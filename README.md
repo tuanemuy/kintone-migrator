@@ -82,6 +82,39 @@ kintone-migrator dump
 
 `fields.json` and `layout.json` will be output to the current directory.
 
+## Schema File
+
+Schema files define the desired kintone form configuration in YAML format. The `layout` key at the root describes form rows, groups, subtables, and field definitions.
+
+```yaml
+layout:
+  - type: ROW
+    fields:
+      - code: customer_name
+        type: SINGLE_LINE_TEXT
+        label: 顧客名
+        size: { width: "200" }
+        required: true
+        unique: true
+  - type: GROUP
+    code: detail_group
+    label: 詳細情報
+    openGroup: true
+    layout:
+      - type: ROW
+        fields:
+          - code: note
+            type: MULTI_LINE_TEXT
+            label: 備考
+            size: { width: "400" }
+```
+
+For the full specification and all supported field types, see:
+
+- [Schema Specification](./spec/schema.md) — format reference for all field types, layout items, decoration elements, and validation rules
+- [Sample Schema (YAML)](./spec/sample_schema.yaml) — comprehensive example covering all field types
+- [Sample Schema (JSON)](./spec/sample_schema.json) — equivalent example in JSON format
+
 ## License
 
 MIT
