@@ -1,0 +1,547 @@
+{
+  "fields": {
+    "customer_name": {
+      "type": "SINGLE_LINE_TEXT",
+      "label": "顧客名",
+      "properties": {
+        "required": true,
+        "unique": true,
+        "defaultValue": "",
+        "minLength": "1",
+        "maxLength": "100"
+      }
+    },
+    "auto_title": {
+      "type": "SINGLE_LINE_TEXT",
+      "label": "自動タイトル",
+      "noLabel": true,
+      "properties": {
+        "expression": "customer_name & \" - \" & order_number"
+      }
+    },
+    "minimal_text": {
+      "type": "SINGLE_LINE_TEXT",
+      "label": "最小構成テキスト",
+      "properties": {}
+    },
+    "description": {
+      "type": "MULTI_LINE_TEXT",
+      "label": "説明",
+      "properties": {
+        "required": true,
+        "defaultValue": "ここに説明を入力してください",
+        "minLength": "10",
+        "maxLength": "5000"
+      }
+    },
+    "memo": {
+      "type": "MULTI_LINE_TEXT",
+      "label": "メモ",
+      "properties": {}
+    },
+    "rich_description": {
+      "type": "RICH_TEXT",
+      "label": "リッチテキスト説明",
+      "properties": {
+        "required": true,
+        "defaultValue": "<p>初期値</p>"
+      }
+    },
+    "minimal_rich_text": {
+      "type": "RICH_TEXT",
+      "label": "最小リッチテキスト",
+      "properties": {}
+    },
+    "price": {
+      "type": "NUMBER",
+      "label": "金額",
+      "properties": {
+        "required": true,
+        "unique": false,
+        "defaultValue": "0",
+        "minValue": "0",
+        "maxValue": "99999999",
+        "digit": true,
+        "displayScale": "0",
+        "unit": "円",
+        "unitPosition": "AFTER"
+      }
+    },
+    "quantity": {
+      "type": "NUMBER",
+      "label": "数量",
+      "properties": {
+        "required": true,
+        "minValue": "1",
+        "maxValue": "9999",
+        "digit": false
+      }
+    },
+    "unit_price_usd": {
+      "type": "NUMBER",
+      "label": "単価（USD）",
+      "properties": {
+        "displayScale": "2",
+        "unit": "$",
+        "unitPosition": "BEFORE"
+      }
+    },
+    "minimal_number": {
+      "type": "NUMBER",
+      "label": "最小数値",
+      "properties": {}
+    },
+    "total_amount": {
+      "type": "CALC",
+      "label": "合計金額",
+      "properties": {
+        "expression": "price * quantity",
+        "format": "NUMBER",
+        "displayScale": "0",
+        "unit": "円",
+        "unitPosition": "AFTER",
+        "hideExpression": false
+      }
+    },
+    "calc_date": {
+      "type": "CALC",
+      "label": "計算日付",
+      "properties": {
+        "expression": "due_date",
+        "format": "DATE"
+      }
+    },
+    "calc_time": {
+      "type": "CALC",
+      "label": "計算時刻",
+      "properties": {
+        "expression": "start_time",
+        "format": "TIME"
+      }
+    },
+    "calc_datetime": {
+      "type": "CALC",
+      "label": "計算日時",
+      "properties": {
+        "expression": "created_datetime",
+        "format": "DATETIME"
+      }
+    },
+    "work_hours": {
+      "type": "CALC",
+      "label": "作業時間",
+      "properties": {
+        "expression": "end_time - start_time",
+        "format": "HOUR_MINUTE",
+        "hideExpression": true
+      }
+    },
+    "elapsed_time": {
+      "type": "CALC",
+      "label": "経過時間",
+      "properties": {
+        "expression": "end_datetime - start_datetime",
+        "format": "DAY_HOUR_MINUTE"
+      }
+    },
+    "minimal_calc": {
+      "type": "CALC",
+      "label": "最小計算",
+      "properties": {
+        "expression": "quantity + 1"
+      }
+    },
+    "categories": {
+      "type": "CHECK_BOX",
+      "label": "カテゴリ",
+      "properties": {
+        "required": true,
+        "defaultValue": ["A"],
+        "options": {
+          "A": { "label": "カテゴリA", "index": "0" },
+          "B": { "label": "カテゴリB", "index": "1" },
+          "C": { "label": "カテゴリC", "index": "2" }
+        },
+        "align": "HORIZONTAL"
+      }
+    },
+    "tags": {
+      "type": "CHECK_BOX",
+      "label": "タグ",
+      "properties": {
+        "defaultValue": [],
+        "options": {
+          "重要": { "label": "重要", "index": "0" },
+          "緊急": { "label": "緊急", "index": "1" }
+        },
+        "align": "VERTICAL"
+      }
+    },
+    "priority": {
+      "type": "RADIO_BUTTON",
+      "label": "優先度",
+      "properties": {
+        "required": true,
+        "defaultValue": ["中"],
+        "options": {
+          "高": { "label": "高", "index": "0" },
+          "中": { "label": "中", "index": "1" },
+          "低": { "label": "低", "index": "2" }
+        },
+        "align": "HORIZONTAL"
+      }
+    },
+    "evaluation": {
+      "type": "RADIO_BUTTON",
+      "label": "評価",
+      "properties": {
+        "options": {
+          "良": { "label": "良", "index": "0" },
+          "可": { "label": "可", "index": "1" },
+          "不可": { "label": "不可", "index": "2" }
+        },
+        "align": "VERTICAL"
+      }
+    },
+    "skills": {
+      "type": "MULTI_SELECT",
+      "label": "スキル",
+      "properties": {
+        "required": false,
+        "defaultValue": [],
+        "options": {
+          "JavaScript": { "label": "JavaScript", "index": "0" },
+          "TypeScript": { "label": "TypeScript", "index": "1" },
+          "Python": { "label": "Python", "index": "2" },
+          "Go": { "label": "Go", "index": "3" }
+        },
+        "align": "HORIZONTAL"
+      }
+    },
+    "status": {
+      "type": "DROP_DOWN",
+      "label": "ステータス",
+      "properties": {
+        "required": true,
+        "defaultValue": ["未着手"],
+        "options": {
+          "未着手": { "label": "未着手", "index": "0" },
+          "進行中": { "label": "進行中", "index": "1" },
+          "レビュー中": { "label": "レビュー中", "index": "2" },
+          "完了": { "label": "完了", "index": "3" },
+          "保留": { "label": "保留", "index": "4" }
+        }
+      }
+    },
+    "minimal_dropdown": {
+      "type": "DROP_DOWN",
+      "label": "最小ドロップダウン",
+      "properties": {
+        "options": {
+          "A": { "label": "A", "index": "0" },
+          "B": { "label": "B", "index": "1" }
+        }
+      }
+    },
+    "due_date": {
+      "type": "DATE",
+      "label": "期限日",
+      "properties": {
+        "required": true,
+        "unique": false,
+        "defaultValue": "",
+        "defaultNowValue": true
+      }
+    },
+    "birthday": {
+      "type": "DATE",
+      "label": "生年月日",
+      "properties": {
+        "unique": true,
+        "defaultValue": "2000-01-01"
+      }
+    },
+    "minimal_date": {
+      "type": "DATE",
+      "label": "最小日付",
+      "properties": {}
+    },
+    "start_time": {
+      "type": "TIME",
+      "label": "開始時刻",
+      "properties": {
+        "required": true,
+        "defaultNowValue": true
+      }
+    },
+    "end_time": {
+      "type": "TIME",
+      "label": "終了時刻",
+      "properties": {
+        "defaultValue": "18:00"
+      }
+    },
+    "minimal_time": {
+      "type": "TIME",
+      "label": "最小時刻",
+      "properties": {}
+    },
+    "start_datetime": {
+      "type": "DATETIME",
+      "label": "開始日時",
+      "properties": {
+        "required": true,
+        "unique": false,
+        "defaultNowValue": true
+      }
+    },
+    "end_datetime": {
+      "type": "DATETIME",
+      "label": "終了日時",
+      "properties": {
+        "unique": true,
+        "defaultValue": "2026-01-01T09:00:00Z"
+      }
+    },
+    "minimal_datetime": {
+      "type": "DATETIME",
+      "label": "最小日時",
+      "properties": {}
+    },
+    "website": {
+      "type": "LINK",
+      "label": "Webサイト",
+      "properties": {
+        "required": false,
+        "unique": true,
+        "defaultValue": "https://example.com",
+        "minLength": "10",
+        "maxLength": "500",
+        "protocol": "WEB"
+      }
+    },
+    "phone": {
+      "type": "LINK",
+      "label": "電話番号",
+      "properties": {
+        "required": true,
+        "protocol": "CALL"
+      }
+    },
+    "email": {
+      "type": "LINK",
+      "label": "メールアドレス",
+      "properties": {
+        "required": true,
+        "unique": true,
+        "protocol": "MAIL"
+      }
+    },
+    "minimal_link": {
+      "type": "LINK",
+      "label": "最小リンク",
+      "properties": {}
+    },
+    "assignee": {
+      "type": "USER_SELECT",
+      "label": "担当者",
+      "properties": {
+        "required": true,
+        "defaultValue": [{ "code": "admin", "type": "USER" }]
+      }
+    },
+    "watchers": {
+      "type": "USER_SELECT",
+      "label": "ウォッチャー",
+      "properties": {
+        "defaultValue": [
+          { "code": "admin", "type": "USER" },
+          { "code": "dev-team", "type": "GROUP" }
+        ]
+      }
+    },
+    "minimal_user_select": {
+      "type": "USER_SELECT",
+      "label": "最小ユーザー選択",
+      "properties": {}
+    },
+    "department": {
+      "type": "ORGANIZATION_SELECT",
+      "label": "部署",
+      "properties": {
+        "required": true,
+        "defaultValue": [{ "code": "engineering", "type": "ORGANIZATION" }]
+      }
+    },
+    "minimal_org_select": {
+      "type": "ORGANIZATION_SELECT",
+      "label": "最小組織選択",
+      "properties": {}
+    },
+    "team": {
+      "type": "GROUP_SELECT",
+      "label": "チーム",
+      "properties": {
+        "required": false,
+        "defaultValue": [{ "code": "dev-team", "type": "GROUP" }]
+      }
+    },
+    "minimal_group_select": {
+      "type": "GROUP_SELECT",
+      "label": "最小グループ選択",
+      "properties": {}
+    },
+    "attachment": {
+      "type": "FILE",
+      "label": "添付ファイル",
+      "properties": {
+        "required": true,
+        "thumbnailSize": "250"
+      }
+    },
+    "minimal_file": {
+      "type": "FILE",
+      "label": "最小ファイル",
+      "properties": {}
+    },
+    "detail_group": {
+      "type": "GROUP",
+      "label": "詳細情報",
+      "properties": {
+        "openGroup": true
+      }
+    },
+    "collapsed_group": {
+      "type": "GROUP",
+      "label": "折りたたみグループ",
+      "properties": {
+        "openGroup": false
+      }
+    },
+    "minimal_group": {
+      "type": "GROUP",
+      "label": "最小グループ",
+      "properties": {}
+    },
+    "order_items": {
+      "type": "SUBTABLE",
+      "label": "注文明細",
+      "properties": {
+        "fields": {
+          "item_name": {
+            "type": "SINGLE_LINE_TEXT",
+            "label": "商品名",
+            "properties": {
+              "required": true,
+              "maxLength": "200"
+            }
+          },
+          "item_quantity": {
+            "type": "NUMBER",
+            "label": "数量",
+            "properties": {
+              "required": true,
+              "minValue": "1",
+              "digit": false
+            }
+          },
+          "item_price": {
+            "type": "NUMBER",
+            "label": "単価",
+            "properties": {
+              "required": true,
+              "digit": true,
+              "unit": "円",
+              "unitPosition": "AFTER"
+            }
+          },
+          "item_subtotal": {
+            "type": "CALC",
+            "label": "小計",
+            "properties": {
+              "expression": "item_quantity * item_price",
+              "format": "NUMBER",
+              "displayScale": "0",
+              "unit": "円",
+              "unitPosition": "AFTER"
+            }
+          },
+          "item_note": {
+            "type": "MULTI_LINE_TEXT",
+            "label": "備考",
+            "properties": {}
+          },
+          "item_category": {
+            "type": "DROP_DOWN",
+            "label": "分類",
+            "properties": {
+              "options": {
+                "商品": { "label": "商品", "index": "0" },
+                "サービス": { "label": "サービス", "index": "1" },
+                "その他": { "label": "その他", "index": "2" }
+              }
+            }
+          },
+          "item_date": {
+            "type": "DATE",
+            "label": "納品日",
+            "properties": {}
+          }
+        }
+      }
+    },
+    "minimal_subtable": {
+      "type": "SUBTABLE",
+      "label": "最小サブテーブル",
+      "properties": {
+        "fields": {
+          "sub_field": {
+            "type": "SINGLE_LINE_TEXT",
+            "label": "サブフィールド",
+            "properties": {}
+          }
+        }
+      }
+    },
+    "related_customers": {
+      "type": "REFERENCE_TABLE",
+      "label": "関連顧客",
+      "properties": {
+        "referenceTable": {
+          "relatedApp": { "app": "42" },
+          "condition": {
+            "field": "customer_name",
+            "relatedField": "name"
+          },
+          "filterCond": "status in (\"active\")",
+          "displayFields": ["name", "email", "phone", "department"],
+          "sort": "name asc",
+          "size": "5"
+        }
+      }
+    },
+    "minimal_reference_table": {
+      "type": "REFERENCE_TABLE",
+      "label": "最小関連テーブル",
+      "properties": {
+        "referenceTable": {
+          "relatedApp": { "app": "100" },
+          "condition": {
+            "field": "order_number",
+            "relatedField": "order_id"
+          },
+          "displayFields": ["order_id"]
+        }
+      }
+    },
+    "order_number": {
+      "type": "SINGLE_LINE_TEXT",
+      "label": "注文番号",
+      "noLabel": false,
+      "properties": {
+        "required": true,
+        "unique": true
+      }
+    }
+  }
+}

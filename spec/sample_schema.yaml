@@ -1,0 +1,541 @@
+# 顧客管理アプリ サンプルスキーマ
+layout:
+  # --- 基本情報 ---
+  - type: ROW
+    fields:
+      - code: customer_name
+        type: SINGLE_LINE_TEXT
+        label: 顧客名
+        size: { width: "200" }
+        required: true
+        unique: true
+        defaultValue: ""
+        minLength: "1"
+        maxLength: "100"
+      - code: order_number
+        type: SINGLE_LINE_TEXT
+        label: 注文番号
+        noLabel: false
+        size: { width: "200" }
+        required: true
+        unique: true
+
+  - type: ROW
+    fields:
+      - code: auto_title
+        type: SINGLE_LINE_TEXT
+        label: 自動タイトル
+        noLabel: true
+        size: { width: "400" }
+        expression: customer_name & " - " & order_number
+
+  - type: ROW
+    fields:
+      - code: minimal_text
+        type: SINGLE_LINE_TEXT
+        label: 最小構成テキスト
+        size: { width: "200" }
+
+  - type: ROW
+    fields:
+      - code: description
+        type: MULTI_LINE_TEXT
+        label: 説明
+        size: { width: "500", innerHeight: "200" }
+        required: true
+        defaultValue: ここに説明を入力してください
+        minLength: "10"
+        maxLength: "5000"
+
+  - type: ROW
+    fields:
+      - code: memo
+        type: MULTI_LINE_TEXT
+        label: メモ
+        size: { width: "400", innerHeight: "100" }
+
+  - type: ROW
+    fields:
+      - code: rich_description
+        type: RICH_TEXT
+        label: リッチテキスト説明
+        size: { width: "500", innerHeight: "200" }
+        required: true
+        defaultValue: "<p>初期値</p>"
+      - code: minimal_rich_text
+        type: RICH_TEXT
+        label: 最小リッチテキスト
+        size: { width: "300" }
+
+  # --- 数値・計算 ---
+  - type: ROW
+    fields:
+      - code: price
+        type: NUMBER
+        label: 金額
+        size: { width: "200" }
+        required: true
+        unique: false
+        defaultValue: "0"
+        minValue: "0"
+        maxValue: "99999999"
+        digit: true
+        displayScale: "0"
+        unit: 円
+        unitPosition: AFTER
+      - code: quantity
+        type: NUMBER
+        label: 数量
+        size: { width: "150" }
+        required: true
+        minValue: "1"
+        maxValue: "9999"
+        digit: false
+      - code: unit_price_usd
+        type: NUMBER
+        label: 単価（USD）
+        size: { width: "150" }
+        displayScale: "2"
+        unit: $
+        unitPosition: BEFORE
+
+  - type: ROW
+    fields:
+      - code: minimal_number
+        type: NUMBER
+        label: 最小数値
+        size: { width: "150" }
+
+  - type: ROW
+    fields:
+      - code: total_amount
+        type: CALC
+        label: 合計金額
+        size: { width: "200" }
+        expression: price * quantity
+        format: NUMBER
+        displayScale: "0"
+        unit: 円
+        unitPosition: AFTER
+        hideExpression: false
+      - code: minimal_calc
+        type: CALC
+        label: 最小計算
+        size: { width: "150" }
+        expression: quantity + 1
+
+  - type: ROW
+    fields:
+      - code: calc_date
+        type: CALC
+        label: 計算日付
+        size: { width: "150" }
+        expression: due_date
+        format: DATE
+      - code: calc_time
+        type: CALC
+        label: 計算時刻
+        size: { width: "150" }
+        expression: start_time
+        format: TIME
+      - code: calc_datetime
+        type: CALC
+        label: 計算日時
+        size: { width: "200" }
+        expression: created_datetime
+        format: DATETIME
+
+  - type: ROW
+    fields:
+      - code: work_hours
+        type: CALC
+        label: 作業時間
+        size: { width: "150" }
+        expression: end_time - start_time
+        format: HOUR_MINUTE
+        hideExpression: true
+      - code: elapsed_time
+        type: CALC
+        label: 経過時間
+        size: { width: "150" }
+        expression: end_datetime - start_datetime
+        format: DAY_HOUR_MINUTE
+
+  # --- 選択系 ---
+  - type: ROW
+    fields:
+      - code: categories
+        type: CHECK_BOX
+        label: カテゴリ
+        size: { width: "300" }
+        required: true
+        defaultValue:
+          - A
+        options:
+          A: { label: カテゴリA, index: "0" }
+          B: { label: カテゴリB, index: "1" }
+          C: { label: カテゴリC, index: "2" }
+        align: HORIZONTAL
+      - code: tags
+        type: CHECK_BOX
+        label: タグ
+        size: { width: "200" }
+        defaultValue: []
+        options:
+          重要: { label: 重要, index: "0" }
+          緊急: { label: 緊急, index: "1" }
+        align: VERTICAL
+
+  - type: ROW
+    fields:
+      - code: priority
+        type: RADIO_BUTTON
+        label: 優先度
+        size: { width: "200" }
+        required: true
+        defaultValue:
+          - 中
+        options:
+          高: { label: 高, index: "0" }
+          中: { label: 中, index: "1" }
+          低: { label: 低, index: "2" }
+        align: HORIZONTAL
+      - code: evaluation
+        type: RADIO_BUTTON
+        label: 評価
+        size: { width: "200" }
+        options:
+          良: { label: 良, index: "0" }
+          可: { label: 可, index: "1" }
+          不可: { label: 不可, index: "2" }
+        align: VERTICAL
+
+  - type: ROW
+    fields:
+      - code: skills
+        type: MULTI_SELECT
+        label: スキル
+        size: { width: "300" }
+        required: false
+        defaultValue: []
+        options:
+          JavaScript: { label: JavaScript, index: "0" }
+          TypeScript: { label: TypeScript, index: "1" }
+          Python: { label: Python, index: "2" }
+          Go: { label: Go, index: "3" }
+        align: HORIZONTAL
+
+  - type: ROW
+    fields:
+      - code: status
+        type: DROP_DOWN
+        label: ステータス
+        size: { width: "200" }
+        required: true
+        defaultValue:
+          - 未着手
+        options:
+          未着手: { label: 未着手, index: "0" }
+          進行中: { label: 進行中, index: "1" }
+          レビュー中: { label: レビュー中, index: "2" }
+          完了: { label: 完了, index: "3" }
+          保留: { label: 保留, index: "4" }
+      - code: minimal_dropdown
+        type: DROP_DOWN
+        label: 最小ドロップダウン
+        size: { width: "150" }
+        options:
+          A: { label: A, index: "0" }
+          B: { label: B, index: "1" }
+
+  # --- 日付・時刻 ---
+  - type: ROW
+    fields:
+      - code: due_date
+        type: DATE
+        label: 期限日
+        size: { width: "150" }
+        required: true
+        unique: false
+        defaultValue: ""
+        defaultNowValue: true
+      - code: birthday
+        type: DATE
+        label: 生年月日
+        size: { width: "150" }
+        unique: true
+        defaultValue: "2000-01-01"
+      - code: minimal_date
+        type: DATE
+        label: 最小日付
+        size: { width: "150" }
+
+  - type: ROW
+    fields:
+      - code: start_time
+        type: TIME
+        label: 開始時刻
+        size: { width: "150" }
+        required: true
+        defaultNowValue: true
+      - code: end_time
+        type: TIME
+        label: 終了時刻
+        size: { width: "150" }
+        defaultValue: "18:00"
+      - code: minimal_time
+        type: TIME
+        label: 最小時刻
+        size: { width: "150" }
+
+  - type: ROW
+    fields:
+      - code: start_datetime
+        type: DATETIME
+        label: 開始日時
+        size: { width: "200" }
+        required: true
+        unique: false
+        defaultNowValue: true
+      - code: end_datetime
+        type: DATETIME
+        label: 終了日時
+        size: { width: "200" }
+        unique: true
+        defaultValue: "2026-01-01T09:00:00Z"
+      - code: minimal_datetime
+        type: DATETIME
+        label: 最小日時
+        size: { width: "200" }
+
+  # --- リンク ---
+  - type: ROW
+    fields:
+      - code: website
+        type: LINK
+        label: Webサイト
+        size: { width: "300" }
+        required: false
+        unique: true
+        defaultValue: "https://example.com"
+        minLength: "10"
+        maxLength: "500"
+        protocol: WEB
+      - code: phone
+        type: LINK
+        label: 電話番号
+        size: { width: "200" }
+        required: true
+        protocol: CALL
+      - code: email
+        type: LINK
+        label: メールアドレス
+        size: { width: "250" }
+        required: true
+        unique: true
+        protocol: MAIL
+
+  - type: ROW
+    fields:
+      - code: minimal_link
+        type: LINK
+        label: 最小リンク
+        size: { width: "200" }
+
+  # --- ユーザー選択 ---
+  - type: ROW
+    fields:
+      - code: assignee
+        type: USER_SELECT
+        label: 担当者
+        size: { width: "200" }
+        required: true
+        defaultValue:
+          - { code: admin, type: USER }
+      - code: watchers
+        type: USER_SELECT
+        label: ウォッチャー
+        size: { width: "200" }
+        defaultValue:
+          - { code: admin, type: USER }
+          - { code: dev-team, type: GROUP }
+      - code: minimal_user_select
+        type: USER_SELECT
+        label: 最小ユーザー選択
+        size: { width: "200" }
+
+  - type: ROW
+    fields:
+      - code: department
+        type: ORGANIZATION_SELECT
+        label: 部署
+        size: { width: "200" }
+        required: true
+        defaultValue:
+          - { code: engineering, type: ORGANIZATION }
+      - code: minimal_org_select
+        type: ORGANIZATION_SELECT
+        label: 最小組織選択
+        size: { width: "200" }
+
+  - type: ROW
+    fields:
+      - code: team
+        type: GROUP_SELECT
+        label: チーム
+        size: { width: "200" }
+        required: false
+        defaultValue:
+          - { code: dev-team, type: GROUP }
+      - code: minimal_group_select
+        type: GROUP_SELECT
+        label: 最小グループ選択
+        size: { width: "200" }
+
+  # --- ファイル ---
+  - type: ROW
+    fields:
+      - code: attachment
+        type: FILE
+        label: 添付ファイル
+        size: { width: "200" }
+        required: true
+        thumbnailSize: "250"
+      - code: minimal_file
+        type: FILE
+        label: 最小ファイル
+        size: { width: "200" }
+
+  # --- 装飾要素 ---
+  - type: ROW
+    fields:
+      - type: LABEL
+        label: セクション見出し
+        elementId: heading_1
+        size: { width: "400" }
+      - type: HR
+        elementId: hr_1
+        size: { width: "600" }
+
+  - type: ROW
+    fields:
+      - type: SPACER
+        elementId: spacer_1
+        size: { width: "200", height: "50" }
+
+  # --- グループ ---
+  - type: GROUP
+    code: detail_group
+    label: 詳細情報
+    openGroup: true
+    layout:
+      - type: ROW
+        fields:
+          - code: price
+            type: NUMBER
+            label: 金額（グループ内）
+            size: { width: "200" }
+
+  - type: GROUP
+    code: collapsed_group
+    label: 折りたたみグループ
+    openGroup: false
+    layout:
+      - type: ROW
+        fields:
+          - code: memo
+            type: MULTI_LINE_TEXT
+            label: メモ（グループ内）
+            size: { width: "400" }
+
+  - type: GROUP
+    code: minimal_group
+    label: 最小グループ
+    layout: []
+
+  # --- サブテーブル ---
+  - type: SUBTABLE
+    code: order_items
+    label: 注文明細
+    fields:
+      - code: item_name
+        type: SINGLE_LINE_TEXT
+        label: 商品名
+        size: { width: "250" }
+        required: true
+        maxLength: "200"
+      - code: item_quantity
+        type: NUMBER
+        label: 数量
+        size: { width: "100" }
+        required: true
+        minValue: "1"
+        digit: false
+      - code: item_price
+        type: NUMBER
+        label: 単価
+        size: { width: "150" }
+        required: true
+        digit: true
+        unit: 円
+        unitPosition: AFTER
+      - code: item_subtotal
+        type: CALC
+        label: 小計
+        size: { width: "150" }
+        expression: item_quantity * item_price
+        format: NUMBER
+        displayScale: "0"
+        unit: 円
+        unitPosition: AFTER
+      - code: item_note
+        type: MULTI_LINE_TEXT
+        label: 備考
+        size: { width: "200" }
+      - code: item_category
+        type: DROP_DOWN
+        label: 分類
+        size: { width: "150" }
+        options:
+          商品: { label: 商品, index: "0" }
+          サービス: { label: サービス, index: "1" }
+          その他: { label: その他, index: "2" }
+      - code: item_date
+        type: DATE
+        label: 納品日
+        size: { width: "150" }
+
+  - type: SUBTABLE
+    code: minimal_subtable
+    label: 最小サブテーブル
+    fields:
+      - code: sub_field
+        type: SINGLE_LINE_TEXT
+        label: サブフィールド
+        size: { width: "200" }
+
+  # --- 関連テーブル ---
+  - type: ROW
+    fields:
+      - code: related_customers
+        type: REFERENCE_TABLE
+        label: 関連顧客
+        size: { width: "600" }
+        referenceTable:
+          relatedApp: { app: "42" }
+          condition: { field: customer_name, relatedField: name }
+          filterCond: 'status in ("active")'
+          displayFields: [name, email, phone, department]
+          sort: name asc
+          size: "5"
+
+  - type: ROW
+    fields:
+      - code: minimal_reference_table
+        type: REFERENCE_TABLE
+        label: 最小関連テーブル
+        size: { width: "400" }
+        referenceTable:
+          relatedApp: { app: "100" }
+          condition: { field: order_number, relatedField: order_id }
+          displayFields: [order_id]
