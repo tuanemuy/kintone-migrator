@@ -1,0 +1,12 @@
+import type { ServiceArgs } from "../types";
+
+export type SaveSchemaInput = {
+  readonly schemaText: string;
+};
+
+export async function saveSchema({
+  container,
+  input,
+}: ServiceArgs<SaveSchemaInput>): Promise<void> {
+  await container.schemaStorage.update(input.schemaText);
+}
