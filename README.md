@@ -1,8 +1,8 @@
 # kintone-migrator
 
-A CLI tool for migrating kintone form schemas.
+A CLI tool for migrating kintone form schemas and seed data.
 
-Compares a YAML-defined schema file against an actual kintone app form, providing diff detection, migration, schema capture, and more.
+Compares a YAML-defined schema file against an actual kintone app form, providing diff detection, migration, schema capture, seed data management, and more.
 
 ## Installation
 
@@ -98,6 +98,33 @@ kintone-migrator dump
 
 `fields.json` and `layout.json` will be output to the current directory.
 
+### `seed`
+
+Applies seed data (records) to a kintone app using upsert (insert or update based on a key field). Can also capture existing records from an app to a seed file.
+
+```bash
+# Apply seed data to a single app
+kintone-migrator seed
+kintone-migrator seed -s my-seed.yaml
+
+# Capture records from a kintone app
+kintone-migrator seed --capture --key-field customer_code
+kintone-migrator seed --capture --key-field customer_code -s seeds/customer.yaml
+
+# Multi-app mode
+kintone-migrator seed --all
+kintone-migrator seed --capture --key-field code --all
+kintone-migrator seed --app customer
+```
+
+#### Seed-specific arguments
+
+| CLI Argument | Description |
+|---------|------|
+| `--capture` | Capture mode: fetch records from kintone and save to seed file |
+| `--key-field`, `-k` | Key field code for upsert (required for `--capture`) |
+| `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
+
 ## Schema File
 
 Schema files define the desired kintone form configuration in YAML format. The `layout` key at the root describes form rows, groups, subtables, and field definitions.
@@ -130,6 +157,51 @@ For the full specification and all supported field types, see:
 - [Schema Specification](./spec/schema.md) — format reference for all field types, layout items, decoration elements, and validation rules
 - [Sample Schema (YAML)](./spec/sample_schema.yaml) — comprehensive example covering all field types
 - [Sample Schema (JSON)](./spec/sample_schema.json) — equivalent example in JSON format
+
+## Seed Data File
+
+Seed data files define records to be upserted into a kintone app. The `key` field specifies which field to use for matching existing records (must have the "Prohibit duplicate values" setting enabled in kintone).
+
+```yaml
+key: customer_code
+records:
+  - customer_code: "C001"
+    customer_name: "Test Corp"
+    priority: "high"
+    tags:
+      - "VIP"
+      - "long-term"
+    assignee:
+      - code: "user1"
+    start_date: "2025-01-15"
+    order_items:
+      - product_name: "Product A"
+        quantity: "1"
+        price: "1000"
+```
+
+For the full specification, see:
+
+- [Seed Data Specification](./spec/seed.md) — format reference, field type mappings, and validation rules
+
+## Multi-App Project Config
+
+When using a project config file (`kintone-migrator.yaml`), seed files can be configured per app via the `seedFile` option:
+
+```yaml
+apps:
+  customer:
+    appId: "10"
+    schemaFile: schemas/customer.yaml
+    seedFile: seeds/customer.yaml
+  order:
+    appId: "20"
+    seedFile: seeds/order.yaml
+    dependsOn:
+      - customer
+```
+
+If `seedFile` is omitted, it defaults to `seeds/<appName>.yaml`.
 
 ## License
 
