@@ -236,15 +236,38 @@ function buildFieldDefinition(
         type: fieldType,
         properties: properties as FieldPropsOf<"CALC">,
       };
-    case "CHECK_BOX":
     case "RADIO_BUTTON":
-    case "MULTI_SELECT":
-    case "DROP_DOWN":
+    case "DROP_DOWN": {
+      const props = { ...properties };
+      if (
+        props.defaultValue !== undefined &&
+        Array.isArray(props.defaultValue)
+      ) {
+        const arr = props.defaultValue as string[];
+        props.defaultValue = arr.length > 0 ? String(arr[0]) : "";
+      }
       return {
         ...base,
         type: fieldType,
-        properties: properties as FieldPropsOf<"CHECK_BOX">,
+        properties: props as FieldPropsOf<"RADIO_BUTTON">,
       };
+    }
+    case "CHECK_BOX":
+    case "MULTI_SELECT": {
+      const props = { ...properties };
+      if (
+        props.defaultValue !== undefined &&
+        typeof props.defaultValue === "string"
+      ) {
+        props.defaultValue =
+          props.defaultValue === "" ? [] : [props.defaultValue];
+      }
+      return {
+        ...base,
+        type: fieldType,
+        properties: props as FieldPropsOf<"CHECK_BOX">,
+      };
+    }
     case "DATE":
       return {
         ...base,

@@ -444,6 +444,40 @@ describe("DiffDetector", () => {
       expect(diff.summary.modified).toBe(1);
     });
 
+    it("RADIO_BUTTON の defaultValue 文字列が異なる場合、modified として検出される", () => {
+      const before = makeField("f", "RADIO_BUTTON", "RB", {
+        defaultValue: "A",
+        options: {
+          A: { label: "A", index: "0" },
+          B: { label: "B", index: "1" },
+        },
+      });
+      const after = makeField("f", "RADIO_BUTTON", "RB", {
+        defaultValue: "B",
+        options: {
+          A: { label: "A", index: "0" },
+          B: { label: "B", index: "1" },
+        },
+      });
+      const schema = makeSchema([after]);
+      const current = makeFieldMap([before]);
+
+      const diff = DiffDetector.detect(schema, current);
+      expect(diff.summary.modified).toBe(1);
+    });
+
+    it("RADIO_BUTTON の defaultValue が同一文字列の場合、差分なしとなる", () => {
+      const field = makeField("f", "RADIO_BUTTON", "RB", {
+        defaultValue: "A",
+        options: { A: { label: "A", index: "0" } },
+      });
+      const schema = makeSchema([field]);
+      const current = makeFieldMap([field]);
+
+      const diff = DiffDetector.detect(schema, current);
+      expect(diff.isEmpty).toBe(true);
+    });
+
     it("配列プロパティが異なる長さの場合、modified として検出される", () => {
       const before = makeField("f", "CHECK_BOX", "CB", {
         defaultValue: ["A"],

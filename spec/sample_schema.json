@@ -182,7 +182,7 @@
       "label": "優先度",
       "properties": {
         "required": true,
-        "defaultValue": ["中"],
+        "defaultValue": "中",
         "options": {
           "高": { "label": "高", "index": "0" },
           "中": { "label": "中", "index": "1" },
@@ -223,7 +223,7 @@
       "label": "ステータス",
       "properties": {
         "required": true,
-        "defaultValue": ["未着手"],
+        "defaultValue": "未着手",
         "options": {
           "未着手": { "label": "未着手", "index": "0" },
           "進行中": { "label": "進行中", "index": "1" },

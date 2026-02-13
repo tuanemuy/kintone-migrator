@@ -141,6 +141,21 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
     );
   }
 
+  // Normalize defaultValue for selection fields
+  if (type === "RADIO_BUTTON" || type === "DROP_DOWN") {
+    if (rest.defaultValue !== undefined && Array.isArray(rest.defaultValue)) {
+      const arr = rest.defaultValue as string[];
+      rest.defaultValue = arr.length > 0 ? String(arr[0]) : "";
+    }
+  } else if (type === "CHECK_BOX" || type === "MULTI_SELECT") {
+    if (
+      rest.defaultValue !== undefined &&
+      typeof rest.defaultValue === "string"
+    ) {
+      rest.defaultValue = rest.defaultValue === "" ? [] : [rest.defaultValue];
+    }
+  }
+
   return { ...base, type, properties: rest } as FieldDefinition;
 }
 

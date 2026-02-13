@@ -204,9 +204,9 @@ type SelectionOption = Readonly<{
   index: string;
 }>;
 
-type SelectionFieldDefinition = FieldDefinitionBase &
+type MultiValueSelectionFieldDefinition = FieldDefinitionBase &
   Readonly<{
-    type: "CHECK_BOX" | "RADIO_BUTTON" | "MULTI_SELECT" | "DROP_DOWN";
+    type: "CHECK_BOX" | "MULTI_SELECT";
     properties: Readonly<{
       required?: boolean;
       defaultValue?: readonly string[];
@@ -214,7 +214,25 @@ type SelectionFieldDefinition = FieldDefinitionBase &
       align?: "HORIZONTAL" | "VERTICAL";
     }>;
   }>;
+
+type SingleValueSelectionFieldDefinition = FieldDefinitionBase &
+  Readonly<{
+    type: "RADIO_BUTTON" | "DROP_DOWN";
+    properties: Readonly<{
+      required?: boolean;
+      defaultValue?: string;
+      options: Readonly<Record<string, SelectionOption>>;
+      align?: "HORIZONTAL" | "VERTICAL";
+    }>;
+  }>;
+
+type SelectionFieldDefinition =
+  | MultiValueSelectionFieldDefinition
+  | SingleValueSelectionFieldDefinition;
 ```
+
+- **CHECK_BOX / MULTI_SELECT**（複数選択）: `defaultValue` は文字列の配列
+- **RADIO_BUTTON / DROP_DOWN**（単一選択）: `defaultValue` は文字列
 
 #### 日時系フィールド
 

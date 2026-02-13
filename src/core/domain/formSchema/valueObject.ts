@@ -153,9 +153,9 @@ export type CalcFieldDefinition = FieldDefinitionBase &
   }>;
 
 // Selection fields
-export type SelectionFieldDefinition = FieldDefinitionBase &
+export type MultiValueSelectionFieldDefinition = FieldDefinitionBase &
   Readonly<{
-    type: "CHECK_BOX" | "RADIO_BUTTON" | "MULTI_SELECT" | "DROP_DOWN";
+    type: "CHECK_BOX" | "MULTI_SELECT";
     properties: Readonly<{
       required?: boolean;
       defaultValue?: readonly string[];
@@ -163,6 +163,21 @@ export type SelectionFieldDefinition = FieldDefinitionBase &
       align?: "HORIZONTAL" | "VERTICAL";
     }>;
   }>;
+
+export type SingleValueSelectionFieldDefinition = FieldDefinitionBase &
+  Readonly<{
+    type: "RADIO_BUTTON" | "DROP_DOWN";
+    properties: Readonly<{
+      required?: boolean;
+      defaultValue?: string;
+      options: Readonly<Record<string, SelectionOption>>;
+      align?: "HORIZONTAL" | "VERTICAL";
+    }>;
+  }>;
+
+export type SelectionFieldDefinition =
+  | MultiValueSelectionFieldDefinition
+  | SingleValueSelectionFieldDefinition;
 
 // Date/Time fields
 export type DateFieldDefinition = FieldDefinitionBase &
@@ -275,7 +290,8 @@ export type FieldDefinition =
   | RichTextFieldDefinition
   | NumberFieldDefinition
   | CalcFieldDefinition
-  | SelectionFieldDefinition
+  | MultiValueSelectionFieldDefinition
+  | SingleValueSelectionFieldDefinition
   | DateFieldDefinition
   | TimeFieldDefinition
   | DateTimeFieldDefinition
