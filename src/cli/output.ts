@@ -3,6 +3,7 @@ import pc from "picocolors";
 import type { Container } from "@/core/application/container";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 
 export function printDiffResult(result: DetectDiffOutput): void {
   const { summary } = result;
@@ -39,6 +40,28 @@ export function printDiffResult(result: DetectDiffOutput): void {
   });
 
   p.note(lines.join("\n"), "Diff Details");
+}
+
+export function printAppHeader(appName: string, appId: string): void {
+  p.log.step(`\n=== [${pc.bold(appName)}] (app: ${appId}) ===`);
+}
+
+export function printMultiAppResult(result: MultiAppResult): void {
+  p.log.step("");
+
+  for (const r of result.results) {
+    switch (r.status) {
+      case "succeeded":
+        p.log.success(`  ${pc.green("\u2713")} Succeeded: ${r.name}`);
+        break;
+      case "failed":
+        p.log.error(`  ${pc.red("\u2717")} Failed: ${r.name}`);
+        break;
+      case "skipped":
+        p.log.warn(`  ${pc.dim("-")} Skipped: ${r.name}`);
+        break;
+    }
+  }
 }
 
 export async function promptDeploy(container: Container): Promise<void> {

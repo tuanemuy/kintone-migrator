@@ -73,6 +73,22 @@ export const kintoneArgs = {
   },
 };
 
+export const multiAppArgs = {
+  app: {
+    type: "string" as const,
+    description: "Target app name (from project config file)",
+  },
+  all: {
+    type: "boolean" as const,
+    description: "Run all apps in dependency order",
+  },
+  config: {
+    type: "string" as const,
+    short: "c",
+    description: "Project config file path (default: kintone-migrator.yaml)",
+  },
+};
+
 export function resolveConfig(cliValues: {
   domain?: string;
   username?: string;
