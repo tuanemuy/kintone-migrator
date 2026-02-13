@@ -17,6 +17,7 @@ vi.mock("@clack/prompts", () => ({
 
 vi.mock("@/cli/config", () => ({
   kintoneArgs: {},
+  multiAppArgs: {},
   resolveConfig: vi.fn(() => ({
     baseUrl: "https://test.cybozu.com",
     username: "user",
@@ -24,6 +25,21 @@ vi.mock("@/cli/config", () => ({
     appId: "1",
     schemaFilePath: "schema.yaml",
   })),
+}));
+
+vi.mock("@/cli/projectConfig", () => ({
+  resolveTarget: vi.fn(() => ({ mode: "single-legacy" })),
+  printAvailableApps: vi.fn(),
+  resolveAppCliConfig: vi.fn(),
+  routeMultiApp: vi.fn(
+    async (
+      _values: unknown,
+      handlers: { singleLegacy: () => Promise<void> },
+    ) => {
+      await handlers.singleLegacy();
+    },
+  ),
+  runMultiAppWithFailCheck: vi.fn(),
 }));
 
 vi.mock("@/core/application/container/cli", () => ({
@@ -35,6 +51,8 @@ vi.mock("@/core/application/formSchema/executeMigration");
 
 vi.mock("@/cli/output", () => ({
   printDiffResult: vi.fn(),
+  printAppHeader: vi.fn(),
+  printMultiAppResult: vi.fn(),
   promptDeploy: vi.fn(),
 }));
 

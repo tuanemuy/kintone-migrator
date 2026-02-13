@@ -1,4 +1,5 @@
 import * as v from "valibot";
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 
 const CliConfigSchema = v.object({
   KINTONE_DOMAIN: v.pipe(v.string(), v.nonEmpty("KINTONE_DOMAIN is required")),
@@ -73,6 +74,22 @@ export const kintoneArgs = {
   },
 };
 
+export const multiAppArgs = {
+  app: {
+    type: "string" as const,
+    description: "Target app name (from project config file)",
+  },
+  all: {
+    type: "boolean" as const,
+    description: "Run all apps in dependency order",
+  },
+  config: {
+    type: "string" as const,
+    short: "c",
+    description: "Project config file path (default: kintone-migrator.yaml)",
+  },
+};
+
 export function resolveConfig(cliValues: {
   domain?: string;
   username?: string;
@@ -100,7 +117,10 @@ export function resolveConfig(cliValues: {
 
   if (!result.success) {
     const missing = result.issues.map((issue) => issue.message).join("\n  ");
-    throw new Error(`Missing required configuration:\n  ${missing}`);
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      `Missing required configuration:\n  ${missing}`,
+    );
   }
 
   const { output } = result;
@@ -136,7 +156,8 @@ function resolveAuth(
     return { type: "password", username, password };
   }
 
-  throw new Error(
+  throw new ValidationError(
+    ValidationErrorCode.InvalidInput,
     "Missing required configuration:\n  Either KINTONE_API_TOKEN or KINTONE_USERNAME/KINTONE_PASSWORD is required",
   );
 }

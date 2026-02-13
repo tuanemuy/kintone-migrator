@@ -19,6 +19,7 @@ vi.mock("@clack/prompts", () => ({
 
 vi.mock("@/cli/config", () => ({
   kintoneArgs: {},
+  multiAppArgs: {},
   resolveConfig: vi.fn(() => ({
     baseUrl: "https://test.cybozu.com",
     auth: { type: "password", username: "user", password: "pass" },
@@ -26,6 +27,21 @@ vi.mock("@/cli/config", () => ({
     schemaFilePath: "schema.yaml",
   })),
   buildKintoneAuth: vi.fn(() => ({ username: "user", password: "pass" })),
+}));
+
+vi.mock("@/cli/projectConfig", () => ({
+  resolveTarget: vi.fn(() => ({ mode: "single-legacy" })),
+  printAvailableApps: vi.fn(),
+  resolveAppCliConfig: vi.fn(),
+  routeMultiApp: vi.fn(
+    async (
+      _values: unknown,
+      handlers: { singleLegacy: () => Promise<void> },
+    ) => {
+      await handlers.singleLegacy();
+    },
+  ),
+  runMultiAppWithFailCheck: vi.fn(),
 }));
 
 vi.mock("@kintone/rest-api-client", () => ({
@@ -39,6 +55,11 @@ vi.mock("@kintone/rest-api-client", () => ({
 
 vi.mock("node:fs/promises", () => ({
   writeFile: mocks.writeFile,
+}));
+
+vi.mock("@/cli/output", () => ({
+  printAppHeader: vi.fn(),
+  printMultiAppResult: vi.fn(),
 }));
 
 vi.mock("@/cli/handleError", () => ({

@@ -14,7 +14,7 @@ export class ApplicationError extends AnyError {
 
 export const NotFoundErrorCode = {
   NotFound: "NOT_FOUND",
-  // ${Entity}NotFound: "${ENTITY}_NOT_FOUND",
+  AppNotFound: "APP_NOT_FOUND",
 } as const;
 export type NotFoundErrorCode =
   (typeof NotFoundErrorCode)[keyof typeof NotFoundErrorCode];

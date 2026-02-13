@@ -136,6 +136,69 @@
 
 ---
 
+## シナリオ3a: フォーム設定をリセットして全カスタムフィールドを削除する
+
+### 目的
+
+フォームからすべてのカスタムフィールドを削除し、空の初期状態に戻す。テスト環境のクリーンアップや、フォーム設定をゼロから作り直す際に使用する。CLIでは `override --reset` フラグで実行する。
+
+### 前提
+
+- `--reset` と `--schema` フラグは排他的であり、同時に指定した場合は `ValidationError` となる
+- スキーマファイルの指定は不要
+
+### フロー（CLI）
+
+1. 利用者は `override --reset` を実行する
+2. システムは `FormConfigurator.getFields()` で現在のフォーム設定を取得する
+3. システムはシステムフィールドを除外し、削除対象のカスタムフィールドを特定する
+4. 削除対象フィールドの一覧を表示し、確認プロンプトを表示する
+    - 「全 N 件のカスタムフィールドを削除してフォームをリセットします。この操作は元に戻せません。続行しますか？ (y/N)」
+5. 利用者が確認した場合、`FormConfigurator.deleteFields()` で全カスタムフィールドを削除する
+6. `FormConfigurator.updateLayout()` で空のレイアウトに更新する
+
+### 出力例
+
+```
+Reset target: 12 custom fields will be deleted.
+
+Fields to delete:
+  - customer_name (SINGLE_LINE_TEXT)
+  - customer_code (SINGLE_LINE_TEXT)
+  - email (SINGLE_LINE_TEXT)
+  ...
+
+⚠ All 12 custom fields will be deleted and the form will be reset. This cannot be undone.
+Continue? (y/N): y
+
+Deleting fields... done.
+Updating layout... done.
+
+Form has been reset successfully.
+```
+
+### カスタムフィールドがない場合
+
+```
+No custom fields found. The form is already in its initial state.
+```
+
+### Multi-Appモード
+
+- `override --reset --all` で全アプリのフォームを一括リセットできる
+- 依存関係の逆順（依存されているアプリを後に）でリセットを実行する
+    - 理由: 参照先アプリのフィールドを先に削除すると、参照元のLookupフィールド等が不整合になる可能性があるため
+- 1回の確認プロンプトで全アプリの実行を開始する
+- Fail-Fast方式: 1つのアプリで失敗した場合、残りのアプリはスキップされる
+
+### エラー時
+
+- `--reset` と `--schema` を同時に指定した場合: `ValidationError`（「--reset と --schema は同時に指定できません。」）
+- `FormConfigurator.getFields()` の通信に失敗した場合: `SystemError` を表示する
+- `FormConfigurator.deleteFields()` の通信に失敗した場合: `SystemError` を表示し、処理を中断する
+
+---
+
 ## シナリオ4: 稼働中のフォーム設定から宣言的な構成を生成して管理者用メモに反映する
 
 ### 目的
@@ -167,3 +230,46 @@
 
 - 成功時: ダイアログを閉じ、トースト通知で「管理者用メモに設定を反映しました。」と表示する
 - 失敗時: ダイアログ内にエラーメッセージを表示する。ダイアログは閉じない
+
+---
+
+## シナリオ5: 複数アプリを依存順に一括操作する（Multi-Appモード）
+
+### 目的
+
+プロジェクト設定ファイル（`kintone-migrator.yaml`）で定義された複数のkintoneアプリに対して、依存関係に基づいた順序で一括操作（diff/migrate/override/capture/dump）を実行する。
+
+### 前提
+
+- `kintone-migrator.yaml` がプロジェクトルートに配置されている
+- CLI引数 `--all` で全アプリ一括実行、`--app <name>` で単一アプリ実行
+
+### フロー（`--all` での一括 migrate の例）
+
+1. 設定ファイルを読み込み、バリデーションを実行する
+2. 依存関係を解決し、トポロジカルソートで実行順序を決定する
+3. 各アプリのdiffを依存順に検出して表示する
+4. 変更サマリーを表示し、1回の確認プロンプトで続行を問う
+5. 利用者が確認した場合、依存順に各アプリのmigration + deployを実行する
+6. 失敗時は即停止し、残りのアプリはスキップする
+
+### 出力例
+
+```
+=== [customer] (app: 10) ===
+Migration + Deploy completed.
+
+=== [order] (app: 20) ===
+[SystemError] EXTERNAL_API_ERROR: Failed to add form fields
+
+Execution stopped.
+  ✓ Succeeded: customer
+  ✗ Failed: order
+  - Skipped: invoice
+```
+
+### エラー時
+
+- 設定ファイルが見つからない場合: ValidationErrorを表示
+- 循環依存が検出された場合: BusinessRuleErrorを表示
+- 実行中のアプリが失敗した場合: Fail-Fastで即停止、結果サマリーを表示

@@ -1,43 +1,196 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
+import type { Container } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+import { deployApp } from "@/core/application/formSchema/deployApp";
 import { forceOverrideForm } from "@/core/application/formSchema/forceOverrideForm";
-import { kintoneArgs, resolveConfig } from "../config";
+import { resetForm } from "@/core/application/formSchema/resetForm";
+import { kintoneArgs, multiAppArgs, resolveConfig } from "../config";
 import { handleCliError } from "../handleError";
-import { promptDeploy } from "../output";
+import { printAppHeader, promptDeploy } from "../output";
+import {
+  resolveAppCliConfig,
+  routeMultiApp,
+  runMultiAppWithFailCheck,
+} from "../projectConfig";
+
+async function runSingleOverride(container: Container): Promise<void> {
+  p.log.warn(
+    `${pc.bold(pc.red("WARNING:"))} This will replace the entire form with the declared schema.`,
+  );
+  p.log.warn("Fields not defined in the schema will be deleted.");
+
+  const shouldContinue = await p.confirm({
+    message: "Are you sure you want to force override?",
+  });
+
+  if (p.isCancel(shouldContinue) || !shouldContinue) {
+    p.cancel("Force override cancelled.");
+    process.exit(0);
+  }
+
+  const s = p.spinner();
+  s.start("Force overriding form...");
+  await forceOverrideForm({ container });
+  s.stop("Force override applied.");
+
+  p.log.success("Force override completed successfully.");
+
+  await promptDeploy(container);
+}
+
+async function runSingleReset(container: Container): Promise<void> {
+  p.log.warn(
+    `${pc.bold(pc.red("WARNING:"))} This will delete ALL custom fields, resetting the form to empty.`,
+  );
+
+  const shouldContinue = await p.confirm({
+    message: "Are you sure you want to reset the form?",
+  });
+
+  if (p.isCancel(shouldContinue) || !shouldContinue) {
+    p.cancel("Reset cancelled.");
+    process.exit(0);
+  }
+
+  const s = p.spinner();
+  s.start("Resetting form...");
+  await resetForm({ container });
+  s.stop("Form reset applied.");
+
+  p.log.success("Reset completed successfully.");
+
+  await promptDeploy(container);
+}
 
 export default define({
   name: "override",
   description: "Force override kintone form with declared schema",
-  args: { ...kintoneArgs },
+  args: {
+    ...kintoneArgs,
+    ...multiAppArgs,
+    reset: {
+      type: "boolean" as const,
+      description: "Reset form by deleting all custom fields",
+    },
+  },
   run: async (ctx) => {
     try {
-      const config = resolveConfig(ctx.values);
-      const container = createCliContainer(config);
+      const isReset = ctx.values.reset === true;
 
-      p.log.warn(
-        `${pc.bold(pc.red("WARNING:"))} This will replace the entire form with the declared schema.`,
-      );
-      p.log.warn("Fields not defined in the schema will be deleted.");
-
-      const shouldContinue = await p.confirm({
-        message: "Are you sure you want to force override?",
-      });
-
-      if (p.isCancel(shouldContinue) || !shouldContinue) {
-        p.cancel("Force override cancelled.");
-        process.exit(0);
+      if (isReset && ctx.values["schema-file"]) {
+        throw new ValidationError(
+          ValidationErrorCode.InvalidInput,
+          "--reset and --schema-file cannot be used together",
+        );
       }
 
-      const s = p.spinner();
-      s.start("Force overriding form...");
-      await forceOverrideForm({ container });
-      s.stop("Force override applied.");
+      await routeMultiApp(ctx.values, {
+        singleLegacy: async () => {
+          const config = resolveConfig(ctx.values);
+          const container = createCliContainer(config);
+          if (isReset) {
+            await runSingleReset(container);
+          } else {
+            await runSingleOverride(container);
+          }
+        },
+        singleApp: async (app, projectConfig) => {
+          const config = resolveAppCliConfig(app, projectConfig, ctx.values);
+          const container = createCliContainer(config);
+          if (isReset) {
+            await runSingleReset(container);
+          } else {
+            await runSingleOverride(container);
+          }
+        },
+        multiApp: async (plan, projectConfig) => {
+          if (isReset) {
+            p.log.warn(
+              `${pc.bold(pc.red("WARNING:"))} This will delete ALL custom fields from ALL apps, resetting them to empty.`,
+            );
 
-      p.log.success("Force override completed successfully.");
+            const shouldContinue = await p.confirm({
+              message: "Are you sure you want to reset all apps?",
+            });
 
-      await promptDeploy(container);
+            if (p.isCancel(shouldContinue) || !shouldContinue) {
+              p.cancel("Reset cancelled.");
+              process.exit(0);
+            }
+
+            const reversedPlan = {
+              orderedApps: [...plan.orderedApps].reverse(),
+            };
+
+            await runMultiAppWithFailCheck(
+              reversedPlan,
+              async (app) => {
+                const config = resolveAppCliConfig(
+                  app,
+                  projectConfig,
+                  ctx.values,
+                );
+                const container = createCliContainer(config);
+
+                printAppHeader(app.name, app.appId);
+
+                const s = p.spinner();
+                s.start("Resetting form...");
+                await resetForm({ container });
+                s.stop("Form reset applied.");
+
+                const ds = p.spinner();
+                ds.start("Deploying to production...");
+                await deployApp({ container });
+                ds.stop("Reset + Deploy completed.");
+              },
+              "All resets completed successfully.",
+            );
+          } else {
+            p.log.warn(
+              `${pc.bold(pc.red("WARNING:"))} This will replace the entire form for ALL apps with their declared schemas.`,
+            );
+            p.log.warn("Fields not defined in each schema will be deleted.");
+
+            const shouldContinue = await p.confirm({
+              message: "Are you sure you want to force override all apps?",
+            });
+
+            if (p.isCancel(shouldContinue) || !shouldContinue) {
+              p.cancel("Force override cancelled.");
+              process.exit(0);
+            }
+
+            await runMultiAppWithFailCheck(
+              plan,
+              async (app) => {
+                const config = resolveAppCliConfig(
+                  app,
+                  projectConfig,
+                  ctx.values,
+                );
+                const container = createCliContainer(config);
+
+                printAppHeader(app.name, app.appId);
+
+                const s = p.spinner();
+                s.start("Force overriding form...");
+                await forceOverrideForm({ container });
+                s.stop("Force override applied.");
+
+                const ds = p.spinner();
+                ds.start("Deploying to production...");
+                await deployApp({ container });
+                ds.stop("Override + Deploy completed.");
+              },
+              "All overrides completed successfully.",
+            );
+          }
+        },
+      });
     } catch (error) {
       handleCliError(error);
     }
