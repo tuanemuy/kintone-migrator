@@ -10,6 +10,7 @@ export type CliContainerConfig = {
   baseUrl: string;
   auth: CliConfig["auth"];
   appId: string;
+  guestSpaceId?: string;
   schemaFilePath: string;
 };
 
@@ -17,6 +18,7 @@ export function createCliContainer(config: CliContainerConfig): Container {
   const client = new KintoneRestAPIClient({
     baseUrl: config.baseUrl,
     auth: buildKintoneAuth(config.auth),
+    guestSpaceId: config.guestSpaceId,
   });
 
   return {
