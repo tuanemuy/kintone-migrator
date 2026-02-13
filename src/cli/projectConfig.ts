@@ -1,6 +1,6 @@
+import { access, readFile } from "node:fs/promises";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import { projectConfigExists } from "@/core/adapters/local/projectConfigStorage";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { MultiAppExecutor } from "@/core/application/projectConfig/executeMultiApp";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
@@ -79,7 +79,8 @@ export async function resolveTarget(
 
   // Mode 2/3: --app or --all → requires config file
   if (values.app || values.all) {
-    const config = await loadProjectConfig({ configPath });
+    const content = await readConfigFile(configPath);
+    const config = loadProjectConfig({ content });
     const plan = resolveExecutionPlan({
       config,
       appName: values.app,
@@ -93,8 +94,9 @@ export async function resolveTarget(
   }
 
   // Mode 4: No flags, config file exists → show available apps
-  if (await projectConfigExists(configPath)) {
-    const config = await loadProjectConfig({ configPath });
+  if (await configFileExists(configPath)) {
+    const content = await readConfigFile(configPath);
+    const config = loadProjectConfig({ content });
     return { mode: "list-apps", config };
   }
 
@@ -249,5 +251,26 @@ export async function runMultiAppWithFailCheck(
 
   if (successMessage) {
     p.log.success(successMessage);
+  }
+}
+
+async function configFileExists(configPath: string): Promise<boolean> {
+  try {
+    await access(configPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function readConfigFile(configPath: string): Promise<string> {
+  try {
+    return await readFile(configPath, "utf-8");
+  } catch (cause) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      `Config file not found: ${configPath}`,
+      cause,
+    );
   }
 }
