@@ -51,6 +51,24 @@ type SeedCliValues = MultiAppCliValues & {
   "seed-file"?: string;
 };
 
+type SeedMode = { type: "upsert" } | { type: "capture"; keyField: string };
+
+function resolveSeedMode(values: SeedCliValues): SeedMode {
+  if (values.capture !== true) {
+    return { type: "upsert" };
+  }
+
+  const keyField = values["key-field"];
+  if (!keyField) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "--key-field is required when using --capture mode",
+    );
+  }
+
+  return { type: "capture", keyField };
+}
+
 function resolveSeedFilePath(cliValues: SeedCliValues, app?: AppEntry): string {
   return (
     cliValues["seed-file"] ??
@@ -144,11 +162,10 @@ async function runSeedCapture(
 
 async function runSeedOperation(
   config: SeedCliContainerConfig,
-  isCapture: boolean,
-  keyField?: string,
+  mode: { type: "upsert" } | { type: "capture"; keyField: string },
 ): Promise<void> {
-  if (isCapture) {
-    await runSeedCapture(config, keyField as string);
+  if (mode.type === "capture") {
+    await runSeedCapture(config, mode.keyField);
   } else {
     await runUpsert(config);
   }
@@ -161,23 +178,16 @@ export default define({
   run: async (ctx) => {
     try {
       const values = ctx.values as SeedCliValues;
-      const isCapture = values.capture === true;
-
-      if (isCapture && !values["key-field"]) {
-        throw new ValidationError(
-          ValidationErrorCode.InvalidInput,
-          "--key-field is required when using --capture mode",
-        );
-      }
+      const mode = resolveSeedMode(values);
 
       await routeMultiApp(values, {
         singleLegacy: async () => {
           const config = resolveSeedConfig(values);
-          await runSeedOperation(config, isCapture, values["key-field"]);
+          await runSeedOperation(config, mode);
         },
         singleApp: async (app, projectConfig) => {
           const config = resolveSeedAppConfig(app, projectConfig, values);
-          await runSeedOperation(config, isCapture, values["key-field"]);
+          await runSeedOperation(config, mode);
         },
         multiApp: async (plan, projectConfig) => {
           await runMultiAppWithFailCheck(
@@ -185,9 +195,9 @@ export default define({
             async (app) => {
               const config = resolveSeedAppConfig(app, projectConfig, values);
               printAppHeader(app.name, app.appId);
-              await runSeedOperation(config, isCapture, values["key-field"]);
+              await runSeedOperation(config, mode);
             },
-            isCapture
+            mode.type === "capture"
               ? "All captures completed successfully."
               : "All seed applications completed successfully.",
           );
