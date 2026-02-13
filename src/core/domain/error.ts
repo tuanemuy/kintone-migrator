@@ -1,8 +1,12 @@
 import { AnyError } from "@/lib/error";
 import { FormSchemaErrorCode } from "./formSchema/errorCode";
+import { ProjectConfigErrorCode } from "./projectConfig/errorCode";
+import { SeedDataErrorCode } from "./seedData/errorCode";
 
 export const BusinessRuleErrorCode = {
   ...FormSchemaErrorCode,
+  ...ProjectConfigErrorCode,
+  ...SeedDataErrorCode,
 };
 
 export type BusinessRuleErrorCode =
