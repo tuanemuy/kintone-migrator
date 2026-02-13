@@ -16,6 +16,7 @@ export default define({
       const client = new KintoneRestAPIClient({
         baseUrl: config.baseUrl,
         auth: buildKintoneAuth(config.auth),
+        guestSpaceId: config.guestSpaceId,
       });
 
       const s = p.spinner();

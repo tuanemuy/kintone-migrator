@@ -6,6 +6,7 @@ const CliConfigSchema = v.object({
   KINTONE_USERNAME: v.optional(v.string()),
   KINTONE_PASSWORD: v.optional(v.string()),
   KINTONE_APP_ID: v.pipe(v.string(), v.nonEmpty("KINTONE_APP_ID is required")),
+  KINTONE_GUEST_SPACE_ID: v.optional(v.string()),
   SCHEMA_FILE_PATH: v.optional(v.string(), "schema.yaml"),
 });
 
@@ -15,6 +16,7 @@ export type CliConfig = {
     | { type: "apiToken"; apiToken: string | string[] }
     | { type: "password"; username: string; password: string };
   appId: string;
+  guestSpaceId?: string;
   schemaFilePath: string;
 };
 
@@ -58,6 +60,12 @@ export const kintoneArgs = {
     short: "a",
     description: "kintone app ID (overrides KINTONE_APP_ID env var)",
   },
+  "guest-space-id": {
+    type: "string" as const,
+    short: "g",
+    description:
+      "kintone guest space ID (overrides KINTONE_GUEST_SPACE_ID env var)",
+  },
   "schema-file": {
     type: "string" as const,
     short: "f",
@@ -71,6 +79,7 @@ export function resolveConfig(cliValues: {
   password?: string;
   "api-token"?: string;
   "app-id"?: string;
+  "guest-space-id"?: string;
   "schema-file"?: string;
 }): CliConfig {
   const result = v.safeParse(CliConfigSchema, {
@@ -82,6 +91,10 @@ export function resolveConfig(cliValues: {
     KINTONE_PASSWORD:
       cliValues.password ?? process.env.KINTONE_PASSWORD ?? undefined,
     KINTONE_APP_ID: cliValues["app-id"] ?? process.env.KINTONE_APP_ID ?? "",
+    KINTONE_GUEST_SPACE_ID:
+      cliValues["guest-space-id"] ??
+      process.env.KINTONE_GUEST_SPACE_ID ??
+      undefined,
     SCHEMA_FILE_PATH: cliValues["schema-file"] ?? process.env.SCHEMA_FILE_PATH,
   });
 
@@ -102,6 +115,7 @@ export function resolveConfig(cliValues: {
     baseUrl: `https://${output.KINTONE_DOMAIN}`,
     auth,
     appId: output.KINTONE_APP_ID,
+    guestSpaceId: output.KINTONE_GUEST_SPACE_ID,
     schemaFilePath: output.SCHEMA_FILE_PATH,
   };
 }
