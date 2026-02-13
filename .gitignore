@@ -26,6 +26,4 @@ dist-ssr
 
 coverage
 
-logs
-
 .env
