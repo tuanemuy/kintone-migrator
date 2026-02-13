@@ -1,6 +1,21 @@
 import { BusinessRuleError } from "@/core/domain/error";
 import { FormSchemaErrorCode } from "./errorCode";
 
+// Lookup
+export type LookupFieldMapping = Readonly<{
+  field: string;
+  relatedField: string;
+}>;
+
+export type Lookup = Readonly<{
+  relatedApp: Readonly<{ app: string; code?: string }>;
+  relatedKeyField: string;
+  fieldMappings: readonly LookupFieldMapping[];
+  lookupPickerFields: readonly string[];
+  filterCond?: string;
+  sort?: string;
+}>;
+
 // FieldCode
 export type FieldCode = string & { readonly brand: "FieldCode" };
 
@@ -75,6 +90,7 @@ export type SingleLineTextFieldDefinition = FieldDefinitionBase &
       maxLength?: string;
       expression?: string;
       hideExpression?: boolean;
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -112,6 +128,7 @@ export type NumberFieldDefinition = FieldDefinitionBase &
       displayScale?: string;
       unit?: string;
       unitPosition?: "BEFORE" | "AFTER";
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -191,6 +208,7 @@ export type LinkFieldDefinition = FieldDefinitionBase &
       minLength?: string;
       maxLength?: string;
       protocol?: "WEB" | "CALL" | "MAIL";
+      lookup?: Lookup;
     }>;
   }>;
 
