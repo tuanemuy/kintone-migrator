@@ -23,6 +23,7 @@ Connection details for kintone can be specified via CLI arguments or environment
 | `--username`, `-u` | `KINTONE_USERNAME` | kintone username |
 | `--password`, `-p` | `KINTONE_PASSWORD` | kintone password |
 | `--app-id`, `-a` | `KINTONE_APP_ID` | kintone app ID |
+| `--guest-space-id`, `-g` | `KINTONE_GUEST_SPACE_ID` | kintone guest space ID |
 | `--schema-file`, `-f` | `SCHEMA_FILE_PATH` | Schema file path (default: `schema.yaml`) |
 
 ### Authentication
@@ -47,6 +48,7 @@ KINTONE_USERNAME=your_username
 KINTONE_PASSWORD=your_password
 
 KINTONE_APP_ID=123
+# KINTONE_GUEST_SPACE_ID=456
 SCHEMA_FILE_PATH=schema.yaml
 ```
 
