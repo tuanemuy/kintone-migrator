@@ -1,3 +1,4 @@
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type {
   KintoneRecordForParameter,
   KintoneRecordForResponse,
@@ -8,13 +9,19 @@ export class EmptyRecordManager implements RecordManager {
   async getAllRecords(
     _condition?: string,
   ): Promise<readonly KintoneRecordForResponse[]> {
-    throw new Error("EmptyRecordManager.getAllRecords not implemented");
+    throw new SystemError(
+      SystemErrorCode.InternalServerError,
+      "EmptyRecordManager.getAllRecords not implemented",
+    );
   }
 
   async addRecords(
     _records: readonly KintoneRecordForParameter[],
   ): Promise<void> {
-    throw new Error("EmptyRecordManager.addRecords not implemented");
+    throw new SystemError(
+      SystemErrorCode.InternalServerError,
+      "EmptyRecordManager.addRecords not implemented",
+    );
   }
 
   async updateRecords(
@@ -23,6 +30,9 @@ export class EmptyRecordManager implements RecordManager {
       record: KintoneRecordForParameter;
     }[],
   ): Promise<void> {
-    throw new Error("EmptyRecordManager.updateRecords not implemented");
+    throw new SystemError(
+      SystemErrorCode.InternalServerError,
+      "EmptyRecordManager.updateRecords not implemented",
+    );
   }
 }

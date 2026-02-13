@@ -5,7 +5,12 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { resolveExecutionOrder } from "@/core/domain/projectConfig/services/dependencyResolver";
 import { AppName } from "@/core/domain/projectConfig/valueObject";
-import { NotFoundError, NotFoundErrorCode } from "../error";
+import {
+  NotFoundError,
+  NotFoundErrorCode,
+  ValidationError,
+  ValidationErrorCode,
+} from "../error";
 
 export type ResolveExecutionPlanInput = Readonly<{
   config: ProjectConfig;
@@ -26,8 +31,9 @@ export function resolveExecutionPlan(
     return resolveExecutionOrder(config.apps);
   }
 
-  throw new Error(
-    "Unreachable: CLI layer must ensure at least one mode (appName or all) is selected",
+  throw new ValidationError(
+    ValidationErrorCode.InvalidInput,
+    "At least one mode (appName or all) must be selected",
   );
 }
 
