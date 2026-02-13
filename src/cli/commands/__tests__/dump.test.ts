@@ -21,11 +21,11 @@ vi.mock("@/cli/config", () => ({
   kintoneArgs: {},
   resolveConfig: vi.fn(() => ({
     baseUrl: "https://test.cybozu.com",
-    username: "user",
-    password: "pass",
+    auth: { type: "password", username: "user", password: "pass" },
     appId: "1",
     schemaFilePath: "schema.yaml",
   })),
+  buildKintoneAuth: vi.fn(() => ({ username: "user", password: "pass" })),
 }));
 
 vi.mock("@kintone/rest-api-client", () => ({

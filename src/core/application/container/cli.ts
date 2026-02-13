@@ -1,4 +1,6 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { CliConfig } from "@/cli/config";
+import { buildKintoneAuth } from "@/cli/config";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
@@ -6,8 +8,7 @@ import type { Container } from "@/core/application/container";
 
 export type CliContainerConfig = {
   baseUrl: string;
-  username: string;
-  password: string;
+  auth: CliConfig["auth"];
   appId: string;
   schemaFilePath: string;
 };
@@ -15,10 +16,7 @@ export type CliContainerConfig = {
 export function createCliContainer(config: CliContainerConfig): Container {
   const client = new KintoneRestAPIClient({
     baseUrl: config.baseUrl,
-    auth: {
-      username: config.username,
-      password: config.password,
-    },
+    auth: buildKintoneAuth(config.auth),
   });
 
   return {
