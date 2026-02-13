@@ -115,6 +115,47 @@ size:
   innerHeight: "200"   # 内部高さ（ピクセル文字列、MULTI_LINE_TEXT/RICH_TEXT等で使用）
 ```
 
+### Lookup
+
+`SINGLE_LINE_TEXT`、`NUMBER`、`LINK` フィールドに `lookup` プロパティを指定すると、そのフィールドはルックアップフィールドとして動作する。kintone API ではルックアップは独立したフィールド型ではなく、これらのフィールド型のプロパティとして定義される。
+
+```yaml
+lookup:
+  relatedApp: { app: "10" }
+  relatedKeyField: customer_code
+  fieldMappings:
+    - { field: name, relatedField: customer_name }
+    - { field: address, relatedField: customer_address }
+  lookupPickerFields: [customer_name, customer_address]
+  filterCond: 'status in ("active")'
+  sort: "customer_code asc"
+```
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `relatedApp` | RelatedApp | Yes | 参照先アプリ |
+| `relatedKeyField` | string | Yes | 参照先アプリのキーフィールドのフィールドコード |
+| `fieldMappings` | LookupFieldMapping[] | Yes | フィールドのコピー元・コピー先マッピング |
+| `lookupPickerFields` | string[] | Yes | ルックアップピッカーに表示するフィールドコードの配列 |
+| `filterCond` | string | No | レコード絞り込み条件 |
+| `sort` | string | No | ソート条件 |
+
+**RelatedApp**:
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `app` | string | Yes | 参照先アプリのアプリID |
+| `code` | string | No | 参照先アプリのアプリコード |
+
+**LookupFieldMapping**:
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `field` | string | Yes | 自アプリのコピー先フィールドコード |
+| `relatedField` | string | Yes | 参照先アプリのコピー元フィールドコード |
+
+> **注意**: `relatedApp.app` はアプリIDであるため、異なる環境へマイグレーションする場合は、移行先環境のアプリIDに手動で書き換える必要があります。
+
 ## フィールド型一覧
 
 ### SINGLE_LINE_TEXT（文字列（1行））
@@ -131,6 +172,15 @@ size:
   maxLength: "100"
   expression: "field_a & \" - \" & field_b"   # 自動計算式
   hideExpression: false                         # 計算式を非表示にするか
+  lookup:                                       # ルックアップ設定（省略可）
+    relatedApp: { app: "10" }
+    relatedKeyField: customer_code
+    fieldMappings:
+      - { field: name, relatedField: customer_name }
+      - { field: address, relatedField: customer_address }
+    lookupPickerFields: [customer_name, customer_address]
+    filterCond: 'status in ("active")'
+    sort: "customer_code asc"
 ```
 
 | プロパティ | 型 | 必須 | 説明 |
@@ -142,6 +192,7 @@ size:
 | `maxLength` | string | No | 最大文字数 |
 | `expression` | string | No | 自動計算式 |
 | `hideExpression` | boolean | No | 計算式を非表示にするか |
+| `lookup` | Lookup | No | ルックアップ設定（指定時、フィールドはルックアップフィールドとして動作する） |
 
 ### MULTI_LINE_TEXT（文字列（複数行））
 
@@ -208,6 +259,7 @@ size:
 | `displayScale` | string | No | 小数点以下の表示桁数 |
 | `unit` | string | No | 単位記号 |
 | `unitPosition` | `"BEFORE"` \| `"AFTER"` | No | 単位記号の表示位置 |
+| `lookup` | Lookup | No | ルックアップ設定（指定時、フィールドはルックアップフィールドとして動作する） |
 
 ### CALC（計算）
 
@@ -238,6 +290,7 @@ size:
 | 値 | 説明 |
 | --- | --- |
 | `NUMBER` | 数値（デフォルト） |
+| `NUMBER_DIGIT` | 数値（桁区切り） |
 | `DATE` | 日付 |
 | `TIME` | 時刻 |
 | `DATETIME` | 日時 |
@@ -381,6 +434,7 @@ size:
 | `minLength` | string | No | 最小文字数 |
 | `maxLength` | string | No | 最大文字数 |
 | `protocol` | `"WEB"` \| `"CALL"` \| `"MAIL"` | No | リンクの種類 |
+| `lookup` | Lookup | No | ルックアップ設定（指定時、フィールドはルックアップフィールドとして動作する） |
 
 ### USER_SELECT / ORGANIZATION_SELECT / GROUP_SELECT（ユーザー選択系）
 
@@ -401,6 +455,7 @@ size:
 | --- | --- | --- | --- |
 | `required` | boolean | No | 必須フィールド |
 | `defaultValue` | EntityRef[] | No | デフォルト値のエンティティ参照配列 |
+| `entities` | EntityRef[] | No | 選択候補を絞り込むエンティティの配列 |
 
 **EntityRef**:
 
@@ -523,6 +578,14 @@ ROW 内の `fields` 配列に、フィールドと並べて装飾要素を配置
       type: RECORD_NUMBER
       size: { width: "100" }
 ```
+
+## パーサーの自動変換
+
+スキーマパース時に以下の自動変換が行われる。
+
+| 変換 | 説明 |
+| --- | --- |
+| 数値→文字列 | `minLength: 10` のように数値で記述された値は、自動的に文字列 `"10"` に変換される |
 
 ## バリデーション
 
