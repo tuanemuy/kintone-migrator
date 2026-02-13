@@ -22,7 +22,7 @@ export type UserEntity = Readonly<{
 }>;
 
 // SubtableRow
-export type SubtableRow = Readonly<Record<string, string>>;
+export type SubtableRow = Readonly<Record<string, string | readonly string[]>>;
 
 // RecordFieldValue
 export type RecordFieldValue =

@@ -52,8 +52,8 @@ function toKintoneFieldValue(value: RecordFieldValue): { value: unknown } {
     return {
       value: (value as readonly SubtableRow[]).map((row) => {
         const kintoneRow: Record<string, { value: unknown }> = {};
-        for (const [k, v] of Object.entries(row)) {
-          kintoneRow[k] = { value: v };
+        for (const [k, cellValue] of Object.entries(row)) {
+          kintoneRow[k] = { value: cellValue };
         }
         return { value: kintoneRow };
       }),
@@ -90,13 +90,17 @@ function fromKintoneFieldValue(value: unknown): RecordFieldValue {
         return value.map((row) => {
           const cells = (row as { value: Record<string, { value: unknown }> })
             .value;
-          const flat: Record<string, string> = {};
+          const flat: Record<string, string | readonly string[]> = {};
           for (const [k, cell] of Object.entries(cells)) {
             if (SYSTEM_FIELDS.has(k)) continue;
-            flat[k] =
-              cell.value === null || cell.value === undefined
-                ? ""
-                : String(cell.value);
+            if (Array.isArray(cell.value)) {
+              flat[k] = cell.value.map(String) as readonly string[];
+            } else {
+              flat[k] =
+                cell.value === null || cell.value === undefined
+                  ? ""
+                  : String(cell.value);
+            }
           }
           return flat;
         });
