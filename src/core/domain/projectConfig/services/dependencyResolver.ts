@@ -52,8 +52,8 @@ export function resolveExecutionOrder(
       }
     }
 
-    // Sort newly freed nodes alphabetically and insert at queue front
-    // to maintain level-based alphabetical ordering
+    // Sort newly freed nodes alphabetically and append to queue
+    // to maintain BFS level-based alphabetical ordering
     nextBatch.sort();
     queue.push(...nextBatch);
   }

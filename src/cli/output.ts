@@ -60,6 +60,9 @@ export function printMultiAppResult(result: MultiAppResult): void {
       case "skipped":
         p.log.warn(`  ${pc.dim("-")} Skipped: ${r.name}`);
         break;
+      default:
+        r.status satisfies never;
+        break;
     }
   }
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isBusinessRuleError } from "@/core/domain/error";
 import { ProjectConfigErrorCode } from "../../errorCode";
+import { AppName } from "../../valueObject";
 import { parseProjectConfig } from "../configParser";
 
 describe("parseProjectConfig", () => {
@@ -19,7 +20,7 @@ describe("parseProjectConfig", () => {
     expect(config.auth).toEqual({ type: "apiToken", apiToken: "test-token" });
     expect(config.apps.size).toBe(1);
 
-    const customer = config.apps.get("customer" as never);
+    const customer = config.apps.get(AppName.create("customer"));
     expect(customer).toBeDefined();
     expect(customer?.appId).toBe("10");
     expect(customer?.schemaFile).toBe("schemas/customer.yaml");
@@ -43,10 +44,10 @@ describe("parseProjectConfig", () => {
 
     expect(config.apps.size).toBe(3);
 
-    const order = config.apps.get("order" as never);
+    const order = config.apps.get(AppName.create("order"));
     expect(order?.dependsOn).toEqual(["customer"]);
 
-    const invoice = config.apps.get("invoice" as never);
+    const invoice = config.apps.get(AppName.create("invoice"));
     expect(invoice?.dependsOn).toEqual(["order", "customer"]);
     expect(invoice?.schemaFile).toBe("custom/invoice.yaml");
   });
@@ -81,7 +82,7 @@ describe("parseProjectConfig", () => {
       },
     });
 
-    const app1 = config.apps.get("app1" as never);
+    const app1 = config.apps.get(AppName.create("app1"));
     expect(app1?.domain).toBe("other.cybozu.com");
     expect(app1?.auth).toEqual({
       type: "apiToken",
@@ -215,7 +216,7 @@ describe("parseProjectConfig", () => {
       },
     });
 
-    const app1 = config.apps.get("app1" as never);
+    const app1 = config.apps.get(AppName.create("app1"));
     expect(app1?.domain).toBe("app.cybozu.com");
   });
 
@@ -227,7 +228,7 @@ describe("parseProjectConfig", () => {
       },
     });
 
-    const app1 = config.apps.get("app1" as never);
+    const app1 = config.apps.get(AppName.create("app1"));
     expect(app1?.auth).toEqual({ type: "apiToken", apiToken: "app-token" });
   });
 });

@@ -3,6 +3,9 @@ import type { FieldCode } from "@/core/domain/formSchema/valueObject";
 import type { ServiceArgs } from "../types";
 
 export async function resetForm({ container }: ServiceArgs): Promise<void> {
+  // System fields (RECORD_NUMBER, CREATOR, CREATED_TIME, MODIFIER,
+  // UPDATED_TIME, CATEGORY, STATUS, STATUS_ASSIGNEE) are already excluded
+  // by the FormConfigurator.getFields() port contract.
   const currentFields = await container.formConfigurator.getFields();
   const subtableInnerCodes = collectSubtableInnerFieldCodes(currentFields);
 
