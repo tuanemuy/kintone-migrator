@@ -19,10 +19,20 @@ Connection details for kintone can be specified via CLI arguments or environment
 | CLI Argument | Environment Variable | Description |
 |---------|----------|------|
 | `--domain`, `-d` | `KINTONE_DOMAIN` | kintone domain (e.g., `example.cybozu.com`) |
+| `--api-token`, `-t` | `KINTONE_API_TOKEN` | kintone API token |
 | `--username`, `-u` | `KINTONE_USERNAME` | kintone username |
 | `--password`, `-p` | `KINTONE_PASSWORD` | kintone password |
 | `--app-id`, `-a` | `KINTONE_APP_ID` | kintone app ID |
 | `--schema-file`, `-f` | `SCHEMA_FILE_PATH` | Schema file path (default: `schema.yaml`) |
+
+### Authentication
+
+Two authentication methods are supported:
+
+- **API Token** (`KINTONE_API_TOKEN`): Recommended. Scoped per app for better security. Multiple tokens can be specified as a comma-separated string (e.g., `token1,token2`).
+- **Username/Password** (`KINTONE_USERNAME` / `KINTONE_PASSWORD`): Basic authentication with user credentials.
+
+If both are provided, API Token takes priority. At least one method must be configured.
 
 ### .env File
 
@@ -30,8 +40,12 @@ Environment variables can also be defined in a `.env` file and loaded with `dote
 
 ```env
 KINTONE_DOMAIN=example.cybozu.com
+
+# Authentication: Use either API Token or Username/Password (API Token takes priority)
+# KINTONE_API_TOKEN=your_api_token
 KINTONE_USERNAME=your_username
 KINTONE_PASSWORD=your_password
+
 KINTONE_APP_ID=123
 SCHEMA_FILE_PATH=schema.yaml
 ```

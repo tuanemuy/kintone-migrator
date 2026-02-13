@@ -3,7 +3,7 @@ import * as p from "@clack/prompts";
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { define } from "gunshi";
 import pc from "picocolors";
-import { kintoneArgs, resolveConfig } from "../config";
+import { buildKintoneAuth, kintoneArgs, resolveConfig } from "../config";
 import { handleCliError } from "../handleError";
 
 export default define({
@@ -15,10 +15,7 @@ export default define({
       const config = resolveConfig(ctx.values);
       const client = new KintoneRestAPIClient({
         baseUrl: config.baseUrl,
-        auth: {
-          username: config.username,
-          password: config.password,
-        },
+        auth: buildKintoneAuth(config.auth),
       });
 
       const s = p.spinner();
