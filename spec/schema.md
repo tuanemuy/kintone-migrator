@@ -244,13 +244,11 @@ size:
 | `HOUR_MINUTE` | 時間:分 |
 | `DAY_HOUR_MINUTE` | 日 時間:分 |
 
-### CHECK_BOX / RADIO_BUTTON / MULTI_SELECT / DROP_DOWN（選択系）
-
-4つの選択系フィールドは同じプロパティ構造を持つ。
+### CHECK_BOX / MULTI_SELECT（複数選択系）
 
 ```yaml
 - code: field_code
-  type: CHECK_BOX      # または RADIO_BUTTON / MULTI_SELECT / DROP_DOWN
+  type: CHECK_BOX      # または MULTI_SELECT
   label: ラベル
   size: { width: "300" }
   required: true
@@ -269,6 +267,31 @@ size:
 | `defaultValue` | string[] | No | デフォルト選択値の配列 |
 | `options` | Record<string, SelectionOption> | Yes | 選択肢の定義 |
 | `align` | `"HORIZONTAL"` \| `"VERTICAL"` | No | 選択肢の配置方向 |
+
+### RADIO_BUTTON / DROP_DOWN（単一選択系）
+
+```yaml
+- code: field_code
+  type: RADIO_BUTTON   # または DROP_DOWN
+  label: ラベル
+  size: { width: "300" }
+  required: true
+  defaultValue: 選択肢A
+  options:
+    選択肢A: { label: 選択肢A, index: "0" }
+    選択肢B: { label: 選択肢B, index: "1" }
+    選択肢C: { label: 選択肢C, index: "2" }
+  align: HORIZONTAL
+```
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `required` | boolean | No | 必須フィールド |
+| `defaultValue` | string | No | デフォルト選択値（文字列） |
+| `options` | Record<string, SelectionOption> | Yes | 選択肢の定義 |
+| `align` | `"HORIZONTAL"` \| `"VERTICAL"` | No | 選択肢の配置方向 |
+
+> **注意**: YAML で配列構文（`- value`）を使用した場合でも、パーサーが自動的に文字列に正規化します。
 
 **SelectionOption**:
 

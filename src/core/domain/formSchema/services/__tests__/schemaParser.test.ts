@@ -1011,9 +1011,50 @@ layout:
       expect(field?.type).toBe("RADIO_BUTTON");
       if (field?.type === "RADIO_BUTTON") {
         expect(field.properties.required).toBe(true);
-        expect(field.properties.defaultValue).toEqual(["中"]);
+        expect(field.properties.defaultValue).toBe("中");
         expect(field.properties.align).toBe("VERTICAL");
         expect(Object.keys(field.properties.options)).toHaveLength(3);
+      }
+    });
+
+    it("RADIO_BUTTON の defaultValue を文字列で指定するとそのまま保持される", () => {
+      const yaml = `
+layout:
+  - type: ROW
+    fields:
+      - code: priority
+        type: RADIO_BUTTON
+        label: 優先度
+        defaultValue: 中
+        options:
+          高: { label: 高, index: "0" }
+          中: { label: 中, index: "1" }
+          低: { label: 低, index: "2" }
+`;
+      const schema = SchemaParser.parse(yaml);
+      const field = schema.fields.get("priority" as FieldCode);
+      expect(field?.type).toBe("RADIO_BUTTON");
+      if (field?.type === "RADIO_BUTTON") {
+        expect(field.properties.defaultValue).toBe("中");
+      }
+    });
+
+    it("RADIO_BUTTON の defaultValue が空配列の場合は空文字列に正規化される", () => {
+      const yaml = `
+layout:
+  - type: ROW
+    fields:
+      - code: priority
+        type: RADIO_BUTTON
+        label: 優先度
+        defaultValue: []
+        options:
+          高: { label: 高, index: "0" }
+`;
+      const schema = SchemaParser.parse(yaml);
+      const field = schema.fields.get("priority" as FieldCode);
+      if (field?.type === "RADIO_BUTTON") {
+        expect(field.properties.defaultValue).toBe("");
       }
     });
 
@@ -1061,11 +1102,31 @@ layout:
       expect(field?.type).toBe("DROP_DOWN");
       if (field?.type === "DROP_DOWN") {
         expect(field.properties.required).toBe(true);
-        expect(field.properties.defaultValue).toEqual(["未着手"]);
+        expect(field.properties.defaultValue).toBe("未着手");
         expect(field.properties.options).toEqual({
           未着手: { label: "未着手", index: "0" },
           完了: { label: "完了", index: "1" },
         });
+      }
+    });
+
+    it("DROP_DOWN の defaultValue を文字列で指定するとそのまま保持される", () => {
+      const yaml = `
+layout:
+  - type: ROW
+    fields:
+      - code: status
+        type: DROP_DOWN
+        label: ステータス
+        defaultValue: 未着手
+        options:
+          未着手: { label: 未着手, index: "0" }
+          完了: { label: 完了, index: "1" }
+`;
+      const schema = SchemaParser.parse(yaml);
+      const field = schema.fields.get("status" as FieldCode);
+      if (field?.type === "DROP_DOWN") {
+        expect(field.properties.defaultValue).toBe("未着手");
       }
     });
 
