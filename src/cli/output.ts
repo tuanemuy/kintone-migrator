@@ -4,6 +4,7 @@ import type { Container } from "@/core/application/container";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
+import { logError } from "./handleError";
 
 export function printDiffResult(result: DetectDiffOutput): void {
   const { summary } = result;
@@ -56,6 +57,9 @@ export function printMultiAppResult(result: MultiAppResult): void {
         break;
       case "failed":
         p.log.error(`  ${pc.red("\u2717")} Failed: ${r.name}`);
+        if (r.error) {
+          logError(r.error);
+        }
         break;
       case "skipped":
         p.log.warn(`  ${pc.dim("-")} Skipped: ${r.name}`);
