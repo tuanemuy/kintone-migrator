@@ -7,6 +7,8 @@
 | [FormSchema](./formSchema.md) | kintoneフォーム設定の宣言的管理 | コアドメイン |
 | [ProjectConfig](./projectConfig.md) | 複数アプリのプロジェクト設定管理 | サポートドメイン |
 | [SeedData](./seedData.md) | kintoneレコードデータのシード管理 | サポートドメイン |
+| [Customization](./customization.md) | JS/CSSカスタマイズの宣言的管理 | サポートドメイン |
+| [FieldPermission](./fieldPermission.md) | フィールドアクセス権の宣言的管理 | サポートドメイン |
 
 ## ドメイン区分の方針
 

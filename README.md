@@ -1,8 +1,8 @@
 # kintone-migrator
 
-A CLI tool for migrating kintone form schemas and seed data.
+A CLI tool for migrating kintone form schemas, seed data, JS/CSS customizations, and field access permissions.
 
-Compares a YAML-defined schema file against an actual kintone app form, providing diff detection, migration, schema capture, seed data management, and more.
+Compares a YAML-defined schema file against an actual kintone app form, providing diff detection, migration, schema capture, seed data management, JS/CSS customization, field ACL management, and more.
 
 ## Installation
 
@@ -30,7 +30,7 @@ Connection details for kintone can be specified via CLI arguments or environment
 
 ### Multi-App Options
 
-These options are available on **all commands** (diff, migrate, override, capture, dump, validate, seed) and enable multi-app mode via a project config file.
+These options are available on **all commands** (diff, migrate, override, capture, dump, validate, seed, customize, field-acl, capture-field-acl) and enable multi-app mode via a project config file.
 
 | CLI Argument | Description |
 |---------|------|
@@ -196,6 +196,64 @@ kintone-migrator seed --app customer
 | `--key-field`, `-k` | Key field code for upsert (required for `--capture`) |
 | `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
 
+### `customize`
+
+Applies JS/CSS customization to a kintone app from a YAML config file. Local files are uploaded and merged with existing customization settings. Files not in the config are preserved. After applying, prompts for deployment to production.
+
+```bash
+kintone-migrator customize
+kintone-migrator customize --customize-file my-customize.yaml
+
+# Skip confirmation prompts (for CI/CD)
+kintone-migrator customize --yes
+
+# Multi-app mode
+kintone-migrator customize --app customer
+kintone-migrator customize --all
+kintone-migrator customize --all --yes
+```
+
+#### Customize-specific arguments
+
+| CLI Argument | Environment Variable | Description |
+|---------|----------|------|
+| `--customize-file` | `CUSTOMIZE_FILE_PATH` | Customization config file path (default: `customize.yaml`, multi-app: `customize/<appName>.yaml`) |
+| `--yes`, `-y` | — | Skip confirmation prompts |
+
+### `field-acl`
+
+Applies field access permissions from a YAML config file to a kintone app. Uses full replacement — the YAML file defines the complete desired state.
+
+```bash
+kintone-migrator field-acl
+kintone-migrator field-acl --field-acl-file my-field-acl.yaml
+
+# Multi-app mode
+kintone-migrator field-acl --app customer
+kintone-migrator field-acl --all
+```
+
+#### Field ACL-specific arguments
+
+| CLI Argument | Environment Variable | Description |
+|---------|----------|------|
+| `--field-acl-file` | `FIELD_ACL_FILE_PATH` | Field ACL file path (default: `field-acl.yaml`, multi-app: `field-acl/<appName>.yaml`) |
+
+### `capture-field-acl`
+
+Captures the current field access permissions from a kintone app and saves them to a YAML file.
+
+```bash
+kintone-migrator capture-field-acl
+kintone-migrator capture-field-acl --field-acl-file my-field-acl.yaml
+
+# Multi-app mode
+kintone-migrator capture-field-acl --app customer
+kintone-migrator capture-field-acl --all
+```
+
+Uses the same `--field-acl-file` argument as `field-acl`.
+
 ## Schema File
 
 Schema files define the desired kintone form configuration in YAML format. The `layout` key at the root describes form rows, groups, subtables, and field definitions.
@@ -333,9 +391,89 @@ For the full specification, see:
 
 - [Seed Data Specification](./spec/seed.md) — format reference, field type mappings, and validation rules
 
+## Customization Config File
+
+Customization config files define JS/CSS resources to apply to a kintone app. Resources can be local files or external URLs. The merge strategy preserves existing resources not defined in the config.
+
+```yaml
+scope: ALL
+desktop:
+  js:
+    - type: FILE
+      path: ./dist/desktop.js
+    - type: URL
+      url: https://cdn.example.com/lib.js
+  css:
+    - type: FILE
+      path: ./styles/desktop.css
+mobile:
+  js:
+    - type: FILE
+      path: ./dist/mobile.js
+  css: []
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `scope` | No | Customization scope: `ALL` (all users), `ADMIN` (admins only), `NONE` (disabled). Omit to keep current scope. |
+| `desktop` | Yes | Desktop platform JS/CSS configuration |
+| `mobile` | No | Mobile platform JS/CSS configuration (defaults to empty if omitted) |
+
+Each resource in `js` / `css` arrays has:
+
+| Field | Description |
+|-------|-------------|
+| `type: FILE` + `path` | Local file to upload (relative to config file directory) |
+| `type: URL` + `url` | External URL resource |
+
+Each category (desktop.js, desktop.css, mobile.js, mobile.css) supports up to 30 resources.
+
+For the full specification, see:
+
+- [Customization Domain Specification](./spec/domains/customization.md) — domain model, config format, and merge strategy
+- [Customization Use Case Specification](./spec/usecases/customization.md) — use case details and test cases
+
+## Field ACL File
+
+Field ACL files define field-level access permissions in YAML format. The file represents the complete desired state — all permissions are replaced on apply.
+
+```yaml
+rights:
+  - code: salary
+    entities:
+      - accessibility: WRITE
+        entity:
+          type: USER
+          code: admin_user
+      - accessibility: READ
+        entity:
+          type: GROUP
+          code: managers
+        includeSubs: true
+      - accessibility: NONE
+        entity:
+          type: ORGANIZATION
+          code: general_staff
+```
+
+| Field | Description |
+|-------|-------------|
+| `rights` | List of field permission rules |
+| `rights[].code` | Field code to set permissions for |
+| `rights[].entities` | List of permission entries for this field |
+| `entities[].accessibility` | Access level: `READ`, `WRITE`, or `NONE` |
+| `entities[].entity.type` | Entity type: `USER`, `GROUP`, `ORGANIZATION`, or `FIELD_ENTITY` |
+| `entities[].entity.code` | Entity identifier (username, group code, etc.) |
+| `entities[].includeSubs` | Include sub-organizations/sub-groups (optional) |
+
+For the full specification, see:
+
+- [FieldPermission Domain Specification](./spec/domains/fieldPermission.md) — domain model, config format, and serialization
+- [FieldPermission Use Case Specification](./spec/usecases/fieldPermission.md) — use case details and test cases
+
 ## Multi-App Project Config
 
-A project config file (`kintone-migrator.yaml`) enables managing multiple kintone apps with dependency ordering. All commands (diff, migrate, override, capture, dump, validate, seed) support multi-app mode.
+A project config file (`kintone-migrator.yaml`) enables managing multiple kintone apps with dependency ordering. All commands (diff, migrate, override, capture, dump, validate, seed, customize, field-acl, capture-field-acl) support multi-app mode.
 
 ```yaml
 # Shared connection settings (can be overridden per app)
