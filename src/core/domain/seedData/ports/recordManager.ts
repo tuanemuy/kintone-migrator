@@ -16,4 +16,5 @@ export interface RecordManager {
   updateRecords(
     records: readonly { id: string; record: KintoneRecordForParameter }[],
   ): Promise<void>;
+  deleteAllRecords(): Promise<{ deletedCount: number }>;
 }

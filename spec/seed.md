@@ -36,6 +36,27 @@ records:
     priority: "low"
 ```
 
+### Cleanモード
+
+CLIで `--clean` フラグを付けて実行すると、既存レコードをすべて削除してからシードデータを適用する。Upsert計画はスキップされ、全レコードがInsert（追加）として処理される。`key` の有無に関わらず動作する。
+
+```bash
+kintone-migrator seed --clean
+kintone-migrator seed --clean --yes   # 確認プロンプトをスキップ
+```
+
+#### Cleanモードのフロー
+
+1. `recordManager.deleteAllRecords()` で既存レコードを全削除
+2. シードファイルの全レコードを `recordManager.addRecords()` で追加
+3. `UpsertSeedOutput` を返却（`deleted` に削除件数が含まれる）
+
+#### 注意事項
+
+- `--clean` と `--capture` は排他的であり、同時に指定した場合は `ValidationError` となる
+- 破壊的操作のため、デフォルトで確認プロンプトが表示される（`--yes` でスキップ可能）
+- Multi-Appモード（`--all`）では、1回の確認プロンプトで全アプリの実行を開始する
+
 ## フィールド定義
 
 | フィールド | 型 | 必須 | 説明 |

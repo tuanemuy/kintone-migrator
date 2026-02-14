@@ -35,4 +35,11 @@ export class EmptyRecordManager implements RecordManager {
       "EmptyRecordManager.updateRecords not implemented",
     );
   }
+
+  async deleteAllRecords(): Promise<{ deletedCount: number }> {
+    throw new SystemError(
+      SystemErrorCode.InternalServerError,
+      "EmptyRecordManager.deleteAllRecords not implemented",
+    );
+  }
 }

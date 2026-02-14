@@ -2,9 +2,17 @@
 
 ## upsertSeed
 
-シードファイルのデータをkintoneアプリにUpsert（存在すれば更新、なければ追加）する。
+シードファイルのデータをkintoneアプリにUpsert（存在すれば更新、なければ追加）する。`clean` オプションを指定すると、既存レコードを全削除してからシードデータを全追加する。
 
-### フロー
+### 入力
+
+```typescript
+type UpsertSeedInput = {
+  clean?: boolean;
+};
+```
+
+### フロー（通常モード）
 
 1. `seedStorage.get()` でシードファイルを読み込む
 2. `SeedParser.parse()` でパース・バリデーション
@@ -14,7 +22,16 @@
 6. `RecordConverter.toKintoneRecord()` でシードレコードをkintone形式に変換
 7. `recordManager.addRecords()` で新規レコードを追加
 8. `recordManager.updateRecords()` で既存レコードを更新
-9. `UpsertSeedOutput` を返却
+9. `UpsertSeedOutput` を返却（`deleted: 0`）
+
+### フロー（cleanモード: `input.clean === true`）
+
+1. `seedStorage.get()` でシードファイルを読み込む
+2. `SeedParser.parse()` でパース・バリデーション
+3. `recordManager.deleteAllRecords()` で既存レコードを全削除
+4. `RecordConverter.toKintoneRecord()` でシードレコードをkintone形式に変換
+5. `recordManager.addRecords()` で全レコードを追加（Upsert計画はスキップ）
+6. `UpsertSeedOutput` を返却（`deleted` に削除件数が含まれる）
 
 ### 出力
 
@@ -23,6 +40,7 @@ type UpsertSeedOutput = {
   added: number;
   updated: number;
   unchanged: number;
+  deleted: number;
   total: number;
 };
 ```

@@ -33,11 +33,12 @@ records:
     name: "テスト2"
 `);
 
-    const result = await upsertSeed({ container });
+    const result = await upsertSeed({ container, input: {} });
 
     expect(result.added).toBe(2);
     expect(result.updated).toBe(0);
     expect(result.unchanged).toBe(0);
+    expect(result.deleted).toBe(0);
     expect(result.total).toBe(2);
     expect(container.recordManager.callLog).toContain("addRecords");
   });
@@ -54,11 +55,12 @@ records:
     name: "更新後"
 `);
 
-    const result = await upsertSeed({ container });
+    const result = await upsertSeed({ container, input: {} });
 
     expect(result.added).toBe(0);
     expect(result.updated).toBe(1);
     expect(result.unchanged).toBe(0);
+    expect(result.deleted).toBe(0);
     expect(result.total).toBe(1);
     expect(container.recordManager.callLog).toContain("updateRecords");
   });
@@ -75,11 +77,12 @@ records:
     name: "テスト"
 `);
 
-    const result = await upsertSeed({ container });
+    const result = await upsertSeed({ container, input: {} });
 
     expect(result.added).toBe(0);
     expect(result.updated).toBe(0);
     expect(result.unchanged).toBe(1);
+    expect(result.deleted).toBe(0);
     expect(result.total).toBe(1);
     expect(container.recordManager.callLog).not.toContain("addRecords");
     expect(container.recordManager.callLog).not.toContain("updateRecords");
@@ -94,11 +97,12 @@ records:
   - name: "テスト3"
 `);
 
-    const result = await upsertSeed({ container });
+    const result = await upsertSeed({ container, input: {} });
 
     expect(result.added).toBe(3);
     expect(result.updated).toBe(0);
     expect(result.unchanged).toBe(0);
+    expect(result.deleted).toBe(0);
     expect(result.total).toBe(3);
     expect(container.recordManager.callLog).toContain("addRecords");
     expect(container.recordManager.callLog).not.toContain("getAllRecords");
@@ -111,7 +115,7 @@ records:
   - name: "テスト1"
 `);
 
-    await upsertSeed({ container });
+    await upsertSeed({ container, input: {} });
 
     expect(container.recordManager.callLog).not.toContain("getAllRecords");
     expect(container.recordManager.callLog).not.toContain("updateRecords");
@@ -123,9 +127,10 @@ records:
 records: []
 `);
 
-    const result = await upsertSeed({ container });
+    const result = await upsertSeed({ container, input: {} });
 
     expect(result.added).toBe(0);
+    expect(result.deleted).toBe(0);
     expect(result.total).toBe(0);
     expect(container.recordManager.callLog).not.toContain("addRecords");
   });
@@ -147,11 +152,128 @@ records:
     name: "新規"
 `);
 
-    const result = await upsertSeed({ container });
+    const result = await upsertSeed({ container, input: {} });
 
     expect(result.added).toBe(1);
     expect(result.updated).toBe(1);
     expect(result.unchanged).toBe(1);
+    expect(result.deleted).toBe(0);
     expect(result.total).toBe(3);
+  });
+
+  describe("clean mode", () => {
+    it("全削除→全追加が実行される", async () => {
+      const container: TestSeedContainer = getContainer();
+      container.recordManager.setRecords([
+        makeKintoneRecord("10", { code: "001", name: "既存1" }),
+        makeKintoneRecord("20", { code: "002", name: "既存2" }),
+      ]);
+      container.seedStorage.setContent(`
+key: code
+records:
+  - code: "003"
+    name: "新規1"
+  - code: "004"
+    name: "新規2"
+  - code: "005"
+    name: "新規3"
+`);
+
+      const result = await upsertSeed({
+        container,
+        input: { clean: true },
+      });
+
+      expect(result.deleted).toBe(2);
+      expect(result.added).toBe(3);
+      expect(result.updated).toBe(0);
+      expect(result.unchanged).toBe(0);
+      expect(result.total).toBe(3);
+      expect(container.recordManager.callLog).toEqual([
+        "deleteAllRecords",
+        "addRecords",
+      ]);
+    });
+
+    it("空アプリ（レコード0件）の場合でも動作する", async () => {
+      const container: TestSeedContainer = getContainer();
+      container.seedStorage.setContent(`
+key: code
+records:
+  - code: "001"
+    name: "新規1"
+`);
+
+      const result = await upsertSeed({
+        container,
+        input: { clean: true },
+      });
+
+      expect(result.deleted).toBe(0);
+      expect(result.added).toBe(1);
+      expect(result.updated).toBe(0);
+      expect(result.unchanged).toBe(0);
+      expect(result.total).toBe(1);
+    });
+
+    it("レコード0件のシードの場合は削除のみ", async () => {
+      const container: TestSeedContainer = getContainer();
+      container.recordManager.setRecords([
+        makeKintoneRecord("10", { code: "001", name: "既存1" }),
+      ]);
+      container.seedStorage.setContent(`
+records: []
+`);
+
+      const result = await upsertSeed({
+        container,
+        input: { clean: true },
+      });
+
+      expect(result.deleted).toBe(1);
+      expect(result.added).toBe(0);
+      expect(result.updated).toBe(0);
+      expect(result.unchanged).toBe(0);
+      expect(result.total).toBe(0);
+      expect(container.recordManager.callLog).toEqual(["deleteAllRecords"]);
+      expect(container.recordManager.callLog).not.toContain("addRecords");
+    });
+
+    it("upsert keyが無視される（keyありでも全削除→全追加）", async () => {
+      const container: TestSeedContainer = getContainer();
+      container.recordManager.setRecords([
+        makeKintoneRecord("10", { code: "001", name: "既存" }),
+      ]);
+      container.seedStorage.setContent(`
+key: code
+records:
+  - code: "001"
+    name: "同じキーだが全追加される"
+`);
+
+      const result = await upsertSeed({
+        container,
+        input: { clean: true },
+      });
+
+      expect(result.deleted).toBe(1);
+      expect(result.added).toBe(1);
+      expect(result.updated).toBe(0);
+      expect(result.unchanged).toBe(0);
+      expect(container.recordManager.callLog).not.toContain("getAllRecords");
+      expect(container.recordManager.callLog).not.toContain("updateRecords");
+    });
+
+    it("通常モードではdeleted: 0が返る", async () => {
+      const container: TestSeedContainer = getContainer();
+      container.seedStorage.setContent(`
+records:
+  - name: "テスト"
+`);
+
+      const result = await upsertSeed({ container, input: {} });
+
+      expect(result.deleted).toBe(0);
+    });
   });
 });
