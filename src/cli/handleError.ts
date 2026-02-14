@@ -47,11 +47,33 @@ export function handleCliError(error: unknown): never {
   process.exit(1);
 }
 
+function formatErrorForDisplay(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "object" && error !== null) {
+    return JSON.stringify(error, null, 2);
+  }
+  return String(error);
+}
+
 function logErrorDetails(error: Error): void {
   if (error.cause) {
-    p.log.warn(`Cause: ${String(error.cause)}`);
+    p.log.warn(`Cause: ${formatErrorForDisplay(error.cause)}`);
     const cause = error.cause as Record<string, unknown>;
-    if (cause.errors) {
+    if (Array.isArray(cause.errors)) {
+      for (const e of cause.errors) {
+        if (e instanceof Error) {
+          p.log.warn(`  - ${e.message}`);
+          const inner = e as unknown as Record<string, unknown>;
+          if (inner.errors && typeof inner.errors === "object") {
+            p.log.warn(`    ${JSON.stringify(inner.errors, null, 2)}`);
+          }
+        } else {
+          p.log.warn(`  - ${JSON.stringify(e, null, 2)}`);
+        }
+      }
+    } else if (cause.errors && typeof cause.errors === "object") {
       p.log.warn(`Details: ${JSON.stringify(cause.errors, null, 2)}`);
     }
   }
