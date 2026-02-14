@@ -328,6 +328,7 @@ A project config file (`kintone-migrator.yaml`) enables managing multiple kinton
 
 ```yaml
 # Shared connection settings (can be overridden per app)
+# domain can also be set via KINTONE_DOMAIN env var or --domain CLI arg
 domain: example.cybozu.com
 auth:
   apiToken: "shared-token"

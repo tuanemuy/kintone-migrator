@@ -95,7 +95,8 @@ YAML形式のプロジェクト設定をパースし、バリデーションを�
 バリデーション:
 - `apps` は必須で空でないオブジェクト
 - 各アプリに `appId` が必須
-- `domain` と `auth` はトップレベルまたはアプリ単位で最低1つ必要
+- `auth` はトップレベルまたはアプリ単位で最低1つ必要
+- `domain` はCLI引数・環境変数・設定ファイルのいずれかで実行時に解決される（設定ファイル内では任意）
 
 ## エラーコード
 
@@ -105,5 +106,4 @@ YAML形式のプロジェクト設定をパースし、バリデーションを�
 | UNKNOWN_DEPENDENCY | 存在しないアプリへの依存参照 |
 | EMPTY_APPS | apps が空 |
 | EMPTY_APP_ID | appId が空 |
-| MISSING_DOMAIN | domain が未設定 |
 | MISSING_AUTH | auth が未設定 |

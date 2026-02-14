@@ -60,15 +60,7 @@ export function parseProjectConfig(raw: unknown): ProjectConfig {
       isRecord(rawAppValue.auth) ? rawAppValue.auth : undefined,
     );
     const appDomain = asOptionalString(rawAppValue.domain);
-    const resolvedDomain = appDomain ?? topLevelDomain;
     const resolvedAuth = appAuth ?? topLevelAuth;
-
-    if (!resolvedDomain) {
-      throw new BusinessRuleError(
-        ProjectConfigErrorCode.MissingDomain,
-        `App "${name}" has no domain configured (set at top-level or per-app)`,
-      );
-    }
 
     if (!resolvedAuth) {
       throw new BusinessRuleError(

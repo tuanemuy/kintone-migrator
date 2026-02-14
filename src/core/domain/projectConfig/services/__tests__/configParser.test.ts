@@ -178,19 +178,16 @@ describe("parseProjectConfig", () => {
     }
   });
 
-  it("throws MissingDomain when no domain is available", () => {
-    try {
-      parseProjectConfig({
-        auth: { apiToken: "t" },
-        apps: { app1: { appId: "1" } },
-      });
-      expect.fail("Should have thrown");
-    } catch (error) {
-      expect(isBusinessRuleError(error)).toBe(true);
-      if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.MissingDomain);
-      }
-    }
+  it("parses config without domain (domain can be resolved via env vars later)", () => {
+    const config = parseProjectConfig({
+      auth: { apiToken: "t" },
+      apps: { app1: { appId: "1" } },
+    });
+
+    expect(config.domain).toBeUndefined();
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.domain).toBeUndefined();
+    expect(app1?.appId).toBe("1");
   });
 
   it("throws MissingAuth when no auth is available", () => {
