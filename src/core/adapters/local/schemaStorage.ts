@@ -6,12 +6,13 @@ import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage
 export class LocalFileSchemaStorage implements SchemaStorage {
   constructor(private readonly filePath: string) {}
 
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     try {
-      return await readFile(this.filePath, "utf-8");
+      const content = await readFile(this.filePath, "utf-8");
+      return { content, exists: true };
     } catch (error) {
       if (isNodeError(error) && error.code === "ENOENT") {
-        return "";
+        return { content: "", exists: false };
       }
       throw new SystemError(
         SystemErrorCode.StorageError,

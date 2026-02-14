@@ -1,7 +1,7 @@
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
 
 export class EmptySchemaStorage implements SchemaStorage {
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     throw new Error("EmptySchemaStorage.get not implemented");
   }
 

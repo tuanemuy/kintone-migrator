@@ -1,3 +1,4 @@
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
@@ -10,8 +11,14 @@ import { parseSchemaText } from "./parseSchema";
 export async function executeMigration({
   container,
 }: ServiceArgs): Promise<void> {
-  const rawText = await container.schemaStorage.get();
-  const schema = parseSchemaText(rawText);
+  const result = await container.schemaStorage.get();
+  if (!result.exists) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "Schema file not found",
+    );
+  }
+  const schema = parseSchemaText(result.content);
   const [currentFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(),
     container.formConfigurator.getLayout(),

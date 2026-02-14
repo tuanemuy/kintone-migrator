@@ -825,6 +825,16 @@ layout:
     );
   });
 
+  it("スキーマファイルが存在しない場合はValidationErrorをスローする", async () => {
+    const container = getContainer();
+    container.formConfigurator.setFields(new Map());
+    container.formConfigurator.setLayout([]);
+
+    await expect(executeMigration({ container })).rejects.toThrow(
+      ValidationError,
+    );
+  });
+
   it("SchemaStorage.get()の通信に失敗した場合、SystemErrorがスローされる", async () => {
     const container = getContainer();
     container.schemaStorage.setFailOn("get");
