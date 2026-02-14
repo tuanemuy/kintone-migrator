@@ -12,7 +12,7 @@ describe("resolveConfig", () => {
     process.env = originalEnv;
   });
 
-  it("必須環境変数がすべて揃っている場合、設定を返す", () => {
+  it("ユーザー名/パスワードが揃っている場合、パスワード認証の設定を返す", () => {
     process.env.KINTONE_DOMAIN = "example.cybozu.com";
     process.env.KINTONE_USERNAME = "user";
     process.env.KINTONE_PASSWORD = "pass";
@@ -21,10 +21,73 @@ describe("resolveConfig", () => {
     const config = resolveConfig({});
     expect(config).toEqual({
       baseUrl: "https://example.cybozu.com",
-      username: "user",
-      password: "pass",
+      auth: { type: "password", username: "user", password: "pass" },
       appId: "42",
       schemaFilePath: "schema.yaml",
+    });
+  });
+
+  it("API Tokenが設定されている場合、API Token認証の設定を返す", () => {
+    process.env.KINTONE_DOMAIN = "example.cybozu.com";
+    process.env.KINTONE_API_TOKEN = "my-token";
+    process.env.KINTONE_APP_ID = "42";
+
+    const config = resolveConfig({});
+    expect(config).toEqual({
+      baseUrl: "https://example.cybozu.com",
+      auth: { type: "apiToken", apiToken: "my-token" },
+      appId: "42",
+      schemaFilePath: "schema.yaml",
+    });
+  });
+
+  it("カンマ区切りの複数API Tokenを配列として返す", () => {
+    process.env.KINTONE_DOMAIN = "example.cybozu.com";
+    process.env.KINTONE_API_TOKEN = "token1, token2, token3";
+    process.env.KINTONE_APP_ID = "42";
+
+    const config = resolveConfig({});
+    expect(config.auth).toEqual({
+      type: "apiToken",
+      apiToken: ["token1", "token2", "token3"],
+    });
+  });
+
+  it("API Tokenとユーザー名/パスワードの両方がある場合、API Tokenが優先される", () => {
+    process.env.KINTONE_DOMAIN = "example.cybozu.com";
+    process.env.KINTONE_API_TOKEN = "my-token";
+    process.env.KINTONE_USERNAME = "user";
+    process.env.KINTONE_PASSWORD = "pass";
+    process.env.KINTONE_APP_ID = "42";
+
+    const config = resolveConfig({});
+    expect(config.auth).toEqual({
+      type: "apiToken",
+      apiToken: "my-token",
+    });
+  });
+
+  it("認証情報が両方未設定の場合、エラーをスローする", () => {
+    process.env.KINTONE_DOMAIN = "example.cybozu.com";
+    process.env.KINTONE_APP_ID = "42";
+    delete process.env.KINTONE_API_TOKEN;
+    delete process.env.KINTONE_USERNAME;
+    delete process.env.KINTONE_PASSWORD;
+
+    expect(() => resolveConfig({})).toThrow(
+      "Either KINTONE_API_TOKEN or KINTONE_USERNAME/KINTONE_PASSWORD is required",
+    );
+  });
+
+  it("CLI引数の--api-tokenが環境変数より優先される", () => {
+    process.env.KINTONE_DOMAIN = "example.cybozu.com";
+    process.env.KINTONE_API_TOKEN = "env-token";
+    process.env.KINTONE_APP_ID = "42";
+
+    const config = resolveConfig({ "api-token": "cli-token" });
+    expect(config.auth).toEqual({
+      type: "apiToken",
+      apiToken: "cli-token",
     });
   });
 
@@ -75,8 +138,7 @@ describe("resolveConfig", () => {
 
     expect(config).toEqual({
       baseUrl: "https://cli.cybozu.com",
-      username: "cli-user",
-      password: "cli-pass",
+      auth: { type: "password", username: "cli-user", password: "cli-pass" },
       appId: "99",
       schemaFilePath: "custom.yaml",
     });

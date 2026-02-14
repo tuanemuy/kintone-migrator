@@ -1,6 +1,21 @@
 import { BusinessRuleError } from "@/core/domain/error";
 import { FormSchemaErrorCode } from "./errorCode";
 
+// Lookup
+export type LookupFieldMapping = Readonly<{
+  field: string;
+  relatedField: string;
+}>;
+
+export type Lookup = Readonly<{
+  relatedApp: Readonly<{ app: string; code?: string }>;
+  relatedKeyField: string;
+  fieldMappings: readonly LookupFieldMapping[];
+  lookupPickerFields: readonly string[];
+  filterCond?: string;
+  sort?: string;
+}>;
+
 // FieldCode
 export type FieldCode = string & { readonly brand: "FieldCode" };
 
@@ -75,6 +90,7 @@ export type SingleLineTextFieldDefinition = FieldDefinitionBase &
       maxLength?: string;
       expression?: string;
       hideExpression?: boolean;
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -112,6 +128,7 @@ export type NumberFieldDefinition = FieldDefinitionBase &
       displayScale?: string;
       unit?: string;
       unitPosition?: "BEFORE" | "AFTER";
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -136,9 +153,9 @@ export type CalcFieldDefinition = FieldDefinitionBase &
   }>;
 
 // Selection fields
-export type SelectionFieldDefinition = FieldDefinitionBase &
+export type MultiValueSelectionFieldDefinition = FieldDefinitionBase &
   Readonly<{
-    type: "CHECK_BOX" | "RADIO_BUTTON" | "MULTI_SELECT" | "DROP_DOWN";
+    type: "CHECK_BOX" | "MULTI_SELECT";
     properties: Readonly<{
       required?: boolean;
       defaultValue?: readonly string[];
@@ -146,6 +163,21 @@ export type SelectionFieldDefinition = FieldDefinitionBase &
       align?: "HORIZONTAL" | "VERTICAL";
     }>;
   }>;
+
+export type SingleValueSelectionFieldDefinition = FieldDefinitionBase &
+  Readonly<{
+    type: "RADIO_BUTTON" | "DROP_DOWN";
+    properties: Readonly<{
+      required?: boolean;
+      defaultValue?: string;
+      options: Readonly<Record<string, SelectionOption>>;
+      align?: "HORIZONTAL" | "VERTICAL";
+    }>;
+  }>;
+
+export type SelectionFieldDefinition =
+  | MultiValueSelectionFieldDefinition
+  | SingleValueSelectionFieldDefinition;
 
 // Date/Time fields
 export type DateFieldDefinition = FieldDefinitionBase &
@@ -191,6 +223,7 @@ export type LinkFieldDefinition = FieldDefinitionBase &
       minLength?: string;
       maxLength?: string;
       protocol?: "WEB" | "CALL" | "MAIL";
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -257,7 +290,8 @@ export type FieldDefinition =
   | RichTextFieldDefinition
   | NumberFieldDefinition
   | CalcFieldDefinition
-  | SelectionFieldDefinition
+  | MultiValueSelectionFieldDefinition
+  | SingleValueSelectionFieldDefinition
   | DateFieldDefinition
   | TimeFieldDefinition
   | DateTimeFieldDefinition

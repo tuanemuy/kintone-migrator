@@ -3,6 +3,8 @@ import pc from "picocolors";
 import type { Container } from "@/core/application/container";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
+import { logError } from "./handleError";
 
 export function printDiffResult(result: DetectDiffOutput): void {
   const { summary } = result;
@@ -41,14 +43,49 @@ export function printDiffResult(result: DetectDiffOutput): void {
   p.note(lines.join("\n"), "Diff Details");
 }
 
-export async function promptDeploy(container: Container): Promise<void> {
-  const shouldDeploy = await p.confirm({
-    message: "運用環境に反映しますか？",
-  });
+export function printAppHeader(appName: string, appId: string): void {
+  p.log.step(`\n=== [${pc.bold(appName)}] (app: ${appId}) ===`);
+}
 
-  if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-    p.log.warn("テスト環境に反映済みですが、運用環境には反映されていません。");
-    return;
+export function printMultiAppResult(result: MultiAppResult): void {
+  p.log.step("");
+
+  for (const r of result.results) {
+    switch (r.status) {
+      case "succeeded":
+        p.log.success(`  ${pc.green("\u2713")} Succeeded: ${r.name}`);
+        break;
+      case "failed":
+        p.log.error(`  ${pc.red("\u2717")} Failed: ${r.name}`);
+        if (r.error) {
+          logError(r.error);
+        }
+        break;
+      case "skipped":
+        p.log.warn(`  ${pc.dim("-")} Skipped: ${r.name}`);
+        break;
+      default:
+        r.status satisfies never;
+        break;
+    }
+  }
+}
+
+export async function promptDeploy(
+  container: Container,
+  skipConfirm: boolean,
+): Promise<void> {
+  if (!skipConfirm) {
+    const shouldDeploy = await p.confirm({
+      message: "運用環境に反映しますか？",
+    });
+
+    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
+      p.log.warn(
+        "テスト環境に反映済みですが、運用環境には反映されていません。",
+      );
+      return;
+    }
   }
 
   const ds = p.spinner();

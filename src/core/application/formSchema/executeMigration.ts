@@ -6,6 +6,7 @@ import {
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
 import type { ServiceArgs } from "../types";
+import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
 
 export async function executeMigration({
@@ -19,6 +20,9 @@ export async function executeMigration({
     );
   }
   const schema = parseSchemaText(result.content);
+
+  assertSchemaValid(schema);
+
   const [currentFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(),
     container.formConfigurator.getLayout(),

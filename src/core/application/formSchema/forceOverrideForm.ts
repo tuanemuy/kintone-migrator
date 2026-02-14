@@ -5,6 +5,7 @@ import type {
   FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
 import type { ServiceArgs } from "../types";
+import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
 
 export async function forceOverrideForm({
@@ -18,6 +19,9 @@ export async function forceOverrideForm({
     );
   }
   const schema = parseSchemaText(result.content);
+
+  assertSchemaValid(schema);
+
   const currentFields = await container.formConfigurator.getFields();
   const subtableInnerCodes = collectSubtableInnerFieldCodes(schema.fields);
 

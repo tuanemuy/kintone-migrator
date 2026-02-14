@@ -29,6 +29,51 @@ layout:
         size: { width: "400" }
         expression: customer_name & " - " & order_number
 
+  # --- ルックアップ ---
+  - type: ROW
+    fields:
+      - code: customer_code
+        type: SINGLE_LINE_TEXT
+        label: 顧客コード
+        size: { width: "200" }
+        required: true
+        unique: true
+        lookup:
+          relatedApp: { app: "10" }
+          relatedKeyField: code
+          fieldMappings:
+            - { field: customer_name, relatedField: name }
+            - { field: email, relatedField: contact_email }
+          lookupPickerFields: [code, name, contact_email]
+          filterCond: 'status in ("active")'
+          sort: "code asc"
+
+  - type: ROW
+    fields:
+      - code: supplier_id
+        type: NUMBER
+        label: 仕入先ID
+        size: { width: "200" }
+        lookup:
+          relatedApp: { app: "15" }
+          relatedKeyField: supplier_id
+          fieldMappings:
+            - { field: supplier_name, relatedField: name }
+          lookupPickerFields: [supplier_id, name]
+
+  - type: ROW
+    fields:
+      - code: reference_url
+        type: LINK
+        label: 参照先URL
+        size: { width: "300" }
+        protocol: WEB
+        lookup:
+          relatedApp: { app: "20", code: "URL_MASTER" }
+          relatedKeyField: url
+          fieldMappings: []
+          lookupPickerFields: [url, title]
+
   - type: ROW
     fields:
       - code: minimal_text
@@ -193,8 +238,7 @@ layout:
         label: 優先度
         size: { width: "200" }
         required: true
-        defaultValue:
-          - 中
+        defaultValue: 中
         options:
           高: { label: 高, index: "0" }
           中: { label: 中, index: "1" }
@@ -232,8 +276,7 @@ layout:
         label: ステータス
         size: { width: "200" }
         required: true
-        defaultValue:
-          - 未着手
+        defaultValue: 未着手
         options:
           未着手: { label: 未着手, index: "0" }
           進行中: { label: 進行中, index: "1" }

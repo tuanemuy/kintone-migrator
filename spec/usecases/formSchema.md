@@ -170,6 +170,39 @@ type DetectDiffOutput = {
 
 ---
 
+## resetForm
+
+### 概要
+
+フォームからすべてのカスタムフィールドを削除し、空の初期状態に戻す。`forceOverrideForm` の特殊ケースとして、スキーマファイルを参照せずにフォームをリセットする。CLI では `override --reset` フラグで実行される。
+
+### 処理フロー
+
+1. `FormConfigurator.getFields()` で現在のフィールド定義を取得する
+2. システムフィールド（`RECORD_NUMBER`, `CREATOR`, `CREATED_TIME`, `MODIFIER`, `UPDATED_TIME`, `CATEGORY`, `STATUS`, `STATUS_ASSIGNEE`）を除外し、削除対象のカスタムフィールドを特定する
+3. 削除対象フィールドがある場合、`FormConfigurator.deleteFields()` で全カスタムフィールドを削除する
+4. `FormConfigurator.updateLayout()` で空のレイアウトに更新する
+
+### 入力DTO
+
+なし
+
+### 出力DTO
+
+なし（`void`）
+
+### テストケース
+
+- カスタムフィールドが存在する場合、すべてのカスタムフィールドのコードが `FormConfigurator.deleteFields()` に渡される
+- システムフィールドは `FormConfigurator.deleteFields()` の対象に含まれない
+- フィールド削除後に `FormConfigurator.updateLayout()` が空のレイアウトで呼ばれる
+- カスタムフィールドが0件の場合、`FormConfigurator.deleteFields()` は呼ばれず、`FormConfigurator.updateLayout()` のみ実行される
+- `FormConfigurator.getFields()` の通信に失敗した場合、`SystemError` がスローされる
+- `FormConfigurator.deleteFields()` の通信に失敗した場合、`SystemError` がスローされる
+- `FormConfigurator.updateLayout()` の通信に失敗した場合、`SystemError` がスローされる
+
+---
+
 ## captureSchema
 
 ### 概要
@@ -234,3 +267,23 @@ type SaveSchemaInput = {
 - `KintoneRestAPIClient` → ユーザー名/パスワード認証で明示的に初期化
 - アプリID → `KINTONE_APP_ID` 環境変数から取得
 - `capture` コマンドは `captureSchema` + `saveSchema` を連続実行
+
+### Multi-Appモード
+
+`kintone-migrator.yaml` プロジェクト設定ファイルが存在する場合、以下の実行モードが利用可能：
+
+- `--app <name>`: 設定ファイルから指定アプリの設定を解決し、シングル実行
+- `--all`: 設定ファイルの全アプリを依存順（トポロジカルソート）に実行
+
+各コマンドのMulti-App動作：
+
+| コマンド | `--all` 動作 |
+| --- | --- |
+| `diff` | 各アプリのdiffを依存順に表示 |
+| `migrate` | 全アプリの変更サマリー表示 → 1回確認 → 依存順にmigrate+deploy |
+| `override` | 警告表示 → 1回確認 → 依存順にoverride+deploy |
+| `override --reset` | 警告表示 → 1回確認 → 依存の逆順に各アプリをリセット |
+| `capture` | 各アプリのスキーマを設定された `schemaFile` パスにキャプチャ |
+| `dump` | 各アプリのdumpを `<appName>-fields.json` / `<appName>-layout.json` に出力 |
+
+失敗時はFail-Fast方式で即停止し、残りのアプリはスキップされる。

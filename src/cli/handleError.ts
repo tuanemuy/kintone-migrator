@@ -6,43 +6,42 @@ import {
 } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 
-export function handleCliError(error: unknown): never {
+export function logError(error: unknown): void {
   if (isBusinessRuleError(error)) {
     p.log.error(`[BusinessRuleError] ${error.code}: ${error.message}`);
     logErrorDetails(error);
-    p.outro("Failed.");
-    process.exit(1);
+    return;
   }
 
   if (isValidationError(error)) {
     p.log.error(`[ValidationError] ${error.message}`);
     logErrorDetails(error);
-    p.outro("Failed.");
-    process.exit(1);
+    return;
   }
 
   if (isSystemError(error)) {
     p.log.error(`[SystemError] ${error.code}: ${error.message}`);
     logErrorDetails(error);
-    p.outro("Failed.");
-    process.exit(1);
+    return;
   }
 
   if (isApplicationError(error)) {
     p.log.error(`[${error.name}] ${error.code}: ${error.message}`);
     logErrorDetails(error);
-    p.outro("Failed.");
-    process.exit(1);
+    return;
   }
 
   if (error instanceof Error) {
     p.log.error(`[Error] ${error.message}`);
     logErrorDetails(error);
-    p.outro("Failed.");
-    process.exit(1);
+    return;
   }
 
   p.log.error(`[Error] 予期しないエラーが発生しました: ${String(error)}`);
+}
+
+export function handleCliError(error: unknown): never {
+  logError(error);
   p.outro("Failed.");
   process.exit(1);
 }

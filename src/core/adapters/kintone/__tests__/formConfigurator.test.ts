@@ -213,6 +213,66 @@ describe("KintoneFormConfigurator", () => {
       );
     });
 
+    it("RADIO_BUTTON フィールドを取得すると defaultValue が文字列として保持される", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({
+            properties: {
+              priority: {
+                type: "RADIO_BUTTON",
+                code: "priority",
+                label: "優先度",
+                required: true,
+                defaultValue: "中",
+                options: {
+                  高: { label: "高", index: "0" },
+                  中: { label: "中", index: "1" },
+                  低: { label: "低", index: "2" },
+                },
+                align: "HORIZONTAL",
+              },
+            },
+          }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+      const fields = await adapter.getFields();
+
+      const field = fields.get("priority" as FieldCode);
+      expect(field?.type).toBe("RADIO_BUTTON");
+      if (field?.type === "RADIO_BUTTON") {
+        expect(field.properties.defaultValue).toBe("中");
+        expect(field.properties.required).toBe(true);
+        expect(field.properties.align).toBe("HORIZONTAL");
+      }
+    });
+
+    it("RADIO_BUTTON の defaultValue が配列で返された場合、文字列に正規化される", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({
+            properties: {
+              priority: {
+                type: "RADIO_BUTTON",
+                code: "priority",
+                label: "優先度",
+                defaultValue: ["中"],
+                options: {
+                  高: { label: "高", index: "0" },
+                  中: { label: "中", index: "1" },
+                },
+              },
+            },
+          }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+      const fields = await adapter.getFields();
+
+      const field = fields.get("priority" as FieldCode);
+      if (field?.type === "RADIO_BUTTON") {
+        expect(field.properties.defaultValue).toBe("中");
+      }
+    });
+
     it("USER_SELECT フィールドを取得すると defaultValue と entities が保持される", async () => {
       const client = createMockClient({
         getFormFields: () =>
