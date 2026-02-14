@@ -189,6 +189,60 @@ describe("handleCliError", () => {
     );
   });
 
+  it("cause に error (単数) プロパティがある場合、内部エラーの詳細が warn でログ出力される", () => {
+    // KintoneAllRecordsError のように .error (単数) プロパティでラップされるケース
+    const innerError = new Error(
+      "[400] [CB_VA01] 入力内容が正しくありません。 (abc-123)",
+    );
+    Object.assign(innerError, {
+      errors: {
+        "records[0].field1.value": {
+          messages: ["必須です。"],
+        },
+      },
+    });
+    const cause = Object.assign(
+      new Error("0/5 records are processed successfully"),
+      { error: innerError },
+    );
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "Failed to add records",
+      cause,
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("0/5 records are processed successfully"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("[400] [CB_VA01]"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("必須です。"),
+    );
+  });
+
+  it("cause のcauseチェーンを再帰的にたどって表示する", () => {
+    const rootCause = new Error("connection refused");
+    const midCause = new Error("API call failed", { cause: rootCause });
+    const error = new SystemError(
+      SystemErrorCode.NetworkError,
+      "ネットワークエラー",
+      midCause,
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("API call failed"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Caused by: connection refused"),
+    );
+  });
+
   it("stack トレースがある場合、Stack 情報が warn でログ出力される", () => {
     const error = new Error("テストエラー");
 
