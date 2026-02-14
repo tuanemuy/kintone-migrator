@@ -71,14 +71,21 @@ export function printMultiAppResult(result: MultiAppResult): void {
   }
 }
 
-export async function promptDeploy(container: Container): Promise<void> {
-  const shouldDeploy = await p.confirm({
-    message: "運用環境に反映しますか？",
-  });
+export async function promptDeploy(
+  container: Container,
+  skipConfirm: boolean,
+): Promise<void> {
+  if (!skipConfirm) {
+    const shouldDeploy = await p.confirm({
+      message: "運用環境に反映しますか？",
+    });
 
-  if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-    p.log.warn("テスト環境に反映済みですが、運用環境には反映されていません。");
-    return;
+    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
+      p.log.warn(
+        "テスト環境に反映済みですが、運用環境には反映されていません。",
+      );
+      return;
+    }
   }
 
   const ds = p.spinner();

@@ -92,9 +92,14 @@ Applies schema file changes to the kintone form. Displays the diff and prompts f
 ```bash
 kintone-migrator migrate
 
+# Skip confirmation prompts (for CI/CD)
+kintone-migrator migrate --yes
+kintone-migrator migrate -y
+
 # Multi-app mode
 kintone-migrator migrate --app customer
 kintone-migrator migrate --all
+kintone-migrator migrate --all --yes
 ```
 
 ### `override`
@@ -104,12 +109,17 @@ Overwrites the entire kintone form with the schema file contents. Fields not def
 ```bash
 kintone-migrator override
 
+# Skip confirmation prompts (for CI/CD)
+kintone-migrator override --yes
+kintone-migrator override -y
+
 # Reset form: delete all custom fields (no schema file needed)
 kintone-migrator override --reset
 
 # Multi-app mode
 kintone-migrator override --all
 kintone-migrator override --reset --all
+kintone-migrator override --all --yes
 ```
 
 #### Override-specific arguments
@@ -117,6 +127,7 @@ kintone-migrator override --reset --all
 | CLI Argument | Description |
 |---------|------|
 | `--reset` | Reset form by deleting all custom fields. Cannot be used with `--schema-file`. In multi-app mode (`--all`), apps are reset in reverse dependency order. |
+| `--yes`, `-y` | Skip confirmation prompts. Also available on `migrate`. |
 
 ### `capture`
 
