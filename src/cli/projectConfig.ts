@@ -1,6 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import type { KintoneAuth } from "@/core/application/container/cli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { MultiAppExecutor } from "@/core/application/projectConfig/executeMultiApp";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
@@ -146,7 +147,7 @@ function resolveAuthForApp(
   app: AppEntry,
   projectConfig: ProjectConfig,
   cliValues: MultiAppCliValues,
-): CliConfig["auth"] {
+): KintoneAuth {
   // CLI args take highest priority
   const cliApiToken =
     cliValues["api-token"] ?? process.env.KINTONE_API_TOKEN ?? undefined;
@@ -178,7 +179,7 @@ function resolveAuthForApp(
   );
 }
 
-function convertAuthConfig(auth: AuthConfig): CliConfig["auth"] {
+function convertAuthConfig(auth: AuthConfig): KintoneAuth {
   if (auth.type === "apiToken") {
     return { type: "apiToken", apiToken: auth.apiToken };
   }
@@ -245,8 +246,10 @@ export async function runMultiAppWithFailCheck(
   printMultiAppResult(multiResult);
 
   if (multiResult.hasFailure) {
-    p.outro("Execution stopped due to failure.");
-    process.exit(1);
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "Execution stopped due to failure.",
+    );
   }
 
   if (successMessage) {

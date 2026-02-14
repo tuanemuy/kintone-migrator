@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
+import { isNodeError } from "@/lib/nodeError";
 
 export class LocalFileSchemaStorage implements SchemaStorage {
   constructor(private readonly filePath: string) {}
@@ -34,8 +35,4 @@ export class LocalFileSchemaStorage implements SchemaStorage {
       );
     }
   }
-}
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && "code" in error;
 }

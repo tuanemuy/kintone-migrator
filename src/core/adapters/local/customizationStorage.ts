@@ -1,10 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && "code" in error;
-}
+import { isNodeError } from "@/lib/nodeError";
 
 export class LocalFileCustomizationStorage implements CustomizationStorage {
   constructor(private readonly filePath: string) {}

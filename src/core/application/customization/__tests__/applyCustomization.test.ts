@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setupTestContainer } from "@/core/application/__tests__/helpers";
+import { setupTestCustomizationContainer } from "@/core/application/__tests__/helpers";
 import { isSystemError, isValidationError } from "@/core/application/error";
 import { CustomizationErrorCode } from "@/core/domain/customization/errorCode";
 import { isBusinessRuleError } from "@/core/domain/error";
@@ -47,7 +47,7 @@ mobile:
 `;
 
 describe("applyCustomization", () => {
-  const getContainer = setupTestContainer();
+  const getContainer = setupTestCustomizationContainer();
 
   describe("正常系", () => {
     it("FILEリソースをアップロードしカスタマイズを更新する", async () => {
@@ -329,7 +329,7 @@ mobile:
       } catch (error) {
         expect(isBusinessRuleError(error)).toBe(true);
         if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(CustomizationErrorCode.TooManyFiles);
+          expect(error.code).toBe(CustomizationErrorCode.CzTooManyFiles);
         }
       }
     });

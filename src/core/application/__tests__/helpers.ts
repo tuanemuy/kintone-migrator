@@ -1,5 +1,7 @@
 import { afterEach, beforeEach } from "vitest";
 import type { Container } from "@/core/application/container";
+import type { CustomizationContainer } from "@/core/application/container/customization";
+import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import type { SeedContainer } from "@/core/application/container/seed";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
@@ -355,6 +357,7 @@ export class InMemoryFieldPermissionConfigurator
 
 export class InMemoryFieldPermissionStorage implements FieldPermissionStorage {
   private content = "";
+  private _exists = false;
   callLog: string[] = [];
   private failOn: Set<string> = new Set();
 
@@ -371,20 +374,22 @@ export class InMemoryFieldPermissionStorage implements FieldPermissionStorage {
     }
   }
 
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     this.callLog.push("get");
     this.checkFail("get");
-    return this.content;
+    return { content: this.content, exists: this._exists };
   }
 
   async update(content: string): Promise<void> {
     this.callLog.push("update");
     this.checkFail("update");
     this.content = content;
+    this._exists = true;
   }
 
   setContent(content: string): void {
     this.content = content;
+    this._exists = true;
   }
 }
 
@@ -392,11 +397,6 @@ export type TestContainer = Container & {
   formConfigurator: InMemoryFormConfigurator;
   schemaStorage: InMemorySchemaStorage;
   appDeployer: InMemoryAppDeployer;
-  customizationConfigurator: InMemoryCustomizationConfigurator;
-  fileUploader: InMemoryFileUploader;
-  customizationStorage: InMemoryCustomizationStorage;
-  fieldPermissionConfigurator: InMemoryFieldPermissionConfigurator;
-  fieldPermissionStorage: InMemoryFieldPermissionStorage;
 };
 
 export function createTestContainer(): TestContainer {
@@ -404,11 +404,6 @@ export function createTestContainer(): TestContainer {
     formConfigurator: new InMemoryFormConfigurator(),
     schemaStorage: new InMemorySchemaStorage(),
     appDeployer: new InMemoryAppDeployer(),
-    customizationConfigurator: new InMemoryCustomizationConfigurator(),
-    fileUploader: new InMemoryFileUploader(),
-    customizationStorage: new InMemoryCustomizationStorage(),
-    fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
-    fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
   };
 }
 
@@ -495,6 +490,7 @@ export class InMemoryRecordManager implements RecordManager {
 
 export class InMemorySeedStorage implements SeedStorage {
   private content = "";
+  private _exists = false;
   callLog: string[] = [];
   private failOn: Set<string> = new Set();
 
@@ -511,20 +507,22 @@ export class InMemorySeedStorage implements SeedStorage {
     }
   }
 
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     this.callLog.push("get");
     this.checkFail("get");
-    return this.content;
+    return { content: this.content, exists: this._exists };
   }
 
   async update(content: string): Promise<void> {
     this.callLog.push("update");
     this.checkFail("update");
     this.content = content;
+    this._exists = true;
   }
 
   setContent(content: string): void {
     this.content = content;
+    this._exists = true;
   }
 }
 
@@ -545,6 +543,66 @@ export function setupTestSeedContainer(): () => TestSeedContainer {
 
   beforeEach(() => {
     container = createTestSeedContainer();
+  });
+
+  afterEach(() => {
+    // No cleanup needed for in-memory adapters
+  });
+
+  return () => container;
+}
+
+// Field permission test helpers
+
+export type TestFieldPermissionContainer = FieldPermissionContainer & {
+  fieldPermissionConfigurator: InMemoryFieldPermissionConfigurator;
+  fieldPermissionStorage: InMemoryFieldPermissionStorage;
+};
+
+export function createTestFieldPermissionContainer(): TestFieldPermissionContainer {
+  return {
+    fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
+    fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
+  };
+}
+
+export function setupTestFieldPermissionContainer(): () => TestFieldPermissionContainer {
+  let container: TestFieldPermissionContainer;
+
+  beforeEach(() => {
+    container = createTestFieldPermissionContainer();
+  });
+
+  afterEach(() => {
+    // No cleanup needed for in-memory adapters
+  });
+
+  return () => container;
+}
+
+// Customization test helpers
+
+export type TestCustomizationContainer = CustomizationContainer & {
+  customizationConfigurator: InMemoryCustomizationConfigurator;
+  customizationStorage: InMemoryCustomizationStorage;
+  fileUploader: InMemoryFileUploader;
+  appDeployer: InMemoryAppDeployer;
+};
+
+export function createTestCustomizationContainer(): TestCustomizationContainer {
+  return {
+    customizationConfigurator: new InMemoryCustomizationConfigurator(),
+    customizationStorage: new InMemoryCustomizationStorage(),
+    fileUploader: new InMemoryFileUploader(),
+    appDeployer: new InMemoryAppDeployer(),
+  };
+}
+
+export function setupTestCustomizationContainer(): () => TestCustomizationContainer {
+  let container: TestCustomizationContainer;
+
+  beforeEach(() => {
+    container = createTestCustomizationContainer();
   });
 
   afterEach(() => {

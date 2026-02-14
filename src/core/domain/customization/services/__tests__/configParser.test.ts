@@ -109,7 +109,7 @@ mobile: {}
       expect(() => ConfigParser.parse("")).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse("")).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.EmptyConfigText,
+          code: CustomizationErrorCode.CzEmptyConfigText,
         }),
       );
     });
@@ -118,7 +118,7 @@ mobile: {}
       expect(() => ConfigParser.parse("   \n  ")).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse("   \n  ")).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.EmptyConfigText,
+          code: CustomizationErrorCode.CzEmptyConfigText,
         }),
       );
     });
@@ -129,7 +129,7 @@ mobile: {}
       );
       expect(() => ConfigParser.parse("{ invalid: yaml:")).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidConfigYaml,
+          code: CustomizationErrorCode.CzInvalidConfigYaml,
         }),
       );
     });
@@ -140,7 +140,7 @@ mobile: {}
       );
       expect(() => ConfigParser.parse("just a string")).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidConfigStructure,
+          code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
       );
     });
@@ -158,7 +158,7 @@ mobile:
       expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidScope,
+          code: CustomizationErrorCode.CzInvalidScope,
         }),
       );
     });
@@ -172,23 +172,19 @@ mobile:
       expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidConfigStructure,
+          code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
       );
     });
 
-    it("mobileが未定義の場合、InvalidConfigStructureをスローする", () => {
+    it("mobileが未定義の場合、デフォルトの空プラットフォームが設定される", () => {
       const yaml = `
 desktop:
   js: []
   css: []
 `;
-      expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse(yaml)).toThrow(
-        expect.objectContaining({
-          code: CustomizationErrorCode.InvalidConfigStructure,
-        }),
-      );
+      const result = ConfigParser.parse(yaml);
+      expect(result.mobile).toEqual({ js: [], css: [] });
     });
 
     it("不正なリソースタイプの場合、InvalidResourceTypeをスローする", () => {
@@ -205,7 +201,7 @@ mobile:
       expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidResourceType,
+          code: CustomizationErrorCode.CzInvalidResourceType,
         }),
       );
     });
@@ -223,7 +219,7 @@ mobile:
       expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidConfigStructure,
+          code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
       );
     });
@@ -241,7 +237,7 @@ mobile:
       expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
       expect(() => ConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
-          code: CustomizationErrorCode.InvalidConfigStructure,
+          code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
       );
     });

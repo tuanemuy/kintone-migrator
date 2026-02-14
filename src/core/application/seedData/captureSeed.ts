@@ -23,11 +23,11 @@ export async function captureSeed({
 
   const seedText = SeedSerializer.serialize({ key, records });
 
-  const existingText = await container.seedStorage.get();
+  const existing = await container.seedStorage.get();
 
   return {
     seedText,
     recordCount: records.length,
-    hasExistingSeed: existingText.length > 0,
+    hasExistingSeed: existing.exists,
   };
 }

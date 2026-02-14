@@ -12,7 +12,7 @@ import type {
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
 import { BusinessRuleError } from "@/core/domain/error";
-import type { ServiceArgs } from "../types";
+import type { CustomizationServiceArgs } from "../container/customization";
 import { parseConfigText } from "./parseConfig";
 
 const MAX_RESOURCES_PER_CATEGORY = 30;
@@ -29,21 +29,20 @@ async function resolveResources(
   const resolveList = async (
     resources: readonly CustomizationResource[],
   ): Promise<readonly ResolvedResource[]> => {
-    const resolved: ResolvedResource[] = [];
-    for (const resource of resources) {
-      if (resource.type === "URL") {
-        resolved.push(resource);
-      } else {
+    return Promise.all(
+      resources.map(async (resource): Promise<ResolvedResource> => {
+        if (resource.type === "URL") {
+          return resource;
+        }
         const absolutePath = resolve(basePath, resource.path);
         const { fileKey } = await fileUploader.upload(absolutePath);
-        resolved.push({
+        return {
           type: "FILE",
           fileKey,
           name: basename(resource.path),
-        });
-      }
-    }
-    return resolved;
+        };
+      }),
+    );
   };
 
   const [js, css] = await Promise.all([
@@ -70,7 +69,7 @@ function validateResourceCount(
 ): void {
   if (resources.length > MAX_RESOURCES_PER_CATEGORY) {
     throw new BusinessRuleError(
-      CustomizationErrorCode.TooManyFiles,
+      CustomizationErrorCode.CzTooManyFiles,
       `${label} has ${resources.length} resources, exceeding the maximum of ${MAX_RESOURCES_PER_CATEGORY}`,
     );
   }
@@ -79,7 +78,7 @@ function validateResourceCount(
 export async function applyCustomization({
   container,
   input,
-}: ServiceArgs<ApplyCustomizationInput>): Promise<void> {
+}: CustomizationServiceArgs<ApplyCustomizationInput>): Promise<void> {
   const result = await container.customizationStorage.get();
   if (!result.exists) {
     throw new ValidationError(

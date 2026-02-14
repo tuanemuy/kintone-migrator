@@ -1,6 +1,11 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
+import { EmptyAppDeployer } from "@/core/adapters/empty/appDeployer";
+import { EmptyFormConfigurator } from "@/core/adapters/empty/formConfigurator";
+import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
+import type { Container } from "@/core/application/container";
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import {
   type ValidateSchemaOutput,
   validateSchema,
@@ -82,8 +87,17 @@ function printValidationResult(
   return isValid;
 }
 
+function createValidateContainer(schemaFilePath: string): Container {
+  return {
+    formConfigurator: new EmptyFormConfigurator(),
+    schemaStorage: new LocalFileSchemaStorage(schemaFilePath),
+    appDeployer: new EmptyAppDeployer(),
+  };
+}
+
 async function runValidate(schemaFilePath: string): Promise<void> {
-  const result = await validateSchema({ schemaFilePath });
+  const container = createValidateContainer(schemaFilePath);
+  const result = await validateSchema({ container });
   const valid = printValidationResult(result, schemaFilePath);
   if (!valid) {
     p.outro("Validation failed.");
@@ -128,10 +142,14 @@ export default define({
                 values,
                 app.schemaFile,
               );
-              const result = await validateSchema({ schemaFilePath });
+              const container = createValidateContainer(schemaFilePath);
+              const result = await validateSchema({ container });
               const valid = printValidationResult(result, schemaFilePath);
               if (!valid) {
-                throw new Error(`Validation failed for app "${app.name}"`);
+                throw new ValidationError(
+                  ValidationErrorCode.InvalidInput,
+                  `Validation failed for app "${app.name}"`,
+                );
               }
             },
             "All validations passed.",
