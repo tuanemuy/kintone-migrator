@@ -37,7 +37,7 @@ apps:
 | フィールド | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | `domain` | string | - | kintoneドメイン。CLI引数・環境変数・設定ファイルのいずれかで指定 |
-| `auth` | object | 条件付き | 認証設定。トップレベルまたは各アプリで最低1つ必要 |
+| `auth` | object | - | 認証設定。CLI引数・環境変数・設定ファイルのいずれかで指定 |
 | `auth.apiToken` | string | - | APIトークン認証 |
 | `auth.username` | string | - | パスワード認証のユーザー名 |
 | `auth.password` | string | - | パスワード認証のパスワード |
@@ -63,7 +63,7 @@ apps:
 - `schemaFile` 省略時は `schemas/<appName>.yaml` がデフォルト値
 - `dependsOn` の参照先は同一設定ファイル内のアプリ名であること
 - `domain` はCLI引数（`--domain`）、環境変数（`KINTONE_DOMAIN`）、または設定ファイル（トップレベル/アプリ単位）のいずれかで解決される
-- `auth` はトップレベルまたはアプリ単位で最低1つ必要
+- `auth` はCLI引数（`--api-token`, `--username`/`--password`）、環境変数（`KINTONE_API_TOKEN`, `KINTONE_USERNAME`/`KINTONE_PASSWORD`）、または設定ファイル（トップレベル/アプリ単位）のいずれかで解決される
 - 循環依存は `--all` による実行順序解決時に検出してエラー
 
 ## 設定マージ優先順位（高→低）
@@ -107,5 +107,5 @@ Kahn's algorithm（BFSトポロジカルソート）で実行順序を決定す�
 | 存在しない依存先参照 | BusinessRuleError | UNKNOWN_DEPENDENCY |
 | `apps` が空 | BusinessRuleError | EMPTY_APPS |
 | `appId` が空 | BusinessRuleError | EMPTY_APP_ID |
-| `auth` が未設定 | BusinessRuleError | MISSING_AUTH |
 | `domain` が未設定（実行時） | ValidationError | INVALID_INPUT |
+| `auth` が未設定（実行時） | ValidationError | INVALID_INPUT |

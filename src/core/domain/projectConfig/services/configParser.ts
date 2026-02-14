@@ -60,14 +60,6 @@ export function parseProjectConfig(raw: unknown): ProjectConfig {
       isRecord(rawAppValue.auth) ? rawAppValue.auth : undefined,
     );
     const appDomain = asOptionalString(rawAppValue.domain);
-    const resolvedAuth = appAuth ?? topLevelAuth;
-
-    if (!resolvedAuth) {
-      throw new BusinessRuleError(
-        ProjectConfigErrorCode.MissingAuth,
-        `App "${name}" has no auth configured (set at top-level or per-app)`,
-      );
-    }
 
     const appName = AppName.create(name);
     const dependsOn = (asOptionalStringArray(rawAppValue.dependsOn) ?? []).map(
