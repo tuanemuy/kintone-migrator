@@ -12,10 +12,10 @@ export async function captureSchema({
   ]);
   const enrichedLayout = enrichLayoutWithFields(currentLayout, currentFields);
   const schemaText = SchemaSerializer.serialize(enrichedLayout);
-  const existingText = await container.schemaStorage.get();
+  const existingResult = await container.schemaStorage.get();
 
   return {
     schemaText,
-    hasExistingSchema: existingText.length > 0,
+    hasExistingSchema: existingResult.exists,
   };
 }

@@ -34,6 +34,8 @@
     "dev:dump": "tsx src/cli/index.ts dump",
     "dev:seed": "tsx src/cli/index.ts seed",
     "dev:validate": "tsx src/cli/index.ts validate",
+    "dev:field-acl": "tsx src/cli/index.ts field-acl",
+    "dev:capture-field-acl": "tsx src/cli/index.ts capture-field-acl",
     "build": "tsdown",
     "start": "node dist/index.mjs",
     "prepublishOnly": "pnpm build",

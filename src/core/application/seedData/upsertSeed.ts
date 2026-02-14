@@ -2,13 +2,20 @@ import { RecordConverter } from "@/core/domain/seedData/services/recordConverter
 import { SeedParser } from "@/core/domain/seedData/services/seedParser";
 import { UpsertPlanner } from "@/core/domain/seedData/services/upsertPlanner";
 import type { SeedServiceArgs } from "../container/seed";
+import { ValidationError, ValidationErrorCode } from "../error";
 import type { UpsertSeedOutput } from "./dto";
 
 export async function upsertSeed({
   container,
 }: SeedServiceArgs): Promise<UpsertSeedOutput> {
-  const rawText = await container.seedStorage.get();
-  const seedData = SeedParser.parse(rawText);
+  const result = await container.seedStorage.get();
+  if (!result.exists) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "Seed file not found",
+    );
+  }
+  const seedData = SeedParser.parse(result.content);
 
   if (seedData.key === null) {
     const kintoneRecords = seedData.records.map(

@@ -1,9 +1,13 @@
 import { AnyError } from "@/lib/error";
+import { CustomizationErrorCode } from "./customization/errorCode";
+import { FieldPermissionErrorCode } from "./fieldPermission/errorCode";
 import { FormSchemaErrorCode } from "./formSchema/errorCode";
 import { ProjectConfigErrorCode } from "./projectConfig/errorCode";
 import { SeedDataErrorCode } from "./seedData/errorCode";
 
 export const BusinessRuleErrorCode = {
+  ...CustomizationErrorCode,
+  ...FieldPermissionErrorCode,
   ...FormSchemaErrorCode,
   ...ProjectConfigErrorCode,
   ...SeedDataErrorCode,

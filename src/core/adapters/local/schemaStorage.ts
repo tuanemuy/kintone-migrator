@@ -2,16 +2,18 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
+import { isNodeError } from "@/lib/nodeError";
 
 export class LocalFileSchemaStorage implements SchemaStorage {
   constructor(private readonly filePath: string) {}
 
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     try {
-      return await readFile(this.filePath, "utf-8");
+      const content = await readFile(this.filePath, "utf-8");
+      return { content, exists: true };
     } catch (error) {
       if (isNodeError(error) && error.code === "ENOENT") {
-        return "";
+        return { content: "", exists: false };
       }
       throw new SystemError(
         SystemErrorCode.StorageError,
@@ -33,8 +35,4 @@ export class LocalFileSchemaStorage implements SchemaStorage {
       );
     }
   }
-}
-
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && "code" in error;
 }

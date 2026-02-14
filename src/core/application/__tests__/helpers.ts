@@ -1,7 +1,20 @@
 import { afterEach, beforeEach } from "vitest";
 import type { Container } from "@/core/application/container";
+import type { CustomizationContainer } from "@/core/application/container/customization";
+import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import type { SeedContainer } from "@/core/application/container/seed";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
+import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
+import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
+import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
+import type {
+  CustomizationScope,
+  RemotePlatform,
+  ResolvedResource,
+} from "@/core/domain/customization/valueObject";
+import type { FieldRight } from "@/core/domain/fieldPermission/entity";
+import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
+import type { FieldPermissionStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStorage";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
@@ -89,6 +102,7 @@ export class InMemoryFormConfigurator implements FormConfigurator {
 
 export class InMemorySchemaStorage implements SchemaStorage {
   private content = "";
+  private _exists = false;
   callLog: string[] = [];
   private failOn: Set<string> = new Set();
 
@@ -105,20 +119,22 @@ export class InMemorySchemaStorage implements SchemaStorage {
     }
   }
 
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     this.callLog.push("get");
     this.checkFail("get");
-    return this.content;
+    return { content: this.content, exists: this._exists };
   }
 
   async update(content: string): Promise<void> {
     this.callLog.push("update");
     this.checkFail("update");
     this.content = content;
+    this._exists = true;
   }
 
   setContent(content: string): void {
     this.content = content;
+    this._exists = true;
   }
 }
 
@@ -134,6 +150,246 @@ export class InMemoryAppDeployer implements AppDeployer {
       );
     }
     this.deployCount++;
+  }
+}
+
+export class InMemoryCustomizationConfigurator
+  implements CustomizationConfigurator
+{
+  private customization: {
+    scope: CustomizationScope;
+    desktop: RemotePlatform;
+    mobile: RemotePlatform;
+    revision: string;
+  } = {
+    scope: "ALL",
+    desktop: { js: [], css: [] },
+    mobile: { js: [], css: [] },
+    revision: "1",
+  };
+  callLog: string[] = [];
+  lastUpdateParams: {
+    scope?: CustomizationScope;
+    desktop?: {
+      js?: readonly ResolvedResource[];
+      css?: readonly ResolvedResource[];
+    };
+    mobile?: {
+      js?: readonly ResolvedResource[];
+      css?: readonly ResolvedResource[];
+    };
+    revision?: string;
+  } | null = null;
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async getCustomization(): Promise<{
+    scope: CustomizationScope;
+    desktop: RemotePlatform;
+    mobile: RemotePlatform;
+    revision: string;
+  }> {
+    this.callLog.push("getCustomization");
+    this.checkFail("getCustomization");
+    return { ...this.customization };
+  }
+
+  async updateCustomization(params: {
+    scope?: CustomizationScope;
+    desktop?: {
+      js?: readonly ResolvedResource[];
+      css?: readonly ResolvedResource[];
+    };
+    mobile?: {
+      js?: readonly ResolvedResource[];
+      css?: readonly ResolvedResource[];
+    };
+    revision?: string;
+  }): Promise<{ revision: string }> {
+    this.callLog.push("updateCustomization");
+    this.checkFail("updateCustomization");
+    this.lastUpdateParams = params;
+    const newRevision = String(Number(this.customization.revision) + 1);
+    this.customization.revision = newRevision;
+    return { revision: newRevision };
+  }
+
+  setCustomization(customization: {
+    scope: CustomizationScope;
+    desktop: RemotePlatform;
+    mobile: RemotePlatform;
+    revision: string;
+  }): void {
+    this.customization = customization;
+  }
+}
+
+export class InMemoryFileUploader implements FileUploader {
+  private fileKeyCounter = 0;
+  uploadedFiles: Map<string, string> = new Map();
+  callLog: string[] = [];
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async upload(filePath: string): Promise<{ fileKey: string }> {
+    this.callLog.push("upload");
+    this.checkFail("upload");
+    this.fileKeyCounter++;
+    const fileKey = `fk-${this.fileKeyCounter}`;
+    this.uploadedFiles.set(filePath, fileKey);
+    return { fileKey };
+  }
+}
+
+export class InMemoryCustomizationStorage implements CustomizationStorage {
+  private content = "";
+  private _exists = false;
+  callLog: string[] = [];
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.StorageError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async get(): Promise<{ content: string; exists: boolean }> {
+    this.callLog.push("get");
+    this.checkFail("get");
+    return { content: this.content, exists: this._exists };
+  }
+
+  setContent(content: string): void {
+    this.content = content;
+    this._exists = true;
+  }
+}
+
+export class InMemoryFieldPermissionConfigurator
+  implements FieldPermissionConfigurator
+{
+  private permissions: {
+    rights: readonly FieldRight[];
+    revision: string;
+  } = {
+    rights: [],
+    revision: "1",
+  };
+  callLog: string[] = [];
+  lastUpdateParams: {
+    rights: readonly FieldRight[];
+    revision?: string;
+  } | null = null;
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async getFieldPermissions(): Promise<{
+    rights: readonly FieldRight[];
+    revision: string;
+  }> {
+    this.callLog.push("getFieldPermissions");
+    this.checkFail("getFieldPermissions");
+    return { ...this.permissions };
+  }
+
+  async updateFieldPermissions(params: {
+    rights: readonly FieldRight[];
+    revision?: string;
+  }): Promise<{ revision: string }> {
+    this.callLog.push("updateFieldPermissions");
+    this.checkFail("updateFieldPermissions");
+    this.lastUpdateParams = params;
+    const newRevision = String(Number(this.permissions.revision) + 1);
+    this.permissions.revision = newRevision;
+    return { revision: newRevision };
+  }
+
+  setPermissions(permissions: {
+    rights: readonly FieldRight[];
+    revision: string;
+  }): void {
+    this.permissions = permissions;
+  }
+}
+
+export class InMemoryFieldPermissionStorage implements FieldPermissionStorage {
+  private content = "";
+  private _exists = false;
+  callLog: string[] = [];
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.StorageError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async get(): Promise<{ content: string; exists: boolean }> {
+    this.callLog.push("get");
+    this.checkFail("get");
+    return { content: this.content, exists: this._exists };
+  }
+
+  async update(content: string): Promise<void> {
+    this.callLog.push("update");
+    this.checkFail("update");
+    this.content = content;
+    this._exists = true;
+  }
+
+  setContent(content: string): void {
+    this.content = content;
+    this._exists = true;
   }
 }
 
@@ -234,6 +490,7 @@ export class InMemoryRecordManager implements RecordManager {
 
 export class InMemorySeedStorage implements SeedStorage {
   private content = "";
+  private _exists = false;
   callLog: string[] = [];
   private failOn: Set<string> = new Set();
 
@@ -250,20 +507,22 @@ export class InMemorySeedStorage implements SeedStorage {
     }
   }
 
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     this.callLog.push("get");
     this.checkFail("get");
-    return this.content;
+    return { content: this.content, exists: this._exists };
   }
 
   async update(content: string): Promise<void> {
     this.callLog.push("update");
     this.checkFail("update");
     this.content = content;
+    this._exists = true;
   }
 
   setContent(content: string): void {
     this.content = content;
+    this._exists = true;
   }
 }
 
@@ -284,6 +543,66 @@ export function setupTestSeedContainer(): () => TestSeedContainer {
 
   beforeEach(() => {
     container = createTestSeedContainer();
+  });
+
+  afterEach(() => {
+    // No cleanup needed for in-memory adapters
+  });
+
+  return () => container;
+}
+
+// Field permission test helpers
+
+export type TestFieldPermissionContainer = FieldPermissionContainer & {
+  fieldPermissionConfigurator: InMemoryFieldPermissionConfigurator;
+  fieldPermissionStorage: InMemoryFieldPermissionStorage;
+};
+
+export function createTestFieldPermissionContainer(): TestFieldPermissionContainer {
+  return {
+    fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
+    fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
+  };
+}
+
+export function setupTestFieldPermissionContainer(): () => TestFieldPermissionContainer {
+  let container: TestFieldPermissionContainer;
+
+  beforeEach(() => {
+    container = createTestFieldPermissionContainer();
+  });
+
+  afterEach(() => {
+    // No cleanup needed for in-memory adapters
+  });
+
+  return () => container;
+}
+
+// Customization test helpers
+
+export type TestCustomizationContainer = CustomizationContainer & {
+  customizationConfigurator: InMemoryCustomizationConfigurator;
+  customizationStorage: InMemoryCustomizationStorage;
+  fileUploader: InMemoryFileUploader;
+  appDeployer: InMemoryAppDeployer;
+};
+
+export function createTestCustomizationContainer(): TestCustomizationContainer {
+  return {
+    customizationConfigurator: new InMemoryCustomizationConfigurator(),
+    customizationStorage: new InMemoryCustomizationStorage(),
+    fileUploader: new InMemoryFileUploader(),
+    appDeployer: new InMemoryAppDeployer(),
+  };
+}
+
+export function setupTestCustomizationContainer(): () => TestCustomizationContainer {
+  let container: TestCustomizationContainer;
+
+  beforeEach(() => {
+    container = createTestCustomizationContainer();
   });
 
   afterEach(() => {

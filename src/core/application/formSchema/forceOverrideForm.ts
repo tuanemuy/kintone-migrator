@@ -1,3 +1,4 @@
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/entity";
 import type {
   FieldCode,
@@ -10,8 +11,14 @@ import { parseSchemaText } from "./parseSchema";
 export async function forceOverrideForm({
   container,
 }: ServiceArgs): Promise<void> {
-  const rawText = await container.schemaStorage.get();
-  const schema = parseSchemaText(rawText);
+  const result = await container.schemaStorage.get();
+  if (!result.exists) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "Schema file not found",
+    );
+  }
+  const schema = parseSchemaText(result.content);
 
   assertSchemaValid(schema);
 

@@ -1,3 +1,4 @@
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/entity";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
@@ -17,8 +18,14 @@ function toFieldDto(field: FieldDefinition): DiffEntryDto["before"] {
 export async function detectDiff({
   container,
 }: ServiceArgs): Promise<DetectDiffOutput> {
-  const rawText = await container.schemaStorage.get();
-  const schema = parseSchemaText(rawText);
+  const result = await container.schemaStorage.get();
+  if (!result.exists) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "Schema file not found",
+    );
+  }
+  const schema = parseSchemaText(result.content);
   const [currentFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(),
     container.formConfigurator.getLayout(),

@@ -1,4 +1,3 @@
-import { readFile } from "node:fs/promises";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type { Schema } from "@/core/domain/formSchema/entity";
 import { SchemaParser } from "@/core/domain/formSchema/services/schemaParser";
@@ -6,11 +5,8 @@ import {
   SchemaValidator,
   type ValidationResult,
 } from "@/core/domain/formSchema/services/schemaValidator";
-import { SystemError, SystemErrorCode } from "../error";
-
-export type ValidateSchemaInput = Readonly<{
-  schemaFilePath: string;
-}>;
+import { ValidationError, ValidationErrorCode } from "../error";
+import type { ServiceArgs } from "../types";
 
 export type ValidateSchemaOutput = Readonly<{
   parseError?: string;
@@ -18,23 +14,20 @@ export type ValidateSchemaOutput = Readonly<{
   fieldCount: number;
 }>;
 
-export async function validateSchema(
-  input: ValidateSchemaInput,
-): Promise<ValidateSchemaOutput> {
-  let rawText: string;
-  try {
-    rawText = await readFile(input.schemaFilePath, "utf-8");
-  } catch (cause) {
-    throw new SystemError(
-      SystemErrorCode.StorageError,
-      `Failed to read schema file: ${input.schemaFilePath}`,
-      cause,
+export async function validateSchema({
+  container,
+}: ServiceArgs): Promise<ValidateSchemaOutput> {
+  const result = await container.schemaStorage.get();
+  if (!result.exists) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "Schema file not found",
     );
   }
 
   let schema: Schema;
   try {
-    schema = SchemaParser.parse(rawText);
+    schema = SchemaParser.parse(result.content);
   } catch (error) {
     if (isBusinessRuleError(error)) {
       return {

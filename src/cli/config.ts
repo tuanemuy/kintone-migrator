@@ -1,5 +1,11 @@
 import * as v from "valibot";
+import type { KintoneAuth } from "@/core/application/container/cli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+
+export {
+  buildKintoneAuth,
+  type KintoneAuth,
+} from "@/core/application/container/cli";
 
 const CliConfigSchema = v.object({
   KINTONE_DOMAIN: v.pipe(v.string(), v.nonEmpty("KINTONE_DOMAIN is required")),
@@ -13,27 +19,11 @@ const CliConfigSchema = v.object({
 
 export type CliConfig = {
   baseUrl: string;
-  auth:
-    | { type: "apiToken"; apiToken: string | string[] }
-    | { type: "password"; username: string; password: string };
+  auth: KintoneAuth;
   appId: string;
   guestSpaceId?: string;
   schemaFilePath: string;
 };
-
-export function buildKintoneAuth(auth: CliConfig["auth"]):
-  | {
-      apiToken: string | string[];
-    }
-  | {
-      username: string;
-      password: string;
-    } {
-  if (auth.type === "apiToken") {
-    return { apiToken: auth.apiToken };
-  }
-  return { username: auth.username, password: auth.password };
-}
 
 export const kintoneArgs = {
   domain: {

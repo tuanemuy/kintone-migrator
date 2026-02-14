@@ -1,17 +1,40 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import type { CliConfig } from "@/cli/config";
-import { buildKintoneAuth } from "@/cli/config";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
+import { KintoneCustomizationConfigurator } from "@/core/adapters/kintone/customizationConfigurator";
+import { KintoneFieldPermissionConfigurator } from "@/core/adapters/kintone/fieldPermissionConfigurator";
+import { KintoneFileUploader } from "@/core/adapters/kintone/fileUploader";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
+import { LocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
+import { LocalFileFieldPermissionStorage } from "@/core/adapters/local/fieldPermissionStorage";
 import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { LocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
 import type { Container } from "@/core/application/container";
+import type { CustomizationContainer } from "@/core/application/container/customization";
+import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import type { SeedContainer } from "@/core/application/container/seed";
+
+export type KintoneAuth =
+  | { type: "apiToken"; apiToken: string | string[] }
+  | { type: "password"; username: string; password: string };
+
+export function buildKintoneAuth(auth: KintoneAuth):
+  | {
+      apiToken: string | string[];
+    }
+  | {
+      username: string;
+      password: string;
+    } {
+  if (auth.type === "apiToken") {
+    return { apiToken: auth.apiToken };
+  }
+  return { username: auth.username, password: auth.password };
+}
 
 export type CliContainerConfig = {
   baseUrl: string;
-  auth: CliConfig["auth"];
+  auth: KintoneAuth;
   appId: string;
   guestSpaceId?: string;
   schemaFilePath: string;
@@ -19,7 +42,7 @@ export type CliContainerConfig = {
 
 export type SeedCliContainerConfig = {
   baseUrl: string;
-  auth: CliConfig["auth"];
+  auth: KintoneAuth;
   appId: string;
   guestSpaceId?: string;
   seedFilePath: string;
@@ -51,5 +74,63 @@ export function createSeedCliContainer(
   return {
     recordManager: new KintoneRecordManager(client, config.appId),
     seedStorage: new LocalFileSeedStorage(config.seedFilePath),
+  };
+}
+
+export type FieldPermissionCliContainerConfig = {
+  baseUrl: string;
+  auth: KintoneAuth;
+  appId: string;
+  guestSpaceId?: string;
+  fieldAclFilePath: string;
+};
+
+export function createFieldPermissionCliContainer(
+  config: FieldPermissionCliContainerConfig,
+): FieldPermissionContainer {
+  const client = new KintoneRestAPIClient({
+    baseUrl: config.baseUrl,
+    auth: buildKintoneAuth(config.auth),
+    guestSpaceId: config.guestSpaceId,
+  });
+
+  return {
+    fieldPermissionConfigurator: new KintoneFieldPermissionConfigurator(
+      client,
+      config.appId,
+    ),
+    fieldPermissionStorage: new LocalFileFieldPermissionStorage(
+      config.fieldAclFilePath,
+    ),
+  };
+}
+
+export type CustomizationCliContainerConfig = {
+  baseUrl: string;
+  auth: KintoneAuth;
+  appId: string;
+  guestSpaceId?: string;
+  customizeFilePath: string;
+};
+
+export function createCustomizationCliContainer(
+  config: CustomizationCliContainerConfig,
+): CustomizationContainer {
+  const client = new KintoneRestAPIClient({
+    baseUrl: config.baseUrl,
+    auth: buildKintoneAuth(config.auth),
+    guestSpaceId: config.guestSpaceId,
+  });
+
+  return {
+    customizationConfigurator: new KintoneCustomizationConfigurator(
+      client,
+      config.appId,
+    ),
+    customizationStorage: new LocalFileCustomizationStorage(
+      config.customizeFilePath,
+    ),
+    fileUploader: new KintoneFileUploader(client),
+    appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

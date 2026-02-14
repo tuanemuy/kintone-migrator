@@ -2,7 +2,7 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
 
 export class EmptySeedStorage implements SeedStorage {
-  async get(): Promise<string> {
+  async get(): Promise<{ content: string; exists: boolean }> {
     throw new SystemError(
       SystemErrorCode.InternalServerError,
       "EmptySeedStorage.get not implemented",

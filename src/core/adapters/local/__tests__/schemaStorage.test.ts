@@ -17,22 +17,31 @@ describe("LocalFileSchemaStorage", () => {
   });
 
   describe("get", () => {
-    it("ファイルが存在しない場合、空文字列を返す", async () => {
+    it("ファイルが存在しない場合、exists: false を返す", async () => {
       const storage = new LocalFileSchemaStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
-      expect(result).toBe("");
+      expect(result).toEqual({ content: "", exists: false });
     });
 
-    it("ファイルが存在する場合、内容を返す", async () => {
+    it("ファイルが存在する場合、exists: true と内容を返す", async () => {
       const filePath = join(tempDir, "schema.yaml");
       const content = "layout:\n  - type: ROW\n";
       await writeFile(filePath, content, "utf-8");
 
       const storage = new LocalFileSchemaStorage(filePath);
       const result = await storage.get();
-      expect(result).toBe(content);
+      expect(result).toEqual({ content, exists: true });
+    });
+
+    it("ファイルが存在するが空の場合、exists: true と空文字列を返す", async () => {
+      const filePath = join(tempDir, "empty.yaml");
+      await writeFile(filePath, "", "utf-8");
+
+      const storage = new LocalFileSchemaStorage(filePath);
+      const result = await storage.get();
+      expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
