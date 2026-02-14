@@ -103,16 +103,40 @@ records:
     }
   });
 
-  it("keyフィールドがないオブジェクトでエラーをスローする", () => {
-    try {
-      SeedParser.parse("records: []");
-      expect.fail("Expected error");
-    } catch (error) {
-      expect(isBusinessRuleError(error)).toBe(true);
-      if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
-      }
-    }
+  it("keyフィールドがない場合はnullとしてパースする", () => {
+    const yaml = `
+records:
+  - name: "テスト1"
+  - name: "テスト2"
+`;
+    const result = SeedParser.parse(yaml);
+    expect(result.key).toBeNull();
+    expect(result.records).toHaveLength(2);
+    expect(result.records[0].name).toBe("テスト1");
+    expect(result.records[1].name).toBe("テスト2");
+  });
+
+  it("keyなし時にキーフィールド検証がスキップされる", () => {
+    const yaml = `
+records:
+  - name: "テスト1"
+    code: "001"
+  - name: "テスト2"
+`;
+    const result = SeedParser.parse(yaml);
+    expect(result.key).toBeNull();
+    expect(result.records).toHaveLength(2);
+  });
+
+  it("keyなし時に重複値があってもエラーにならない", () => {
+    const yaml = `
+records:
+  - name: "同じ名前"
+  - name: "同じ名前"
+`;
+    const result = SeedParser.parse(yaml);
+    expect(result.key).toBeNull();
+    expect(result.records).toHaveLength(2);
   });
 
   it("recordsが配列でない場合にエラーをスローする", () => {

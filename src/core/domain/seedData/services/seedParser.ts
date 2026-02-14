@@ -92,14 +92,10 @@ export const SeedParser = {
 
     const obj = parsed as Record<string, unknown>;
 
-    if (!("key" in obj) || typeof obj.key !== "string") {
-      throw new BusinessRuleError(
-        SeedDataErrorCode.InvalidSeedStructure,
-        'Seed data must have a "key" string field',
-      );
-    }
-
-    const key = UpsertKey.create(obj.key);
+    const key =
+      "key" in obj && typeof obj.key === "string"
+        ? UpsertKey.create(obj.key)
+        : null;
 
     if (!("records" in obj) || !Array.isArray(obj.records)) {
       throw new BusinessRuleError(
@@ -114,28 +110,30 @@ export const SeedParser = {
     for (let i = 0; i < obj.records.length; i++) {
       const record = parseRecord(obj.records[i], i);
 
-      if (!((key as string) in record)) {
-        throw new BusinessRuleError(
-          SeedDataErrorCode.MissingKeyField,
-          `Record at index ${i} is missing key field "${key}"`,
-        );
-      }
+      if (key !== null) {
+        if (!((key as string) in record)) {
+          throw new BusinessRuleError(
+            SeedDataErrorCode.MissingKeyField,
+            `Record at index ${i} is missing key field "${key}"`,
+          );
+        }
 
-      const keyValue = record[key as string];
-      if (typeof keyValue !== "string") {
-        throw new BusinessRuleError(
-          SeedDataErrorCode.InvalidSeedStructure,
-          `Key field "${key}" value at index ${i} must be a string`,
-        );
-      }
+        const keyValue = record[key as string];
+        if (typeof keyValue !== "string") {
+          throw new BusinessRuleError(
+            SeedDataErrorCode.InvalidSeedStructure,
+            `Key field "${key}" value at index ${i} must be a string`,
+          );
+        }
 
-      if (seenKeys.has(keyValue)) {
-        throw new BusinessRuleError(
-          SeedDataErrorCode.DuplicateKeyValue,
-          `Duplicate key value "${keyValue}" at index ${i}`,
-        );
+        if (seenKeys.has(keyValue)) {
+          throw new BusinessRuleError(
+            SeedDataErrorCode.DuplicateKeyValue,
+            `Duplicate key value "${keyValue}" at index ${i}`,
+          );
+        }
+        seenKeys.add(keyValue);
       }
-      seenKeys.add(keyValue);
 
       records.push(record);
     }
