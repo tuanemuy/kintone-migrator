@@ -58,6 +58,21 @@ records:
 | USER_SELECT, ORG_SELECT, GROUP_SELECT | object[] with `code` | `[{code: "user1"}]` |
 | SUBTABLE | object[] | `[{field1: "val1"}]` |
 
+## システムフィールド
+
+以下のシステムフィールドはkintoneが自動で管理するため、シードデータに含める必要はない。含めた場合でも `capture` 時に自動的に除外される。
+
+| type | 説明 |
+| --- | --- |
+| `RECORD_NUMBER` | レコード番号 |
+| `CREATOR` | 作成者 |
+| `CREATED_TIME` | 作成日時 |
+| `MODIFIER` | 更新者 |
+| `UPDATED_TIME` | 更新日時 |
+| `CATEGORY` | カテゴリー |
+| `STATUS` | ステータス |
+| `STATUS_ASSIGNEE` | 作業者 |
+
 ## バリデーションルール
 
 - `key` を指定する場合は非空文字列であること

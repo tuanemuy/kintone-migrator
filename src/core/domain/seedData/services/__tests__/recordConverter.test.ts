@@ -122,11 +122,11 @@ describe("RecordConverter", () => {
 
     it("システムフィールドを除外する", () => {
       const record = {
-        $id: { value: "1" },
-        $revision: { value: "1" },
-        RECORD_NUMBER: { value: "1" },
-        CREATOR: { value: { code: "admin" } },
-        code: { value: "001" },
+        $id: { type: "__ID__", value: "1" },
+        $revision: { type: "__REVISION__", value: "1" },
+        RECORD_NUMBER: { type: "RECORD_NUMBER", value: "1" },
+        CREATOR: { type: "CREATOR", value: { code: "admin" } },
+        code: { type: "SINGLE_LINE_TEXT", value: "001" },
       } as unknown as KintoneRecordForResponse;
 
       const result = RecordConverter.fromKintoneRecord(record);
@@ -135,6 +135,26 @@ describe("RecordConverter", () => {
       expect(result.$revision).toBeUndefined();
       expect(result.RECORD_NUMBER).toBeUndefined();
       expect(result.CREATOR).toBeUndefined();
+    });
+
+    it("日本語フィールドコードのシステムフィールドをtypeで除外する", () => {
+      const record = {
+        $id: { type: "__ID__", value: "1" },
+        レコード番号: { type: "RECORD_NUMBER", value: "1" },
+        作成者: { type: "CREATOR", value: { code: "admin" } },
+        作成日時: { type: "CREATED_TIME", value: "2024-01-01T00:00:00Z" },
+        更新者: { type: "MODIFIER", value: { code: "admin" } },
+        更新日時: { type: "UPDATED_TIME", value: "2024-01-01T00:00:00Z" },
+        code: { type: "SINGLE_LINE_TEXT", value: "001" },
+      } as unknown as KintoneRecordForResponse;
+
+      const result = RecordConverter.fromKintoneRecord(record);
+      expect(result.code).toBe("001");
+      expect(result.レコード番号).toBeUndefined();
+      expect(result.作成者).toBeUndefined();
+      expect(result.作成日時).toBeUndefined();
+      expect(result.更新者).toBeUndefined();
+      expect(result.更新日時).toBeUndefined();
     });
   });
 });

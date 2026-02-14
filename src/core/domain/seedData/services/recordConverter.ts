@@ -17,6 +17,19 @@ const SYSTEM_FIELDS: ReadonlySet<string> = new Set([
   "CATEGORY",
 ]);
 
+const SYSTEM_FIELD_TYPES: ReadonlySet<string> = new Set([
+  "RECORD_NUMBER",
+  "__ID__",
+  "__REVISION__",
+  "CREATOR",
+  "CREATED_TIME",
+  "MODIFIER",
+  "UPDATED_TIME",
+  "STATUS",
+  "STATUS_ASSIGNEE",
+  "CATEGORY",
+]);
+
 function isSubtableRowArray(value: unknown): value is readonly SubtableRow[] {
   if (!Array.isArray(value)) return false;
   if (value.length === 0) return false;
@@ -125,6 +138,9 @@ export const RecordConverter = {
     const seedRecord: Record<string, RecordFieldValue> = {};
     for (const [fieldCode, cell] of Object.entries(record)) {
       if (SYSTEM_FIELDS.has(fieldCode)) continue;
+      const fieldType = (cell as { type?: string }).type;
+      if (fieldType !== undefined && SYSTEM_FIELD_TYPES.has(fieldType))
+        continue;
       seedRecord[fieldCode] = fromKintoneFieldValue(cell.value);
     }
     return seedRecord as SeedRecord;
