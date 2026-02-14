@@ -16,6 +16,8 @@ Requires Node.js 22 or later.
 
 Connection details for kintone can be specified via CLI arguments or environment variables. CLI arguments take precedence.
 
+### kintone Connection
+
 | CLI Argument | Environment Variable | Description |
 |---------|----------|------|
 | `--domain`, `-d` | `KINTONE_DOMAIN` | kintone domain (e.g., `example.cybozu.com`) |
@@ -25,6 +27,22 @@ Connection details for kintone can be specified via CLI arguments or environment
 | `--app-id`, `-a` | `KINTONE_APP_ID` | kintone app ID |
 | `--guest-space-id`, `-g` | `KINTONE_GUEST_SPACE_ID` | kintone guest space ID |
 | `--schema-file`, `-f` | `SCHEMA_FILE_PATH` | Schema file path (default: `schema.yaml`) |
+
+### Multi-App Options
+
+These options are available on **all commands** (diff, migrate, override, capture, dump, validate, seed) and enable multi-app mode via a project config file.
+
+| CLI Argument | Description |
+|---------|------|
+| `--app <name>` | Target a specific app by name (from project config) |
+| `--all` | Run all apps in dependency order |
+| `--config`, `-c` | Project config file path (default: `kintone-migrator.yaml`) |
+
+**Mutual exclusion rules:**
+
+- `--app` and `--all` cannot be used together
+- `--app-id` and `--app` cannot be used together
+- `--app-id` and `--all` cannot be used together
 
 ### Authentication
 
@@ -61,14 +79,22 @@ Detects differences between the schema file and the current kintone form.
 ```bash
 kintone-migrator diff
 kintone-migrator diff -d example.cybozu.com -a 123
+
+# Multi-app mode
+kintone-migrator diff --app customer
+kintone-migrator diff --all
 ```
 
 ### `migrate`
 
-Applies schema file changes to the kintone form. Displays the diff and prompts for confirmation before execution.
+Applies schema file changes to the kintone form. Displays the diff and prompts for confirmation before execution. Only detected differences are applied (add, update, delete).
 
 ```bash
 kintone-migrator migrate
+
+# Multi-app mode
+kintone-migrator migrate --app customer
+kintone-migrator migrate --all
 ```
 
 ### `override`
@@ -77,7 +103,20 @@ Overwrites the entire kintone form with the schema file contents. Fields not def
 
 ```bash
 kintone-migrator override
+
+# Reset form: delete all custom fields (no schema file needed)
+kintone-migrator override --reset
+
+# Multi-app mode
+kintone-migrator override --all
+kintone-migrator override --reset --all
 ```
+
+#### Override-specific arguments
+
+| CLI Argument | Description |
+|---------|------|
+| `--reset` | Reset form by deleting all custom fields. Cannot be used with `--schema-file`. In multi-app mode (`--all`), apps are reset in reverse dependency order. |
 
 ### `capture`
 
@@ -86,6 +125,10 @@ Saves the current kintone form schema to a file.
 ```bash
 kintone-migrator capture
 kintone-migrator capture -f my-schema.yaml
+
+# Multi-app mode
+kintone-migrator capture --app customer
+kintone-migrator capture --all
 ```
 
 ### `dump`
@@ -94,9 +137,26 @@ Dumps kintone form field definitions and layout in JSON format. For debugging pu
 
 ```bash
 kintone-migrator dump
+
+# Multi-app mode
+kintone-migrator dump --app customer
+kintone-migrator dump --all
 ```
 
-`fields.json` and `layout.json` will be output to the current directory.
+`fields.json` and `layout.json` will be output to the current directory. In multi-app mode, files are prefixed with the app name (e.g., `customer_fields.json`).
+
+### `validate`
+
+Validates the schema file locally without connecting to kintone. Checks for structural issues such as empty labels, missing selection options, invalid lookup configurations, and more.
+
+```bash
+kintone-migrator validate
+kintone-migrator validate -f my-schema.yaml
+
+# Multi-app mode
+kintone-migrator validate --app customer
+kintone-migrator validate --all
+```
 
 ### `seed`
 
@@ -152,6 +212,69 @@ layout:
             size: { width: "400" }
 ```
 
+### Lookup Fields
+
+`SINGLE_LINE_TEXT`, `NUMBER`, and `LINK` fields can be configured as lookup fields by adding a `lookup` property. Lookups are not a separate field type in kintone; they are a property of these field types.
+
+```yaml
+- code: customer_code
+  type: SINGLE_LINE_TEXT
+  label: 顧客コード
+  size: { width: "200" }
+  lookup:
+    relatedApp: { app: "10" }
+    relatedKeyField: code
+    fieldMappings:
+      - { field: customer_name, relatedField: name }
+      - { field: email, relatedField: contact_email }
+    lookupPickerFields: [code, name, contact_email]
+    filterCond: 'status in ("active")'
+    sort: "code asc"
+```
+
+### Reference Tables
+
+`REFERENCE_TABLE` fields display related records from another app.
+
+```yaml
+- code: related_orders
+  type: REFERENCE_TABLE
+  label: 関連注文
+  size: { width: "600" }
+  referenceTable:
+    relatedApp: { app: "42" }
+    condition: { field: customer_name, relatedField: name }
+    filterCond: 'status in ("active")'
+    displayFields: [name, email, phone]
+    sort: "name asc"
+    size: "5"
+```
+
+### Supported Field Types
+
+| Type | Description |
+|------|-------------|
+| `SINGLE_LINE_TEXT` | Single-line text |
+| `MULTI_LINE_TEXT` | Multi-line text |
+| `RICH_TEXT` | Rich text editor |
+| `NUMBER` | Number |
+| `CALC` | Calculated field |
+| `CHECK_BOX` | Checkbox (multi-select) |
+| `RADIO_BUTTON` | Radio button (single-select) |
+| `MULTI_SELECT` | Multi-select |
+| `DROP_DOWN` | Dropdown (single-select) |
+| `DATE` | Date |
+| `TIME` | Time |
+| `DATETIME` | Date and time |
+| `LINK` | Link (URL, phone, email) |
+| `USER_SELECT` | User selection |
+| `ORGANIZATION_SELECT` | Organization selection |
+| `GROUP_SELECT` | Group selection |
+| `FILE` | File attachment |
+| `GROUP` | Field group (collapsible) |
+| `SUBTABLE` | Subtable |
+| `REFERENCE_TABLE` | Reference table |
+
 For the full specification and all supported field types, see:
 
 - [Schema Specification](./spec/schema.md) — format reference for all field types, layout items, decoration elements, and validation rules
@@ -180,15 +303,37 @@ records:
         price: "1000"
 ```
 
+### Seed Field Value Types
+
+| kintone Field Type | YAML Representation | Example |
+|------|-------------|---------|
+| `SINGLE_LINE_TEXT`, `MULTI_LINE_TEXT`, `RICH_TEXT` | string | `"text"` |
+| `NUMBER` | string | `"1000"` |
+| `RADIO_BUTTON`, `DROP_DOWN` | string | `"high"` |
+| `CHECK_BOX`, `MULTI_SELECT` | string[] | `["VIP", "long-term"]` |
+| `DATE` | string (YYYY-MM-DD) | `"2025-01-15"` |
+| `TIME` | string (HH:mm) | `"09:00"` |
+| `DATETIME` | string (ISO 8601) | `"2025-01-15T09:00:00Z"` |
+| `LINK` | string | `"https://example.com"` |
+| `USER_SELECT`, `ORGANIZATION_SELECT`, `GROUP_SELECT` | object[] with `code` | `[{code: "user1"}]` |
+| `SUBTABLE` | object[] | `[{field1: "val1"}]` |
+
 For the full specification, see:
 
 - [Seed Data Specification](./spec/seed.md) — format reference, field type mappings, and validation rules
 
 ## Multi-App Project Config
 
-When using a project config file (`kintone-migrator.yaml`), seed files can be configured per app via the `seedFile` option:
+A project config file (`kintone-migrator.yaml`) enables managing multiple kintone apps with dependency ordering. All commands (diff, migrate, override, capture, dump, validate, seed) support multi-app mode.
 
 ```yaml
+# Shared connection settings (can be overridden per app)
+domain: example.cybozu.com
+auth:
+  apiToken: "shared-token"
+# guestSpaceId: "456"
+
+# App definitions
 apps:
   customer:
     appId: "10"
@@ -196,12 +341,62 @@ apps:
     seedFile: seeds/customer.yaml
   order:
     appId: "20"
+    schemaFile: schemas/order.yaml
     seedFile: seeds/order.yaml
     dependsOn:
       - customer
+  invoice:
+    appId: "30"
+    dependsOn:
+      - order
+      - customer
 ```
 
-If `seedFile` is omitted, it defaults to `seeds/<appName>.yaml`.
+### App Configuration Fields
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `appId` | Yes | kintone app ID |
+| `schemaFile` | No | Schema file path (default: `schemas/<appName>.yaml`) |
+| `seedFile` | No | Seed file path (default: `seeds/<appName>.yaml`) |
+| `domain` | No | App-specific kintone domain (overrides top-level) |
+| `auth` | No | App-specific authentication (overrides top-level) |
+| `guestSpaceId` | No | App-specific guest space ID |
+| `dependsOn` | No | List of app names this app depends on |
+
+### Configuration Merge Priority (high to low)
+
+1. CLI arguments (`--domain`, `--api-token`, etc.)
+2. Environment variables (`KINTONE_DOMAIN`, `KINTONE_API_TOKEN`, etc.)
+3. App-level settings (per `apps.<name>`)
+4. Top-level settings
+
+### Authentication in Config File
+
+```yaml
+# API Token authentication
+auth:
+  apiToken: "your-token"
+
+# Username/Password authentication
+auth:
+  username: "your-username"
+  password: "your-password"
+```
+
+### Dependency Resolution
+
+Apps are executed in topological order based on `dependsOn` declarations. Same-level apps are sorted alphabetically for deterministic ordering. Circular dependencies are detected and reported as errors.
+
+### Execution Behavior
+
+- **`--all`**: Executes all apps in dependency order. Stops on first failure (fail-fast). Remaining apps are skipped.
+- **`--app <name>`**: Executes only the specified app.
+- **`--reset --all`**: Resets apps in **reverse** dependency order (dependent apps first) to avoid reference integrity issues.
+
+For the full specification, see:
+
+- [Project Config Specification](./spec/projectConfig.md) — format reference, validation rules, and dependency resolution
 
 ## License
 

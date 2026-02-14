@@ -19,6 +19,52 @@
         "expression": "customer_name & \" - \" & order_number"
       }
     },
+    "customer_code": {
+      "type": "SINGLE_LINE_TEXT",
+      "label": "顧客コード",
+      "properties": {
+        "required": true,
+        "unique": true,
+        "lookup": {
+          "relatedApp": { "app": "10" },
+          "relatedKeyField": "code",
+          "fieldMappings": [
+            { "field": "customer_name", "relatedField": "name" },
+            { "field": "email", "relatedField": "contact_email" }
+          ],
+          "lookupPickerFields": ["code", "name", "contact_email"],
+          "filterCond": "status in (\"active\")",
+          "sort": "code asc"
+        }
+      }
+    },
+    "supplier_id": {
+      "type": "NUMBER",
+      "label": "仕入先ID",
+      "properties": {
+        "lookup": {
+          "relatedApp": { "app": "15" },
+          "relatedKeyField": "supplier_id",
+          "fieldMappings": [
+            { "field": "supplier_name", "relatedField": "name" }
+          ],
+          "lookupPickerFields": ["supplier_id", "name"]
+        }
+      }
+    },
+    "reference_url": {
+      "type": "LINK",
+      "label": "参照先URL",
+      "properties": {
+        "protocol": "WEB",
+        "lookup": {
+          "relatedApp": { "app": "20", "code": "URL_MASTER" },
+          "relatedKeyField": "url",
+          "fieldMappings": [],
+          "lookupPickerFields": ["url", "title"]
+        }
+      }
+    },
     "minimal_text": {
       "type": "SINGLE_LINE_TEXT",
       "label": "最小構成テキスト",
