@@ -74,6 +74,14 @@ export const kintoneArgs = {
   },
 };
 
+export const confirmArgs = {
+  yes: {
+    type: "boolean" as const,
+    short: "y",
+    description: "Skip confirmation prompts",
+  },
+};
+
 export const multiAppArgs = {
   app: {
     type: "string" as const,

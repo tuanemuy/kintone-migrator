@@ -7,7 +7,12 @@ import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import { forceOverrideForm } from "@/core/application/formSchema/forceOverrideForm";
 import { resetForm } from "@/core/application/formSchema/resetForm";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "../config";
+import {
+  confirmArgs,
+  kintoneArgs,
+  multiAppArgs,
+  resolveConfig,
+} from "../config";
 import { handleCliError } from "../handleError";
 import { printAppHeader, promptDeploy } from "../output";
 import {
@@ -16,19 +21,24 @@ import {
   runMultiAppWithFailCheck,
 } from "../projectConfig";
 
-async function runSingleOverride(container: Container): Promise<void> {
+async function runSingleOverride(
+  container: Container,
+  skipConfirm: boolean,
+): Promise<void> {
   p.log.warn(
     `${pc.bold(pc.red("WARNING:"))} This will replace the entire form with the declared schema.`,
   );
   p.log.warn("Fields not defined in the schema will be deleted.");
 
-  const shouldContinue = await p.confirm({
-    message: "Are you sure you want to force override?",
-  });
+  if (!skipConfirm) {
+    const shouldContinue = await p.confirm({
+      message: "Are you sure you want to force override?",
+    });
 
-  if (p.isCancel(shouldContinue) || !shouldContinue) {
-    p.cancel("Force override cancelled.");
-    process.exit(0);
+    if (p.isCancel(shouldContinue) || !shouldContinue) {
+      p.cancel("Force override cancelled.");
+      process.exit(0);
+    }
   }
 
   const s = p.spinner();
@@ -38,21 +48,26 @@ async function runSingleOverride(container: Container): Promise<void> {
 
   p.log.success("Force override completed successfully.");
 
-  await promptDeploy(container);
+  await promptDeploy(container, skipConfirm);
 }
 
-async function runSingleReset(container: Container): Promise<void> {
+async function runSingleReset(
+  container: Container,
+  skipConfirm: boolean,
+): Promise<void> {
   p.log.warn(
     `${pc.bold(pc.red("WARNING:"))} This will delete ALL custom fields, resetting the form to empty.`,
   );
 
-  const shouldContinue = await p.confirm({
-    message: "Are you sure you want to reset the form?",
-  });
+  if (!skipConfirm) {
+    const shouldContinue = await p.confirm({
+      message: "Are you sure you want to reset the form?",
+    });
 
-  if (p.isCancel(shouldContinue) || !shouldContinue) {
-    p.cancel("Reset cancelled.");
-    process.exit(0);
+    if (p.isCancel(shouldContinue) || !shouldContinue) {
+      p.cancel("Reset cancelled.");
+      process.exit(0);
+    }
   }
 
   const s = p.spinner();
@@ -62,7 +77,7 @@ async function runSingleReset(container: Container): Promise<void> {
 
   p.log.success("Reset completed successfully.");
 
-  await promptDeploy(container);
+  await promptDeploy(container, skipConfirm);
 }
 
 export default define({
@@ -71,6 +86,7 @@ export default define({
   args: {
     ...kintoneArgs,
     ...multiAppArgs,
+    ...confirmArgs,
     reset: {
       type: "boolean" as const,
       description: "Reset form by deleting all custom fields",
@@ -79,6 +95,7 @@ export default define({
   run: async (ctx) => {
     try {
       const isReset = ctx.values.reset === true;
+      const skipConfirm = ctx.values.yes === true;
 
       if (isReset && ctx.values["schema-file"]) {
         throw new ValidationError(
@@ -92,18 +109,18 @@ export default define({
           const config = resolveConfig(ctx.values);
           const container = createCliContainer(config);
           if (isReset) {
-            await runSingleReset(container);
+            await runSingleReset(container, skipConfirm);
           } else {
-            await runSingleOverride(container);
+            await runSingleOverride(container, skipConfirm);
           }
         },
         singleApp: async (app, projectConfig) => {
           const config = resolveAppCliConfig(app, projectConfig, ctx.values);
           const container = createCliContainer(config);
           if (isReset) {
-            await runSingleReset(container);
+            await runSingleReset(container, skipConfirm);
           } else {
-            await runSingleOverride(container);
+            await runSingleOverride(container, skipConfirm);
           }
         },
         multiApp: async (plan, projectConfig) => {
@@ -112,13 +129,15 @@ export default define({
               `${pc.bold(pc.red("WARNING:"))} This will delete ALL custom fields from ALL apps, resetting them to empty.`,
             );
 
-            const shouldContinue = await p.confirm({
-              message: "Are you sure you want to reset all apps?",
-            });
+            if (!skipConfirm) {
+              const shouldContinue = await p.confirm({
+                message: "Are you sure you want to reset all apps?",
+              });
 
-            if (p.isCancel(shouldContinue) || !shouldContinue) {
-              p.cancel("Reset cancelled.");
-              process.exit(0);
+              if (p.isCancel(shouldContinue) || !shouldContinue) {
+                p.cancel("Reset cancelled.");
+                process.exit(0);
+              }
             }
 
             const reversedPlan = {
@@ -155,13 +174,15 @@ export default define({
             );
             p.log.warn("Fields not defined in each schema will be deleted.");
 
-            const shouldContinue = await p.confirm({
-              message: "Are you sure you want to force override all apps?",
-            });
+            if (!skipConfirm) {
+              const shouldContinue = await p.confirm({
+                message: "Are you sure you want to force override all apps?",
+              });
 
-            if (p.isCancel(shouldContinue) || !shouldContinue) {
-              p.cancel("Force override cancelled.");
-              process.exit(0);
+              if (p.isCancel(shouldContinue) || !shouldContinue) {
+                p.cancel("Force override cancelled.");
+                process.exit(0);
+              }
             }
 
             await runMultiAppWithFailCheck(

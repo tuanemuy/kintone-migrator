@@ -248,7 +248,7 @@ describe("promptDeploy", () => {
       appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) },
     };
 
-    await promptDeploy(container);
+    await promptDeploy(container, false);
 
     expect(container.appDeployer.deploy).toHaveBeenCalled();
     expect(p.log.success).toHaveBeenCalledWith(
@@ -266,7 +266,7 @@ describe("promptDeploy", () => {
       appDeployer: { deploy: vi.fn() },
     };
 
-    await promptDeploy(container);
+    await promptDeploy(container, false);
 
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
     expect(p.log.warn).toHaveBeenCalledWith(
@@ -284,11 +284,27 @@ describe("promptDeploy", () => {
       appDeployer: { deploy: vi.fn() },
     };
 
-    await promptDeploy(container);
+    await promptDeploy(container, false);
 
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
     expect(p.log.warn).toHaveBeenCalledWith(
       expect.stringContaining("運用環境には反映されていません"),
+    );
+  });
+
+  it("skipConfirm が true の場合、確認なしで deployApp が呼ばれる", async () => {
+    const container = {
+      formConfigurator: {} as never,
+      schemaStorage: {} as never,
+      appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) },
+    };
+
+    await promptDeploy(container, true);
+
+    expect(p.confirm).not.toHaveBeenCalled();
+    expect(container.appDeployer.deploy).toHaveBeenCalled();
+    expect(p.log.success).toHaveBeenCalledWith(
+      expect.stringContaining("運用環境への反映が完了しました"),
     );
   });
 });

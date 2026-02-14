@@ -18,6 +18,7 @@ vi.mock("@clack/prompts", () => ({
 vi.mock("@/cli/config", () => ({
   kintoneArgs: {},
   multiAppArgs: {},
+  confirmArgs: {},
   resolveConfig: vi.fn(() => ({
     baseUrl: "https://test.cybozu.com",
     username: "user",

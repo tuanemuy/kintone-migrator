@@ -6,7 +6,12 @@ import { deployApp } from "@/core/application/formSchema/deployApp";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { executeMigration } from "@/core/application/formSchema/executeMigration";
 import type { AppEntry } from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "../config";
+import {
+  confirmArgs,
+  kintoneArgs,
+  multiAppArgs,
+  resolveConfig,
+} from "../config";
 import { handleCliError } from "../handleError";
 import { printAppHeader, printDiffResult, promptDeploy } from "../output";
 import {
@@ -15,7 +20,10 @@ import {
   runMultiAppWithFailCheck,
 } from "../projectConfig";
 
-async function runSingleMigrate(container: Container): Promise<void> {
+async function runSingleMigrate(
+  container: Container,
+  skipConfirm: boolean,
+): Promise<void> {
   const s = p.spinner();
   s.start("Detecting changes...");
   const result = await detectDiff({ container });
@@ -28,13 +36,15 @@ async function runSingleMigrate(container: Container): Promise<void> {
 
   printDiffResult(result);
 
-  const shouldContinue = await p.confirm({
-    message: "Apply these changes?",
-  });
+  if (!skipConfirm) {
+    const shouldContinue = await p.confirm({
+      message: "Apply these changes?",
+    });
 
-  if (p.isCancel(shouldContinue) || !shouldContinue) {
-    p.cancel("Migration cancelled.");
-    process.exit(0);
+    if (p.isCancel(shouldContinue) || !shouldContinue) {
+      p.cancel("Migration cancelled.");
+      process.exit(0);
+    }
   }
 
   const ms = p.spinner();
@@ -44,25 +54,27 @@ async function runSingleMigrate(container: Container): Promise<void> {
 
   p.log.success("Migration completed successfully.");
 
-  await promptDeploy(container);
+  await promptDeploy(container, skipConfirm);
 }
 
 export default define({
   name: "migrate",
   description: "Apply schema changes to kintone form",
-  args: { ...kintoneArgs, ...multiAppArgs },
+  args: { ...kintoneArgs, ...multiAppArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
+      const skipConfirm = ctx.values.yes === true;
+
       await routeMultiApp(ctx.values, {
         singleLegacy: async () => {
           const config = resolveConfig(ctx.values);
           const container = createCliContainer(config);
-          await runSingleMigrate(container);
+          await runSingleMigrate(container, skipConfirm);
         },
         singleApp: async (app, projectConfig) => {
           const config = resolveAppCliConfig(app, projectConfig, ctx.values);
           const container = createCliContainer(config);
-          await runSingleMigrate(container);
+          await runSingleMigrate(container, skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
           // multi-app mode: show summary of all changes first
@@ -99,13 +111,15 @@ export default define({
             return;
           }
 
-          const shouldContinue = await p.confirm({
-            message: "Apply these changes to all apps?",
-          });
+          if (!skipConfirm) {
+            const shouldContinue = await p.confirm({
+              message: "Apply these changes to all apps?",
+            });
 
-          if (p.isCancel(shouldContinue) || !shouldContinue) {
-            p.cancel("Migration cancelled.");
-            process.exit(0);
+            if (p.isCancel(shouldContinue) || !shouldContinue) {
+              p.cancel("Migration cancelled.");
+              process.exit(0);
+            }
           }
 
           await runMultiAppWithFailCheck(
