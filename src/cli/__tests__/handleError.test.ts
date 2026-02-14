@@ -173,7 +173,7 @@ describe("handleCliError", () => {
     expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Cause:"));
   });
 
-  it("cause に errors プロパティがある場合、Details が warn でログ出力される", () => {
+  it("cause に errors プロパティがある場合、エラー詳細が warn でログ出力される", () => {
     const cause = { errors: [{ message: "field1 is invalid" }] };
     const error = new SystemError(
       SystemErrorCode.ExternalApiError,
@@ -185,7 +185,7 @@ describe("handleCliError", () => {
 
     expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Cause:"));
     expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("Details:"),
+      expect.stringContaining("field1 is invalid"),
     );
   });
 
