@@ -103,4 +103,31 @@ export class KintoneRecordManager implements RecordManager {
       );
     }
   }
+
+  async deleteAllRecords(): Promise<{ deletedCount: number }> {
+    try {
+      const records = await this.client.record.getAllRecords({
+        app: this.appId,
+        fields: ["$id"],
+      });
+      if (records.length === 0) return { deletedCount: 0 };
+
+      const validated = records.map((r) =>
+        toKintoneRecordForResponse(r as Record<string, unknown>),
+      );
+      await this.client.record.deleteAllRecords({
+        app: this.appId,
+        records: validated.map((r) => ({ id: Number(r.$id.value) })),
+      });
+      return { deletedCount: records.length };
+    } catch (error) {
+      if (isBusinessRuleError(error)) throw error;
+      if (error instanceof SystemError) throw error;
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "Failed to delete all records",
+        error,
+      );
+    }
+  }
 }

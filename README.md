@@ -178,12 +178,17 @@ Applies seed data (records) to a kintone app using upsert (insert or update base
 kintone-migrator seed
 kintone-migrator seed -s my-seed.yaml
 
+# Clean apply: delete all existing records, then apply seed data
+kintone-migrator seed --clean
+kintone-migrator seed --clean --yes
+
 # Capture records from a kintone app
 kintone-migrator seed --capture --key-field customer_code
 kintone-migrator seed --capture --key-field customer_code -s seeds/customer.yaml
 
 # Multi-app mode
 kintone-migrator seed --all
+kintone-migrator seed --clean --all --yes
 kintone-migrator seed --capture --key-field code --all
 kintone-migrator seed --app customer
 ```
@@ -193,8 +198,10 @@ kintone-migrator seed --app customer
 | CLI Argument | Description |
 |---------|------|
 | `--capture` | Capture mode: fetch records from kintone and save to seed file |
+| `--clean` | Delete all existing records before applying seed data. Cannot be used with `--capture`. Prompts for confirmation unless `--yes` is specified. |
 | `--key-field`, `-k` | Key field code for upsert (required for `--capture`) |
 | `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
+| `--yes`, `-y` | Skip confirmation prompts (for `--clean` mode) |
 
 ### `customize`
 

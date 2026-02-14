@@ -5,9 +5,14 @@ import type { SeedServiceArgs } from "../container/seed";
 import { ValidationError, ValidationErrorCode } from "../error";
 import type { UpsertSeedOutput } from "./dto";
 
+export type UpsertSeedInput = {
+  readonly clean?: boolean;
+};
+
 export async function upsertSeed({
   container,
-}: SeedServiceArgs): Promise<UpsertSeedOutput> {
+  input,
+}: SeedServiceArgs<UpsertSeedInput>): Promise<UpsertSeedOutput> {
   const result = await container.seedStorage.get();
   if (!result.exists) {
     throw new ValidationError(
@@ -16,6 +21,25 @@ export async function upsertSeed({
     );
   }
   const seedData = SeedParser.parse(result.content);
+
+  if (input.clean) {
+    const { deletedCount } = await container.recordManager.deleteAllRecords();
+
+    const kintoneRecords = seedData.records.map(
+      RecordConverter.toKintoneRecord,
+    );
+    if (kintoneRecords.length > 0) {
+      await container.recordManager.addRecords(kintoneRecords);
+    }
+
+    return {
+      added: seedData.records.length,
+      updated: 0,
+      unchanged: 0,
+      deleted: deletedCount,
+      total: seedData.records.length,
+    };
+  }
 
   if (seedData.key === null) {
     const kintoneRecords = seedData.records.map(
@@ -28,6 +52,7 @@ export async function upsertSeed({
       added: seedData.records.length,
       updated: 0,
       unchanged: 0,
+      deleted: 0,
       total: seedData.records.length,
     };
   }
@@ -57,6 +82,7 @@ export async function upsertSeed({
     added: plan.toAdd.length,
     updated: plan.toUpdate.length,
     unchanged: plan.unchanged,
+    deleted: 0,
     total: plan.toAdd.length + plan.toUpdate.length + plan.unchanged,
   };
 }

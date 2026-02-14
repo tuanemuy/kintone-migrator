@@ -483,6 +483,14 @@ export class InMemoryRecordManager implements RecordManager {
     }
   }
 
+  async deleteAllRecords(): Promise<{ deletedCount: number }> {
+    this.callLog.push("deleteAllRecords");
+    this.checkFail("deleteAllRecords");
+    const deletedCount = this.records.length;
+    this.records = [];
+    return { deletedCount };
+  }
+
   setRecords(records: KintoneRecordForResponse[]): void {
     this.records = [...records];
   }
