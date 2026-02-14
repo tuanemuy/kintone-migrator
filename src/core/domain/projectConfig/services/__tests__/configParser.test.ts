@@ -190,19 +190,16 @@ describe("parseProjectConfig", () => {
     expect(app1?.appId).toBe("1");
   });
 
-  it("throws MissingAuth when no auth is available", () => {
-    try {
-      parseProjectConfig({
-        domain: "x",
-        apps: { app1: { appId: "1" } },
-      });
-      expect.fail("Should have thrown");
-    } catch (error) {
-      expect(isBusinessRuleError(error)).toBe(true);
-      if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.MissingAuth);
-      }
-    }
+  it("parses config without auth (auth can be resolved via env vars later)", () => {
+    const config = parseProjectConfig({
+      domain: "x",
+      apps: { app1: { appId: "1" } },
+    });
+
+    expect(config.auth).toBeUndefined();
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.auth).toBeUndefined();
+    expect(app1?.appId).toBe("1");
   });
 
   it("uses app-level domain when top-level is missing", () => {
