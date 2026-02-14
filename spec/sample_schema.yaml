@@ -29,6 +29,51 @@ layout:
         size: { width: "400" }
         expression: customer_name & " - " & order_number
 
+  # --- ルックアップ ---
+  - type: ROW
+    fields:
+      - code: customer_code
+        type: SINGLE_LINE_TEXT
+        label: 顧客コード
+        size: { width: "200" }
+        required: true
+        unique: true
+        lookup:
+          relatedApp: { app: "10" }
+          relatedKeyField: code
+          fieldMappings:
+            - { field: customer_name, relatedField: name }
+            - { field: email, relatedField: contact_email }
+          lookupPickerFields: [code, name, contact_email]
+          filterCond: 'status in ("active")'
+          sort: "code asc"
+
+  - type: ROW
+    fields:
+      - code: supplier_id
+        type: NUMBER
+        label: 仕入先ID
+        size: { width: "200" }
+        lookup:
+          relatedApp: { app: "15" }
+          relatedKeyField: supplier_id
+          fieldMappings:
+            - { field: supplier_name, relatedField: name }
+          lookupPickerFields: [supplier_id, name]
+
+  - type: ROW
+    fields:
+      - code: reference_url
+        type: LINK
+        label: 参照先URL
+        size: { width: "300" }
+        protocol: WEB
+        lookup:
+          relatedApp: { app: "20", code: "URL_MASTER" }
+          relatedKeyField: url
+          fieldMappings: []
+          lookupPickerFields: [url, title]
+
   - type: ROW
     fields:
       - code: minimal_text

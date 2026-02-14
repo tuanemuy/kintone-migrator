@@ -33,6 +33,7 @@
     "dev:capture": "tsx src/cli/index.ts capture",
     "dev:dump": "tsx src/cli/index.ts dump",
     "dev:seed": "tsx src/cli/index.ts seed",
+    "dev:validate": "tsx src/cli/index.ts validate",
     "build": "tsdown",
     "start": "node dist/index.mjs",
     "prepublishOnly": "pnpm build",
