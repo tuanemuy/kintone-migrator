@@ -10,6 +10,21 @@ export async function upsertSeed({
   const rawText = await container.seedStorage.get();
   const seedData = SeedParser.parse(rawText);
 
+  if (seedData.key === null) {
+    const kintoneRecords = seedData.records.map(
+      RecordConverter.toKintoneRecord,
+    );
+    if (kintoneRecords.length > 0) {
+      await container.recordManager.addRecords(kintoneRecords);
+    }
+    return {
+      added: seedData.records.length,
+      updated: 0,
+      unchanged: 0,
+      total: seedData.records.length,
+    };
+  }
+
   const existingRecords = await container.recordManager.getAllRecords();
 
   const plan = UpsertPlanner.plan(

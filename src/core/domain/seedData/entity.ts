@@ -2,7 +2,7 @@ import type { SeedRecord, UpsertKey } from "./valueObject";
 
 // SeedData
 export type SeedData = Readonly<{
-  key: UpsertKey;
+  key: UpsertKey | null;
   records: readonly SeedRecord[];
 }>;
 

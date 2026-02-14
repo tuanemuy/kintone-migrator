@@ -85,6 +85,51 @@ records:
     expect(container.recordManager.callLog).not.toContain("updateRecords");
   });
 
+  it("keyなしシードで全レコードがaddされる", async () => {
+    const container: TestSeedContainer = getContainer();
+    container.seedStorage.setContent(`
+records:
+  - name: "テスト1"
+  - name: "テスト2"
+  - name: "テスト3"
+`);
+
+    const result = await upsertSeed({ container });
+
+    expect(result.added).toBe(3);
+    expect(result.updated).toBe(0);
+    expect(result.unchanged).toBe(0);
+    expect(result.total).toBe(3);
+    expect(container.recordManager.callLog).toContain("addRecords");
+    expect(container.recordManager.callLog).not.toContain("getAllRecords");
+  });
+
+  it("keyなしシードでgetAllRecordsが呼ばれない", async () => {
+    const container: TestSeedContainer = getContainer();
+    container.seedStorage.setContent(`
+records:
+  - name: "テスト1"
+`);
+
+    await upsertSeed({ container });
+
+    expect(container.recordManager.callLog).not.toContain("getAllRecords");
+    expect(container.recordManager.callLog).not.toContain("updateRecords");
+  });
+
+  it("keyなしシードでレコードが空の場合addRecordsを呼ばない", async () => {
+    const container: TestSeedContainer = getContainer();
+    container.seedStorage.setContent(`
+records: []
+`);
+
+    const result = await upsertSeed({ container });
+
+    expect(result.added).toBe(0);
+    expect(result.total).toBe(0);
+    expect(container.recordManager.callLog).not.toContain("addRecords");
+  });
+
   it("追加・更新・変更なしを混在して処理する", async () => {
     const container: TestSeedContainer = getContainer();
     container.recordManager.setRecords([
