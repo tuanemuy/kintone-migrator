@@ -4,7 +4,9 @@ import {
   createFieldPermissionCliContainer,
   type FieldPermissionCliContainerConfig,
 } from "@/core/application/container/cli";
+import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
+import { confirmArgs } from "../config";
 import {
   type FieldAclCliValues,
   fieldAclArgs,
@@ -17,7 +19,7 @@ import { routeMultiApp, runMultiAppWithFailCheck } from "../projectConfig";
 
 async function runFieldAcl(
   config: FieldPermissionCliContainerConfig,
-): Promise<void> {
+): Promise<FieldPermissionContainer> {
   const container = createFieldPermissionCliContainer(config);
 
   const s = p.spinner();
@@ -26,20 +28,51 @@ async function runFieldAcl(
   s.stop("Field access permissions applied.");
 
   p.log.success("Field access permissions applied successfully.");
+
+  return container;
+}
+
+async function confirmAndDeploy(
+  containers: readonly FieldPermissionContainer[],
+  skipConfirm: boolean,
+): Promise<void> {
+  if (!skipConfirm) {
+    const shouldDeploy = await p.confirm({
+      message: "運用環境に反映しますか？",
+    });
+
+    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
+      p.log.warn(
+        "テスト環境に反映済みですが、運用環境には反映されていません。",
+      );
+      return;
+    }
+  }
+
+  const ds = p.spinner();
+  ds.start("運用環境に反映しています...");
+  for (const container of containers) {
+    await container.appDeployer.deploy();
+  }
+  ds.stop("運用環境への反映が完了しました。");
+
+  p.log.success("運用環境への反映が完了しました。");
 }
 
 export default define({
   name: "field-acl",
   description: "Apply field access permissions from YAML to kintone app",
-  args: fieldAclArgs,
+  args: { ...fieldAclArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as FieldAclCliValues;
+      const values = ctx.values as FieldAclCliValues & { yes?: boolean };
+      const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
         singleLegacy: async () => {
           const config = resolveFieldAclContainerConfig(values);
-          await runFieldAcl(config);
+          const container = await runFieldAcl(config);
+          await confirmAndDeploy([container], skipConfirm);
         },
         singleApp: async (app, projectConfig) => {
           const config = resolveFieldAclAppContainerConfig(
@@ -47,9 +80,11 @@ export default define({
             projectConfig,
             values,
           );
-          await runFieldAcl(config);
+          const container = await runFieldAcl(config);
+          await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
+          const containers: FieldPermissionContainer[] = [];
           await runMultiAppWithFailCheck(
             plan,
             async (app) => {
@@ -59,10 +94,12 @@ export default define({
                 values,
               );
               printAppHeader(app.name, app.appId);
-              await runFieldAcl(config);
+              const container = await runFieldAcl(config);
+              containers.push(container);
             },
-            "All field ACL applications completed successfully.",
+            undefined,
           );
+          await confirmAndDeploy(containers, skipConfirm);
         },
       });
     } catch (error) {
