@@ -1,21 +1,16 @@
 import { basename, resolve } from "node:path";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
-import { CustomizationErrorCode } from "@/core/domain/customization/errorCode";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
 import { ResourceMerger } from "@/core/domain/customization/services/resourceMerger";
 import type {
   CustomizationPlatform,
   CustomizationResource,
   RemotePlatform,
-  RemoteResource,
   ResolvedPlatform,
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
-import { BusinessRuleError } from "@/core/domain/error";
 import type { CustomizationServiceArgs } from "../container/customization";
 import { parseConfigText } from "./parseConfig";
-
-const MAX_RESOURCES_PER_CATEGORY = 30;
 
 type ApplyCustomizationInput = {
   basePath: string;
@@ -63,18 +58,6 @@ function mergePlatform(
   };
 }
 
-function validateResourceCount(
-  label: string,
-  resources: readonly RemoteResource[] | readonly ResolvedResource[],
-): void {
-  if (resources.length > MAX_RESOURCES_PER_CATEGORY) {
-    throw new BusinessRuleError(
-      CustomizationErrorCode.CzTooManyFiles,
-      `${label} has ${resources.length} resources, exceeding the maximum of ${MAX_RESOURCES_PER_CATEGORY}`,
-    );
-  }
-}
-
 export async function applyCustomization({
   container,
   input,
@@ -105,10 +88,10 @@ export async function applyCustomization({
     resolvedMobile,
   );
 
-  validateResourceCount("desktop.js", mergedDesktop.js);
-  validateResourceCount("desktop.css", mergedDesktop.css);
-  validateResourceCount("mobile.js", mergedMobile.js);
-  validateResourceCount("mobile.css", mergedMobile.css);
+  ResourceMerger.assertResourceCount("desktop.js", mergedDesktop.js);
+  ResourceMerger.assertResourceCount("desktop.css", mergedDesktop.css);
+  ResourceMerger.assertResourceCount("mobile.js", mergedMobile.js);
+  ResourceMerger.assertResourceCount("mobile.css", mergedMobile.css);
 
   await container.customizationConfigurator.updateCustomization({
     scope: config.scope,

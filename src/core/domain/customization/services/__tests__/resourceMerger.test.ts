@@ -1,8 +1,57 @@
 import { describe, expect, it } from "vitest";
+import { BusinessRuleError } from "../../../error";
+import { CustomizationErrorCode } from "../../errorCode";
 import type { RemoteResource, ResolvedResource } from "../../valueObject";
 import { ResourceMerger } from "../resourceMerger";
 
 describe("ResourceMerger", () => {
+  describe("assertResourceCount", () => {
+    it("30件以下の場合、エラーをスローしない", () => {
+      const resources: ResolvedResource[] = Array.from(
+        { length: 30 },
+        (_, i) => ({
+          type: "FILE",
+          fileKey: `fk-${i}`,
+          name: `file-${i}.js`,
+        }),
+      );
+
+      expect(() =>
+        ResourceMerger.assertResourceCount("desktop.js", resources),
+      ).not.toThrow();
+    });
+
+    it("31件以上の場合、BusinessRuleError(CZ_TOO_MANY_FILES)をスローする", () => {
+      const resources: ResolvedResource[] = Array.from(
+        { length: 31 },
+        (_, i) => ({
+          type: "FILE",
+          fileKey: `fk-${i}`,
+          name: `file-${i}.js`,
+        }),
+      );
+
+      expect(() =>
+        ResourceMerger.assertResourceCount("desktop.js", resources),
+      ).toThrow(BusinessRuleError);
+
+      try {
+        ResourceMerger.assertResourceCount("desktop.js", resources);
+      } catch (e) {
+        expect(e).toBeInstanceOf(BusinessRuleError);
+        expect((e as BusinessRuleError).code).toBe(
+          CustomizationErrorCode.CzTooManyFiles,
+        );
+      }
+    });
+
+    it("空配列の場合、エラーをスローしない", () => {
+      expect(() =>
+        ResourceMerger.assertResourceCount("desktop.js", []),
+      ).not.toThrow();
+    });
+  });
+
   describe("mergeResources", () => {
     it("現在のリソースが空の場合、受信リソースを追加する", () => {
       const current: RemoteResource[] = [];
