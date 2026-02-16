@@ -40,7 +40,7 @@ export function printDiffResult(result: DetectDiffOutput): void {
     return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")} ${entry.fieldLabel}${pc.dim(":")} ${entry.details}`;
   });
 
-  p.note(lines.join("\n"), "Diff Details");
+  p.note(lines.join("\n"), "Diff Details", { format: (v) => v });
 }
 
 export function printAppHeader(appName: string, appId: string): void {
