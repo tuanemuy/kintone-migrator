@@ -69,6 +69,7 @@ describe("printDiffResult", () => {
     expect(p.note).toHaveBeenCalledWith(
       expect.stringContaining("name"),
       "Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
     );
   });
 
@@ -114,6 +115,7 @@ describe("printDiffResult", () => {
     expect(p.note).toHaveBeenCalledWith(
       expect.stringContaining("name"),
       "Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
     );
   });
 
@@ -147,6 +149,7 @@ describe("printDiffResult", () => {
     expect(p.note).toHaveBeenCalledWith(
       expect.stringContaining("old_field"),
       "Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
     );
   });
 
@@ -233,6 +236,7 @@ describe("printDiffResult", () => {
     expect(p.note).toHaveBeenCalledWith(
       expect.stringContaining("SINGLE_LINE_TEXT を追加"),
       "Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
     );
   });
 });
