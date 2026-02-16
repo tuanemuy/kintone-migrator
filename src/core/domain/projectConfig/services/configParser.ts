@@ -17,7 +17,7 @@ function asOptionalStringArray(value: unknown): string[] | undefined {
     : undefined;
 }
 
-export function parseProjectConfig(raw: unknown): ProjectConfig {
+function parseProjectConfig(raw: unknown): ProjectConfig {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ProjectConfigErrorCode.EmptyApps,
@@ -105,3 +105,7 @@ function parseAuth(
 
   return undefined;
 }
+
+export const ConfigParser = {
+  parse: parseProjectConfig,
+};

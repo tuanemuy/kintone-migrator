@@ -7,7 +7,7 @@ import type { AppName } from "../valueObject";
  * Resolves execution order using Kahn's algorithm (BFS topological sort).
  * Apps at the same dependency level are sorted alphabetically for deterministic ordering.
  */
-export function resolveExecutionOrder(
+function resolveExecutionOrder(
   apps: ReadonlyMap<AppName, AppEntry>,
 ): ExecutionPlan {
   validateDependencyReferences(apps);
@@ -90,3 +90,7 @@ function validateDependencyReferences(
     }
   }
 }
+
+export const DependencyResolver = {
+  resolve: resolveExecutionOrder,
+};
