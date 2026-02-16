@@ -97,3 +97,7 @@ Hexagonal architecture with domain-driven design principles:
 ### Presentation Layer
 
 - CLI commands catch all exceptions via `handleCliError` and transform them into formatted terminal output.
+
+## Git / Pull Request
+
+- When creating PRs or checking branch diffs, always use the remote base branch (`origin/<base-branch>`) instead of the local one. Local branches may be outdated.
