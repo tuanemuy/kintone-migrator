@@ -100,4 +100,4 @@ Hexagonal architecture with domain-driven design principles:
 
 ## Git / Pull Request
 
-- When creating PRs or checking branch diffs, always use the remote base branch (`origin/<base-branch>`) instead of the local one. Local branches may be outdated.
+- Always run `git fetch origin` before creating branches, checking diffs, or comparing with remote branches. The local `origin/<base-branch>` ref can be stale.
