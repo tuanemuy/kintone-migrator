@@ -161,6 +161,15 @@ records:
     expect(result.total).toBe(3);
   });
 
+  it("シードファイルが存在しない場合、ValidationErrorをスローする", async () => {
+    const container: TestSeedContainer = getContainer();
+    // seedStorage に何もセットしない（exists = false）
+
+    await expect(upsertSeed({ container, input: {} })).rejects.toThrow(
+      "Seed file not found",
+    );
+  });
+
   describe("clean mode", () => {
     it("全削除→全追加が実行される", async () => {
       const container: TestSeedContainer = getContainer();
