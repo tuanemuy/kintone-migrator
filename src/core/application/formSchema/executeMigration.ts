@@ -4,7 +4,10 @@ import {
   enrichLayoutWithFields,
 } from "@/core/domain/formSchema/entity";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
-import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
+import type {
+  FieldCode,
+  FieldDefinition,
+} from "@/core/domain/formSchema/valueObject";
 import type { ServiceArgs } from "../types";
 import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
@@ -47,30 +50,61 @@ export async function executeMigration({
   const modified = diff.entries.filter((e) => e.type === "modified");
   const deleted = diff.entries.filter((e) => e.type === "deleted");
 
-  if (added.length > 0) {
-    const fields = added
-      .filter(
-        (e): e is typeof e & { after: FieldDefinition } =>
-          e.after !== undefined,
-      )
-      .filter((e) => !subtableInnerCodes.has(e.fieldCode))
-      .map((e) => e.after);
-    if (fields.length > 0) {
-      await container.formConfigurator.addFields(fields);
+  const fieldsToAdd: FieldDefinition[] = [];
+  const fieldsToUpdate: FieldDefinition[] = [];
+
+  for (const entry of added) {
+    if (entry.after === undefined) continue;
+    if (subtableInnerCodes.has(entry.fieldCode)) continue;
+    fieldsToAdd.push(entry.after);
+  }
+
+  for (const entry of modified) {
+    if (entry.after === undefined) continue;
+    if (subtableInnerCodes.has(entry.fieldCode)) continue;
+    const after = entry.after;
+    const before = entry.before;
+
+    if (
+      after.type === "SUBTABLE" &&
+      before !== undefined &&
+      before.type === "SUBTABLE"
+    ) {
+      const newInnerFields = new Map<FieldCode, FieldDefinition>();
+      const existingInnerFields = new Map<FieldCode, FieldDefinition>();
+
+      for (const [code, def] of after.properties.fields) {
+        if (before.properties.fields.has(code)) {
+          existingInnerFields.set(code, def);
+        } else {
+          newInnerFields.set(code, def);
+        }
+      }
+
+      if (newInnerFields.size > 0) {
+        fieldsToAdd.push({
+          ...after,
+          properties: { fields: newInnerFields },
+        });
+      }
+
+      if (existingInnerFields.size > 0) {
+        fieldsToUpdate.push({
+          ...after,
+          properties: { fields: existingInnerFields },
+        });
+      }
+    } else {
+      fieldsToUpdate.push(after);
     }
   }
 
-  if (modified.length > 0) {
-    const fields = modified
-      .filter(
-        (e): e is typeof e & { after: FieldDefinition } =>
-          e.after !== undefined,
-      )
-      .filter((e) => !subtableInnerCodes.has(e.fieldCode))
-      .map((e) => e.after);
-    if (fields.length > 0) {
-      await container.formConfigurator.updateFields(fields);
-    }
+  if (fieldsToAdd.length > 0) {
+    await container.formConfigurator.addFields(fieldsToAdd);
+  }
+
+  if (fieldsToUpdate.length > 0) {
+    await container.formConfigurator.updateFields(fieldsToUpdate);
   }
 
   if (deleted.length > 0) {

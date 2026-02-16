@@ -32,7 +32,39 @@ export async function forceOverrideForm({
   for (const [fieldCode, schemaDef] of schema.fields) {
     if (subtableInnerCodes.has(fieldCode)) continue;
     if (currentFields.has(fieldCode)) {
-      toUpdate.push(schemaDef);
+      if (schemaDef.type === "SUBTABLE") {
+        const currentDef = currentFields.get(fieldCode);
+        if (currentDef !== undefined && currentDef.type === "SUBTABLE") {
+          const newInnerFields = new Map<FieldCode, FieldDefinition>();
+          const existingInnerFields = new Map<FieldCode, FieldDefinition>();
+
+          for (const [code, def] of schemaDef.properties.fields) {
+            if (currentDef.properties.fields.has(code)) {
+              existingInnerFields.set(code, def);
+            } else {
+              newInnerFields.set(code, def);
+            }
+          }
+
+          if (newInnerFields.size > 0) {
+            toAdd.push({
+              ...schemaDef,
+              properties: { fields: newInnerFields },
+            });
+          }
+
+          if (existingInnerFields.size > 0) {
+            toUpdate.push({
+              ...schemaDef,
+              properties: { fields: existingInnerFields },
+            });
+          }
+        } else {
+          toUpdate.push(schemaDef);
+        }
+      } else {
+        toUpdate.push(schemaDef);
+      }
     } else {
       toAdd.push(schemaDef);
     }

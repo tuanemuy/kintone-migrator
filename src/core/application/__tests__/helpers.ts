@@ -59,6 +59,20 @@ export class InMemoryFormConfigurator implements FormConfigurator {
     this.callLog.push("addFields");
     this.checkFail("addFields");
     for (const field of fields) {
+      if (field.type === "SUBTABLE") {
+        const existing = this.fields.get(field.code);
+        if (existing !== undefined && existing.type === "SUBTABLE") {
+          const mergedInner = new Map(existing.properties.fields);
+          for (const [code, def] of field.properties.fields) {
+            mergedInner.set(code, def);
+          }
+          this.fields.set(field.code, {
+            ...existing,
+            properties: { fields: mergedInner },
+          });
+          continue;
+        }
+      }
       this.fields.set(field.code, field);
     }
   }
@@ -67,6 +81,20 @@ export class InMemoryFormConfigurator implements FormConfigurator {
     this.callLog.push("updateFields");
     this.checkFail("updateFields");
     for (const field of fields) {
+      if (field.type === "SUBTABLE") {
+        const existing = this.fields.get(field.code);
+        if (existing !== undefined && existing.type === "SUBTABLE") {
+          const mergedInner = new Map(existing.properties.fields);
+          for (const [code, def] of field.properties.fields) {
+            mergedInner.set(code, def);
+          }
+          this.fields.set(field.code, {
+            ...field,
+            properties: { fields: mergedInner },
+          });
+          continue;
+        }
+      }
       this.fields.set(field.code, field);
     }
   }
