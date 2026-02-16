@@ -38,25 +38,23 @@ async function confirmAndDeploy(
 ): Promise<void> {
   if (!skipConfirm) {
     const shouldDeploy = await p.confirm({
-      message: "運用環境に反映しますか？",
+      message: "Deploy to production?",
     });
 
     if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn(
-        "テスト環境に反映済みですが、運用環境には反映されていません。",
-      );
+      p.log.warn("Applied to preview, but not deployed to production.");
       return;
     }
   }
 
   const ds = p.spinner();
-  ds.start("運用環境に反映しています...");
+  ds.start("Deploying to production...");
   for (const container of containers) {
     await container.appDeployer.deploy();
   }
-  ds.stop("運用環境への反映が完了しました。");
+  ds.stop("Deployed to production.");
 
-  p.log.success("運用環境への反映が完了しました。");
+  p.log.success("Deployed to production.");
 }
 
 export default define({

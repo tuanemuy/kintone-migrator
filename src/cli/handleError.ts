@@ -37,7 +37,7 @@ export function logError(error: unknown): void {
     return;
   }
 
-  p.log.error(`[Error] 予期しないエラーが発生しました: ${String(error)}`);
+  p.log.error(`[Error] Unexpected error occurred: ${String(error)}`);
 }
 
 export function handleCliError(error: unknown): never {

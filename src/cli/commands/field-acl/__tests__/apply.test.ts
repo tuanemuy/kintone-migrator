@@ -97,7 +97,7 @@ describe("field-acl apply コマンド", () => {
 
     expect(mockDeploy).not.toHaveBeenCalled();
     expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("運用環境には反映されていません"),
+      expect.stringContaining("not deployed to production"),
     );
   });
 

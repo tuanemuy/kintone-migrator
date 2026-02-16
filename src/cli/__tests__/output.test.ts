@@ -256,7 +256,7 @@ describe("promptDeploy", () => {
 
     expect(container.appDeployer.deploy).toHaveBeenCalled();
     expect(p.log.success).toHaveBeenCalledWith(
-      expect.stringContaining("運用環境への反映が完了しました"),
+      expect.stringContaining("Deployed to production"),
     );
   });
 
@@ -274,7 +274,7 @@ describe("promptDeploy", () => {
 
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
     expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("運用環境には反映されていません"),
+      expect.stringContaining("not deployed to production"),
     );
   });
 
@@ -292,7 +292,7 @@ describe("promptDeploy", () => {
 
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
     expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("運用環境には反映されていません"),
+      expect.stringContaining("not deployed to production"),
     );
   });
 
@@ -308,7 +308,7 @@ describe("promptDeploy", () => {
     expect(p.confirm).not.toHaveBeenCalled();
     expect(container.appDeployer.deploy).toHaveBeenCalled();
     expect(p.log.success).toHaveBeenCalledWith(
-      expect.stringContaining("運用環境への反映が完了しました"),
+      expect.stringContaining("Deployed to production"),
     );
   });
 });
