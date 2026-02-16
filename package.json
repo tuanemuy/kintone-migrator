@@ -1,6 +1,6 @@
 {
   "name": "kintone-migrator",
-  "version": "0.12.5",
+  "version": "0.0.0-development",
   "description": "kintone form schema migration tool",
   "license": "MIT",
   "author": "Hikaru Otabe",
