@@ -40,6 +40,7 @@ type AppEntry = {
   name: AppName;
   appId: string;
   schemaFile: string;
+  seedFile?: string;
   domain?: string;
   auth?: AuthConfig;
   guestSpaceId?: string;
@@ -73,6 +74,19 @@ type MultiAppResult = {
 ### AppName
 
 アプリの識別名を表すブランド型。
+
+### AuthConfig
+
+認証設定を表す Discriminated Union 型。
+
+```typescript
+type AuthConfig =
+  | { readonly type: "apiToken"; readonly apiToken: string }
+  | { readonly type: "password"; readonly username: string; readonly password: string };
+```
+
+- `apiToken`: APIトークンによる認証
+- `password`: ユーザー名・パスワードによる認証
 
 ```typescript
 type AppName = string & { readonly brand: "AppName" };

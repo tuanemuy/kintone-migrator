@@ -3,7 +3,7 @@ import type {
   ExecutionPlan,
   ProjectConfig,
 } from "@/core/domain/projectConfig/entity";
-import { resolveExecutionOrder } from "@/core/domain/projectConfig/services/dependencyResolver";
+import { DependencyResolver } from "@/core/domain/projectConfig/services/dependencyResolver";
 import { AppName } from "@/core/domain/projectConfig/valueObject";
 import {
   NotFoundError,
@@ -28,7 +28,7 @@ export function resolveExecutionPlan(
   }
 
   if (all) {
-    return resolveExecutionOrder(config.apps);
+    return DependencyResolver.resolve(config.apps);
   }
 
   throw new ValidationError(

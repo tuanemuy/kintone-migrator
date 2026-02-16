@@ -3,7 +3,7 @@ import { isBusinessRuleError } from "@/core/domain/error";
 import type { AppEntry } from "../../entity";
 import { ProjectConfigErrorCode } from "../../errorCode";
 import { AppName } from "../../valueObject";
-import { resolveExecutionOrder } from "../dependencyResolver";
+import { DependencyResolver } from "../dependencyResolver";
 
 function makeApp(name: string, dependsOn: string[] = []): [AppName, AppEntry] {
   const appName = AppName.create(name);
@@ -18,10 +18,10 @@ function makeApp(name: string, dependsOn: string[] = []): [AppName, AppEntry] {
   ];
 }
 
-describe("resolveExecutionOrder", () => {
+describe("DependencyResolver.resolve", () => {
   it("returns single app with no dependencies", () => {
     const apps = new Map([makeApp("customer")]);
-    const plan = resolveExecutionOrder(apps);
+    const plan = DependencyResolver.resolve(apps);
 
     expect(plan.orderedApps).toHaveLength(1);
     expect(plan.orderedApps[0].name).toBe("customer");
@@ -33,7 +33,7 @@ describe("resolveExecutionOrder", () => {
       makeApp("order", ["customer"]),
       makeApp("invoice", ["order"]),
     ]);
-    const plan = resolveExecutionOrder(apps);
+    const plan = DependencyResolver.resolve(apps);
 
     expect(plan.orderedApps.map((a) => a.name)).toEqual([
       "customer",
@@ -49,7 +49,7 @@ describe("resolveExecutionOrder", () => {
       makeApp("right", ["base"]),
       makeApp("top", ["left", "right"]),
     ]);
-    const plan = resolveExecutionOrder(apps);
+    const plan = DependencyResolver.resolve(apps);
 
     const names = plan.orderedApps.map((a) => a.name);
     expect(names[0]).toBe("base");
@@ -68,7 +68,7 @@ describe("resolveExecutionOrder", () => {
       makeApp("alpha"),
       makeApp("middle"),
     ]);
-    const plan = resolveExecutionOrder(apps);
+    const plan = DependencyResolver.resolve(apps);
 
     expect(plan.orderedApps.map((a) => a.name)).toEqual([
       "alpha",
@@ -81,7 +81,7 @@ describe("resolveExecutionOrder", () => {
     const apps = new Map([makeApp("a", ["b"]), makeApp("b", ["a"])]);
 
     try {
-      resolveExecutionOrder(apps);
+      DependencyResolver.resolve(apps);
       expect.fail("Should have thrown");
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
@@ -101,7 +101,7 @@ describe("resolveExecutionOrder", () => {
     ]);
 
     try {
-      resolveExecutionOrder(apps);
+      DependencyResolver.resolve(apps);
       expect.fail("Should have thrown");
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
@@ -115,7 +115,7 @@ describe("resolveExecutionOrder", () => {
     const apps = new Map([makeApp("a", ["nonexistent"])]);
 
     try {
-      resolveExecutionOrder(apps);
+      DependencyResolver.resolve(apps);
       expect.fail("Should have thrown");
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
@@ -132,7 +132,7 @@ describe("resolveExecutionOrder", () => {
       makeApp("order", ["customer"]),
       makeApp("invoice", ["order", "customer"]),
     ]);
-    const plan = resolveExecutionOrder(apps);
+    const plan = DependencyResolver.resolve(apps);
 
     expect(plan.orderedApps.map((a) => a.name)).toEqual([
       "customer",

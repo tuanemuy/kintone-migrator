@@ -1,8 +1,12 @@
+import { BusinessRuleError } from "../../error";
+import { CustomizationErrorCode } from "../errorCode";
 import type {
   RemoteResource,
   ResolvedResource,
   UploadedFileResource,
 } from "../valueObject";
+
+const MAX_RESOURCES_PER_CATEGORY = 30;
 
 function remoteToResolved(resource: RemoteResource): ResolvedResource {
   if (resource.type === "URL") {
@@ -16,6 +20,18 @@ function remoteToResolved(resource: RemoteResource): ResolvedResource {
 }
 
 export const ResourceMerger = {
+  assertResourceCount: (
+    label: string,
+    resources: readonly RemoteResource[] | readonly ResolvedResource[],
+  ): void => {
+    if (resources.length > MAX_RESOURCES_PER_CATEGORY) {
+      throw new BusinessRuleError(
+        CustomizationErrorCode.CzTooManyFiles,
+        `${label} has ${resources.length} resources, exceeding the maximum of ${MAX_RESOURCES_PER_CATEGORY}`,
+      );
+    }
+  },
+
   mergeResources: (
     current: readonly RemoteResource[],
     incoming: readonly ResolvedResource[],

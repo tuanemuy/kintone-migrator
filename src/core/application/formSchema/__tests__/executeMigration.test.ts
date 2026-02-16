@@ -353,10 +353,8 @@ layout:
     expect(layoutAfter).toHaveLength(layoutBefore.length);
   });
 
-  it("追加フィールドがサブテーブル内部フィールドのみの場合、addFieldsを呼ばない", async () => {
+  it("サブテーブルに新規内部フィールドがある場合、addFieldsでサブテーブルごと追加する", async () => {
     const container = getContainer();
-    // サブテーブルの内部フィールドだけが追加される状況
-    // 既にサブテーブル自体は存在している
     const existingInner = textField("item_name", "品名");
     const existingSub: SubtableFieldDefinition = {
       code: FieldCode.create("items"),
@@ -396,12 +394,25 @@ layout:
         fields: [{ field: existingInner }],
       },
     ]);
+    container.formConfigurator.callLog = [];
 
     await executeMigration({ container });
 
-    // サブテーブルは更新される（内部フィールドが変わったので）
+    // 新規内部フィールドはaddFieldsでサブテーブルごと追加される
+    const mutationCalls = container.formConfigurator.callLog.filter(
+      (c) => c === "addFields" || c === "updateFields" || c === "deleteFields",
+    );
+    expect(mutationCalls).toContain("addFields");
+
     const fields = await container.formConfigurator.getFields();
     expect(fields.has(FieldCode.create("items"))).toBe(true);
+    const items = fields.get(FieldCode.create("items"));
+    if (items?.type === "SUBTABLE") {
+      expect(items.properties.fields.size).toBe(2);
+      expect(items.properties.fields.has(FieldCode.create("item_qty"))).toBe(
+        true,
+      );
+    }
   });
 
   it("サブテーブルの内部フィールドが減った場合、減ったフィールドは直接削除されない", async () => {

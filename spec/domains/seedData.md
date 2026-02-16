@@ -10,9 +10,9 @@ kintoneアプリのレコードデータ（シードデータ）をYAML/JSONフ�
 | --- | --- |
 | SeedData | シードファイルから読み込まれたデータ全体（キー + レコード配列） |
 | SeedRecord | 1レコード分のフラットなキー・バリューデータ |
-| UpsertKey | Upsert操作のキーとなるフィールドコード（ブランド型） |
+| UpsertKey | Upsert操作のキーとなるフィールドコード（ブランド型）。cleanモードでは省略可能（null） |
 | UpsertPlan | 既存レコードとの比較結果（追加・更新・変更なしの分類） |
-| UpsertResult | Upsert操作の実行結果（追加数・更新数・変更なし数） |
+| UpsertSeedOutput | Upsert操作の実行結果（追加数・更新数・変更なし数・削除数）。アプリケーション層で定義 |
 | RecordFieldValue | レコードフィールドの値（文字列、文字列配列、ユーザー配列、サブテーブル行配列） |
 
 ## エンティティ
@@ -23,10 +23,12 @@ kintoneアプリのレコードデータ（シードデータ）をYAML/JSONフ�
 
 ```typescript
 type SeedData = Readonly<{
-  key: UpsertKey;
+  key: UpsertKey | null;
   records: readonly SeedRecord[];
 }>;
 ```
+
+- `key` が `null` の場合、Upsertキーが未指定であることを意味する。`--clean` モード（全レコード削除後に新規追加）またはキー未指定での全件追加時に使用される
 
 ### UpsertPlan
 
@@ -42,16 +44,20 @@ type UpsertPlan = Readonly<{
 
 ### UpsertResult
 
-Upsert操作の実行結果。
+Upsert操作の実行結果。ドメイン層では `UpsertPlan` までを責務とし、実行結果の集計はアプリケーション層の `UpsertSeedOutput` として管理する。
 
 ```typescript
-type UpsertResult = Readonly<{
+// アプリケーション層 (dto.ts) で定義
+type UpsertSeedOutput = Readonly<{
   added: number;
   updated: number;
   unchanged: number;
+  deleted: number;
   total: number;
 }>;
 ```
+
+- `deleted` は `--clean` モード時に削除されたレコード数。通常の Upsert 操作では `0`
 
 ## 値オブジェクト
 
@@ -97,8 +103,11 @@ interface RecordManager {
   getAllRecords(condition?: string): Promise<readonly KintoneRecordForResponse[]>;
   addRecords(records: readonly KintoneRecordForParameter[]): Promise<void>;
   updateRecords(records: readonly { id: string; record: KintoneRecordForParameter }[]): Promise<void>;
+  deleteAllRecords(): Promise<{ deletedCount: number }>;
 }
 ```
+
+- `deleteAllRecords()` は全レコードを削除し、削除件数を返す。`--clean` モードで使用される
 
 ### SeedStorage
 
@@ -106,10 +115,13 @@ interface RecordManager {
 
 ```typescript
 interface SeedStorage {
-  get(): Promise<string>;
+  get(): Promise<{ content: string; exists: boolean }>;
   update(content: string): Promise<void>;
 }
 ```
+
+- `get()` はファイルの内容と存在有無を返す。ファイルが存在しない場合は `{ content: "", exists: false }` を返す
+- `exists` フィールドにより、ファイルが未作成なのか空なのかを区別できる
 
 ## エラーコード
 

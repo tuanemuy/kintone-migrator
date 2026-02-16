@@ -199,23 +199,41 @@ mobile:
 ```
 
 - `scope` は省略可能。省略時はscopeを変更しない
-- `desktop` と `mobile` は必須
+- `desktop` は必須
+- `mobile` は省略可能（デフォルト: `{ js: [], css: [] }`）
 - 各プラットフォームの `js` と `css` は配列（空配列も可）
 - FILEリソースは `type: FILE` と `path` を持つ
 - URLリソースは `type: URL` と `url` を持つ
 
 ### ResourceMerger
 
-マージロジックを担うドメインサービス。既存のリモートリソースに対して、新しいリソースをマージする。
+マージロジックとリソース数バリデーションを担うドメインサービス。
 
 ```typescript
 const ResourceMerger = {
+  assertResourceCount: (
+    label: string,
+    resources: readonly RemoteResource[] | readonly ResolvedResource[],
+  ): void;
+
   mergeResources: (
     current: readonly RemoteResource[],
     incoming: readonly ResolvedResource[],
   ): readonly ResolvedResource[];
 };
 ```
+
+#### assertResourceCount
+
+カテゴリごとのリソース数が上限（30件）を超えていないかバリデーションする。
+
+- 30件以下の場合はエラーなし
+- 31件以上の場合は `BusinessRuleError(CZ_TOO_MANY_FILES)` をスローする
+- kintone APIの制約に基づくビジネスルール
+
+#### mergeResources
+
+既存のリモートリソースに対して、新しいリソースをマージする。
 
 - FILEリソース: ファイル名で照合。同名があれば置換、なければ末尾に追加
 - URLリソース: URLで照合。同URLがあれば置換、なければ末尾に追加
@@ -266,11 +284,12 @@ interface FileUploader {
 
 ```typescript
 interface CustomizationStorage {
-  get(): Promise<string>;
+  get(): Promise<{ content: string; exists: boolean }>;
 }
 ```
 
-- `get()` はファイルが存在しないまたは空の場合、空文字列 `""` を返す
+- `get()` はファイルの内容と存在有無を返す。ファイルが存在しない場合は `{ content: "", exists: false }` を返す
+- `exists` フィールドにより、ファイルが未作成なのか空なのかを区別できる
 - API通信に失敗した場合は `SystemError` をスローする
 
 ## ユースケース

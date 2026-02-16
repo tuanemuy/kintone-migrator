@@ -10,16 +10,17 @@
 
 ```typescript
 type LoadProjectConfigInput = {
-  configPath: string;
+  content: string;
 };
 ```
 
+- ファイルの読み込みはCLI層の責務であり、本ユースケースにはYAMLテキストが渡される
+
 ### 処理フロー
 
-1. 指定パスからファイルを読み込む
-2. YAML形式としてパースする
-3. ConfigParserでProjectConfigに変換＆バリデーション
-4. ProjectConfigを返す
+1. 渡されたテキストをYAML形式としてパースする
+2. ConfigParserでProjectConfigに変換＆バリデーション
+3. ProjectConfigを返す
 
 ### エラーケース
 
@@ -93,3 +94,16 @@ type MultiAppResult = {
 - 途中でアプリが失敗した場合、失敗以降のアプリは「skipped」でhasFailureがtrue
 - 最初のアプリが失敗した場合、それ以降は全て「skipped」
 - 空のExecutionPlanの場合、空の結果でhasFailureがfalse
+
+---
+
+## アーキテクチャノート
+
+### ServiceArgsパターン不使用について
+
+projectConfigドメインのユースケース（`loadProjectConfig`, `resolveExecutionPlan`）は、他ドメインで使用される `ServiceArgs<T>` パターン（`{ container, input }` 構造）を採用していない。これは意図的な設計判断である。
+
+- projectConfigはアプリ固有のDIコンテナ（`container`）が存在する前に実行される初期化フェーズのユースケースである
+- `loadProjectConfig` は純粋関数としてYAMLテキストを受け取りProjectConfigを返す
+- `resolveExecutionPlan` もProjectConfigとCLI引数から実行計画を計算する純粋関数である
+- これらのユースケースが外部サービスへの依存を持たないため、コンテナの注入が不要

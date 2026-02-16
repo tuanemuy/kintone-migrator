@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { isBusinessRuleError } from "@/core/domain/error";
 import { ProjectConfigErrorCode } from "../../errorCode";
 import { AppName } from "../../valueObject";
-import { parseProjectConfig } from "../configParser";
+import { ConfigParser } from "../configParser";
 
-describe("parseProjectConfig", () => {
+describe("ConfigParser.parse", () => {
   it("parses a valid minimal config", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "example.cybozu.com",
       auth: { apiToken: "test-token" },
       apps: {
@@ -28,7 +28,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("parses config with multiple apps and dependencies", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "example.cybozu.com",
       auth: { apiToken: "token" },
       apps: {
@@ -53,7 +53,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("parses config with password auth", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "example.cybozu.com",
       auth: { username: "user", password: "pass" },
       apps: {
@@ -69,7 +69,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("parses config with per-app overrides", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "default.cybozu.com",
       auth: { apiToken: "default-token" },
       apps: {
@@ -92,7 +92,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("parses guestSpaceId at top level", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "example.cybozu.com",
       auth: { apiToken: "token" },
       guestSpaceId: "456",
@@ -107,7 +107,7 @@ describe("parseProjectConfig", () => {
   it("throws when raw input is not an object", () => {
     for (const input of ["string", 42, null, true, [1, 2]]) {
       try {
-        parseProjectConfig(input);
+        ConfigParser.parse(input);
         expect.fail("Should have thrown");
       } catch (error) {
         expect(isBusinessRuleError(error)).toBe(true);
@@ -120,7 +120,7 @@ describe("parseProjectConfig", () => {
 
   it("throws EmptyApps when apps is missing", () => {
     try {
-      parseProjectConfig({ domain: "x", auth: { apiToken: "t" } });
+      ConfigParser.parse({ domain: "x", auth: { apiToken: "t" } });
       expect.fail("Should have thrown");
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
@@ -132,7 +132,7 @@ describe("parseProjectConfig", () => {
 
   it("throws EmptyApps when apps is empty object", () => {
     try {
-      parseProjectConfig({
+      ConfigParser.parse({
         domain: "x",
         auth: { apiToken: "t" },
         apps: {},
@@ -148,7 +148,7 @@ describe("parseProjectConfig", () => {
 
   it("throws EmptyAppId when appId is missing", () => {
     try {
-      parseProjectConfig({
+      ConfigParser.parse({
         domain: "x",
         auth: { apiToken: "t" },
         apps: { app1: {} },
@@ -164,7 +164,7 @@ describe("parseProjectConfig", () => {
 
   it("throws EmptyAppId when appId is empty string", () => {
     try {
-      parseProjectConfig({
+      ConfigParser.parse({
         domain: "x",
         auth: { apiToken: "t" },
         apps: { app1: { appId: "" } },
@@ -179,7 +179,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("parses config without domain (domain can be resolved via env vars later)", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       auth: { apiToken: "t" },
       apps: { app1: { appId: "1" } },
     });
@@ -191,7 +191,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("parses config without auth (auth can be resolved via env vars later)", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "x",
       apps: { app1: { appId: "1" } },
     });
@@ -203,7 +203,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("uses app-level domain when top-level is missing", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       auth: { apiToken: "t" },
       apps: {
         app1: { appId: "1", domain: "app.cybozu.com" },
@@ -215,7 +215,7 @@ describe("parseProjectConfig", () => {
   });
 
   it("uses app-level auth when top-level is missing", () => {
-    const config = parseProjectConfig({
+    const config = ConfigParser.parse({
       domain: "x",
       apps: {
         app1: { appId: "1", auth: { apiToken: "app-token" } },

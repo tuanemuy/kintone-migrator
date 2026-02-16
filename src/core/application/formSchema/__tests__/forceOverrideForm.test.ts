@@ -576,8 +576,15 @@ layout:
       ]),
     );
     container.formConfigurator.setLayout([]);
+    container.formConfigurator.callLog = [];
 
     await forceOverrideForm({ container });
+
+    // 新規内部フィールドはaddFieldsで追加される
+    const mutationCalls = container.formConfigurator.callLog.filter(
+      (c) => c === "addFields" || c === "updateFields" || c === "deleteFields",
+    );
+    expect(mutationCalls).toContain("addFields");
 
     const fields = await container.formConfigurator.getFields();
     const items = fields.get(FieldCode.create("items"));
@@ -585,6 +592,9 @@ layout:
     expect(items?.label).toBe("明細_新");
     if (items?.type === "SUBTABLE") {
       expect(items.properties.fields.size).toBe(2);
+      expect(items.properties.fields.has(FieldCode.create("item_price"))).toBe(
+        true,
+      );
     }
   });
 

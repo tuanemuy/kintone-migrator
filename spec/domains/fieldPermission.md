@@ -175,11 +175,12 @@ interface FieldPermissionConfigurator {
 
 ```typescript
 interface FieldPermissionStorage {
-  get(): Promise<string>;
+  get(): Promise<{ content: string; exists: boolean }>;
   update(content: string): Promise<void>;
 }
 ```
 
-- `get()` はファイルが存在しないまたは空の場合、空文字列 `""` を返す
+- `get()` はファイルの内容と存在有無を返す。ファイルが存在しない場合は `{ content: "", exists: false }` を返す
+- `exists` フィールドにより、ファイルが未作成なのか空なのかを区別できる
 - `update()` はファイルに設定テキストを書き込む
 - ファイル操作に失敗した場合は `SystemError` をスローする

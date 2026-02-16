@@ -259,6 +259,64 @@ type SaveSchemaInput = {
 
 ---
 
+## validateSchema
+
+### 概要
+
+永続化されたスキーマテキストをパースし、バリデーションを実行する。パースエラーが発生した場合は例外ではなく `parseError` フィールドとして返す特殊パターンを採用している。
+
+### 入力DTO
+
+なし
+
+### 処理フロー
+
+1. `SchemaStorage.get()` でスキーマテキストを取得する
+2. `SchemaParser.parse()` でスキーマをパースする
+   - パースに失敗した場合（`BusinessRuleError`）、例外をキャッチして `parseError` フィールドに格納して返す
+3. `SchemaValidator.validate()` でスキーマのバリデーションを実行する
+4. 結果をDTOに変換して返す
+
+### 出力DTO
+
+```typescript
+type ValidateSchemaOutput = Readonly<{
+  parseError?: string;
+  validationResult?: ValidationResult;
+  fieldCount: number;
+}>;
+```
+
+### テストケース
+
+- 正常なスキーマの場合、`parseError` が `undefined` で `validationResult` と `fieldCount` が設定される
+- パースエラーの場合、`parseError` にエラーメッセージが格納され、`fieldCount` が `0` である
+- スキーマファイルが存在しない場合、`ValidationError(INVALID_INPUT)` がスローされる
+- パース以外の例外は `parseError` に変換せずそのままスローされる
+
+---
+
+## deployApp
+
+### 概要
+
+`AppDeployer.deploy()` に委譲してアプリの設定変更をデプロイする。
+
+### 入力DTO
+
+なし
+
+### 出力DTO
+
+なし（`void`）
+
+### テストケース
+
+- `AppDeployer.deploy()` が呼ばれてデプロイが実行される
+- `AppDeployer.deploy()` の通信に失敗した場合、`SystemError` がスローされる
+
+---
+
 ## CLI実行コンテキスト
 
 上記ユースケースはCLIからも実行可能。CLIでは以下の差異がある：
