@@ -63,6 +63,30 @@ type FormDiff = Readonly<{
 
 ## 値オブジェクト
 
+### LookupFieldMapping / Lookup
+
+ルックアップフィールドの設定を表す型。
+
+```typescript
+type LookupFieldMapping = Readonly<{
+  field: string;
+  relatedField: string;
+}>;
+
+type Lookup = Readonly<{
+  relatedApp: Readonly<{ app: string; code?: string }>;
+  relatedKeyField: string;
+  fieldMappings: readonly LookupFieldMapping[];
+  lookupPickerFields: readonly string[];
+  filterCond?: string;
+  sort?: string;
+}>;
+```
+
+- ルックアップ対応フィールド（SINGLE_LINE_TEXT, NUMBER, LINK）の `lookup` プロパティで使用
+- `relatedApp` は参照先アプリの識別情報
+- `fieldMappings` は参照先フィールドとのマッピング定義
+
 ### FieldCode
 
 フィールドを一意に識別するブランド型。
@@ -117,7 +141,8 @@ type FieldDefinitionBase = Readonly<{
 }>;
 
 type FieldDefinition =
-  | TextFieldDefinition
+  | SingleLineTextFieldDefinition
+  | MultiLineTextFieldDefinition
   | RichTextFieldDefinition
   | NumberFieldDefinition
   | CalcFieldDefinition
@@ -140,9 +165,9 @@ type FieldDefinition =
 #### テキスト系フィールド
 
 ```typescript
-type TextFieldDefinition = FieldDefinitionBase &
+type SingleLineTextFieldDefinition = FieldDefinitionBase &
   Readonly<{
-    type: "SINGLE_LINE_TEXT" | "MULTI_LINE_TEXT";
+    type: "SINGLE_LINE_TEXT";
     properties: Readonly<{
       required?: boolean;
       unique?: boolean;
@@ -150,6 +175,19 @@ type TextFieldDefinition = FieldDefinitionBase &
       minLength?: string;
       maxLength?: string;
       expression?: string;
+      hideExpression?: boolean;
+      lookup?: Lookup;
+    }>;
+  }>;
+
+type MultiLineTextFieldDefinition = FieldDefinitionBase &
+  Readonly<{
+    type: "MULTI_LINE_TEXT";
+    properties: Readonly<{
+      required?: boolean;
+      defaultValue?: string;
+      minLength?: string;
+      maxLength?: string;
     }>;
   }>;
 
@@ -162,6 +200,9 @@ type RichTextFieldDefinition = FieldDefinitionBase &
     }>;
   }>;
 ```
+
+- **SINGLE_LINE_TEXT**: `unique`, `expression`, `hideExpression`, `lookup` プロパティを持つ
+- **MULTI_LINE_TEXT**: `unique`, `expression` プロパティを持たない（kintone API の仕様に準拠）
 
 #### 数値系フィールド
 
@@ -179,6 +220,7 @@ type NumberFieldDefinition = FieldDefinitionBase &
       displayScale?: string;
       unit?: string;
       unitPosition?: "BEFORE" | "AFTER";
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -187,7 +229,7 @@ type CalcFieldDefinition = FieldDefinitionBase &
     type: "CALC";
     properties: Readonly<{
       expression: string;
-      format?: "NUMBER" | "DATE" | "TIME" | "DATETIME" | "HOUR_MINUTE" | "DAY_HOUR_MINUTE";
+      format?: "NUMBER" | "NUMBER_DIGIT" | "DATE" | "TIME" | "DATETIME" | "HOUR_MINUTE" | "DAY_HOUR_MINUTE";
       displayScale?: string;
       unit?: string;
       unitPosition?: "BEFORE" | "AFTER";
@@ -283,6 +325,7 @@ type LinkFieldDefinition = FieldDefinitionBase &
       minLength?: string;
       maxLength?: string;
       protocol?: "WEB" | "CALL" | "MAIL";
+      lookup?: Lookup;
     }>;
   }>;
 
@@ -292,6 +335,7 @@ type UserSelectFieldDefinition = FieldDefinitionBase &
     properties: Readonly<{
       required?: boolean;
       defaultValue?: readonly Readonly<{ code: string; type: string }>[];
+      entities?: readonly Readonly<{ code: string; type: string }>[];
     }>;
   }>;
 
@@ -468,6 +512,7 @@ type GroupLayoutItem = Readonly<{
   type: "GROUP";
   code: FieldCode;
   label: string;
+  noLabel?: boolean;
   openGroup?: boolean;
   layout: readonly LayoutRow[];
 }>;
@@ -476,6 +521,7 @@ type SubtableLayoutItem = Readonly<{
   type: "SUBTABLE";
   code: FieldCode;
   label: string;
+  noLabel?: boolean;
   fields: readonly LayoutElement[];
 }>;
 
@@ -592,6 +638,35 @@ const SchemaSerializer = {
 };
 ```
 
+### SchemaValidator
+
+スキーマのフィールド定義をバリデーションし、問題点を検出する純粋関数。`assertSchemaValid` ユースケースで使用される。
+
+```typescript
+type ValidationSeverity = "error" | "warning";
+
+type ValidationIssue = Readonly<{
+  severity: ValidationSeverity;
+  fieldCode: string;
+  fieldType: string;
+  rule: string;
+  message: string;
+}>;
+
+type ValidationResult = Readonly<{
+  issues: readonly ValidationIssue[];
+  isValid: boolean;
+}>;
+
+const SchemaValidator = {
+  validate: (schema: Schema): ValidationResult;
+};
+```
+
+- フィールド型ごとのプロパティ整合性をチェックする（例: 選択肢フィールドの空オプション、数値フィールドの範囲矛盾など）
+- `isValid` は `error` レベルの問題がない場合に `true`
+- `warning` は問題の可能性があるが動作には影響しないケース
+
 ## ポート
 
 ### FormConfigurator
@@ -619,19 +694,20 @@ interface FormConfigurator {
 
 ```typescript
 interface SchemaStorage {
-  get(): Promise<string>;
+  get(): Promise<{ content: string; exists: boolean }>;
   update(content: string): Promise<void>;
 }
 ```
 
-- `get()` は永続化されたスキーマテキストが存在しないまたは空の場合、空文字列 `""` を返す
+- `get()` はファイルの内容と存在有無を返す。ファイルが存在しない場合は `{ content: "", exists: false }` を返す
+- `exists` フィールドにより、ファイルが未作成なのか空なのかを区別できる（`captureSchema` で既存スキーマ有無の判定に使用）
 - API通信に失敗した場合は `SystemError` をスローする
 
 #### LocalFileSchemaStorage (CLI用)
 
 ローカルファイルシステムを使用してスキーマテキストを永続化するアダプター。
 
-- `get()` はファイルが存在しない場合、空文字列 `""` を返す（ポート契約準拠）
+- `get()` はファイルが存在しない場合、`{ content: "", exists: false }` を返す（ポート契約準拠）
 - `update()` は親ディレクトリが存在しない場合、再帰的に作成する
 - ファイルI/Oに失敗した場合は `SystemError(StorageError)` をスローする
 - エンコーディングはUTF-8

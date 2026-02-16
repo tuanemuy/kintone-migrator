@@ -12,17 +12,24 @@ type UpsertSeedInput = {
 };
 ```
 
-### フロー（通常モード）
+### フロー（通常モード: `key !== null` かつ `clean !== true`）
 
 1. `seedStorage.get()` でシードファイルを読み込む
 2. `SeedParser.parse()` でパース・バリデーション
 3. `recordManager.getAllRecords()` で既存レコードを取得
-4. `RecordConverter.fromKintoneRecord()` で既存レコードをフラット変換
-5. `UpsertPlanner.plan()` で追加・更新・変更なしを分類
-6. `RecordConverter.toKintoneRecord()` でシードレコードをkintone形式に変換
-7. `recordManager.addRecords()` で新規レコードを追加
-8. `recordManager.updateRecords()` で既存レコードを更新
-9. `UpsertSeedOutput` を返却（`deleted: 0`）
+4. `UpsertPlanner.plan()` で追加・更新・変更なしを分類（内部で `RecordConverter.fromKintoneRecord()` を使用して既存レコードをフラット変換）
+5. `RecordConverter.toKintoneRecord()` でシードレコードをkintone形式に変換
+6. `recordManager.addRecords()` で新規レコードを追加
+7. `recordManager.updateRecords()` で既存レコードを更新
+8. `UpsertSeedOutput` を返却（`deleted: 0`）
+
+### フロー（key未指定モード: `key === null` かつ `clean !== true`）
+
+1. `seedStorage.get()` でシードファイルを読み込む
+2. `SeedParser.parse()` でパース・バリデーション
+3. `RecordConverter.toKintoneRecord()` で全シードレコードをkintone形式に変換
+4. `recordManager.addRecords()` で全レコードを追加（既存レコードとの比較はスキップ）
+5. `UpsertSeedOutput` を返却（`updated: 0, unchanged: 0, deleted: 0`）
 
 ### フロー（cleanモード: `input.clean === true`）
 
