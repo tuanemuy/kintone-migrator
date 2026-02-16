@@ -8,14 +8,14 @@ import {
   kintoneArgs,
   multiAppArgs,
   resolveConfig,
-} from "../config";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
+} from "../../config";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
   runMultiAppWithFailCheck,
-} from "../projectConfig";
+} from "../../projectConfig";
 
 async function runSingleDump(
   baseUrl: string,

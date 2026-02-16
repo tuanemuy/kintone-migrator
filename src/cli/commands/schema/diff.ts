@@ -3,14 +3,14 @@ import { define } from "gunshi";
 import type { Container } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "../config";
-import { handleCliError } from "../handleError";
-import { printAppHeader, printDiffResult } from "../output";
+import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
+import { handleCliError } from "../../handleError";
+import { printAppHeader, printDiffResult } from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
   runMultiAppWithFailCheck,
-} from "../projectConfig";
+} from "../../projectConfig";
 
 async function runDiff(container: Container): Promise<void> {
   const s = p.spinner();

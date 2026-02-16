@@ -3,16 +3,10 @@
 import "dotenv/config";
 import { createRequire } from "node:module";
 import { cli, define } from "gunshi";
-import captureCommand from "./commands/capture";
-import captureFieldAclCommand from "./commands/capture-field-acl";
-import customizeCommand from "./commands/customize";
-import diffCommand from "./commands/diff";
-import dumpCommand from "./commands/dump";
-import fieldAclCommand from "./commands/field-acl";
-import migrateCommand from "./commands/migrate";
-import overrideCommand from "./commands/override";
-import seedCommand from "./commands/seed";
-import validateCommand from "./commands/validate";
+import customizeGroup from "./commands/customize";
+import fieldAclGroup from "./commands/field-acl";
+import schemaGroup from "./commands/schema";
+import seedGroup from "./commands/seed";
 
 function loadVersion(): string {
   try {
@@ -35,15 +29,9 @@ await cli(process.argv.slice(2), main, {
   name: "kintone-migrator",
   version: loadVersion(),
   subCommands: {
-    diff: diffCommand,
-    migrate: migrateCommand,
-    override: overrideCommand,
-    capture: captureCommand,
-    dump: dumpCommand,
-    seed: seedCommand,
-    validate: validateCommand,
-    customize: customizeCommand,
-    "field-acl": fieldAclCommand,
-    "capture-field-acl": captureFieldAclCommand,
+    schema: schemaGroup,
+    seed: seedGroup,
+    customize: customizeGroup,
+    "field-acl": fieldAclGroup,
   },
 });

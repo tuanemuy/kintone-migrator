@@ -16,15 +16,15 @@ import {
   kintoneArgs,
   multiAppArgs,
   resolveConfig,
-} from "../config";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
+} from "../../config";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
 import {
   type MultiAppCliValues,
   resolveAppCliConfig,
   routeMultiApp,
   runMultiAppWithFailCheck,
-} from "../projectConfig";
+} from "../../projectConfig";
 
 const customizeArgs = {
   ...kintoneArgs,
@@ -122,7 +122,7 @@ async function confirmAndDeploy(
 }
 
 export default define({
-  name: "customize",
+  name: "apply",
   description: "Apply JS/CSS customization to kintone app",
   args: customizeArgs,
   run: async (ctx) => {

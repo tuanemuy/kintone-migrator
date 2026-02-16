@@ -5,14 +5,14 @@ import type { Container } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
 import { captureSchema } from "@/core/application/formSchema/captureSchema";
 import { saveSchema } from "@/core/application/formSchema/saveSchema";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "../config";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
+import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
   runMultiAppWithFailCheck,
-} from "../projectConfig";
+} from "../../projectConfig";
 
 async function runCapture(
   container: Container,

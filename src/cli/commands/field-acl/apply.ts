@@ -6,16 +6,16 @@ import {
 } from "@/core/application/container/cli";
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
-import { confirmArgs } from "../config";
+import { confirmArgs } from "../../config";
 import {
   type FieldAclCliValues,
   fieldAclArgs,
   resolveFieldAclAppContainerConfig,
   resolveFieldAclContainerConfig,
-} from "../fieldAclConfig";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../projectConfig";
+} from "../../fieldAclConfig";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
+import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
 async function runFieldAcl(
   config: FieldPermissionCliContainerConfig,
@@ -38,29 +38,27 @@ async function confirmAndDeploy(
 ): Promise<void> {
   if (!skipConfirm) {
     const shouldDeploy = await p.confirm({
-      message: "運用環境に反映しますか？",
+      message: "Deploy to production?",
     });
 
     if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn(
-        "テスト環境に反映済みですが、運用環境には反映されていません。",
-      );
+      p.log.warn("Applied to preview, but not deployed to production.");
       return;
     }
   }
 
   const ds = p.spinner();
-  ds.start("運用環境に反映しています...");
+  ds.start("Deploying to production...");
   for (const container of containers) {
     await container.appDeployer.deploy();
   }
-  ds.stop("運用環境への反映が完了しました。");
+  ds.stop("Deployed to production.");
 
-  p.log.success("運用環境への反映が完了しました。");
+  p.log.success("Deployed to production.");
 }
 
 export default define({
-  name: "field-acl",
+  name: "apply",
   description: "Apply field access permissions from YAML to kintone app",
   args: { ...fieldAclArgs, ...confirmArgs },
   run: async (ctx) => {

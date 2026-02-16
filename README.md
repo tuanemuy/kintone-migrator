@@ -15,13 +15,13 @@ export KINTONE_PASSWORD=your_password
 export KINTONE_APP_ID=123
 
 # Capture current form schema
-kintone-migrator capture -f schema.yaml
+kintone-migrator schema capture -f schema.yaml
 
 # Edit schema.yaml, then check diff
-kintone-migrator diff
+kintone-migrator schema diff
 
 # Apply changes
-kintone-migrator migrate
+kintone-migrator schema migrate
 ```
 
 Requires Node.js 22 or later.
@@ -108,50 +108,53 @@ For details, see [Project Config Specification](./spec/projectConfig.md).
 
 ## Commands
 
-| Command | Description |
-|---|---|
-| [`diff`](#diff) | Show differences between schema file and kintone form |
-| [`migrate`](#migrate) | Apply schema changes (incremental) |
-| [`override`](#override) | Overwrite entire form from schema |
-| [`capture`](#capture) | Save current form schema to file |
-| [`validate`](#validate) | Validate schema file locally |
-| [`dump`](#dump) | Dump raw field/layout JSON (for debugging) |
-| [`seed`](#seed) | Upsert seed data records |
-| [`customize`](#customize) | Apply JS/CSS customizations |
-| [`field-acl`](#field-acl) | Apply field access permissions |
-| [`capture-field-acl`](#capture-field-acl) | Save current field permissions to file |
+Commands are organized into domain groups:
 
-All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`migrate`, `override`, `seed --clean`, `customize`) support `--yes` / `-y` to skip confirmation prompts.
+| Group | Subcommand | Description |
+|---|---|---|
+| `schema` | `diff` | Show differences between schema file and kintone form |
+| `schema` | `migrate` | Apply schema changes (incremental) |
+| `schema` | `override` | Overwrite entire form from schema |
+| `schema` | `capture` | Save current form schema to file |
+| `schema` | `validate` | Validate schema file locally |
+| `schema` | `dump` | Dump raw field/layout JSON (for debugging) |
+| `seed` | `apply` | Apply seed data records |
+| `seed` | `capture` | Capture records from kintone app |
+| `customize` | `apply` | Apply JS/CSS customizations |
+| `field-acl` | `apply` | Apply field access permissions |
+| `field-acl` | `capture` | Save current field permissions to file |
 
-### Schema Commands
+All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`schema migrate`, `schema override`, `seed apply --clean`, `customize apply`) support `--yes` / `-y` to skip confirmation prompts.
 
-#### `diff`
+### `schema` -- Form Schema Management
+
+#### `schema diff`
 
 Detects differences between the schema file and the current kintone form.
 
 ```bash
-kintone-migrator diff
-kintone-migrator diff --app customer
+kintone-migrator schema diff
+kintone-migrator schema diff --app customer
 ```
 
-#### `migrate`
+#### `schema migrate`
 
 Applies only the detected differences (add, update, delete) to the kintone form.
 
 ```bash
-kintone-migrator migrate
-kintone-migrator migrate --yes          # Skip confirmation (for CI/CD)
-kintone-migrator migrate --all --yes    # All apps
+kintone-migrator schema migrate
+kintone-migrator schema migrate --yes          # Skip confirmation (for CI/CD)
+kintone-migrator schema migrate --all --yes    # All apps
 ```
 
-#### `override`
+#### `schema override`
 
 Overwrites the entire kintone form with the schema file. Fields not in the schema are deleted.
 
 ```bash
-kintone-migrator override
-kintone-migrator override --reset       # Delete all custom fields (no schema needed)
-kintone-migrator override --all --yes
+kintone-migrator schema override
+kintone-migrator schema override --reset       # Delete all custom fields (no schema needed)
+kintone-migrator schema override --all --yes
 ```
 
 | Option | Description |
@@ -159,62 +162,73 @@ kintone-migrator override --all --yes
 | `--reset` | Delete all custom fields. In multi-app mode, apps are reset in reverse dependency order. |
 | `--yes`, `-y` | Skip confirmation prompts. |
 
-#### `capture`
+#### `schema capture`
 
 Saves the current kintone form schema to a YAML file.
 
 ```bash
-kintone-migrator capture
-kintone-migrator capture -f my-schema.yaml
+kintone-migrator schema capture
+kintone-migrator schema capture -f my-schema.yaml
 ```
 
-#### `validate`
+#### `schema validate`
 
 Validates the schema file locally without connecting to kintone.
 
 ```bash
-kintone-migrator validate
-kintone-migrator validate -f my-schema.yaml
+kintone-migrator schema validate
+kintone-migrator schema validate -f my-schema.yaml
 ```
 
-#### `dump`
+#### `schema dump`
 
 Dumps raw kintone field definitions and layout as JSON. Outputs `fields.json` and `layout.json` (prefixed with app name in multi-app mode).
 
 ```bash
-kintone-migrator dump
+kintone-migrator schema dump
 ```
 
-### Data Commands
+### `seed` -- Seed Data Management
 
-#### `seed`
+#### `seed apply`
 
-Upserts seed data records into a kintone app. Can also capture existing records.
+Upserts seed data records into a kintone app.
 
 ```bash
-kintone-migrator seed                                        # Apply seed data
-kintone-migrator seed --clean --yes                          # Delete all records first
-kintone-migrator seed --capture --key-field customer_code    # Capture from app
+kintone-migrator seed apply                    # Apply seed data
+kintone-migrator seed apply --clean --yes      # Delete all records first
 ```
 
 | Option | Description |
 |---|---|
 | `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
-| `--key-field`, `-k` | Key field code for upsert (required for `--capture`) |
-| `--capture` | Capture mode: fetch records and save to file |
-| `--clean` | Delete all records before applying. Cannot be used with `--capture`. |
+| `--key-field`, `-k` | Key field code for upsert |
+| `--clean` | Delete all records before applying. |
 | `--yes`, `-y` | Skip confirmation prompts (for `--clean` mode). |
 
-### Customization Commands
+#### `seed capture`
 
-#### `customize`
+Captures existing records from a kintone app and saves them to a seed file.
+
+```bash
+kintone-migrator seed capture --key-field customer_code
+```
+
+| Option | Description |
+|---|---|
+| `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
+| `--key-field`, `-k` | Key field code (required) |
+
+### `customize` -- JS/CSS Customization
+
+#### `customize apply`
 
 Applies JS/CSS customizations from a YAML config file. Local files are uploaded and merged with existing settings.
 
 ```bash
-kintone-migrator customize
-kintone-migrator customize --customize-file my-customize.yaml
-kintone-migrator customize --all --yes
+kintone-migrator customize apply
+kintone-migrator customize apply --customize-file my-customize.yaml
+kintone-migrator customize apply --all --yes
 ```
 
 | Option | Environment Variable | Description |
@@ -222,28 +236,28 @@ kintone-migrator customize --all --yes
 | `--customize-file` | `CUSTOMIZE_FILE_PATH` | Config file path (default: `customize.yaml`, multi-app: `customize/<appName>.yaml`) |
 | `--yes`, `-y` | -- | Skip confirmation prompts. |
 
-### Permission Commands
+### `field-acl` -- Field Access Permissions
 
-#### `field-acl`
+#### `field-acl apply`
 
 Applies field access permissions from a YAML config file. Uses full replacement -- the file defines the complete desired state.
 
 ```bash
-kintone-migrator field-acl
-kintone-migrator field-acl --field-acl-file my-field-acl.yaml
+kintone-migrator field-acl apply
+kintone-migrator field-acl apply --field-acl-file my-field-acl.yaml
 ```
 
 | Option | Environment Variable | Description |
 |---|---|---|
 | `--field-acl-file` | `FIELD_ACL_FILE_PATH` | Field ACL file path (default: `field-acl.yaml`, multi-app: `field-acl/<appName>.yaml`) |
 
-#### `capture-field-acl`
+#### `field-acl capture`
 
-Captures the current field access permissions and saves them to a YAML file. Uses the same `--field-acl-file` option as `field-acl`.
+Captures the current field access permissions and saves them to a YAML file. Uses the same `--field-acl-file` option as `field-acl apply`.
 
 ```bash
-kintone-migrator capture-field-acl
-kintone-migrator capture-field-acl --field-acl-file my-field-acl.yaml
+kintone-migrator field-acl capture
+kintone-migrator field-acl capture --field-acl-file my-field-acl.yaml
 ```
 
 ## File Formats

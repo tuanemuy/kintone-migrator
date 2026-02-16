@@ -46,8 +46,6 @@ vi.mock("@/core/application/container/cli", () => ({
 }));
 
 vi.mock("@/core/application/seedData/upsertSeed");
-vi.mock("@/core/application/seedData/captureSeed");
-vi.mock("@/core/application/seedData/saveSeed");
 
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
@@ -59,16 +57,14 @@ vi.mock("@/cli/output", () => ({
 
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
-import { captureSeed } from "@/core/application/seedData/captureSeed";
-import { saveSeed } from "@/core/application/seedData/saveSeed";
 import { upsertSeed } from "@/core/application/seedData/upsertSeed";
-import command from "../seed";
+import command from "../apply";
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("seed コマンド", () => {
+describe("seed apply コマンド", () => {
   it("デフォルトでupsertモードを実行する", async () => {
     vi.mocked(upsertSeed).mockResolvedValue({
       added: 2,
@@ -103,57 +99,6 @@ describe("seed コマンド", () => {
     expect(p.log.info).toHaveBeenCalledWith(
       expect.stringContaining("unchanged"),
     );
-  });
-
-  it("--captureと--key-fieldでcaptureモードを実行する", async () => {
-    vi.mocked(captureSeed).mockResolvedValue({
-      seedText: 'records:\n  - code: "001"\n',
-      recordCount: 1,
-      hasExistingSeed: false,
-    });
-    vi.mocked(saveSeed).mockResolvedValue(undefined);
-
-    await command.run({
-      values: { capture: true, "key-field": "code" },
-    } as never);
-
-    expect(captureSeed).toHaveBeenCalled();
-    expect(saveSeed).toHaveBeenCalled();
-  });
-
-  it("captureモードで既存ファイルがある場合に上書き警告を表示する", async () => {
-    vi.mocked(captureSeed).mockResolvedValue({
-      seedText: "records:\n",
-      recordCount: 0,
-      hasExistingSeed: true,
-    });
-    vi.mocked(saveSeed).mockResolvedValue(undefined);
-
-    await command.run({
-      values: { capture: true, "key-field": "code" },
-    } as never);
-
-    expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("overwritten"),
-    );
-  });
-
-  it("--captureで--key-fieldがない場合にエラーをスローする", async () => {
-    await command.run({
-      values: { capture: true },
-    } as never);
-
-    expect(handleCliError).toHaveBeenCalled();
-    expect(upsertSeed).not.toHaveBeenCalled();
-    expect(captureSeed).not.toHaveBeenCalled();
-  });
-
-  it("--captureと--cleanの同時使用でエラーをスローする", async () => {
-    await command.run({
-      values: { capture: true, clean: true, "key-field": "code" },
-    } as never);
-
-    expect(handleCliError).toHaveBeenCalled();
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {

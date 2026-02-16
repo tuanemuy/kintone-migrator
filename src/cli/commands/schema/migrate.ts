@@ -11,14 +11,14 @@ import {
   kintoneArgs,
   multiAppArgs,
   resolveConfig,
-} from "../config";
-import { handleCliError } from "../handleError";
-import { printAppHeader, printDiffResult, promptDeploy } from "../output";
+} from "../../config";
+import { handleCliError } from "../../handleError";
+import { printAppHeader, printDiffResult, promptDeploy } from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
   runMultiAppWithFailCheck,
-} from "../projectConfig";
+} from "../../projectConfig";
 
 async function runSingleMigrate(
   container: Container,

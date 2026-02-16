@@ -10,11 +10,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development Commands
 
 - `pnpm dev` - Run CLI in development mode (via tsx)
-- `pnpm dev:diff` - Run diff subcommand in dev mode
-- `pnpm dev:migrate` - Run migrate subcommand in dev mode
-- `pnpm dev:override` - Run override subcommand in dev mode
-- `pnpm dev:capture` - Run capture subcommand in dev mode
-- `pnpm dev:dump` - Run dump subcommand in dev mode
+- `pnpm dev:diff` - Run `schema diff` subcommand in dev mode
+- `pnpm dev:migrate` - Run `schema migrate` subcommand in dev mode
+- `pnpm dev:override` - Run `schema override` subcommand in dev mode
+- `pnpm dev:capture` - Run `schema capture` subcommand in dev mode
+- `pnpm dev:dump` - Run `schema dump` subcommand in dev mode
+- `pnpm dev:validate` - Run `schema validate` subcommand in dev mode
+- `pnpm dev:seed` - Run `seed apply` subcommand in dev mode
+- `pnpm dev:customize` - Run `customize apply` subcommand in dev mode
+- `pnpm dev:field-acl` - Run `field-acl apply` subcommand in dev mode
+- `pnpm dev:capture-field-acl` - Run `field-acl capture` subcommand in dev mode
 - `pnpm build` - Build with tsdown
 - `pnpm start` - Run built CLI
 - `pnpm lint` - Lint code with Biome
@@ -55,7 +60,7 @@ Hexagonal architecture with domain-driven design principles:
     - `src/core/application/__tests__/helpers.ts`: Test helpers for application services
 - **Presentation Layer** (`src/cli/`): CLI commands built with gunshi
     - `src/cli/index.ts`: Main entry point with shebang
-    - `src/cli/commands/`: Subcommand definitions (diff, migrate, override, capture, dump)
+    - `src/cli/commands/`: Domain-grouped subcommand definitions (schema/, seed/, customize/, field-acl/)
     - `src/cli/config.ts`: Configuration resolver (CLI args > env vars)
     - `src/cli/output.ts`: Shared output formatting
     - `src/cli/handleError.ts`: Error handling
