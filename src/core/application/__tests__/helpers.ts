@@ -593,12 +593,14 @@ export function setupTestSeedContainer(): () => TestSeedContainer {
 export type TestFieldPermissionContainer = FieldPermissionContainer & {
   fieldPermissionConfigurator: InMemoryFieldPermissionConfigurator;
   fieldPermissionStorage: InMemoryFieldPermissionStorage;
+  appDeployer: InMemoryAppDeployer;
 };
 
 export function createTestFieldPermissionContainer(): TestFieldPermissionContainer {
   return {
     fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
     fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
+    appDeployer: new InMemoryAppDeployer(),
   };
 }
 

@@ -102,6 +102,7 @@ export function createFieldPermissionCliContainer(
     fieldPermissionStorage: new LocalFileFieldPermissionStorage(
       config.fieldAclFilePath,
     ),
+    appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }
 
