@@ -53,13 +53,13 @@ import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
 import { captureFieldPermission } from "@/core/application/fieldPermission/captureFieldPermission";
 import { saveFieldPermission } from "@/core/application/fieldPermission/saveFieldPermission";
-import command from "../capture-field-acl";
+import command from "../capture";
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("capture-field-acl コマンド", () => {
+describe("field-acl capture コマンド", () => {
   it("フィールド権限をキャプチャしてファイルに保存する", async () => {
     vi.mocked(captureFieldPermission).mockResolvedValue({
       configText: "rights:\n  - code: name\n",

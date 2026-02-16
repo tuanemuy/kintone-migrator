@@ -6,16 +6,16 @@ import {
 } from "@/core/application/container/cli";
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
-import { confirmArgs } from "../config";
+import { confirmArgs } from "../../config";
 import {
   type FieldAclCliValues,
   fieldAclArgs,
   resolveFieldAclAppContainerConfig,
   resolveFieldAclContainerConfig,
-} from "../fieldAclConfig";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../projectConfig";
+} from "../../fieldAclConfig";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
+import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
 async function runFieldAcl(
   config: FieldPermissionCliContainerConfig,
@@ -60,7 +60,7 @@ async function confirmAndDeploy(
 }
 
 export default define({
-  name: "field-acl",
+  name: "apply",
   description: "Apply field access permissions from YAML to kintone app",
   args: { ...fieldAclArgs, ...confirmArgs },
   run: async (ctx) => {

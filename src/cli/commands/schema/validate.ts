@@ -11,14 +11,14 @@ import {
   validateSchema,
 } from "@/core/application/formSchema/validateSchema";
 import type { ValidationIssue } from "@/core/domain/formSchema/services/schemaValidator";
-import { multiAppArgs } from "../config";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
+import { multiAppArgs } from "../../config";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
 import {
   type MultiAppCliValues,
   routeMultiApp,
   runMultiAppWithFailCheck,
-} from "../projectConfig";
+} from "../../projectConfig";
 
 const validateArgs = {
   "schema-file": {

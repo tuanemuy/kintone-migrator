@@ -61,13 +61,13 @@ vi.mock("@/cli/handleError", () => ({
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
-import command from "../field-acl";
+import command from "../apply";
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("field-acl コマンド", () => {
+describe("field-acl apply コマンド", () => {
   it("フィールド権限の適用に成功し、成功メッセージが表示される", async () => {
     vi.mocked(applyFieldPermission).mockResolvedValue(undefined);
 

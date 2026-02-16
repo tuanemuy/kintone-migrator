@@ -64,13 +64,13 @@ import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
 import { createCustomizationCliContainer } from "@/core/application/container/cli";
 import { applyCustomization } from "@/core/application/customization/applyCustomization";
-import command from "../customize";
+import command from "../apply";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("customize コマンド", () => {
+describe("customize apply コマンド", () => {
   it("カスタマイズ適用成功時、成功メッセージが表示される", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
 

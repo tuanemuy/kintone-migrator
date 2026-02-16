@@ -12,10 +12,10 @@ import {
   fieldAclArgs,
   resolveFieldAclAppContainerConfig,
   resolveFieldAclContainerConfig,
-} from "../fieldAclConfig";
-import { handleCliError } from "../handleError";
-import { printAppHeader } from "../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../projectConfig";
+} from "../../fieldAclConfig";
+import { handleCliError } from "../../handleError";
+import { printAppHeader } from "../../output";
+import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
 async function runCaptureFieldAcl(
   config: FieldPermissionCliContainerConfig,
@@ -40,7 +40,7 @@ async function runCaptureFieldAcl(
 }
 
 export default define({
-  name: "capture-field-acl",
+  name: "capture",
   description:
     "Capture current field access permissions from kintone app to file",
   args: fieldAclArgs,
