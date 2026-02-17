@@ -8,6 +8,7 @@ import adminNotesGroup from "./commands/admin-notes";
 import appAclGroup from "./commands/app-acl";
 import customizeGroup from "./commands/customize";
 import fieldAclGroup from "./commands/field-acl";
+import initCommand from "./commands/init";
 import notificationGroup from "./commands/notification";
 import pluginGroup from "./commands/plugin";
 import processGroup from "./commands/process";
@@ -39,6 +40,7 @@ await cli(process.argv.slice(2), main, {
   name: "kintone-migrator",
   version: loadVersion(),
   subCommands: {
+    init: initCommand,
     schema: schemaGroup,
     seed: seedGroup,
     customize: customizeGroup,
