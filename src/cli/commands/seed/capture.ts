@@ -5,7 +5,6 @@ import {
   createSeedCliContainer,
   type SeedCliContainerConfig,
 } from "@/core/application/container/cli";
-import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import {
   type CaptureSeedInput,
   captureSeed,
@@ -27,7 +26,7 @@ const seedCaptureArgs = {
   "key-field": {
     type: "string" as const,
     short: "k",
-    description: "Key field code for capture (required)",
+    description: "Key field code for upsert (optional, omit for add-only)",
   },
   "seed-file": {
     type: "string" as const,
@@ -38,7 +37,7 @@ const seedCaptureArgs = {
 
 async function runSeedCapture(
   config: SeedCliContainerConfig,
-  keyField: string,
+  keyField: string | undefined,
 ): Promise<void> {
   const container = createSeedCliContainer(config);
 
@@ -59,6 +58,10 @@ async function runSeedCapture(
     `Seed saved to: ${pc.cyan(config.seedFilePath)} (${result.recordCount} records)`,
   );
 
+  if (!keyField) {
+    p.log.info("No key field specified. All records will be added on apply.");
+  }
+
   if (result.hasExistingSeed) {
     p.log.warn("Existing seed file was overwritten.");
   }
@@ -72,13 +75,6 @@ export default define({
     try {
       const values = ctx.values as SeedCliValues;
       const keyField = values["key-field"];
-
-      if (!keyField) {
-        throw new ValidationError(
-          ValidationErrorCode.InvalidInput,
-          "--key-field is required for seed capture",
-        );
-      }
 
       await routeMultiApp(values, {
         singleLegacy: async () => {

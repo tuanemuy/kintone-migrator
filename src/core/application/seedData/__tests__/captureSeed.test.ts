@@ -68,4 +68,20 @@ describe("captureSeed", () => {
     expect(result.seedText).toContain("key: code");
     expect(result.seedText).toContain("records: []");
   });
+
+  it("keyField未指定時はkeyなしでYAMLを生成する", async () => {
+    const container: TestSeedContainer = getContainer();
+    container.recordManager.setRecords([
+      makeKintoneRecord("10", { code: "001", name: "テスト1" }),
+    ]);
+
+    const result = await captureSeed({
+      container,
+      input: {},
+    });
+
+    expect(result.recordCount).toBe(1);
+    expect(result.seedText).not.toContain("key:");
+    expect(result.seedText).toContain("001");
+  });
 });

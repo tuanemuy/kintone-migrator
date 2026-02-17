@@ -99,13 +99,27 @@ describe("seed capture コマンド", () => {
     );
   });
 
-  it("--key-fieldがない場合にエラーをスローする", async () => {
+  it("--key-field未指定でもエラーにならずkeyなしでcaptureする", async () => {
+    vi.mocked(captureSeed).mockResolvedValue({
+      seedText: "records:\n",
+      recordCount: 0,
+      hasExistingSeed: false,
+    });
+    vi.mocked(saveSeed).mockResolvedValue(undefined);
+
     await command.run({
       values: {},
     } as never);
 
-    expect(handleCliError).toHaveBeenCalled();
-    expect(captureSeed).not.toHaveBeenCalled();
+    expect(handleCliError).not.toHaveBeenCalled();
+    expect(captureSeed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: { keyField: undefined },
+      }),
+    );
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("No key field specified"),
+    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {
