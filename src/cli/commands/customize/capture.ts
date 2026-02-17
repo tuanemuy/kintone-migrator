@@ -18,7 +18,7 @@ import { handleCliError } from "../../handleError";
 import { printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
-function deriveFilePrefix(customizeFilePath: string): string {
+export function deriveFilePrefix(customizeFilePath: string): string {
   const resolved = resolve(customizeFilePath);
   const dir = dirname(resolved);
   const parentDir = basename(dir);

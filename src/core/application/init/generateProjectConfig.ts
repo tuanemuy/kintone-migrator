@@ -22,6 +22,8 @@ export function generateProjectConfig(
     };
   }
 
+  // auth is intentionally omitted from the generated config to avoid writing
+  // credentials to disk. The CLI prompts the user to add auth settings manually.
   const config: Record<string, unknown> = {
     domain: input.domain,
   };

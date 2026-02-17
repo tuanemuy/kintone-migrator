@@ -17,10 +17,12 @@ guestSpaceId: "456"  # optional
 apps:
   customer:
     appId: "10"
-    schemaFile: schemas/customer.yaml  # 省略時: schemas/<appName>.yaml
+    files:
+      schema: schemas/customer.yaml  # 省略時: schemas/<appName>.yaml
   order:
     appId: "20"
-    schemaFile: schemas/order.yaml
+    files:
+      schema: schemas/order.yaml
     dependsOn:
       - customer
   invoice:
@@ -49,54 +51,38 @@ apps:
 | フィールド | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | `appId` | string | 必須 | kintoneアプリID（非空文字列） |
-| `schemaFile` | string | - | スキーマファイルパス。省略時: `schemas/<appName>.yaml` |
+| `files` | object | - | ファイルパスをまとめて指定するオブジェクト（下記参照） |
 | `domain` | string | - | このアプリ固有のドメイン（トップレベルを上書き） |
 | `auth` | object | - | このアプリ固有の認証設定（トップレベルを上書き） |
 | `guestSpaceId` | string | - | このアプリ固有のゲストスペースID |
 | `dependsOn` | string[] | - | 依存先アプリ名の配列 |
-| `seedFile` | string | - | シードデータファイルパス。省略時: `seeds/<appName>.yaml` |
-| `customizeFile` | string | - | カスタマイズファイルパス。省略時: `customize/<appName>.yaml` |
-| `fieldAclFile` | string | - | フィールドACLファイルパス。省略時: `field-acl/<appName>.yaml` |
-| `viewFile` | string | - | ビューファイルパス。省略時: `view/<appName>.yaml` |
-| `appAclFile` | string | - | アプリACLファイルパス。省略時: `app-acl/<appName>.yaml` |
-| `recordAclFile` | string | - | レコードACLファイルパス。省略時: `record-acl/<appName>.yaml` |
-| `processFile` | string | - | プロセス管理ファイルパス。省略時: `process/<appName>.yaml` |
-| `settingsFile` | string | - | 一般設定ファイルパス。省略時: `settings/<appName>.yaml` |
-| `notificationFile` | string | - | 通知設定ファイルパス。省略時: `notification/<appName>.yaml` |
-| `reportFile` | string | - | レポートファイルパス。省略時: `report/<appName>.yaml` |
-| `actionFile` | string | - | アクションファイルパス。省略時: `action/<appName>.yaml` |
-| `adminNotesFile` | string | - | 管理者メモファイルパス。省略時: `admin-notes/<appName>.yaml` |
-| `pluginFile` | string | - | プラグインファイルパス。省略時: `plugin/<appName>.yaml` |
-| `files` | object | - | ファイルパスをまとめて指定するオブジェクト（下記参照） |
 
 ### ファイルパスオブジェクト（`apps.<name>.files`）
 
-フラットフィールド（`schemaFile` 等）の代わりに、`files` オブジェクトでファイルパスをまとめて指定できる。
+| フィールド | 説明 | デフォルト |
+| --- | --- | --- |
+| `files.schema` | スキーマファイルパス | `schemas/<appName>.yaml` |
+| `files.seed` | シードデータファイルパス | `seeds/<appName>.yaml` |
+| `files.customize` | カスタマイズファイルパス | `customize/<appName>.yaml` |
+| `files.fieldAcl` | フィールドACLファイルパス | `field-acl/<appName>.yaml` |
+| `files.view` | ビューファイルパス | `view/<appName>.yaml` |
+| `files.appAcl` | アプリACLファイルパス | `app-acl/<appName>.yaml` |
+| `files.recordAcl` | レコードACLファイルパス | `record-acl/<appName>.yaml` |
+| `files.process` | プロセス管理ファイルパス | `process/<appName>.yaml` |
+| `files.settings` | 一般設定ファイルパス | `settings/<appName>.yaml` |
+| `files.notification` | 通知設定ファイルパス | `notification/<appName>.yaml` |
+| `files.report` | レポートファイルパス | `report/<appName>.yaml` |
+| `files.action` | アクションファイルパス | `action/<appName>.yaml` |
+| `files.adminNotes` | 管理者メモファイルパス | `admin-notes/<appName>.yaml` |
+| `files.plugin` | プラグインファイルパス | `plugin/<appName>.yaml` |
 
-| フィールド | 対応するフラットフィールド |
-| --- | --- |
-| `files.schema` | `schemaFile` |
-| `files.seed` | `seedFile` |
-| `files.customize` | `customizeFile` |
-| `files.fieldAcl` | `fieldAclFile` |
-| `files.view` | `viewFile` |
-| `files.appAcl` | `appAclFile` |
-| `files.recordAcl` | `recordAclFile` |
-| `files.process` | `processFile` |
-| `files.settings` | `settingsFile` |
-| `files.notification` | `notificationFile` |
-| `files.report` | `reportFile` |
-| `files.action` | `actionFile` |
-| `files.adminNotes` | `adminNotesFile` |
-| `files.plugin` | `pluginFile` |
-
-**優先順位**: `files.*` > フラットフィールド（`*File`）。両方指定した場合は `files` が優先される。
+> **非推奨**: フラットフィールド形式（`schemaFile`, `seedFile` 等）は非推奨。`files` オブジェクトを使用すること。後方互換性のため引き続きサポートされるが、将来のバージョンで削除される可能性がある。両方指定した場合は `files` が優先される。
 
 ## バリデーションルール
 
 - `apps` は必須で、空でないオブジェクトであること
 - 各アプリに `appId`（非空文字列）が必須
-- `schemaFile` 省略時は `schemas/<appName>.yaml` がデフォルト値
+- 全ファイルパスフィールドは省略時に規約ベースのデフォルト値が設定される（例: `schemas/<appName>.yaml`）
 - `dependsOn` の参照先は同一設定ファイル内のアプリ名であること
 - `domain` はCLI引数（`--domain`）、環境変数（`KINTONE_DOMAIN`）、または設定ファイル（トップレベル/アプリ単位）のいずれかで解決される
 - `auth` はCLI引数（`--api-token`, `--username`/`--password`）、環境変数（`KINTONE_API_TOKEN`, `KINTONE_USERNAME`/`KINTONE_PASSWORD`）、または設定ファイル（トップレベル/アプリ単位）のいずれかで解決される

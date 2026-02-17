@@ -1,4 +1,4 @@
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
 import type {
@@ -20,27 +20,46 @@ export type CaptureCustomizationOutput = {
   readonly downloadedFileCount: number;
 };
 
+function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
+  if (!usedNames.has(baseName)) {
+    usedNames.add(baseName);
+    return baseName;
+  }
+
+  const ext = extname(baseName);
+  const stem = baseName.slice(0, baseName.length - ext.length);
+  let counter = 1;
+  let candidate = `${stem}_${counter}${ext}`;
+  while (usedNames.has(candidate)) {
+    counter++;
+    candidate = `${stem}_${counter}${ext}`;
+  }
+  usedNames.add(candidate);
+  return candidate;
+}
+
 async function downloadAndSaveResources(
   resources: readonly RemoteResource[],
   platformDir: string,
   resourceType: "js" | "css",
-  filePrefix: string,
+  relativeBaseDir: string,
   container: CustomizationServiceArgs<CaptureCustomizationInput>["container"],
 ): Promise<readonly CustomizationResource[]> {
   const result: CustomizationResource[] = [];
   const dir = join(platformDir, resourceType);
+  const usedNames = new Set<string>();
 
   for (const resource of resources) {
     if (resource.type === "URL") {
       result.push({ type: "URL", url: resource.url });
     } else {
-      const fileName = resource.file.name;
+      const fileName = deduplicateFileName(resource.file.name, usedNames);
       const filePath = join(dir, fileName);
       const data = await container.fileDownloader.download(
         resource.file.fileKey,
       );
       await container.fileWriter.write(filePath, data);
-      const relativePath = join(filePrefix, resourceType, fileName);
+      const relativePath = join(relativeBaseDir, resourceType, fileName);
       result.push({ type: "FILE", path: relativePath });
     }
   }

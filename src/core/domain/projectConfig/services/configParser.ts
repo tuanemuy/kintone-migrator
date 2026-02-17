@@ -117,25 +117,53 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
         asOptionalString(rawAppValue.seedFile) ??
         `seeds/${name}.yaml`,
       customizeFile:
-        files.customizeFile ?? asOptionalString(rawAppValue.customizeFile),
+        files.customizeFile ??
+        asOptionalString(rawAppValue.customizeFile) ??
+        `customize/${name}.yaml`,
       fieldAclFile:
-        files.fieldAclFile ?? asOptionalString(rawAppValue.fieldAclFile),
-      viewFile: files.viewFile ?? asOptionalString(rawAppValue.viewFile),
-      appAclFile: files.appAclFile ?? asOptionalString(rawAppValue.appAclFile),
+        files.fieldAclFile ??
+        asOptionalString(rawAppValue.fieldAclFile) ??
+        `field-acl/${name}.yaml`,
+      viewFile:
+        files.viewFile ??
+        asOptionalString(rawAppValue.viewFile) ??
+        `view/${name}.yaml`,
+      appAclFile:
+        files.appAclFile ??
+        asOptionalString(rawAppValue.appAclFile) ??
+        `app-acl/${name}.yaml`,
       recordAclFile:
-        files.recordAclFile ?? asOptionalString(rawAppValue.recordAclFile),
+        files.recordAclFile ??
+        asOptionalString(rawAppValue.recordAclFile) ??
+        `record-acl/${name}.yaml`,
       processFile:
-        files.processFile ?? asOptionalString(rawAppValue.processFile),
+        files.processFile ??
+        asOptionalString(rawAppValue.processFile) ??
+        `process/${name}.yaml`,
       settingsFile:
-        files.settingsFile ?? asOptionalString(rawAppValue.settingsFile),
+        files.settingsFile ??
+        asOptionalString(rawAppValue.settingsFile) ??
+        `settings/${name}.yaml`,
       notificationFile:
         files.notificationFile ??
-        asOptionalString(rawAppValue.notificationFile),
-      reportFile: files.reportFile ?? asOptionalString(rawAppValue.reportFile),
-      actionFile: files.actionFile ?? asOptionalString(rawAppValue.actionFile),
+        asOptionalString(rawAppValue.notificationFile) ??
+        `notification/${name}.yaml`,
+      reportFile:
+        files.reportFile ??
+        asOptionalString(rawAppValue.reportFile) ??
+        `report/${name}.yaml`,
+      actionFile:
+        files.actionFile ??
+        asOptionalString(rawAppValue.actionFile) ??
+        `action/${name}.yaml`,
       adminNotesFile:
-        files.adminNotesFile ?? asOptionalString(rawAppValue.adminNotesFile),
-      pluginFile: files.pluginFile ?? asOptionalString(rawAppValue.pluginFile),
+        files.adminNotesFile ??
+        asOptionalString(rawAppValue.adminNotesFile) ??
+        `admin-notes/${name}.yaml`,
+      pluginFile:
+        files.pluginFile ??
+        asOptionalString(rawAppValue.pluginFile) ??
+        `plugin/${name}.yaml`,
       domain: appDomain,
       auth: appAuth,
       guestSpaceId: asOptionalString(rawAppValue.guestSpaceId),

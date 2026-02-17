@@ -107,37 +107,25 @@ apps:
       - customer
 ```
 
-File paths can also be specified as flat fields instead of the `files` object:
-
-```yaml
-# Flat fields (alternative format)
-apps:
-  customer:
-    appId: "10"
-    schemaFile: schemas/customer.yaml
-    seedFile: seeds/customer.yaml
-    viewFile: custom/customer-views.yaml
-```
-
-If both are specified, `files.*` takes priority over flat fields.
-
 | Field | Required | Description |
 |---|---|---|
 | `appId` | Yes | kintone app ID |
-| `schemaFile` / `files.schema` | No | Schema file path (default: `schemas/<appName>.yaml`) |
-| `seedFile` / `files.seed` | No | Seed file path (default: `seeds/<appName>.yaml`) |
-| `customizeFile` / `files.customize` | No | Customization file path (default: `customize/<appName>.yaml`) |
-| `fieldAclFile` / `files.fieldAcl` | No | Field ACL file path (default: `field-acl/<appName>.yaml`) |
-| `viewFile` / `files.view` | No | View file path (default: `view/<appName>.yaml`) |
-| `appAclFile` / `files.appAcl` | No | App ACL file path (default: `app-acl/<appName>.yaml`) |
-| `recordAclFile` / `files.recordAcl` | No | Record ACL file path (default: `record-acl/<appName>.yaml`) |
-| `processFile` / `files.process` | No | Process management file path (default: `process/<appName>.yaml`) |
-| `settingsFile` / `files.settings` | No | General settings file path (default: `settings/<appName>.yaml`) |
-| `notificationFile` / `files.notification` | No | Notification file path (default: `notification/<appName>.yaml`) |
-| `reportFile` / `files.report` | No | Report file path (default: `report/<appName>.yaml`) |
-| `actionFile` / `files.action` | No | Action file path (default: `action/<appName>.yaml`) |
-| `adminNotesFile` / `files.adminNotes` | No | Admin notes file path (default: `admin-notes/<appName>.yaml`) |
-| `pluginFile` / `files.plugin` | No | Plugin file path (default: `plugin/<appName>.yaml`) |
+| `files.schema` | No | Schema file path (default: `schemas/<appName>.yaml`) |
+| `files.seed` | No | Seed file path (default: `seeds/<appName>.yaml`) |
+| `files.customize` | No | Customization file path (default: `customize/<appName>.yaml`) |
+| `files.fieldAcl` | No | Field ACL file path (default: `field-acl/<appName>.yaml`) |
+| `files.view` | No | View file path (default: `view/<appName>.yaml`) |
+| `files.appAcl` | No | App ACL file path (default: `app-acl/<appName>.yaml`) |
+| `files.recordAcl` | No | Record ACL file path (default: `record-acl/<appName>.yaml`) |
+| `files.process` | No | Process management file path (default: `process/<appName>.yaml`) |
+| `files.settings` | No | General settings file path (default: `settings/<appName>.yaml`) |
+| `files.notification` | No | Notification file path (default: `notification/<appName>.yaml`) |
+| `files.report` | No | Report file path (default: `report/<appName>.yaml`) |
+| `files.action` | No | Action file path (default: `action/<appName>.yaml`) |
+| `files.adminNotes` | No | Admin notes file path (default: `admin-notes/<appName>.yaml`) |
+| `files.plugin` | No | Plugin file path (default: `plugin/<appName>.yaml`) |
+
+> **Note:** Flat field format (`schemaFile`, `seedFile`, etc.) is deprecated. Use the `files` object instead. Flat fields are still supported for backward compatibility but may be removed in a future version.
 | `domain` | No | Override top-level domain |
 | `auth` | No | Override top-level authentication |
 | `guestSpaceId` | No | Guest space ID |

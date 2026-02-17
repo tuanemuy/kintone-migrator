@@ -1,5 +1,6 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { isBusinessRuleError } from "@/core/domain/error";
 import type { SpaceApp } from "@/core/domain/space/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
 
@@ -10,9 +11,18 @@ export class KintoneSpaceReader implements SpaceReader {
     try {
       const space = await this.client.space.getSpace({ id: spaceId });
 
-      // attachedApps is returned by the kintone API but not included in the SDK type definitions
+      // attachedApps is returned by the kintone API but not included in the SDK type definitions.
+      // If the API response shape changes and attachedApps is missing, we throw rather than
+      // silently returning an empty array, so the caller gets a clear signal.
       const spaceRecord = space as Record<string, unknown>;
       const rawApps = spaceRecord.attachedApps;
+
+      if (rawApps === undefined) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Space API response for space ID ${spaceId} does not contain attachedApps. The kintone API response format may have changed.`,
+        );
+      }
 
       if (!Array.isArray(rawApps)) {
         return [];
@@ -29,6 +39,7 @@ export class KintoneSpaceReader implements SpaceReader {
           name: typeof app.name === "string" ? app.name : "",
         }));
     } catch (error) {
+      if (isBusinessRuleError(error)) throw error;
       if (error instanceof SystemError) throw error;
       throw new SystemError(
         SystemErrorCode.ExternalApiError,

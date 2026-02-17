@@ -60,6 +60,12 @@ import {
 } from "@/core/application/container/viewCli";
 import { captureCustomization } from "@/core/application/customization/captureCustomization";
 import { saveCustomization } from "@/core/application/customization/saveCustomization";
+import {
+  isForbiddenError,
+  isSystemError,
+  isUnauthenticatedError,
+  SystemErrorCode,
+} from "@/core/application/error";
 import { captureFieldPermission } from "@/core/application/fieldPermission/captureFieldPermission";
 import { saveFieldPermission } from "@/core/application/fieldPermission/saveFieldPermission";
 import { captureSchema } from "@/core/application/formSchema/captureSchema";
@@ -331,6 +337,15 @@ function buildCaptureTasks(
   ];
 }
 
+export function isFatalError(error: unknown): boolean {
+  if (isUnauthenticatedError(error)) return true;
+  if (isForbiddenError(error)) return true;
+  if (isSystemError(error) && error.code === SystemErrorCode.NetworkError) {
+    return true;
+  }
+  return false;
+}
+
 export async function captureAllForApp(
   input: CaptureAllForAppInput,
 ): Promise<readonly CaptureResult[]> {
@@ -343,6 +358,12 @@ export async function captureAllForApp(
       results.push({ domain: task.domain, success: true });
     } catch (error) {
       results.push({ domain: task.domain, success: false, error });
+      if (isFatalError(error)) {
+        for (const remaining of tasks.slice(tasks.indexOf(task) + 1)) {
+          results.push({ domain: remaining.domain, success: false, error });
+        }
+        break;
+      }
     }
   }
 

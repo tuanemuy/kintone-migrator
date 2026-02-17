@@ -353,10 +353,10 @@ describe("ConfigParser.parse", () => {
     expect(app1?.schemaFile).toBe("files/schema.yaml");
     expect(app1?.seedFile).toBe("seeds/app1.yaml");
     expect(app1?.customizeFile).toBe("flat/customize.yaml");
-    expect(app1?.viewFile).toBeUndefined();
+    expect(app1?.viewFile).toBe("view/app1.yaml");
   });
 
-  it("未指定のドメインファイルパスフィールドはundefinedのままになる", () => {
+  it("未指定のドメインファイルパスフィールドは規約ベースのデフォルト値になる", () => {
     const config = ConfigParser.parse({
       domain: "example.cybozu.com",
       auth: { apiToken: "token" },
@@ -366,17 +366,17 @@ describe("ConfigParser.parse", () => {
     });
 
     const app1 = config.apps.get(AppName.create("app1"));
-    expect(app1?.customizeFile).toBeUndefined();
-    expect(app1?.fieldAclFile).toBeUndefined();
-    expect(app1?.viewFile).toBeUndefined();
-    expect(app1?.appAclFile).toBeUndefined();
-    expect(app1?.recordAclFile).toBeUndefined();
-    expect(app1?.processFile).toBeUndefined();
-    expect(app1?.settingsFile).toBeUndefined();
-    expect(app1?.notificationFile).toBeUndefined();
-    expect(app1?.reportFile).toBeUndefined();
-    expect(app1?.actionFile).toBeUndefined();
-    expect(app1?.adminNotesFile).toBeUndefined();
-    expect(app1?.pluginFile).toBeUndefined();
+    expect(app1?.customizeFile).toBe("customize/app1.yaml");
+    expect(app1?.fieldAclFile).toBe("field-acl/app1.yaml");
+    expect(app1?.viewFile).toBe("view/app1.yaml");
+    expect(app1?.appAclFile).toBe("app-acl/app1.yaml");
+    expect(app1?.recordAclFile).toBe("record-acl/app1.yaml");
+    expect(app1?.processFile).toBe("process/app1.yaml");
+    expect(app1?.settingsFile).toBe("settings/app1.yaml");
+    expect(app1?.notificationFile).toBe("notification/app1.yaml");
+    expect(app1?.reportFile).toBe("report/app1.yaml");
+    expect(app1?.actionFile).toBe("action/app1.yaml");
+    expect(app1?.adminNotesFile).toBe("admin-notes/app1.yaml");
+    expect(app1?.pluginFile).toBe("plugin/app1.yaml");
   });
 });

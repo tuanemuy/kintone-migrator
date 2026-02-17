@@ -1,4 +1,3 @@
-import { access, writeFile } from "node:fs/promises";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
@@ -91,10 +90,11 @@ export default define({
       const configPath = values.output ?? DEFAULT_CONFIG_PATH;
       const skipConfirm = values.yes ?? false;
 
-      const { spaceReader } = createInitCliContainer({
+      const { spaceReader, projectConfigStorage } = createInitCliContainer({
         baseUrl,
         auth,
         guestSpaceId,
+        configFilePath: configPath,
       });
 
       // Fetch space apps
@@ -116,21 +116,9 @@ export default define({
       }
 
       // Check if config file exists
-      let configExists = false;
-      try {
-        await access(configPath);
-        configExists = true;
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          "code" in error &&
-          error.code !== "ENOENT"
-        ) {
-          throw error;
-        }
-      }
+      const existing = await projectConfigStorage.get();
 
-      if (configExists && !skipConfirm) {
+      if (existing.exists && !skipConfirm) {
         const shouldOverwrite = await p.confirm({
           message: `${configPath} already exists. Overwrite?`,
         });
@@ -146,7 +134,7 @@ export default define({
         domain: kintoneDomain,
         guestSpaceId,
       });
-      await writeFile(configPath, configText, "utf-8");
+      await projectConfigStorage.update(configText);
       p.log.success(`Config written to: ${pc.cyan(configPath)}`);
       p.log.info(
         `Add authentication settings (auth) to ${pc.cyan(configPath)} before running commands.`,
