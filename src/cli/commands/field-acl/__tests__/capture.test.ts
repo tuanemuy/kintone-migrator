@@ -38,7 +38,7 @@ vi.mock("@/cli/output", () => ({
   printAppHeader: vi.fn(),
 }));
 
-vi.mock("@/core/application/container/cli", () => ({
+vi.mock("@/core/application/container/fieldPermissionCli", () => ({
   createFieldPermissionCliContainer: vi.fn(() => ({})),
 }));
 

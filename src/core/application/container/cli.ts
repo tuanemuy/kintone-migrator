@@ -1,17 +1,14 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneCustomizationConfigurator } from "@/core/adapters/kintone/customizationConfigurator";
-import { KintoneFieldPermissionConfigurator } from "@/core/adapters/kintone/fieldPermissionConfigurator";
 import { KintoneFileUploader } from "@/core/adapters/kintone/fileUploader";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
 import { LocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
-import { LocalFileFieldPermissionStorage } from "@/core/adapters/local/fieldPermissionStorage";
 import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { LocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
 import type { Container } from "@/core/application/container";
 import type { CustomizationContainer } from "@/core/application/container/customization";
-import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import type { SeedContainer } from "@/core/application/container/seed";
 
 export type KintoneAuth =
@@ -74,35 +71,6 @@ export function createSeedCliContainer(
   return {
     recordManager: new KintoneRecordManager(client, config.appId),
     seedStorage: new LocalFileSeedStorage(config.seedFilePath),
-  };
-}
-
-export type FieldPermissionCliContainerConfig = {
-  baseUrl: string;
-  auth: KintoneAuth;
-  appId: string;
-  guestSpaceId?: string;
-  fieldAclFilePath: string;
-};
-
-export function createFieldPermissionCliContainer(
-  config: FieldPermissionCliContainerConfig,
-): FieldPermissionContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
-
-  return {
-    fieldPermissionConfigurator: new KintoneFieldPermissionConfigurator(
-      client,
-      config.appId,
-    ),
-    fieldPermissionStorage: new LocalFileFieldPermissionStorage(
-      config.fieldAclFilePath,
-    ),
-    appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }
 

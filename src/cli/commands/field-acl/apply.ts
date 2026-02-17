@@ -1,10 +1,10 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
+import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import {
   createFieldPermissionCliContainer,
   type FieldPermissionCliContainerConfig,
-} from "@/core/application/container/cli";
-import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
+} from "@/core/application/container/fieldPermissionCli";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
 import { confirmArgs } from "../../config";
 import {
