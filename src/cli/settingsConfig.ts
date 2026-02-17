@@ -26,6 +26,7 @@ export function resolveSettingsFilePath(
   return (
     cliValues["settings-file"] ??
     process.env.SETTINGS_FILE_PATH ??
+    app?.settingsFile ??
     (app ? `settings/${app.name}.yaml` : "settings.yaml")
   );
 }

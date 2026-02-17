@@ -26,6 +26,7 @@ export function resolveAppAclFilePath(
   return (
     cliValues["app-acl-file"] ??
     process.env.APP_ACL_FILE_PATH ??
+    app?.appAclFile ??
     (app ? `app-acl/${app.name}.yaml` : "app-acl.yaml")
   );
 }

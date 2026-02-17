@@ -26,6 +26,7 @@ export function resolveReportFilePath(
   return (
     cliValues["report-file"] ??
     process.env.REPORT_FILE_PATH ??
+    app?.reportFile ??
     (app ? `report/${app.name}.yaml` : "reports.yaml")
   );
 }

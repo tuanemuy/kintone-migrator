@@ -26,6 +26,7 @@ export function resolveRecordAclFilePath(
   return (
     cliValues["record-acl-file"] ??
     process.env.RECORD_ACL_FILE_PATH ??
+    app?.recordAclFile ??
     (app ? `record-acl/${app.name}.yaml` : "record-acl.yaml")
   );
 }

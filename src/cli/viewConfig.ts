@@ -26,6 +26,7 @@ export function resolveViewFilePath(
   return (
     cliValues["view-file"] ??
     process.env.VIEW_FILE_PATH ??
+    app?.viewFile ??
     (app ? `view/${app.name}.yaml` : "views.yaml")
   );
 }

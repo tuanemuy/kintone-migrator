@@ -26,6 +26,7 @@ export function resolveNotificationFilePath(
   return (
     cliValues["notification-file"] ??
     process.env.NOTIFICATION_FILE_PATH ??
+    app?.notificationFile ??
     (app ? `notification/${app.name}.yaml` : "notification.yaml")
   );
 }

@@ -138,7 +138,7 @@ export function resolveConfig(cliValues: {
   };
 }
 
-function resolveAuth(
+export function resolveAuth(
   apiToken: string | undefined,
   username: string | undefined,
   password: string | undefined,

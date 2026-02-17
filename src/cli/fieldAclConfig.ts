@@ -26,6 +26,7 @@ export function resolveFieldAclFilePath(
   return (
     cliValues["field-acl-file"] ??
     process.env.FIELD_ACL_FILE_PATH ??
+    app?.fieldAclFile ??
     (app ? `field-acl/${app.name}.yaml` : "field-acl.yaml")
   );
 }

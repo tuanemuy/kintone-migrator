@@ -26,6 +26,7 @@ export function resolvePluginFilePath(
   return (
     cliValues["plugin-file"] ??
     process.env.PLUGIN_FILE_PATH ??
+    app?.pluginFile ??
     (app ? `plugin/${app.name}.yaml` : "plugins.yaml")
   );
 }

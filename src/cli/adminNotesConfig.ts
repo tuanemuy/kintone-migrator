@@ -26,6 +26,7 @@ export function resolveAdminNotesFilePath(
   return (
     cliValues["admin-notes-file"] ??
     process.env.ADMIN_NOTES_FILE_PATH ??
+    app?.adminNotesFile ??
     (app ? `admin-notes/${app.name}.yaml` : "admin-notes.yaml")
   );
 }

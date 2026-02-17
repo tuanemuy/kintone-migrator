@@ -26,6 +26,7 @@ export function resolveProcessFilePath(
   return (
     cliValues["process-file"] ??
     process.env.PROCESS_FILE_PATH ??
+    app?.processFile ??
     (app ? `process/${app.name}.yaml` : "process.yaml")
   );
 }

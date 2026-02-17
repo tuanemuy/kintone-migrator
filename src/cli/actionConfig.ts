@@ -26,6 +26,7 @@ export function resolveActionFilePath(
   return (
     cliValues["action-file"] ??
     process.env.ACTION_FILE_PATH ??
+    app?.actionFile ??
     (app ? `action/${app.name}.yaml` : "actions.yaml")
   );
 }
