@@ -442,6 +442,264 @@ actions:
       }
     });
 
+    it("action がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - not_an_object
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("action に name がない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - from: state1
+    to: state1
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("action に from がない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: action1
+    to: state1
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("action に to がない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: action1
+    from: state1
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("無効な action.type で PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+  state2:
+    index: 1
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: action1
+    from: state1
+    to: state2
+    type: INVALID
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("assignee がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee: not_an_object
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("assignee に entities がない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("entity がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities:
+        - not_an_object
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("state がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1: not_an_object
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("SECONDARY アクションの executableUser がオブジェクトでない場合にエラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+  state2:
+    index: 1
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: action1
+    from: state1
+    to: state2
+    type: SECONDARY
+    executableUser: not_an_object
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
+    it("SECONDARY アクションの executableUser.entities が配列でない場合にエラー", () => {
+      try {
+        ProcessManagementConfigParser.parse(`
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+  state2:
+    index: 1
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: action1
+    from: state1
+    to: state2
+    type: SECONDARY
+    executableUser:
+      entities: not_an_array
+`);
+      } catch (error) {
+        expect(isBusinessRuleError(error)).toBe(true);
+        if (isBusinessRuleError(error)) {
+          expect(error.code).toBe(
+            ProcessManagementErrorCode.PmInvalidConfigStructure,
+          );
+        }
+      }
+    });
+
     it("action の to が存在しないステータスの場合に PmInvalidActionReference エラー", () => {
       try {
         ProcessManagementConfigParser.parse(`

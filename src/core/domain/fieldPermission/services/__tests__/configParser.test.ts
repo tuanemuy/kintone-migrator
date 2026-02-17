@@ -229,6 +229,87 @@ rights:
       );
     });
 
+    it("should throw for non-object field right", () => {
+      const yaml = `
+rights:
+  - not_an_object
+`;
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: FieldPermissionErrorCode.FpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-array entities in field right", () => {
+      const yaml = `
+rights:
+  - code: field_code_1
+    entities: not_an_array
+`;
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: FieldPermissionErrorCode.FpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object field right entity", () => {
+      const yaml = `
+rights:
+  - code: field_code_1
+    entities:
+      - not_an_object
+`;
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: FieldPermissionErrorCode.FpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object entity in field right entity", () => {
+      const yaml = `
+rights:
+  - code: field_code_1
+    entities:
+      - accessibility: READ
+        entity: not_an_object
+`;
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: FieldPermissionErrorCode.FpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should parse includeSubs as false", () => {
+      const yaml = `
+rights:
+  - code: field_code_1
+    entities:
+      - accessibility: READ
+        entity:
+          type: GROUP
+          code: group1
+        includeSubs: false
+`;
+      const config = FieldPermissionConfigParser.parse(yaml);
+      expect(config.rights[0].entities[0].includeSubs).toBe(false);
+    });
+
     it("should throw DuplicateFieldCode for duplicate field codes", () => {
       const yaml = `
 rights:

@@ -117,6 +117,72 @@ describe("NotificationConfigSerializer.serialize", () => {
     expect(yaml.trim()).toBe("{}");
   });
 
+  it("perRecordのtargetにincludeSubsを含めてシリアライズできる", () => {
+    const config: NotificationConfig = {
+      perRecord: [
+        {
+          filterCond: "",
+          title: "Test",
+          targets: [
+            {
+              entity: { type: "GROUP", code: "group1" },
+              includeSubs: true,
+            },
+          ],
+        },
+      ],
+    };
+    const yaml = NotificationConfigSerializer.serialize(config);
+    expect(yaml).toContain("includeSubs: true");
+  });
+
+  it("reminderのtimeフィールドをシリアライズできる", () => {
+    const config: NotificationConfig = {
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 1,
+            time: "09:00",
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    };
+    const yaml = NotificationConfigSerializer.serialize(config);
+    expect(yaml).toContain("time:");
+    expect(yaml).toContain("09:00");
+    expect(yaml).not.toContain("hoursLater");
+  });
+
+  it("reminderのtargetにincludeSubsを含めてシリアライズできる", () => {
+    const config: NotificationConfig = {
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 1,
+            hoursLater: 9,
+            filterCond: "",
+            title: "Due",
+            targets: [
+              {
+                entity: { type: "GROUP", code: "group1" },
+                includeSubs: false,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const yaml = NotificationConfigSerializer.serialize(config);
+    expect(yaml).toContain("includeSubs: false");
+  });
+
   it("ラウンドトリップテスト: parse→serialize→parse→比較", () => {
     const yaml1 = NotificationConfigSerializer.serialize(fullConfig);
     const parsed1 = NotificationConfigParser.parse(yaml1);

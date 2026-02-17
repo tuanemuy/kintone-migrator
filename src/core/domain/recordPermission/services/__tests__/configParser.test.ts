@@ -283,5 +283,130 @@ rights:
         }),
       );
     });
+
+    it("should throw for non-object record right", () => {
+      const yaml = `
+rights:
+  - not_an_object
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-array entities in record right", () => {
+      const yaml = `
+rights:
+  - filterCond: ""
+    entities: not_an_array
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object record right entity", () => {
+      const yaml = `
+rights:
+  - filterCond: ""
+    entities:
+      - not_an_object
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object entity in record right entity", () => {
+      const yaml = `
+rights:
+  - filterCond: ""
+    entities:
+      - entity: not_an_object
+        viewable: true
+        editable: false
+        deletable: false
+        includeSubs: false
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw InvalidPermissionValue for string deletable value", () => {
+      const yaml = `
+rights:
+  - filterCond: ""
+    entities:
+      - entity:
+          type: USER
+          code: user1
+        viewable: true
+        editable: false
+        deletable: "no"
+        includeSubs: false
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpInvalidPermissionValue,
+        }),
+      );
+    });
+
+    it("should throw InvalidPermissionValue for string includeSubs value", () => {
+      const yaml = `
+rights:
+  - filterCond: ""
+    entities:
+      - entity:
+          type: USER
+          code: user1
+        viewable: true
+        editable: false
+        deletable: false
+        includeSubs: "true"
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpInvalidPermissionValue,
+        }),
+      );
+    });
+
+    it("should parse filterCond as string", () => {
+      const yaml = `
+rights:
+  - filterCond: 'status = "active"'
+    entities: []
+`;
+      const config = RecordPermissionConfigParser.parse(yaml);
+      expect(config.rights[0].filterCond).toBe('status = "active"');
+    });
   });
 });

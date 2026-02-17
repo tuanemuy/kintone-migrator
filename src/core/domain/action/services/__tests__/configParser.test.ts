@@ -280,5 +280,166 @@ actions:
         }),
       );
     });
+
+    it("should throw for non-object action value", () => {
+      const yaml = `
+actions:
+  test: not_an_object
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-array mappings", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings: not_an_array
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-array entities", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings: []
+    entities: not_an_array
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object mapping", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings:
+      - not_an_object
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object entity", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings: []
+    entities:
+      - not_an_object
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should parse destApp with app only", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      app: "123"
+    mappings: []
+    entities: []
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(config.actions.test.destApp).toEqual({ app: "123" });
+    });
+
+    it("should parse destApp with both app and code", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      app: "123"
+      code: my-app
+    mappings: []
+    entities: []
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(config.actions.test.destApp).toEqual({
+        app: "123",
+        code: "my-app",
+      });
+    });
+
+    it("should parse mapping with srcField omitted for RECORD_URL", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings:
+      - srcType: RECORD_URL
+        destField: url_field
+    entities: []
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(config.actions.test.mappings[0].srcField).toBeUndefined();
+    });
+
+    it("should throw AcEmptyActionName for empty action key", () => {
+      const yaml = `
+actions:
+  "":
+    index: 0
+    destApp:
+      code: target-app
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcEmptyActionName,
+        }),
+      );
+    });
+
+    it("should parse empty actions object", () => {
+      const yaml = `
+actions: {}
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(Object.keys(config.actions)).toHaveLength(0);
+    });
   });
 });

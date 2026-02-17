@@ -248,6 +248,61 @@ describe("ReportConfigSerializer", () => {
       expect(yaml).not.toContain("chartMode");
     });
 
+    it("should serialize periodicReport with dayOfWeek", () => {
+      const config: ReportsConfig = {
+        reports: {
+          週次レポート: {
+            chartType: "COLUMN",
+            chartMode: "NORMAL",
+            index: 0,
+            name: "週次レポート",
+            groups: [],
+            aggregations: [{ type: "COUNT" }],
+            filterCond: "",
+            sorts: [],
+            periodicReport: {
+              active: true,
+              period: {
+                every: "WEEK",
+                dayOfWeek: "MONDAY",
+                time: "09:00",
+              },
+            },
+          },
+        },
+      };
+
+      const yaml = ReportConfigSerializer.serialize(config);
+      expect(yaml).toContain("dayOfWeek: MONDAY");
+    });
+
+    it("should serialize periodicReport with minute", () => {
+      const config: ReportsConfig = {
+        reports: {
+          時間レポート: {
+            chartType: "COLUMN",
+            chartMode: "NORMAL",
+            index: 0,
+            name: "時間レポート",
+            groups: [],
+            aggregations: [{ type: "COUNT" }],
+            filterCond: "",
+            sorts: [],
+            periodicReport: {
+              active: true,
+              period: {
+                every: "HOUR",
+                minute: 30,
+              },
+            },
+          },
+        },
+      };
+
+      const yaml = ReportConfigSerializer.serialize(config);
+      expect(yaml).toContain("minute: 30");
+    });
+
     it("should roundtrip parse and serialize", () => {
       const originalYaml = `
 reports:

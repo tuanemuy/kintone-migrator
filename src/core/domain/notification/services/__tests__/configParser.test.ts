@@ -374,6 +374,299 @@ reminder:
     }
   });
 
+  it("generalのincludeSubsを指定できる", () => {
+    const yaml = `
+general:
+  notifyToCommenter: false
+  notifications:
+    - entity:
+        type: GROUP
+        code: group1
+      recordAdded: true
+      recordEdited: false
+      commentAdded: false
+      statusChanged: false
+      fileImported: false
+      includeSubs: true
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.general?.notifications[0].includeSubs).toBe(true);
+  });
+
+  it("perRecordのtargetにincludeSubsを指定できる", () => {
+    const yaml = `
+perRecord:
+  - filterCond: 'status = "open"'
+    targets:
+      - entity:
+          type: ORGANIZATION
+          code: org1
+        includeSubs: true
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.perRecord?.[0].targets[0].includeSubs).toBe(true);
+  });
+
+  it("perRecordのtargetのincludeSubs省略時はundefined", () => {
+    const yaml = `
+perRecord:
+  - filterCond: 'status = "open"'
+    targets:
+      - entity:
+          type: USER
+          code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.perRecord?.[0].targets[0].includeSubs).toBeUndefined();
+  });
+
+  it("reminderのtargetにincludeSubsを指定できる", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: 9
+      targets:
+        - entity:
+            type: GROUP
+            code: group1
+          includeSubs: true
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.reminder?.notifications[0].targets[0].includeSubs).toBe(true);
+  });
+
+  it("reminderのhoursLater/time両方省略時はどちらもundefined", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    const notification = config.reminder?.notifications[0];
+    expect(notification?.hoursLater).toBeUndefined();
+    expect(notification?.time).toBeUndefined();
+  });
+
+  it("reminderのfilterCond省略時は空文字列にデフォルトされる", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: 9
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.reminder?.notifications[0].filterCond).toBe("");
+  });
+
+  it("reminderのtitle省略時は空文字列にデフォルトされる", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: 9
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.reminder?.notifications[0].title).toBe("");
+  });
+
+  it("reminderのtimezone省略時はAsia/Tokyoにデフォルトされる", () => {
+    const yaml = `
+reminder:
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: 9
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.reminder?.timezone).toBe("Asia/Tokyo");
+  });
+
+  it("generalの通知が非オブジェクトでNtInvalidConfigStructureエラー", () => {
+    const yaml = `
+general:
+  notifyToCommenter: false
+  notifications:
+    - not_an_object
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("generalのnotificationsが配列でない場合にエラー", () => {
+    const yaml = `
+general:
+  notifyToCommenter: false
+  notifications: not_an_array
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("perRecordのnotificationが非オブジェクトでエラー", () => {
+    const yaml = `
+perRecord:
+  - not_an_object
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("perRecordのtargetsが配列でない場合にエラー", () => {
+    const yaml = `
+perRecord:
+  - filterCond: 'status = "open"'
+    targets: not_an_array
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("perRecordのtargetが非オブジェクトでエラー", () => {
+    const yaml = `
+perRecord:
+  - filterCond: 'status = "open"'
+    targets:
+      - not_an_object
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("reminderの通知が非オブジェクトでエラー", () => {
+    const yaml = `
+reminder:
+  notifications:
+    - not_an_object
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("reminderのnotificationsが配列でない場合にエラー", () => {
+    const yaml = `
+reminder:
+  notifications: not_an_array
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("reminderのtargetsが配列でない場合にエラー", () => {
+    const yaml = `
+reminder:
+  notifications:
+    - code: due_date
+      daysLater: 1
+      targets: not_an_array
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
+  it("entityが非オブジェクトでNtInvalidConfigStructureエラー", () => {
+    const yaml = `
+general:
+  notifyToCommenter: false
+  notifications:
+    - entity: not_an_object
+      recordAdded: true
+      recordEdited: false
+      commentAdded: false
+      statusChanged: false
+      fileImported: false
+`;
+    try {
+      NotificationConfigParser.parse(yaml);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        NotificationErrorCode.NtInvalidConfigStructure,
+      );
+    }
+  });
+
   it("reminderのhoursLaterとtime両方指定でNtConflictingTimingFieldsエラー", () => {
     const yaml = `
 reminder:

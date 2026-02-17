@@ -161,6 +161,124 @@ describe("ViewDiffDetector", () => {
     });
   });
 
+  describe("modified views - additional property changes", () => {
+    it("should detect sort change", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", sort: "f1 asc" }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", sort: "f1 desc" }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("sort changed");
+    });
+
+    it("should detect date change", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "CALENDAR",
+          name: "view1",
+          date: "date_field1",
+        }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "CALENDAR",
+          name: "view1",
+          date: "date_field2",
+        }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("date changed");
+    });
+
+    it("should detect title change", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", title: "new title" }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", title: "old title" }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("title changed");
+    });
+
+    it("should detect device change", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", device: "DESKTOP" }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", device: "ANY" }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("device changed");
+    });
+
+    it("should describe 'no visible changes' when views are not equal but no properties differ visibly", () => {
+      const view = makeView({ type: "LIST", name: "view1" });
+      const local: Record<string, ViewConfig> = { view1: view };
+      const remote: Record<string, ViewConfig> = { view1: { ...view } };
+
+      const result = ViewDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect multiple property changes in a single view", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "LIST",
+          name: "view1",
+          sort: "f1 asc",
+          date: "d1",
+          title: "t1",
+          device: "DESKTOP",
+        }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "LIST",
+          name: "view1",
+          sort: "f2 desc",
+          date: "d2",
+          title: "t2",
+          device: "ANY",
+        }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("sort changed");
+      expect(result.entries[0].details).toContain("date changed");
+      expect(result.entries[0].details).toContain("title changed");
+      expect(result.entries[0].details).toContain("device changed");
+    });
+
+    it("should treat undefined and empty string as equal for optional string fields", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", filterCond: undefined }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({ type: "LIST", name: "view1", filterCond: "" }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect added, modified, and deleted simultaneously", () => {
       const local: Record<string, ViewConfig> = {
