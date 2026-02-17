@@ -67,6 +67,9 @@ describe("capture コマンド", () => {
     });
     vi.mocked(saveSchema).mockResolvedValue(undefined);
 
+    // `as never` is used because gunshi's RunContext type requires internal fields
+    // that are irrelevant to unit tests. This is safe since we only test the
+    // handler logic, not the CLI framework integration.
     await command.run({ values: {} } as never);
 
     expect(captureSchema).toHaveBeenCalled();

@@ -143,4 +143,38 @@ describe("CustomizationConfigSerializer", () => {
 
     expect(parsed.scope).toBe("NONE");
   });
+
+  it("should round-trip when both desktop and mobile are empty with scope", () => {
+    const config: CustomizationConfig = {
+      scope: "ALL",
+      desktop: { js: [], css: [] },
+      mobile: { js: [], css: [] },
+    };
+
+    const yaml = CustomizationConfigSerializer.serialize(config);
+    const parsed = ConfigParser.parse(yaml);
+
+    expect(parsed.scope).toBe("ALL");
+    expect(parsed.desktop.js).toEqual([]);
+    expect(parsed.desktop.css).toEqual([]);
+    expect(parsed.mobile.js).toEqual([]);
+    expect(parsed.mobile.css).toEqual([]);
+  });
+
+  it("should round-trip when both desktop and mobile are empty without scope", () => {
+    const config: CustomizationConfig = {
+      scope: undefined,
+      desktop: { js: [], css: [] },
+      mobile: { js: [], css: [] },
+    };
+
+    const yaml = CustomizationConfigSerializer.serialize(config);
+    const parsed = ConfigParser.parse(yaml);
+
+    expect(parsed.scope).toBeUndefined();
+    expect(parsed.desktop.js).toEqual([]);
+    expect(parsed.desktop.css).toEqual([]);
+    expect(parsed.mobile.js).toEqual([]);
+    expect(parsed.mobile.css).toEqual([]);
+  });
 });

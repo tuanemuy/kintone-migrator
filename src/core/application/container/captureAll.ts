@@ -1,0 +1,31 @@
+import type { ActionContainer } from "./action";
+import type { AdminNotesContainer } from "./adminNotes";
+import type { AppPermissionContainer } from "./appPermission";
+import type { CustomizationCaptureContainer } from "./customization";
+import type { FieldPermissionContainer } from "./fieldPermission";
+import type { GeneralSettingsContainer } from "./generalSettings";
+import type { Container } from "./index";
+import type { NotificationContainer } from "./notification";
+import type { PluginContainer } from "./plugin";
+import type { ProcessManagementContainer } from "./processManagement";
+import type { RecordPermissionContainer } from "./recordPermission";
+import type { ReportContainer } from "./report";
+import type { SeedContainer } from "./seed";
+import type { ViewContainer } from "./view";
+
+export type CaptureAllContainers = {
+  readonly schema: Container;
+  readonly seed: SeedContainer;
+  readonly customization: CustomizationCaptureContainer;
+  readonly view: ViewContainer;
+  readonly settings: GeneralSettingsContainer;
+  readonly notification: NotificationContainer;
+  readonly report: ReportContainer;
+  readonly action: ActionContainer;
+  readonly process: ProcessManagementContainer;
+  readonly fieldPermission: FieldPermissionContainer;
+  readonly appPermission: AppPermissionContainer;
+  readonly recordPermission: RecordPermissionContainer;
+  readonly adminNotes: AdminNotesContainer;
+  readonly plugin: PluginContainer;
+};

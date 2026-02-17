@@ -9,7 +9,9 @@ import {
 } from "@/core/application/init/captureAllForApp";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
+import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName } from "@/core/domain/space/entity";
+import { createCliCaptureContainers } from "../captureContainerFactory";
 import { kintoneArgs, resolveAuth } from "../config";
 import { handleCliError } from "../handleError";
 
@@ -143,23 +145,27 @@ export default define({
       });
       await projectConfigStorage.update(configText);
       p.log.success(`Config written to: ${pc.cyan(configPath)}`);
-      p.log.info(
-        `Add authentication settings (auth) to ${pc.cyan(configPath)} or set KINTONE_API_TOKEN / KINTONE_USERNAME + KINTONE_PASSWORD environment variables.`,
-      );
 
       // Run captures for each app
       for (const app of apps) {
         const appName = resolveAppName(app);
         p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
 
-        const cs = p.spinner();
-        cs.start(`Capturing all domains for ${appName}...`);
-        const results = await captureAllForApp({
+        const containers = createCliCaptureContainers({
           baseUrl,
           auth,
           appId: app.appId,
           guestSpaceId,
           appName,
+        });
+        const paths = buildAppFilePaths(appName);
+
+        const cs = p.spinner();
+        cs.start(`Capturing all domains for ${appName}...`);
+        const results = await captureAllForApp({
+          appName,
+          customizeFilePath: paths.customize,
+          containers,
         });
         const successCount = results.filter((r) => r.success).length;
         const failCount = results.filter((r) => !r.success).length;
@@ -171,6 +177,9 @@ export default define({
         printCaptureResults(results);
       }
 
+      p.log.info(
+        `Add authentication settings (auth) to ${pc.cyan(configPath)} or set KINTONE_API_TOKEN / KINTONE_USERNAME + KINTONE_PASSWORD environment variables.`,
+      );
       p.log.success("\nProject initialization complete.");
     } catch (error) {
       handleCliError(error);

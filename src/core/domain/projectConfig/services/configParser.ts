@@ -41,7 +41,7 @@ function resolveFilePathFields(
   rawApp: Record<string, unknown>,
 ): FilePathFields {
   const f = isRecord(filesObj) ? filesObj : {};
-  return {
+  const raw = {
     schemaFile:
       asOptionalString(f.schema) ?? asOptionalString(rawApp.schemaFile),
     seedFile: asOptionalString(f.seed) ?? asOptionalString(rawApp.seedFile),
@@ -70,6 +70,9 @@ function resolveFilePathFields(
     pluginFile:
       asOptionalString(f.plugin) ?? asOptionalString(rawApp.pluginFile),
   };
+  return Object.fromEntries(
+    Object.entries(raw).filter(([, v]) => v !== undefined),
+  ) as FilePathFields;
 }
 
 function parseProjectConfig(raw: unknown): ProjectConfig {

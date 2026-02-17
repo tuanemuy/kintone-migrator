@@ -1,4 +1,4 @@
-import { basename, dirname, resolve } from "node:path";
+import { basename, dirname, extname, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
@@ -22,7 +22,7 @@ export function deriveFilePrefix(customizeFilePath: string): string {
   const resolved = resolve(customizeFilePath);
   const dir = dirname(resolved);
   const parentDir = basename(dir);
-  const fileName = basename(resolved, ".yaml");
+  const fileName = basename(resolved, extname(resolved));
 
   // parentDir is "" when the file is at the filesystem root (e.g. /customize.yaml)
   if (parentDir === "") {

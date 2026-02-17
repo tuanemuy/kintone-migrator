@@ -114,4 +114,44 @@ describe("generateProjectConfig", () => {
     const parsed = parseYaml(result);
     expect(parsed.guestSpaceId).toBeUndefined();
   });
+
+  it("同じcodeのアプリが2つある場合、2つ目に-2サフィックスを付与する", () => {
+    const apps: SpaceApp[] = [
+      { appId: "1", code: "myapp", name: "App 1" },
+      { appId: "2", code: "myapp", name: "App 2" },
+    ];
+
+    const result = generateProjectConfig({
+      apps,
+      domain: "example.cybozu.com",
+    });
+
+    const parsed = parseYaml(result);
+    expect(parsed.apps.myapp).toBeDefined();
+    expect(parsed.apps.myapp.appId).toBe("1");
+    expect(parsed.apps["myapp-2"]).toBeDefined();
+    expect(parsed.apps["myapp-2"].appId).toBe("2");
+    expect(parsed.apps["myapp-2"].files.schema).toBe("schemas/myapp-2.yaml");
+  });
+
+  it("同じcodeのアプリが3つある場合、-2と-3サフィックスを付与する", () => {
+    const apps: SpaceApp[] = [
+      { appId: "1", code: "dup", name: "Dup 1" },
+      { appId: "2", code: "dup", name: "Dup 2" },
+      { appId: "3", code: "dup", name: "Dup 3" },
+    ];
+
+    const result = generateProjectConfig({
+      apps,
+      domain: "example.cybozu.com",
+    });
+
+    const parsed = parseYaml(result);
+    expect(parsed.apps.dup).toBeDefined();
+    expect(parsed.apps.dup.appId).toBe("1");
+    expect(parsed.apps["dup-2"]).toBeDefined();
+    expect(parsed.apps["dup-2"].appId).toBe("2");
+    expect(parsed.apps["dup-3"]).toBeDefined();
+    expect(parsed.apps["dup-3"].appId).toBe("3");
+  });
 });

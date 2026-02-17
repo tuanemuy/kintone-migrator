@@ -8,6 +8,13 @@ export type AuthConfig =
       readonly password: string;
     };
 
+/**
+ * Represents a single app entry in the project config.
+ *
+ * File path fields are kept flat (not nested under a `files` sub-object) to
+ * maintain a 1:1 mapping with the parsed YAML structure in `configParser.ts`.
+ * For grouped access to file paths, use `AppFilePaths` from `appFilePaths.ts`.
+ */
 export type AppEntry = Readonly<{
   name: AppName;
   appId: string;

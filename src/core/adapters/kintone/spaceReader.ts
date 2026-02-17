@@ -40,7 +40,8 @@ export class KintoneSpaceReader implements SpaceReader {
           appId: String(app.appId ?? ""),
           code: typeof app.code === "string" ? app.code : "",
           name: typeof app.name === "string" ? app.name : "",
-        }));
+        }))
+        .filter((app) => app.appId !== "");
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
       if (error instanceof SystemError) throw error;

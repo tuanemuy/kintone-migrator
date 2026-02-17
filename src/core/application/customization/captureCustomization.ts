@@ -1,4 +1,5 @@
 import { extname, join } from "node:path";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
 import type {
@@ -25,6 +26,8 @@ type CaptureCustomizationArgs = {
   input: CaptureCustomizationInput;
 };
 
+const MAX_DEDUPLICATE_COUNTER = 10_000;
+
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {
     usedNames.add(baseName);
@@ -37,63 +40,82 @@ function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   let candidate = `${stem}_${counter}${ext}`;
   while (usedNames.has(candidate)) {
     counter++;
+    if (counter > MAX_DEDUPLICATE_COUNTER) {
+      throw new SystemError(
+        SystemErrorCode.StorageError,
+        `Failed to deduplicate file name "${baseName}": exceeded maximum counter (${MAX_DEDUPLICATE_COUNTER})`,
+      );
+    }
     candidate = `${stem}_${counter}${ext}`;
   }
   usedNames.add(candidate);
   return candidate;
 }
 
-async function downloadAndSaveResources(
+type PlannedFile = {
+  readonly fileName: string;
+  readonly fileKey: string;
+  readonly absolutePath: string;
+};
+
+type PlanResult = {
+  readonly resources: readonly CustomizationResource[];
+  readonly filesToDownload: readonly PlannedFile[];
+};
+
+function planResources(
   resources: readonly RemoteResource[],
   platformDir: string,
   resourceType: "js" | "css",
   relativeBaseDir: string,
-  container: CustomizationCaptureContainer,
-): Promise<readonly CustomizationResource[]> {
-  const result: CustomizationResource[] = [];
+): PlanResult {
+  const planned: CustomizationResource[] = [];
+  const filesToDownload: PlannedFile[] = [];
   const dir = join(platformDir, resourceType);
   const usedNames = new Set<string>();
 
   for (const resource of resources) {
     if (resource.type === "URL") {
-      result.push({ type: "URL", url: resource.url });
+      planned.push({ type: "URL", url: resource.url });
     } else {
       const fileName = deduplicateFileName(resource.file.name, usedNames);
-      const filePath = join(dir, fileName);
-      const data = await container.fileDownloader.download(
-        resource.file.fileKey,
-      );
-      await container.fileWriter.write(filePath, data);
+      const absolutePath = join(dir, fileName);
       const relativePath = join(relativeBaseDir, resourceType, fileName);
-      result.push({ type: "FILE", path: relativePath });
+      planned.push({ type: "FILE", path: relativePath });
+      filesToDownload.push({
+        fileName,
+        fileKey: resource.file.fileKey,
+        absolutePath,
+      });
     }
   }
 
-  return result;
+  return { resources: planned, filesToDownload };
 }
 
-async function downloadPlatform(
+function planPlatform(
   remotePlatform: RemotePlatform,
   platformName: string,
   args: CaptureCustomizationArgs,
-): Promise<{ platform: CustomizationPlatform; fileCount: number }> {
+): {
+  platform: CustomizationPlatform;
+  filesToDownload: readonly PlannedFile[];
+  fileCount: number;
+} {
   const platformDir = join(args.input.basePath, platformName);
   const platformPrefix = join(args.input.filePrefix, platformName);
 
-  const jsResources = await downloadAndSaveResources(
+  const jsPlan = planResources(
     remotePlatform.js,
     platformDir,
     "js",
     platformPrefix,
-    args.container,
   );
-
-  const cssResources = await downloadAndSaveResources(
+  const cssPlan = planResources(
     remotePlatform.css,
     platformDir,
     "css",
     platformPrefix,
-    args.container,
   );
 
   const fileCount =
@@ -101,9 +123,20 @@ async function downloadPlatform(
     remotePlatform.css.filter((r) => r.type === "FILE").length;
 
   return {
-    platform: { js: jsResources, css: cssResources },
+    platform: { js: jsPlan.resources, css: cssPlan.resources },
+    filesToDownload: [...jsPlan.filesToDownload, ...cssPlan.filesToDownload],
     fileCount,
   };
+}
+
+async function downloadFiles(
+  files: readonly PlannedFile[],
+  container: CustomizationCaptureContainer,
+): Promise<void> {
+  for (const file of files) {
+    const data = await container.fileDownloader.download(file.fileKey);
+    await container.fileWriter.write(file.absolutePath, data);
+  }
 }
 
 export async function captureCustomization(
@@ -115,20 +148,28 @@ export async function captureCustomization(
   const { scope, desktop, mobile } =
     await args.container.customizationConfigurator.getCustomization();
 
-  const desktopResult = await downloadPlatform(desktop, "desktop", args);
-  const mobileResult = await downloadPlatform(mobile, "mobile", args);
+  // Phase 1: Plan file paths and build config (no I/O yet)
+  const desktopPlan = planPlatform(desktop, "desktop", args);
+  const mobilePlan = planPlatform(mobile, "mobile", args);
 
   const config: CustomizationConfig = {
     scope,
-    desktop: desktopResult.platform,
-    mobile: mobileResult.platform,
+    desktop: desktopPlan.platform,
+    mobile: mobilePlan.platform,
   };
 
   const configText = CustomizationConfigSerializer.serialize(config);
 
+  // Phase 2: Download and write files
+  const allFiles = [
+    ...desktopPlan.filesToDownload,
+    ...mobilePlan.filesToDownload,
+  ];
+  await downloadFiles(allFiles, args.container);
+
   return {
     configText,
     hasExistingConfig: existing.exists,
-    downloadedFileCount: desktopResult.fileCount + mobileResult.fileCount,
+    downloadedFileCount: desktopPlan.fileCount + mobilePlan.fileCount,
   };
 }

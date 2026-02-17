@@ -5,59 +5,7 @@ import { captureAdminNotes } from "@/core/application/adminNotes/captureAdminNot
 import { saveAdminNotes } from "@/core/application/adminNotes/saveAdminNotes";
 import { captureAppPermission } from "@/core/application/appPermission/captureAppPermission";
 import { saveAppPermission } from "@/core/application/appPermission/saveAppPermission";
-import {
-  type ActionCliContainerConfig,
-  createActionCliContainer,
-} from "@/core/application/container/actionCli";
-import {
-  type AdminNotesCliContainerConfig,
-  createAdminNotesCliContainer,
-} from "@/core/application/container/adminNotesCli";
-import {
-  type AppPermissionCliContainerConfig,
-  createAppPermissionCliContainer,
-} from "@/core/application/container/appPermissionCli";
-import type { KintoneAuth } from "@/core/application/container/cli";
-import {
-  type CliContainerConfig,
-  type CustomizationCliContainerConfig,
-  createCliContainer,
-  createCustomizationCliContainer,
-  createSeedCliContainer,
-  type SeedCliContainerConfig,
-} from "@/core/application/container/cli";
-import {
-  createFieldPermissionCliContainer,
-  type FieldPermissionCliContainerConfig,
-} from "@/core/application/container/fieldPermissionCli";
-import {
-  createGeneralSettingsCliContainer,
-  type GeneralSettingsCliContainerConfig,
-} from "@/core/application/container/generalSettingsCli";
-import {
-  createNotificationCliContainer,
-  type NotificationCliContainerConfig,
-} from "@/core/application/container/notification";
-import {
-  createPluginCliContainer,
-  type PluginCliContainerConfig,
-} from "@/core/application/container/pluginCli";
-import {
-  createProcessManagementCliContainer,
-  type ProcessManagementCliContainerConfig,
-} from "@/core/application/container/processManagementCli";
-import {
-  createRecordPermissionCliContainer,
-  type RecordPermissionCliContainerConfig,
-} from "@/core/application/container/recordPermissionCli";
-import {
-  createReportCliContainer,
-  type ReportCliContainerConfig,
-} from "@/core/application/container/reportCli";
-import {
-  createViewCliContainer,
-  type ViewCliContainerConfig,
-} from "@/core/application/container/viewCli";
+import type { CaptureAllContainers } from "@/core/application/container/captureAll";
 import { captureCustomization } from "@/core/application/customization/captureCustomization";
 import { saveCustomization } from "@/core/application/customization/saveCustomization";
 import {
@@ -86,13 +34,8 @@ import { captureSeed } from "@/core/application/seedData/captureSeed";
 import { saveSeed } from "@/core/application/seedData/saveSeed";
 import { captureView } from "@/core/application/view/captureView";
 import { saveView } from "@/core/application/view/saveView";
-import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 
-// NOTE: This orchestration function directly references CLI container factories
-// (e.g. createCliContainer, createCustomizationCliContainer). This couples the
-// application layer to the composition root, which is an intentional trade-off
-// to keep init-specific capture logic centralised. If additional orchestration
-// functions are needed, consider extracting a container factory interface.
+export type { CaptureAllContainers } from "@/core/application/container/captureAll";
 
 export type CaptureResult = Readonly<{
   domain: string;
@@ -101,11 +44,9 @@ export type CaptureResult = Readonly<{
 }>;
 
 export type CaptureAllForAppInput = Readonly<{
-  baseUrl: string;
-  auth: KintoneAuth;
-  appId: string;
-  guestSpaceId?: string;
   appName: string;
+  customizeFilePath: string;
+  containers: CaptureAllContainers;
 }>;
 
 type CaptureTask = {
@@ -113,34 +54,37 @@ type CaptureTask = {
   readonly run: () => Promise<void>;
 };
 
+function buildStandardTask<C>(
+  domain: string,
+  container: C,
+  capture: (c: C) => Promise<{ configText: string }>,
+  save: (c: C, text: string) => Promise<void>,
+): CaptureTask {
+  return {
+    domain,
+    run: async () => {
+      const result = await capture(container);
+      await save(container, result.configText);
+    },
+  };
+}
+
 function buildCaptureTasks(
   input: CaptureAllForAppInput,
 ): readonly CaptureTask[] {
-  const base = {
-    baseUrl: input.baseUrl,
-    auth: input.auth,
-    appId: input.appId,
-    guestSpaceId: input.guestSpaceId,
-  };
-
-  const paths = buildAppFilePaths(input.appName);
+  const c = input.containers;
 
   return [
     {
       domain: "customize",
       run: async () => {
-        const config: CustomizationCliContainerConfig = {
-          ...base,
-          customizeFilePath: paths.customize,
-        };
-        const container = createCustomizationCliContainer(config);
-        const basePath = dirname(resolve(paths.customize));
+        const basePath = dirname(resolve(input.customizeFilePath));
         const result = await captureCustomization({
-          container,
+          container: c.customization,
           input: { basePath, filePrefix: input.appName },
         });
         await saveCustomization({
-          container,
+          container: c.customization,
           input: { configText: result.configText },
         });
       },
@@ -148,198 +92,99 @@ function buildCaptureTasks(
     {
       domain: "schema",
       run: async () => {
-        const config: CliContainerConfig = {
-          ...base,
-          schemaFilePath: paths.schema,
-        };
-        const container = createCliContainer(config);
-        const result = await captureSchema({ container });
+        const result = await captureSchema({ container: c.schema });
         await saveSchema({
-          container,
+          container: c.schema,
           input: { schemaText: result.schemaText },
         });
       },
     },
     {
+      // During init, seed is captured without an upsert key because the key
+      // field is unknown at this point. Users can add keyField later when
+      // they configure upsert-based seed application.
       domain: "seed",
       run: async () => {
-        const config: SeedCliContainerConfig = {
-          ...base,
-          seedFilePath: paths.seed,
-        };
-        const container = createSeedCliContainer(config);
-        const result = await captureSeed({
-          container,
-          input: {},
-        });
+        const result = await captureSeed({ container: c.seed, input: {} });
         await saveSeed({
-          container,
+          container: c.seed,
           input: { seedText: result.seedText },
         });
       },
     },
-    {
-      domain: "view",
-      run: async () => {
-        const config: ViewCliContainerConfig = {
-          ...base,
-          viewFilePath: paths.view,
-        };
-        const container = createViewCliContainer(config);
-        const result = await captureView({ container });
-        await saveView({ container, input: { configText: result.configText } });
-      },
-    },
-    {
-      domain: "settings",
-      run: async () => {
-        const config: GeneralSettingsCliContainerConfig = {
-          ...base,
-          settingsFilePath: paths.settings,
-        };
-        const container = createGeneralSettingsCliContainer(config);
-        const result = await captureGeneralSettings({ container });
-        await saveGeneralSettings({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "notification",
-      run: async () => {
-        const config: NotificationCliContainerConfig = {
-          ...base,
-          notificationFilePath: paths.notification,
-        };
-        const container = createNotificationCliContainer(config);
-        const result = await captureNotification({ container });
-        await saveNotification({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "report",
-      run: async () => {
-        const config: ReportCliContainerConfig = {
-          ...base,
-          reportFilePath: paths.report,
-        };
-        const container = createReportCliContainer(config);
-        const result = await captureReport({ container });
-        await saveReport({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "action",
-      run: async () => {
-        const config: ActionCliContainerConfig = {
-          ...base,
-          actionFilePath: paths.action,
-        };
-        const container = createActionCliContainer(config);
-        const result = await captureAction({ container });
-        await saveAction({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "process",
-      run: async () => {
-        const config: ProcessManagementCliContainerConfig = {
-          ...base,
-          processFilePath: paths.process,
-        };
-        const container = createProcessManagementCliContainer(config);
-        const result = await captureProcessManagement({ container });
-        await saveProcessManagement({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "field-acl",
-      run: async () => {
-        const config: FieldPermissionCliContainerConfig = {
-          ...base,
-          fieldAclFilePath: paths.fieldAcl,
-        };
-        const container = createFieldPermissionCliContainer(config);
-        const result = await captureFieldPermission({ container });
-        await saveFieldPermission({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "app-acl",
-      run: async () => {
-        const config: AppPermissionCliContainerConfig = {
-          ...base,
-          appAclFilePath: paths.appAcl,
-        };
-        const container = createAppPermissionCliContainer(config);
-        const result = await captureAppPermission({ container });
-        await saveAppPermission({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "record-acl",
-      run: async () => {
-        const config: RecordPermissionCliContainerConfig = {
-          ...base,
-          recordAclFilePath: paths.recordAcl,
-        };
-        const container = createRecordPermissionCliContainer(config);
-        const result = await captureRecordPermission({ container });
-        await saveRecordPermission({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "admin-notes",
-      run: async () => {
-        const config: AdminNotesCliContainerConfig = {
-          ...base,
-          adminNotesFilePath: paths.adminNotes,
-        };
-        const container = createAdminNotesCliContainer(config);
-        const result = await captureAdminNotes({ container });
-        await saveAdminNotes({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
-    {
-      domain: "plugin",
-      run: async () => {
-        const config: PluginCliContainerConfig = {
-          ...base,
-          pluginFilePath: paths.plugin,
-        };
-        const container = createPluginCliContainer(config);
-        const result = await capturePlugin({ container });
-        await savePlugin({
-          container,
-          input: { configText: result.configText },
-        });
-      },
-    },
+    buildStandardTask(
+      "view",
+      c.view,
+      (v) => captureView({ container: v }),
+      (v, text) => saveView({ container: v, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "settings",
+      c.settings,
+      (s) => captureGeneralSettings({ container: s }),
+      (s, text) =>
+        saveGeneralSettings({ container: s, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "notification",
+      c.notification,
+      (n) => captureNotification({ container: n }),
+      (n, text) =>
+        saveNotification({ container: n, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "report",
+      c.report,
+      (r) => captureReport({ container: r }),
+      (r, text) => saveReport({ container: r, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "action",
+      c.action,
+      (a) => captureAction({ container: a }),
+      (a, text) => saveAction({ container: a, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "process",
+      c.process,
+      (p) => captureProcessManagement({ container: p }),
+      (p, text) =>
+        saveProcessManagement({ container: p, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "field-acl",
+      c.fieldPermission,
+      (f) => captureFieldPermission({ container: f }),
+      (f, text) =>
+        saveFieldPermission({ container: f, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "app-acl",
+      c.appPermission,
+      (a) => captureAppPermission({ container: a }),
+      (a, text) =>
+        saveAppPermission({ container: a, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "record-acl",
+      c.recordPermission,
+      (r) => captureRecordPermission({ container: r }),
+      (r, text) =>
+        saveRecordPermission({ container: r, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "admin-notes",
+      c.adminNotes,
+      (a) => captureAdminNotes({ container: a }),
+      (a, text) =>
+        saveAdminNotes({ container: a, input: { configText: text } }),
+    ),
+    buildStandardTask(
+      "plugin",
+      c.plugin,
+      (p) => capturePlugin({ container: p }),
+      (p, text) => savePlugin({ container: p, input: { configText: text } }),
+    ),
   ];
 }
 

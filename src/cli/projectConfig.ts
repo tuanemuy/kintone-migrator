@@ -7,6 +7,7 @@ import type { MultiAppExecutor } from "@/core/application/projectConfig/executeM
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
 import { loadProjectConfig } from "@/core/application/projectConfig/loadProjectConfig";
 import { resolveExecutionPlan } from "@/core/application/projectConfig/resolveExecutionPlan";
+import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import type {
   AppEntry,
   AuthConfig,
@@ -140,7 +141,7 @@ export function resolveAppCliConfig(
       cliValues["schema-file"] ??
       process.env.SCHEMA_FILE_PATH ??
       app.schemaFile ??
-      `schemas/${app.name}.yaml`,
+      buildAppFilePaths(app.name).schema,
   };
 }
 

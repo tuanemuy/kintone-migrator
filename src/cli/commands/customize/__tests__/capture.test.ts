@@ -32,4 +32,12 @@ describe("deriveFilePrefix", () => {
       "myapp",
     );
   });
+
+  it(".yml 拡張子のファイルも正しくファイル名を返す", () => {
+    expect(deriveFilePrefix("my-config.yml")).toBe("my-config");
+  });
+
+  it("ディレクトリ内の .yml ファイルも正しくファイル名を返す", () => {
+    expect(deriveFilePrefix("some-dir/my-config.yml")).toBe("my-config");
+  });
 });
