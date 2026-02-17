@@ -17,6 +17,43 @@ function asOptionalStringArray(value: unknown): string[] | undefined {
     : undefined;
 }
 
+type ParsedFiles = {
+  schemaFile?: string;
+  seedFile?: string;
+  customizeFile?: string;
+  fieldAclFile?: string;
+  viewFile?: string;
+  appAclFile?: string;
+  recordAclFile?: string;
+  processFile?: string;
+  settingsFile?: string;
+  notificationFile?: string;
+  reportFile?: string;
+  actionFile?: string;
+  adminNotesFile?: string;
+  pluginFile?: string;
+};
+
+function parseFiles(raw: unknown): ParsedFiles {
+  if (!isRecord(raw)) return {};
+  return {
+    schemaFile: asOptionalString(raw.schema),
+    seedFile: asOptionalString(raw.seed),
+    customizeFile: asOptionalString(raw.customize),
+    fieldAclFile: asOptionalString(raw.fieldAcl),
+    viewFile: asOptionalString(raw.view),
+    appAclFile: asOptionalString(raw.appAcl),
+    recordAclFile: asOptionalString(raw.recordAcl),
+    processFile: asOptionalString(raw.process),
+    settingsFile: asOptionalString(raw.settings),
+    notificationFile: asOptionalString(raw.notification),
+    reportFile: asOptionalString(raw.report),
+    actionFile: asOptionalString(raw.action),
+    adminNotesFile: asOptionalString(raw.adminNotes),
+    pluginFile: asOptionalString(raw.plugin),
+  };
+}
+
 function parseProjectConfig(raw: unknown): ProjectConfig {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
@@ -66,12 +103,39 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
       AppName.create,
     );
 
+    const files = parseFiles(rawAppValue.files);
+
     apps.set(appName, {
       name: appName,
       appId,
       schemaFile:
-        asOptionalString(rawAppValue.schemaFile) ?? `schemas/${name}.yaml`,
-      seedFile: asOptionalString(rawAppValue.seedFile) ?? `seeds/${name}.yaml`,
+        files.schemaFile ??
+        asOptionalString(rawAppValue.schemaFile) ??
+        `schemas/${name}.yaml`,
+      seedFile:
+        files.seedFile ??
+        asOptionalString(rawAppValue.seedFile) ??
+        `seeds/${name}.yaml`,
+      customizeFile:
+        files.customizeFile ?? asOptionalString(rawAppValue.customizeFile),
+      fieldAclFile:
+        files.fieldAclFile ?? asOptionalString(rawAppValue.fieldAclFile),
+      viewFile: files.viewFile ?? asOptionalString(rawAppValue.viewFile),
+      appAclFile: files.appAclFile ?? asOptionalString(rawAppValue.appAclFile),
+      recordAclFile:
+        files.recordAclFile ?? asOptionalString(rawAppValue.recordAclFile),
+      processFile:
+        files.processFile ?? asOptionalString(rawAppValue.processFile),
+      settingsFile:
+        files.settingsFile ?? asOptionalString(rawAppValue.settingsFile),
+      notificationFile:
+        files.notificationFile ??
+        asOptionalString(rawAppValue.notificationFile),
+      reportFile: files.reportFile ?? asOptionalString(rawAppValue.reportFile),
+      actionFile: files.actionFile ?? asOptionalString(rawAppValue.actionFile),
+      adminNotesFile:
+        files.adminNotesFile ?? asOptionalString(rawAppValue.adminNotesFile),
+      pluginFile: files.pluginFile ?? asOptionalString(rawAppValue.pluginFile),
       domain: appDomain,
       auth: appAuth,
       guestSpaceId: asOptionalString(rawAppValue.guestSpaceId),

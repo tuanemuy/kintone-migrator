@@ -55,6 +55,42 @@ apps:
 | `guestSpaceId` | string | - | このアプリ固有のゲストスペースID |
 | `dependsOn` | string[] | - | 依存先アプリ名の配列 |
 | `seedFile` | string | - | シードデータファイルパス。省略時: `seeds/<appName>.yaml` |
+| `customizeFile` | string | - | カスタマイズファイルパス。省略時: `customize/<appName>.yaml` |
+| `fieldAclFile` | string | - | フィールドACLファイルパス。省略時: `field-acl/<appName>.yaml` |
+| `viewFile` | string | - | ビューファイルパス。省略時: `view/<appName>.yaml` |
+| `appAclFile` | string | - | アプリACLファイルパス。省略時: `app-acl/<appName>.yaml` |
+| `recordAclFile` | string | - | レコードACLファイルパス。省略時: `record-acl/<appName>.yaml` |
+| `processFile` | string | - | プロセス管理ファイルパス。省略時: `process/<appName>.yaml` |
+| `settingsFile` | string | - | 一般設定ファイルパス。省略時: `settings/<appName>.yaml` |
+| `notificationFile` | string | - | 通知設定ファイルパス。省略時: `notification/<appName>.yaml` |
+| `reportFile` | string | - | レポートファイルパス。省略時: `report/<appName>.yaml` |
+| `actionFile` | string | - | アクションファイルパス。省略時: `action/<appName>.yaml` |
+| `adminNotesFile` | string | - | 管理者メモファイルパス。省略時: `admin-notes/<appName>.yaml` |
+| `pluginFile` | string | - | プラグインファイルパス。省略時: `plugin/<appName>.yaml` |
+| `files` | object | - | ファイルパスをまとめて指定するオブジェクト（下記参照） |
+
+### ファイルパスオブジェクト（`apps.<name>.files`）
+
+フラットフィールド（`schemaFile` 等）の代わりに、`files` オブジェクトでファイルパスをまとめて指定できる。
+
+| フィールド | 対応するフラットフィールド |
+| --- | --- |
+| `files.schema` | `schemaFile` |
+| `files.seed` | `seedFile` |
+| `files.customize` | `customizeFile` |
+| `files.fieldAcl` | `fieldAclFile` |
+| `files.view` | `viewFile` |
+| `files.appAcl` | `appAclFile` |
+| `files.recordAcl` | `recordAclFile` |
+| `files.process` | `processFile` |
+| `files.settings` | `settingsFile` |
+| `files.notification` | `notificationFile` |
+| `files.report` | `reportFile` |
+| `files.action` | `actionFile` |
+| `files.adminNotes` | `adminNotesFile` |
+| `files.plugin` | `pluginFile` |
+
+**優先順位**: `files.*` > フラットフィールド（`*File`）。両方指定した場合は `files` が優先される。
 
 ## バリデーションルール
 

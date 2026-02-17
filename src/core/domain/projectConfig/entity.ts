@@ -13,6 +13,18 @@ export type AppEntry = Readonly<{
   appId: string;
   schemaFile: string;
   seedFile?: string;
+  customizeFile?: string;
+  fieldAclFile?: string;
+  viewFile?: string;
+  appAclFile?: string;
+  recordAclFile?: string;
+  processFile?: string;
+  settingsFile?: string;
+  notificationFile?: string;
+  reportFile?: string;
+  actionFile?: string;
+  adminNotesFile?: string;
+  pluginFile?: string;
   domain?: string;
   auth?: AuthConfig;
   guestSpaceId?: string;
