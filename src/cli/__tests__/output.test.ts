@@ -6,6 +6,8 @@ vi.mock("@clack/prompts", () => ({
     info: vi.fn(),
     warn: vi.fn(),
     success: vi.fn(),
+    step: vi.fn(),
+    error: vi.fn(),
   },
   note: vi.fn(),
   confirm: vi.fn(),
@@ -13,8 +15,24 @@ vi.mock("@clack/prompts", () => ({
   isCancel: vi.fn(() => false),
 }));
 
+vi.mock("../handleError", () => ({
+  logError: vi.fn(),
+}));
+
 import * as p from "@clack/prompts";
-import { printDiffResult, promptDeploy } from "../output";
+import type { DiffProcessManagementOutput } from "@/core/application/processManagement/diffProcessManagement";
+import type { DetectViewDiffOutput } from "@/core/application/view/dto";
+import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
+import type { AppName } from "@/core/domain/projectConfig/valueObject";
+import { logError } from "../handleError";
+import {
+  printAppHeader,
+  printDiffResult,
+  printMultiAppResult,
+  printProcessDiffResult,
+  printViewDiffResult,
+  promptDeploy,
+} from "../output";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -238,6 +256,228 @@ describe("printDiffResult", () => {
       "Diff Details",
       expect.objectContaining({ format: expect.any(Function) }),
     );
+  });
+});
+
+describe("printViewDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DetectViewDiffOutput = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printViewDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("追加エントリがある場合、'+N added' と 'View Diff Details' ノートが出力される", () => {
+    const result: DetectViewDiffOutput = {
+      entries: [
+        { type: "added", viewName: "一覧", details: "LIST view を追加" },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printViewDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("+1 added"),
+    );
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("一覧"),
+      "View Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+
+  it("変更エントリがある場合、'~N modified' がログ出力される", () => {
+    const result: DetectViewDiffOutput = {
+      entries: [{ type: "modified", viewName: "一覧", details: "ソート変更" }],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printViewDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("~1 modified"),
+    );
+  });
+
+  it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
+    const result: DetectViewDiffOutput = {
+      entries: [{ type: "deleted", viewName: "旧一覧", details: "削除" }],
+      summary: { added: 0, modified: 0, deleted: 1, total: 1 },
+      isEmpty: false,
+    };
+    printViewDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("-1 deleted"),
+    );
+  });
+
+  it("追加・変更・削除が混在する場合、全種類のサマリーが出力される", () => {
+    const result: DetectViewDiffOutput = {
+      entries: [
+        { type: "added", viewName: "新規", details: "追加" },
+        { type: "modified", viewName: "変更", details: "変更" },
+        { type: "deleted", viewName: "削除", details: "削除" },
+      ],
+      summary: { added: 1, modified: 1, deleted: 1, total: 3 },
+      isEmpty: false,
+    };
+    printViewDiffResult(result);
+    const changeLine = vi.mocked(p.log.info).mock.calls[0][0] as string;
+    expect(changeLine).toContain("+1 added");
+    expect(changeLine).toContain("~1 modified");
+    expect(changeLine).toContain("-1 deleted");
+  });
+});
+
+describe("printProcessDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffProcessManagementOutput = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0 },
+      isEmpty: true,
+    };
+    printProcessDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("追加エントリがある場合、'+N added' と 'Process Management Diff Details' ノートが出力される", () => {
+    const result: DiffProcessManagementOutput = {
+      entries: [
+        {
+          type: "added",
+          category: "state",
+          name: "処理中",
+          details: "assignee: ONE",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0 },
+      isEmpty: false,
+    };
+    printProcessDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("+1 added"),
+    );
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("処理中"),
+      "Process Management Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+
+  it("変更エントリがある場合、'~N modified' がログ出力される", () => {
+    const result: DiffProcessManagementOutput = {
+      entries: [
+        {
+          type: "modified",
+          category: "enable",
+          name: "enable",
+          details: "false -> true",
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0 },
+      isEmpty: false,
+    };
+    printProcessDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("~1 modified"),
+    );
+  });
+
+  it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
+    const result: DiffProcessManagementOutput = {
+      entries: [
+        {
+          type: "deleted",
+          category: "action",
+          name: "承認",
+          details: "未処理 -> 処理済",
+        },
+      ],
+      summary: { added: 0, modified: 0, deleted: 1 },
+      isEmpty: false,
+    };
+    printProcessDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("-1 deleted"),
+    );
+  });
+});
+
+describe("printAppHeader", () => {
+  it("アプリ名とIDを含むヘッダーが出力される", () => {
+    printAppHeader("テストアプリ", "123");
+    expect(p.log.step).toHaveBeenCalledWith(
+      expect.stringContaining("テストアプリ"),
+    );
+    expect(p.log.step).toHaveBeenCalledWith(expect.stringContaining("123"));
+  });
+});
+
+describe("printMultiAppResult", () => {
+  it("succeeded の場合、成功メッセージが出力される", () => {
+    const result: MultiAppResult = {
+      results: [{ name: "App1" as AppName, status: "succeeded" }],
+      hasFailure: false,
+    };
+    printMultiAppResult(result);
+    expect(p.log.success).toHaveBeenCalledWith(
+      expect.stringContaining("Succeeded"),
+    );
+    expect(p.log.success).toHaveBeenCalledWith(expect.stringContaining("App1"));
+  });
+
+  it("failed の場合、エラーメッセージと logError が呼ばれる", () => {
+    const testError = new Error("test error");
+    const result: MultiAppResult = {
+      results: [
+        { name: "App2" as AppName, status: "failed", error: testError },
+      ],
+      hasFailure: true,
+    };
+    printMultiAppResult(result);
+    expect(p.log.error).toHaveBeenCalledWith(expect.stringContaining("Failed"));
+    expect(p.log.error).toHaveBeenCalledWith(expect.stringContaining("App2"));
+    expect(logError).toHaveBeenCalledWith(testError);
+  });
+
+  it("failed で error がない場合、エラーメッセージのみ出力される", () => {
+    const result: MultiAppResult = {
+      results: [{ name: "App3" as AppName, status: "failed" }],
+      hasFailure: true,
+    };
+    printMultiAppResult(result);
+    expect(p.log.error).toHaveBeenCalledWith(expect.stringContaining("Failed"));
+    expect(logError).not.toHaveBeenCalled();
+  });
+
+  it("skipped の場合、スキップメッセージが出力される", () => {
+    const result: MultiAppResult = {
+      results: [{ name: "App4" as AppName, status: "skipped" }],
+      hasFailure: false,
+    };
+    printMultiAppResult(result);
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Skipped"));
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("App4"));
+  });
+
+  it("混合結果の場合、各ステータスに応じたメッセージが出力される", () => {
+    const result: MultiAppResult = {
+      results: [
+        { name: "OK" as AppName, status: "succeeded" },
+        { name: "NG" as AppName, status: "failed", error: new Error("fail") },
+        { name: "Skip" as AppName, status: "skipped" },
+      ],
+      hasFailure: true,
+    };
+    printMultiAppResult(result);
+    expect(p.log.success).toHaveBeenCalled();
+    expect(p.log.error).toHaveBeenCalled();
+    expect(p.log.warn).toHaveBeenCalled();
+    expect(logError).toHaveBeenCalled();
   });
 });
 
