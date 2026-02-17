@@ -63,7 +63,7 @@ SCHEMA_FILE_PATH=schema.yaml
 
 ### Multi-App Project Config
 
-For managing multiple apps, create a project config file (`kintone-migrator.yaml`):
+For managing multiple apps, create a project config file (`kintone-migrator.yaml`). You can generate one automatically with `kintone-migrator init`.
 
 ```yaml
 domain: example.cybozu.com
@@ -73,20 +73,71 @@ auth:
 apps:
   customer:
     appId: "10"
-    schemaFile: schemas/customer.yaml
-    seedFile: seeds/customer.yaml
+    files:
+      schema: schemas/customer.yaml
+      seed: seeds/customer.yaml
+      view: view/customer.yaml
+      settings: settings/customer.yaml
+      notification: notification/customer.yaml
+      report: report/customer.yaml
+      action: action/customer.yaml
+      process: process/customer.yaml
+      fieldAcl: field-acl/customer.yaml
+      appAcl: app-acl/customer.yaml
+      recordAcl: record-acl/customer.yaml
+      adminNotes: admin-notes/customer.yaml
+      plugin: plugin/customer.yaml
   order:
     appId: "20"
-    schemaFile: schemas/order.yaml
+    files:
+      schema: schemas/order.yaml
+      seed: seeds/order.yaml
+      view: view/order.yaml
+      settings: settings/order.yaml
+      notification: notification/order.yaml
+      report: report/order.yaml
+      action: action/order.yaml
+      process: process/order.yaml
+      fieldAcl: field-acl/order.yaml
+      appAcl: app-acl/order.yaml
+      recordAcl: record-acl/order.yaml
+      adminNotes: admin-notes/order.yaml
+      plugin: plugin/order.yaml
     dependsOn:
       - customer
 ```
 
+File paths can also be specified as flat fields instead of the `files` object:
+
+```yaml
+# Flat fields (alternative format)
+apps:
+  customer:
+    appId: "10"
+    schemaFile: schemas/customer.yaml
+    seedFile: seeds/customer.yaml
+    viewFile: custom/customer-views.yaml
+```
+
+If both are specified, `files.*` takes priority over flat fields.
+
 | Field | Required | Description |
 |---|---|---|
 | `appId` | Yes | kintone app ID |
-| `schemaFile` | No | Schema file path (default: `schemas/<appName>.yaml`) |
-| `seedFile` | No | Seed file path (default: `seeds/<appName>.yaml`) |
+| `schemaFile` / `files.schema` | No | Schema file path (default: `schemas/<appName>.yaml`) |
+| `seedFile` / `files.seed` | No | Seed file path (default: `seeds/<appName>.yaml`) |
+| `customizeFile` / `files.customize` | No | Customization file path (default: `customize/<appName>.yaml`) |
+| `fieldAclFile` / `files.fieldAcl` | No | Field ACL file path (default: `field-acl/<appName>.yaml`) |
+| `viewFile` / `files.view` | No | View file path (default: `view/<appName>.yaml`) |
+| `appAclFile` / `files.appAcl` | No | App ACL file path (default: `app-acl/<appName>.yaml`) |
+| `recordAclFile` / `files.recordAcl` | No | Record ACL file path (default: `record-acl/<appName>.yaml`) |
+| `processFile` / `files.process` | No | Process management file path (default: `process/<appName>.yaml`) |
+| `settingsFile` / `files.settings` | No | General settings file path (default: `settings/<appName>.yaml`) |
+| `notificationFile` / `files.notification` | No | Notification file path (default: `notification/<appName>.yaml`) |
+| `reportFile` / `files.report` | No | Report file path (default: `report/<appName>.yaml`) |
+| `actionFile` / `files.action` | No | Action file path (default: `action/<appName>.yaml`) |
+| `adminNotesFile` / `files.adminNotes` | No | Admin notes file path (default: `admin-notes/<appName>.yaml`) |
+| `pluginFile` / `files.plugin` | No | Plugin file path (default: `plugin/<appName>.yaml`) |
 | `domain` | No | Override top-level domain |
 | `auth` | No | Override top-level authentication |
 | `guestSpaceId` | No | Guest space ID |
@@ -104,11 +155,38 @@ Apps are executed in topological order based on `dependsOn`. Circular dependenci
 
 Configuration merge priority (high to low): CLI arguments > environment variables > app-level settings > top-level settings.
 
+#### File Path Resolution in Multi-App Mode
+
+In multi-app mode, each command resolves its config file path using a convention-based default (`<domain>/<appName>.yaml`). CLI arguments and environment variables take precedence if specified.
+
+| Command Group | Multi-App Default Path | Single-App Default Path |
+|---|---|---|
+| `schema` | `schemas/<appName>.yaml` | `schema.yaml` |
+| `seed` | `seeds/<appName>.yaml` | `seed.yaml` |
+| `customize` | `customize/<appName>.yaml` | `customize.yaml` |
+| `field-acl` | `field-acl/<appName>.yaml` | `field-acl.yaml` |
+| `view` | `view/<appName>.yaml` | `views.yaml` |
+| `app-acl` | `app-acl/<appName>.yaml` | `app-acl.yaml` |
+| `record-acl` | `record-acl/<appName>.yaml` | `record-acl.yaml` |
+| `process` | `process/<appName>.yaml` | `process.yaml` |
+| `settings` | `settings/<appName>.yaml` | `settings.yaml` |
+| `notification` | `notification/<appName>.yaml` | `notification.yaml` |
+| `report` | `report/<appName>.yaml` | `reports.yaml` |
+| `action` | `action/<appName>.yaml` | `actions.yaml` |
+| `admin-notes` | `admin-notes/<appName>.yaml` | `admin-notes.yaml` |
+| `plugin` | `plugin/<appName>.yaml` | `plugins.yaml` |
+
+All file paths can be explicitly overridden per app in the project config. If not specified, the convention-based default path is used.
+
 For details, see [Project Config Specification](./spec/projectConfig.md).
 
 ## Commands
 
 Commands are organized into domain groups:
+
+| Command | Description |
+|---|---|
+| `init` | Initialize a project from a kintone space |
 
 | Group | Subcommand | Description |
 |---|---|---|
@@ -145,6 +223,28 @@ Commands are organized into domain groups:
 | `plugin` | `capture` | Save current plugin settings to file |
 
 All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`schema migrate`, `schema override`, `seed apply --clean`, `customize apply`) support `--yes` / `-y` to skip confirmation prompts.
+
+### `init` -- Project Initialization
+
+Initializes a project from a kintone space. Fetches all apps in the specified space, generates a `kintone-migrator.yaml` config file with `files` object format, and captures all domain configurations for each app.
+
+```bash
+kintone-migrator init <spaceId>
+kintone-migrator init <spaceId> --yes    # Skip confirmation prompts
+```
+
+| Option | Description |
+|---|---|
+| `<spaceId>` | kintone space ID (required argument) |
+| `--domain`, `-d` | kintone domain |
+| `--api-token`, `-t` | API token |
+| `--username`, `-u` | Username |
+| `--password`, `-p` | Password |
+| `--guest-space-id`, `-g` | Guest space ID |
+| `--config`, `-c` | Output config file path (default: `kintone-migrator.yaml`) |
+| `--yes`, `-y` | Skip confirmation prompts |
+
+The generated config uses the `files` object format with all domain file paths pre-configured. For each app, schema, view, settings, notification, report, action, process, field-acl, app-acl, record-acl, admin-notes, and plugin configurations are captured.
 
 ### `schema` -- Form Schema Management
 
