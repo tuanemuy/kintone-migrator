@@ -46,7 +46,7 @@ vi.mock("@/cli/config", () => ({
   confirmArgs: {},
 }));
 
-vi.mock("@/core/application/container/cli", () => ({
+vi.mock("@/core/application/container/fieldPermissionCli", () => ({
   createFieldPermissionCliContainer: vi.fn(() => ({
     appDeployer: { deploy: mockDeploy },
   })),

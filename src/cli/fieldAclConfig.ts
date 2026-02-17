@@ -1,4 +1,4 @@
-import type { FieldPermissionCliContainerConfig } from "@/core/application/container/cli";
+import type { FieldPermissionCliContainerConfig } from "@/core/application/container/fieldPermissionCli";
 import type {
   AppEntry,
   ProjectConfig,

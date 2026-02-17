@@ -4,7 +4,7 @@ import pc from "picocolors";
 import {
   createFieldPermissionCliContainer,
   type FieldPermissionCliContainerConfig,
-} from "@/core/application/container/cli";
+} from "@/core/application/container/fieldPermissionCli";
 import { captureFieldPermission } from "@/core/application/fieldPermission/captureFieldPermission";
 import { saveFieldPermission } from "@/core/application/fieldPermission/saveFieldPermission";
 import {

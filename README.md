@@ -1,6 +1,6 @@
 # kintone-migrator
 
-A CLI tool for managing kintone apps as code -- form schemas, seed data, JS/CSS customizations, and field access permissions.
+A CLI tool for declaratively managing kintone app configurations as code -- form schemas, views, access permissions, process management, notifications, and more.
 
 ## Quick Start
 
@@ -123,6 +123,26 @@ Commands are organized into domain groups:
 | `customize` | `apply` | Apply JS/CSS customizations |
 | `field-acl` | `apply` | Apply field access permissions |
 | `field-acl` | `capture` | Save current field permissions to file |
+| `view` | `apply` | Apply view (list) settings |
+| `view` | `capture` | Save current view settings to file |
+| `app-acl` | `apply` | Apply app-level access permissions |
+| `app-acl` | `capture` | Save current app permissions to file |
+| `record-acl` | `apply` | Apply record-level access permissions |
+| `record-acl` | `capture` | Save current record permissions to file |
+| `process` | `apply` | Apply process management (workflow) settings |
+| `process` | `capture` | Save current process management settings to file |
+| `settings` | `apply` | Apply general app settings |
+| `settings` | `capture` | Save current general settings to file |
+| `notification` | `apply` | Apply notification settings |
+| `notification` | `capture` | Save current notification settings to file |
+| `report` | `apply` | Apply graph/report settings |
+| `report` | `capture` | Save current report settings to file |
+| `action` | `apply` | Apply action settings |
+| `action` | `capture` | Save current action settings to file |
+| `admin-notes` | `apply` | Apply admin notes |
+| `admin-notes` | `capture` | Save current admin notes to file |
+| `plugin` | `apply` | Apply plugin settings |
+| `plugin` | `capture` | Save current plugin settings to file |
 
 All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`schema migrate`, `schema override`, `seed apply --clean`, `customize apply`) support `--yes` / `-y` to skip confirmation prompts.
 
@@ -260,6 +280,236 @@ kintone-migrator field-acl capture
 kintone-migrator field-acl capture --field-acl-file my-field-acl.yaml
 ```
 
+### `view` -- View (List) Settings
+
+#### `view apply`
+
+Applies view settings from a YAML config file.
+
+```bash
+kintone-migrator view apply
+kintone-migrator view apply --view-file my-views.yaml
+```
+
+#### `view capture`
+
+Captures the current view settings and saves them to a YAML file.
+
+```bash
+kintone-migrator view capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--view-file` | `VIEW_FILE_PATH` | View file path (default: `views.yaml`, multi-app: `view/<appName>.yaml`) |
+
+### `app-acl` -- App Access Permissions
+
+#### `app-acl apply`
+
+Applies app-level access permissions from a YAML config file.
+
+```bash
+kintone-migrator app-acl apply
+kintone-migrator app-acl apply --app-acl-file my-app-acl.yaml
+```
+
+#### `app-acl capture`
+
+Captures the current app access permissions and saves them to a YAML file.
+
+```bash
+kintone-migrator app-acl capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--app-acl-file` | `APP_ACL_FILE_PATH` | App ACL file path (default: `app-acl.yaml`, multi-app: `app-acl/<appName>.yaml`) |
+
+### `record-acl` -- Record Access Permissions
+
+#### `record-acl apply`
+
+Applies record-level access permissions from a YAML config file.
+
+```bash
+kintone-migrator record-acl apply
+kintone-migrator record-acl apply --record-acl-file my-record-acl.yaml
+```
+
+#### `record-acl capture`
+
+Captures the current record access permissions and saves them to a YAML file.
+
+```bash
+kintone-migrator record-acl capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--record-acl-file` | `RECORD_ACL_FILE_PATH` | Record ACL file path (default: `record-acl.yaml`, multi-app: `record-acl/<appName>.yaml`) |
+
+### `process` -- Process Management (Workflow)
+
+#### `process apply`
+
+Applies process management settings (statuses, actions, assignees) from a YAML config file.
+
+```bash
+kintone-migrator process apply
+kintone-migrator process apply --process-file my-process.yaml
+```
+
+#### `process capture`
+
+Captures the current process management settings and saves them to a YAML file.
+
+```bash
+kintone-migrator process capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--process-file` | `PROCESS_FILE_PATH` | Process management file path (default: `process.yaml`, multi-app: `process/<appName>.yaml`) |
+
+### `settings` -- General Settings
+
+#### `settings apply`
+
+Applies general app settings (name, description, icon, theme, etc.) from a YAML config file.
+
+```bash
+kintone-migrator settings apply
+kintone-migrator settings apply --settings-file my-settings.yaml
+```
+
+#### `settings capture`
+
+Captures the current general settings and saves them to a YAML file.
+
+```bash
+kintone-migrator settings capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--settings-file` | `SETTINGS_FILE_PATH` | General settings file path (default: `settings.yaml`, multi-app: `settings/<appName>.yaml`) |
+
+### `notification` -- Notification Settings
+
+#### `notification apply`
+
+Applies notification settings (general, per-record, reminder) from a YAML config file.
+
+```bash
+kintone-migrator notification apply
+kintone-migrator notification apply --notification-file my-notification.yaml
+```
+
+#### `notification capture`
+
+Captures the current notification settings and saves them to a YAML file.
+
+```bash
+kintone-migrator notification capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--notification-file` | `NOTIFICATION_FILE_PATH` | Notification file path (default: `notification.yaml`, multi-app: `notification/<appName>.yaml`) |
+
+### `report` -- Graph/Report Settings
+
+#### `report apply`
+
+Applies graph and report settings from a YAML config file.
+
+```bash
+kintone-migrator report apply
+kintone-migrator report apply --report-file my-reports.yaml
+```
+
+#### `report capture`
+
+Captures the current report settings and saves them to a YAML file.
+
+```bash
+kintone-migrator report capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--report-file` | `REPORT_FILE_PATH` | Report file path (default: `reports.yaml`, multi-app: `report/<appName>.yaml`) |
+
+### `action` -- Action Settings
+
+#### `action apply`
+
+Applies action settings (record copy actions) from a YAML config file.
+
+```bash
+kintone-migrator action apply
+kintone-migrator action apply --action-file my-actions.yaml
+```
+
+#### `action capture`
+
+Captures the current action settings and saves them to a YAML file.
+
+```bash
+kintone-migrator action capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--action-file` | `ACTION_FILE_PATH` | Action file path (default: `actions.yaml`, multi-app: `action/<appName>.yaml`) |
+
+### `admin-notes` -- Admin Notes
+
+#### `admin-notes apply`
+
+Applies admin notes from a YAML config file.
+
+```bash
+kintone-migrator admin-notes apply
+kintone-migrator admin-notes apply --admin-notes-file my-notes.yaml
+```
+
+#### `admin-notes capture`
+
+Captures the current admin notes and saves them to a YAML file.
+
+```bash
+kintone-migrator admin-notes capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--admin-notes-file` | `ADMIN_NOTES_FILE_PATH` | Admin notes file path (default: `admin-notes.yaml`, multi-app: `admin-notes/<appName>.yaml`) |
+
+### `plugin` -- Plugin Settings
+
+#### `plugin apply`
+
+Applies plugin settings (enable/disable installed plugins) from a YAML config file.
+
+```bash
+kintone-migrator plugin apply
+kintone-migrator plugin apply --plugin-file my-plugins.yaml
+```
+
+#### `plugin capture`
+
+Captures the current plugin settings and saves them to a YAML file.
+
+```bash
+kintone-migrator plugin capture
+```
+
+| Option | Environment Variable | Description |
+|---|---|---|
+| `--plugin-file` | `PLUGIN_FILE_PATH` | Plugin file path (default: `plugins.yaml`, multi-app: `plugin/<appName>.yaml`) |
+
 ## File Formats
 
 ### Schema File
@@ -359,6 +609,283 @@ rights:
 ```
 
 For details, see [Field Permission Specification](./spec/domains/fieldPermission.md).
+
+### View File
+
+Defines view (list) settings. Views are identified by name.
+
+```yaml
+views:
+  一覧:
+    type: LIST
+    index: 0
+    fields:
+      - customer_name
+      - customer_code
+      - status
+    filterCond: status in ("active")
+    sort: customer_code asc
+    pager: true
+    device: ANY
+  カレンダー:
+    type: CALENDAR
+    index: 1
+    date: scheduled_date
+    title: customer_name
+```
+
+View types: `LIST`, `CALENDAR`, `CUSTOM`. For details, see [View Specification](./spec/domains/view.md).
+
+### App ACL File
+
+Defines app-level access permissions.
+
+```yaml
+rights:
+  - entity:
+      type: USER
+      code: admin_user
+    includeSubs: false
+    appEditable: true
+    recordViewable: true
+    recordAddable: true
+    recordEditable: true
+    recordDeletable: true
+    recordImportable: true
+    recordExportable: true
+  - entity:
+      type: GROUP
+      code: general_staff
+    includeSubs: false
+    appEditable: false
+    recordViewable: true
+    recordAddable: true
+    recordEditable: true
+    recordDeletable: false
+    recordImportable: false
+    recordExportable: false
+```
+
+For details, see [App Permission Specification](./spec/domains/appPermission.md).
+
+### Record ACL File
+
+Defines record-level access permissions with filter conditions.
+
+```yaml
+rights:
+  - filterCond: status in ("active")
+    entities:
+      - entity:
+          type: USER
+          code: admin_user
+        viewable: true
+        editable: true
+        deletable: true
+        includeSubs: false
+      - entity:
+          type: GROUP
+          code: general_staff
+        viewable: true
+        editable: false
+        deletable: false
+        includeSubs: false
+```
+
+For details, see [Record Permission Specification](./spec/domains/recordPermission.md).
+
+### Process Management File
+
+Defines workflow statuses and actions.
+
+```yaml
+enable: true
+states:
+  未処理:
+    index: 0
+    assignee:
+      type: ONE
+      entities:
+        - type: CREATOR
+  処理中:
+    index: 1
+    assignee:
+      type: ONE
+      entities:
+        - type: USER
+          code: manager
+  完了:
+    index: 2
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: 処理開始
+    from: 未処理
+    to: 処理中
+    filterCond: ""
+    type: PRIMARY
+  - name: 完了にする
+    from: 処理中
+    to: 完了
+    filterCond: ""
+    type: PRIMARY
+```
+
+For details, see [Process Management Specification](./spec/domains/processManagement.md).
+
+### General Settings File
+
+Defines general app settings. All fields are optional -- only specified fields are updated.
+
+```yaml
+name: 顧客管理
+description: 顧客情報を管理するアプリ
+icon:
+  type: PRESET
+  key: APP006
+theme: WHITE
+titleField:
+  selectionMode: MANUAL
+  code: customer_name
+enableThumbnails: true
+enableBulkDeletion: false
+enableComments: true
+numberPrecision:
+  digits: 16
+  decimalPlaces: 4
+  roundingMode: HALF_EVEN
+firstMonthOfFiscalYear: 4
+```
+
+For details, see [General Settings Specification](./spec/domains/generalSettings.md).
+
+### Notification File
+
+Defines notification settings (general notifications, per-record notifications, and reminders).
+
+```yaml
+general:
+  notifyToCommenter: true
+  notifications:
+    - entity:
+        type: USER
+        code: admin_user
+      recordAdded: true
+      recordEdited: true
+      commentAdded: true
+      statusChanged: true
+      fileImported: false
+perRecord:
+  - filterCond: priority in ("high")
+    title: 高優先度レコードの更新
+    targets:
+      - entity:
+          type: USER
+          code: manager
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: deadline
+      daysLater: -1
+      time: "09:00"
+      filterCond: status not in ("完了")
+      title: 締切日リマインダー
+      targets:
+        - entity:
+            type: FIELD_ENTITY
+            code: creator
+```
+
+For details, see [Notification Specification](./spec/domains/notification.md).
+
+### Report File
+
+Defines graph and report settings. Reports are identified by name.
+
+```yaml
+reports:
+  月別売上:
+    chartType: COLUMN
+    chartMode: NORMAL
+    index: 0
+    groups:
+      - code: order_date
+        per: MONTH
+    aggregations:
+      - type: SUM
+        code: amount
+    filterCond: ""
+    sorts:
+      - by: GROUP1
+        order: ASC
+  担当者別件数:
+    chartType: PIE
+    index: 1
+    groups:
+      - code: assignee
+    aggregations:
+      - type: COUNT
+    filterCond: status in ("active")
+    sorts:
+      - by: TOTAL
+        order: DESC
+```
+
+Chart types: `BAR`, `COLUMN`, `PIE`, `LINE`, `PIVOT_TABLE`, `TABLE`, `AREA`, `SPLINE`, `SPLINE_AREA`. For details, see [Report Specification](./spec/domains/report.md).
+
+### Action File
+
+Defines record copy action settings. Actions are identified by name.
+
+```yaml
+actions:
+  案件コピー:
+    index: 0
+    destApp:
+      app: "20"
+    mappings:
+      - srcType: FIELD
+        srcField: customer_name
+        destField: customer_name
+      - srcType: RECORD_URL
+        destField: source_url
+    entities:
+      - type: USER
+        code: admin_user
+    filterCond: status in ("approved")
+```
+
+For details, see [Action Specification](./spec/domains/action.md).
+
+### Admin Notes File
+
+Defines admin notes content.
+
+```yaml
+content: |
+  <h2>アプリ管理メモ</h2>
+  <p>このアプリは顧客管理用です。</p>
+includeInTemplateAndDuplicates: true
+```
+
+For details, see [Admin Notes Specification](./spec/domains/adminNotes.md).
+
+### Plugin File
+
+Defines plugin enable/disable settings.
+
+```yaml
+plugins:
+  - id: djmhffjlbojgcbnahicgdjiahbegolkj
+    name: 条件分岐プラグイン
+    enabled: true
+  - id: pafgcfghlmjicbadmkohfoihfkblahhe
+    name: カレンダーPlusプラグイン
+    enabled: false
+```
+
+For details, see [Plugin Specification](./spec/domains/plugin.md).
 
 ## License
 

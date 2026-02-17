@@ -3,6 +3,8 @@ import pc from "picocolors";
 import type { Container } from "@/core/application/container";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { DiffProcessManagementOutput } from "@/core/application/processManagement/diffProcessManagement";
+import type { DetectViewDiffOutput } from "@/core/application/view/dto";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import { logError } from "./handleError";
 
@@ -41,6 +43,76 @@ export function printDiffResult(result: DetectDiffOutput): void {
   });
 
   p.note(lines.join("\n"), "Diff Details", { format: (v) => v });
+}
+
+export function printViewDiffResult(result: DetectViewDiffOutput): void {
+  const { summary } = result;
+
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  const summaryParts = [
+    summary.added > 0 ? pc.green(`+${summary.added} added`) : null,
+    summary.modified > 0 ? pc.yellow(`~${summary.modified} modified`) : null,
+    summary.deleted > 0 ? pc.red(`-${summary.deleted} deleted`) : null,
+  ]
+    .filter(Boolean)
+    .join(pc.dim("  |  "));
+
+  p.log.info(`Changes: ${summaryParts}`);
+
+  const lines = result.entries.map((entry) => {
+    const colorize =
+      entry.type === "added"
+        ? pc.green
+        : entry.type === "deleted"
+          ? pc.red
+          : pc.yellow;
+    const prefix =
+      entry.type === "added" ? "+" : entry.type === "deleted" ? "-" : "~";
+    return `${colorize(prefix)} ${colorize(entry.viewName)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "View Diff Details", { format: (v) => v });
+}
+
+export function printProcessDiffResult(
+  result: DiffProcessManagementOutput,
+): void {
+  const { summary } = result;
+
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  const summaryParts = [
+    summary.added > 0 ? pc.green(`+${summary.added} added`) : null,
+    summary.modified > 0 ? pc.yellow(`~${summary.modified} modified`) : null,
+    summary.deleted > 0 ? pc.red(`-${summary.deleted} deleted`) : null,
+  ]
+    .filter(Boolean)
+    .join(pc.dim("  |  "));
+
+  p.log.info(`Changes: ${summaryParts}`);
+
+  const lines = result.entries.map((entry) => {
+    const colorize =
+      entry.type === "added"
+        ? pc.green
+        : entry.type === "deleted"
+          ? pc.red
+          : pc.yellow;
+    const prefix =
+      entry.type === "added" ? "+" : entry.type === "deleted" ? "-" : "~";
+    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.category)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Process Management Diff Details", {
+    format: (v) => v,
+  });
 }
 
 export function printAppHeader(appName: string, appId: string): void {
