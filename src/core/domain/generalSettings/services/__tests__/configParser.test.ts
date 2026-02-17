@@ -280,5 +280,124 @@ icon:
       const config = GeneralSettingsConfigParser.parse(yaml);
       expect(config.icon).toEqual({ type: "FILE", key: "some-file-key" });
     });
+
+    it("should throw for non-string name", () => {
+      const yaml = `
+name: 123
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-string description", () => {
+      const yaml = `
+description: 123
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-string titleField.code", () => {
+      const yaml = `
+titleField:
+  selectionMode: MANUAL
+  code: 123
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-object titleField", () => {
+      const yaml = `
+titleField: not_an_object
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for icon with empty key", () => {
+      const yaml = `
+icon:
+  type: PRESET
+  key: ""
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for numberPrecision with non-number digits", () => {
+      const yaml = `
+numberPrecision:
+  digits: abc
+  decimalPlaces: 2
+  roundingMode: HALF_EVEN
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+    });
+
+    it("should throw for numberPrecision with non-number decimalPlaces", () => {
+      const yaml = `
+numberPrecision:
+  digits: 12
+  decimalPlaces: abc
+  roundingMode: HALF_EVEN
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+    });
+
+    it("should throw for numberPrecision with invalid roundingMode", () => {
+      const yaml = `
+numberPrecision:
+  digits: 12
+  decimalPlaces: 2
+  roundingMode: INVALID
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+    });
+
+    it("should throw for firstMonthOfFiscalYear less than 1", () => {
+      const yaml = `
+firstMonthOfFiscalYear: 0
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+    });
   });
 });
