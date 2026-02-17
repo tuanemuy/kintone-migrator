@@ -120,7 +120,7 @@ describe("applyView", () => {
       await applyView({ container });
 
       const updatedView =
-        container.viewConfigurator.lastUpdateParams?.views["一覧"];
+        container.viewConfigurator.lastUpdateParams?.views.一覧;
       // Local config should win since it's already in filteredViews
       expect(updatedView?.builtinType).toBeUndefined();
     });

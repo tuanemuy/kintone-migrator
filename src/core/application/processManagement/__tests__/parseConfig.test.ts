@@ -20,7 +20,7 @@ actions: []
     const config = parseProcessManagementConfigText(rawText);
     expect(config.enable).toBe(true);
     expect(Object.keys(config.states)).toHaveLength(1);
-    expect(config.states["未処理"].assignee.type).toBe("ONE");
+    expect(config.states.未処理.assignee.type).toBe("ONE");
   });
 
   it("BusinessRuleError を ValidationError に変換する", () => {

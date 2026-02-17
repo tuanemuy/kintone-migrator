@@ -41,7 +41,7 @@ describe("applyAction", () => {
         ),
       ).toHaveLength(1);
       expect(
-        container.actionConfigurator.lastUpdateParams?.actions["見積書を作成"]
+        container.actionConfigurator.lastUpdateParams?.actions.見積書を作成
           .name,
       ).toBe("見積書を作成");
       expect(container.actionConfigurator.lastUpdateParams?.revision).toBe("1");

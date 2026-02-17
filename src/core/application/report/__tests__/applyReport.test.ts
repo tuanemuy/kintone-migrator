@@ -50,7 +50,7 @@ describe("applyReport", () => {
         ),
       ).toHaveLength(2);
       expect(
-        container.reportConfigurator.lastUpdateParams?.reports["月次タスク集計"]
+        container.reportConfigurator.lastUpdateParams?.reports.月次タスク集計
           .chartType,
       ).toBe("COLUMN");
       expect(container.reportConfigurator.lastUpdateParams?.revision).toBe("1");

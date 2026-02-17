@@ -33,11 +33,11 @@ actions:
 
       expect(config.enable).toBe(true);
       expect(Object.keys(config.states)).toHaveLength(2);
-      expect(config.states["未処理"].index).toBe(0);
-      expect(config.states["未処理"].assignee.type).toBe("ONE");
-      expect(config.states["未処理"].assignee.entities).toHaveLength(1);
-      expect(config.states["未処理"].assignee.entities[0].type).toBe("USER");
-      expect(config.states["未処理"].assignee.entities[0].code).toBe("user1");
+      expect(config.states.未処理.index).toBe(0);
+      expect(config.states.未処理.assignee.type).toBe("ONE");
+      expect(config.states.未処理.assignee.entities).toHaveLength(1);
+      expect(config.states.未処理.assignee.entities[0].type).toBe("USER");
+      expect(config.states.未処理.assignee.entities[0].code).toBe("user1");
       expect(config.actions).toHaveLength(1);
       expect(config.actions[0].name).toBe("承認");
       expect(config.actions[0].from).toBe("未処理");

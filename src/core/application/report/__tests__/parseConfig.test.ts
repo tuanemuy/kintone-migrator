@@ -20,7 +20,7 @@ reports:
 `;
     const config = parseReportConfigText(rawText);
     expect(Object.keys(config.reports)).toHaveLength(1);
-    expect(config.reports["テスト"].chartType).toBe("BAR");
+    expect(config.reports.テスト.chartType).toBe("BAR");
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {
