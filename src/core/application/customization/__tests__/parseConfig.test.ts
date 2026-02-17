@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { ConfigParser } from "@/core/domain/customization/services/configParser";
 import { isValidationError } from "../../error";
 import { parseConfigText } from "../parseConfig";
 
@@ -36,14 +37,10 @@ desktop:
   });
 
   it("BusinessRuleError以外のエラーはそのまま再スローされる", () => {
-    // parseConfigText内でBusinessRuleError以外のエラーは発生しないが、
-    // ConfigParser.parseの実装上、非BusinessRuleErrorはそのまま伝播される
-    // ここでは不正な構造のYAMLでBusinessRuleErrorが変換されることを検証
-    try {
-      parseConfigText("scope: INVALID_SCOPE\ndesktop:\n  js: []\n  css: []");
-      expect.fail("Expected error to be thrown");
-    } catch (error) {
-      expect(isValidationError(error)).toBe(true);
-    }
+    vi.spyOn(ConfigParser, "parse").mockImplementation(() => {
+      throw new TypeError("unexpected error");
+    });
+    expect(() => parseConfigText("dummy")).toThrow(TypeError);
+    vi.restoreAllMocks();
   });
 });

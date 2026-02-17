@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import { FieldPermissionConfigParser } from "@/core/domain/fieldPermission/services/configParser";
 import { isValidationError } from "../../error";
 import { parseFieldPermissionConfigText } from "../parseConfig";
 
@@ -43,5 +44,13 @@ rights:
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
     }
+  });
+
+  it("BusinessRuleError以外のエラーはそのまま再スローされる", () => {
+    vi.spyOn(FieldPermissionConfigParser, "parse").mockImplementation(() => {
+      throw new TypeError("unexpected error");
+    });
+    expect(() => parseFieldPermissionConfigText("dummy")).toThrow(TypeError);
+    vi.restoreAllMocks();
   });
 });
