@@ -115,14 +115,10 @@ export const ConfigParser = {
       scope = obj.scope as CustomizationScope;
     }
 
-    if (obj.desktop === undefined || obj.desktop === null) {
-      throw new BusinessRuleError(
-        CustomizationErrorCode.CzInvalidConfigStructure,
-        'Config must have a "desktop" property',
-      );
-    }
-
-    const desktop = parsePlatform(obj.desktop);
+    const desktop: CustomizationPlatform =
+      obj.desktop === undefined || obj.desktop === null
+        ? { js: [], css: [] }
+        : parsePlatform(obj.desktop);
     const mobile: CustomizationPlatform =
       obj.mobile === undefined || obj.mobile === null
         ? { js: [], css: [] }

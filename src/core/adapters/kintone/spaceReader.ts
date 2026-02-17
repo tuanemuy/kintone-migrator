@@ -25,7 +25,10 @@ export class KintoneSpaceReader implements SpaceReader {
       }
 
       if (!Array.isArray(rawApps)) {
-        return [];
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Space API response for space ID ${spaceId} has unexpected attachedApps type: ${typeof rawApps}`,
+        );
       }
 
       return rawApps

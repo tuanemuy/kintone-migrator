@@ -24,8 +24,9 @@ export function deriveFilePrefix(customizeFilePath: string): string {
   const parentDir = basename(dir);
   const fileName = basename(resolved, ".yaml");
 
-  if (parentDir === "." || parentDir === "") {
-    return fileName === "customize" ? "customize" : fileName;
+  // parentDir is "" when the file is at the filesystem root (e.g. /customize.yaml)
+  if (parentDir === "") {
+    return fileName;
   }
 
   if (fileName === "customize") {

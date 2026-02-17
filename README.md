@@ -229,7 +229,7 @@ kintone-migrator init <spaceId> --yes    # Skip confirmation prompts
 | `--username`, `-u` | Username |
 | `--password`, `-p` | Password |
 | `--guest-space-id`, `-g` | Guest space ID |
-| `--config`, `-c` | Output config file path (default: `kintone-migrator.yaml`) |
+| `--output`, `-o` | Output config file path (default: `kintone-migrator.yaml`) |
 | `--yes`, `-y` | Skip confirmation prompts |
 
 The generated config uses the `files` object format with all domain file paths pre-configured. For each app, schema, view, settings, notification, report, action, process, field-acl, app-acl, record-acl, admin-notes, and plugin configurations are captured.

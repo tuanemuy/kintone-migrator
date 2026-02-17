@@ -5,14 +5,25 @@ import type { FileUploader } from "@/core/domain/customization/ports/fileUploade
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
 
-export type CustomizationContainer = {
+/** Ports needed by customize apply */
+export type CustomizationApplyContainer = {
   customizationConfigurator: CustomizationConfigurator;
   customizationStorage: CustomizationStorage;
   fileUploader: FileUploader;
-  fileDownloader: FileDownloader;
-  fileWriter: FileWriter;
   appDeployer: AppDeployer;
 };
+
+/** Ports needed by customize capture / save */
+export type CustomizationCaptureContainer = {
+  customizationConfigurator: CustomizationConfigurator;
+  customizationStorage: CustomizationStorage;
+  fileDownloader: FileDownloader;
+  fileWriter: FileWriter;
+};
+
+/** Full container satisfying both apply and capture */
+export type CustomizationContainer = CustomizationApplyContainer &
+  CustomizationCaptureContainer;
 
 export type CustomizationServiceArgs<T = undefined> = T extends undefined
   ? { container: CustomizationContainer }

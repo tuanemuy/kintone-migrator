@@ -1,4 +1,4 @@
-import type { CustomizationServiceArgs } from "../container/customization";
+import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
 
 export type SaveCustomizationInput = {
   readonly configText: string;
@@ -7,6 +7,9 @@ export type SaveCustomizationInput = {
 export async function saveCustomization({
   container,
   input,
-}: CustomizationServiceArgs<SaveCustomizationInput>): Promise<void> {
+}: {
+  container: { customizationStorage: CustomizationStorage };
+  input: SaveCustomizationInput;
+}): Promise<void> {
   await container.customizationStorage.update(input.configText);
 }

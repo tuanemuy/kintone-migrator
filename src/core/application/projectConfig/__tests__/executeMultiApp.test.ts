@@ -7,24 +7,9 @@ import { AppName } from "@/core/domain/projectConfig/valueObject";
 import { executeMultiApp } from "../executeMultiApp";
 
 function makeAppEntry(name: string, dependsOn: string[] = []): AppEntry {
-  const appName = AppName.create(name);
   return {
-    name: appName,
+    name: AppName.create(name),
     appId: `${name}-id`,
-    schemaFile: `schemas/${name}.yaml`,
-    seedFile: `seeds/${name}.yaml`,
-    customizeFile: `customize/${name}.yaml`,
-    fieldAclFile: `field-acl/${name}.yaml`,
-    viewFile: `view/${name}.yaml`,
-    appAclFile: `app-acl/${name}.yaml`,
-    recordAclFile: `record-acl/${name}.yaml`,
-    processFile: `process/${name}.yaml`,
-    settingsFile: `settings/${name}.yaml`,
-    notificationFile: `notification/${name}.yaml`,
-    reportFile: `report/${name}.yaml`,
-    actionFile: `action/${name}.yaml`,
-    adminNotesFile: `admin-notes/${name}.yaml`,
-    pluginFile: `plugin/${name}.yaml`,
     dependsOn: dependsOn.map(AppName.create),
   };
 }

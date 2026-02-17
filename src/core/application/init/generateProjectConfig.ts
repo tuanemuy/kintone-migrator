@@ -1,6 +1,6 @@
 import { stringify as stringifyYaml } from "yaml";
+import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
-import { buildAppFilePaths } from "./appFilePaths";
 
 export type GenerateProjectConfigInput = Readonly<{
   apps: readonly SpaceApp[];

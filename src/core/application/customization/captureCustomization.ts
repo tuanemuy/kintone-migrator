@@ -7,7 +7,7 @@ import type {
   RemotePlatform,
   RemoteResource,
 } from "@/core/domain/customization/valueObject";
-import type { CustomizationServiceArgs } from "../container/customization";
+import type { CustomizationCaptureContainer } from "../container/customization";
 
 export type CaptureCustomizationInput = {
   readonly basePath: string;
@@ -18,6 +18,11 @@ export type CaptureCustomizationOutput = {
   readonly configText: string;
   readonly hasExistingConfig: boolean;
   readonly downloadedFileCount: number;
+};
+
+type CaptureCustomizationArgs = {
+  container: CustomizationCaptureContainer;
+  input: CaptureCustomizationInput;
 };
 
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
@@ -43,7 +48,7 @@ async function downloadAndSaveResources(
   platformDir: string,
   resourceType: "js" | "css",
   relativeBaseDir: string,
-  container: CustomizationServiceArgs<CaptureCustomizationInput>["container"],
+  container: CustomizationCaptureContainer,
 ): Promise<readonly CustomizationResource[]> {
   const result: CustomizationResource[] = [];
   const dir = join(platformDir, resourceType);
@@ -70,7 +75,7 @@ async function downloadAndSaveResources(
 async function downloadPlatform(
   remotePlatform: RemotePlatform,
   platformName: string,
-  args: CustomizationServiceArgs<CaptureCustomizationInput>,
+  args: CaptureCustomizationArgs,
 ): Promise<{ platform: CustomizationPlatform; fileCount: number }> {
   const platformDir = join(args.input.basePath, platformName);
   const platformPrefix = join(args.input.filePrefix, platformName);
@@ -102,8 +107,11 @@ async function downloadPlatform(
 }
 
 export async function captureCustomization(
-  args: CustomizationServiceArgs<CaptureCustomizationInput>,
+  args: CaptureCustomizationArgs,
 ): Promise<CaptureCustomizationOutput> {
+  // Check existing config *before* downloading files so callers can act on it early
+  const existing = await args.container.customizationStorage.get();
+
   const { scope, desktop, mobile } =
     await args.container.customizationConfigurator.getCustomization();
 
@@ -117,7 +125,6 @@ export async function captureCustomization(
   };
 
   const configText = CustomizationConfigSerializer.serialize(config);
-  const existing = await args.container.customizationStorage.get();
 
   return {
     configText,

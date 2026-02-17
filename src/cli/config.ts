@@ -99,12 +99,9 @@ export function resolveConfig(cliValues: {
 }): CliConfig {
   const result = v.safeParse(CliConfigSchema, {
     KINTONE_DOMAIN: cliValues.domain ?? process.env.KINTONE_DOMAIN ?? "",
-    KINTONE_API_TOKEN:
-      cliValues["api-token"] ?? process.env.KINTONE_API_TOKEN ?? undefined,
-    KINTONE_USERNAME:
-      cliValues.username ?? process.env.KINTONE_USERNAME ?? undefined,
-    KINTONE_PASSWORD:
-      cliValues.password ?? process.env.KINTONE_PASSWORD ?? undefined,
+    KINTONE_API_TOKEN: cliValues["api-token"] ?? process.env.KINTONE_API_TOKEN,
+    KINTONE_USERNAME: cliValues.username ?? process.env.KINTONE_USERNAME,
+    KINTONE_PASSWORD: cliValues.password ?? process.env.KINTONE_PASSWORD,
     KINTONE_APP_ID: cliValues["app-id"] ?? process.env.KINTONE_APP_ID ?? "",
     KINTONE_GUEST_SPACE_ID:
       cliValues["guest-space-id"] ??

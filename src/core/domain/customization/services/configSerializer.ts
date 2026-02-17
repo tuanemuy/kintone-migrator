@@ -20,6 +20,10 @@ function serializeResourceList(
   return resources.map(serializeResource);
 }
 
+function hasPlatformResources(platform: CustomizationPlatform): boolean {
+  return platform.js.length > 0 || platform.css.length > 0;
+}
+
 function serializePlatform(
   platform: CustomizationPlatform,
 ): Record<string, unknown> {
@@ -41,9 +45,11 @@ export const CustomizationConfigSerializer = {
       result.scope = config.scope;
     }
 
-    result.desktop = serializePlatform(config.desktop);
+    if (hasPlatformResources(config.desktop)) {
+      result.desktop = serializePlatform(config.desktop);
+    }
 
-    if (config.mobile.js.length > 0 || config.mobile.css.length > 0) {
+    if (hasPlatformResources(config.mobile)) {
       result.mobile = serializePlatform(config.mobile);
     }
 

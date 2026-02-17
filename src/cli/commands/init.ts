@@ -50,12 +50,19 @@ type InitCliValues = {
   yes?: boolean;
 };
 
+function formatError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 function printCaptureResults(results: readonly CaptureResult[]): void {
   for (const result of results) {
     if (result.success) {
       p.log.success(`  ${pc.green("\u2713")} ${result.domain}`);
     } else {
-      p.log.error(`  ${pc.red("\u2717")} ${result.domain}`);
+      p.log.error(
+        `  ${pc.red("\u2717")} ${result.domain}: ${pc.dim(formatError(result.error))}`,
+      );
     }
   }
 }
@@ -76,12 +83,9 @@ export default define({
         );
       }
 
-      const apiToken =
-        values["api-token"] ?? process.env.KINTONE_API_TOKEN ?? undefined;
-      const username =
-        values.username ?? process.env.KINTONE_USERNAME ?? undefined;
-      const password =
-        values.password ?? process.env.KINTONE_PASSWORD ?? undefined;
+      const apiToken = values["api-token"] ?? process.env.KINTONE_API_TOKEN;
+      const username = values.username ?? process.env.KINTONE_USERNAME;
+      const password = values.password ?? process.env.KINTONE_PASSWORD;
 
       const baseUrl = `https://${kintoneDomain}`;
       const auth = resolveAuth(apiToken, username, password);
@@ -129,6 +133,9 @@ export default define({
       }
 
       // Generate and write config
+      // Auth is intentionally omitted from the generated file to prevent
+      // credentials from being committed to version control. The user is
+      // expected to supply auth via environment variables or add it manually.
       const configText = generateProjectConfig({
         apps,
         domain: kintoneDomain,
@@ -137,7 +144,7 @@ export default define({
       await projectConfigStorage.update(configText);
       p.log.success(`Config written to: ${pc.cyan(configPath)}`);
       p.log.info(
-        `Add authentication settings (auth) to ${pc.cyan(configPath)} before running commands.`,
+        `Add authentication settings (auth) to ${pc.cyan(configPath)} or set KINTONE_API_TOKEN / KINTONE_USERNAME + KINTONE_PASSWORD environment variables.`,
       );
 
       // Run captures for each app

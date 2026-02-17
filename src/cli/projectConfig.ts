@@ -139,7 +139,8 @@ export function resolveAppCliConfig(
     schemaFilePath:
       cliValues["schema-file"] ??
       process.env.SCHEMA_FILE_PATH ??
-      app.schemaFile,
+      app.schemaFile ??
+      `schemas/${app.name}.yaml`,
   };
 }
 
@@ -149,12 +150,9 @@ function resolveAuthForApp(
   cliValues: MultiAppCliValues,
 ): KintoneAuth {
   // CLI args take highest priority
-  const cliApiToken =
-    cliValues["api-token"] ?? process.env.KINTONE_API_TOKEN ?? undefined;
-  const cliUsername =
-    cliValues.username ?? process.env.KINTONE_USERNAME ?? undefined;
-  const cliPassword =
-    cliValues.password ?? process.env.KINTONE_PASSWORD ?? undefined;
+  const cliApiToken = cliValues["api-token"] ?? process.env.KINTONE_API_TOKEN;
+  const cliUsername = cliValues.username ?? process.env.KINTONE_USERNAME;
+  const cliPassword = cliValues.password ?? process.env.KINTONE_PASSWORD;
 
   if (cliApiToken) {
     const tokens = cliApiToken.includes(",")

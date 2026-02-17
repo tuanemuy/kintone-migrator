@@ -86,7 +86,13 @@ import { captureSeed } from "@/core/application/seedData/captureSeed";
 import { saveSeed } from "@/core/application/seedData/saveSeed";
 import { captureView } from "@/core/application/view/captureView";
 import { saveView } from "@/core/application/view/saveView";
-import { buildAppFilePaths } from "./appFilePaths";
+import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
+
+// NOTE: This orchestration function directly references CLI container factories
+// (e.g. createCliContainer, createCustomizationCliContainer). This couples the
+// application layer to the composition root, which is an intentional trade-off
+// to keep init-specific capture logic centralised. If additional orchestration
+// functions are needed, consider extracting a container factory interface.
 
 export type CaptureResult = Readonly<{
   domain: string;
