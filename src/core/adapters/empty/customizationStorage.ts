@@ -8,4 +8,11 @@ export class EmptyCustomizationStorage implements CustomizationStorage {
       "EmptyCustomizationStorage.get not implemented",
     );
   }
+
+  async update(_content: string): Promise<void> {
+    throw new SystemError(
+      SystemErrorCode.InternalServerError,
+      "EmptyCustomizationStorage.update not implemented",
+    );
+  }
 }
