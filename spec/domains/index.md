@@ -9,21 +9,19 @@
 | [SeedData](./seedData.md) | kintoneレコードデータのシード管理 | サポートドメイン |
 | [Customization](./customization.md) | JS/CSSカスタマイズの宣言的管理 | サポートドメイン |
 | [FieldPermission](./fieldPermission.md) | フィールドアクセス権の宣言的管理 | サポートドメイン |
+| [View](./view.md) | 一覧（ビュー）設定の宣言的管理 | サポートドメイン |
+| [AppPermission](./appPermission.md) | アプリのアクセス権の宣言的管理 | サポートドメイン |
+| [RecordPermission](./recordPermission.md) | レコードのアクセス権の宣言的管理 | サポートドメイン |
+| [ProcessManagement](./processManagement.md) | プロセス管理（ワークフロー）の宣言的管理 | サポートドメイン |
+| [GeneralSettings](./generalSettings.md) | 一般設定の宣言的管理 | サポートドメイン |
+| [Notification](./notification.md) | 通知設定の宣言的管理 | サポートドメイン |
+| [Report](./report.md) | グラフ・レポート設定の宣言的管理 | サポートドメイン |
+| [Action](./action.md) | アクション設定の宣言的管理 | サポートドメイン |
+| [AdminNotes](./adminNotes.md) | アプリ管理者用メモの宣言的管理 | サポートドメイン |
+| [Plugin](./plugin.md) | プラグイン設定の宣言的管理 | サポートドメイン |
 
 ## ドメイン区分の方針
 
-本システムは「kintoneフォーム設定を宣言的に管理する」という単一の明確な目的を持つクライアントサイドスクリプトである。
+本システムは「kintoneアプリ設定を宣言的に管理する」CLIツールである。
 
-### 採用案: 単一ドメイン（FormSchema）
-
-本システムの全機能（宣言的設定のパース、差分検出、マイグレーション、強制上書き、設定取り込み）は密結合しており、同一のユビキタス言語・同一の型体系を共有する。管理者用メモの読み書きはポート（外部サービスインターフェース）として扱い、ドメインの関心事から分離する。
-
-### 不採用案
-
-#### A. FormField + FormMigration の2ドメイン分割
-
-フォームフィールドの表現（FormField）と同期操作（FormMigration）を分けるアプローチ。両者が同じ型（FieldDefinition, FieldCode等）を共有し、独立した境界づけられたコンテキストとして成立しないため不採用。
-
-#### B. FormSchema + AppSetting の2ドメイン分割
-
-管理者用メモの管理を独立ドメイン（AppSetting）として切り出すアプローチ。管理者用メモはドメイン固有のビジネスルールを持たず、単なる永続化手段であるためポートとして扱えば十分。独立ドメインにする必要性がないため不採用。
+各ドメインはkintone REST APIで取得・更新可能な設定単位に対応し、`capture`（現在設定の取得・YAML化）と `apply`（YAML設定の適用）の2操作を基本パターンとする。すべてのドメインが同一のヘキサゴナルアーキテクチャ（ドメイン層・アダプター層・アプリケーション層・CLI層）に従い、`field-acl` の実装をリファレンスとして統一的なパターンで実装されている。
