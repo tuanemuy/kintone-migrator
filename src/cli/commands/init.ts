@@ -14,7 +14,11 @@ import { generateProjectConfig } from "@/core/application/init/generateProjectCo
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName } from "@/core/domain/space/entity";
 import { kintoneArgs, resolveAuth, validateKintoneDomain } from "../config";
-import { formatErrorForDisplay, handleCliError } from "../handleError";
+import {
+  formatErrorForDisplay,
+  handleCliError,
+  logError,
+} from "../handleError";
 import { DEFAULT_CONFIG_PATH } from "../projectConfig";
 
 const initArgs = {
@@ -66,6 +70,7 @@ function printCaptureResults(results: readonly CaptureResult[]): void {
       p.log.error(
         `  ${pc.red("\u2717")} ${result.domain}: ${pc.dim(formatErrorForDisplay(result.error))}`,
       );
+      logError(result.error);
     }
   }
 }
