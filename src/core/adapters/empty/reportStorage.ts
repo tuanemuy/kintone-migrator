@@ -1,6 +1,6 @@
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
+import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
 
 export class EmptyReportStorage implements ReportStorage {
   async get(): Promise<StorageResult> {

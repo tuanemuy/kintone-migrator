@@ -15,6 +15,11 @@ function sanitizeForFileSystem(name: string): string {
 }
 
 export function resolveAppName(app: SpaceApp): AppName {
-  const raw = app.code !== "" ? app.code : `app-${app.appId}`;
+  const raw =
+    app.code !== ""
+      ? app.code
+      : app.name !== ""
+        ? app.name
+        : `app-${app.appId}`;
   return AppName.create(sanitizeForFileSystem(raw));
 }

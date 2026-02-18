@@ -1,8 +1,8 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
+import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
 import { isNodeError } from "@/lib/nodeError";
 
 export class LocalFileReportStorage implements ReportStorage {
