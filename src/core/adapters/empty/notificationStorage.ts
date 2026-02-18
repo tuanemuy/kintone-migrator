@@ -1,8 +1,9 @@
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { NotificationStorage } from "@/core/domain/notification/ports/notificationStorage";
+import type { StorageResult } from "@/core/domain/ports/storageResult";
 
 export class EmptyNotificationStorage implements NotificationStorage {
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     throw new SystemError(
       SystemErrorCode.InternalServerError,
       "EmptyNotificationStorage.get not implemented",
