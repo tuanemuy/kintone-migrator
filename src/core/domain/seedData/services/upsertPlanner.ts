@@ -27,7 +27,8 @@ function deepEqual(a: RecordFieldValue, b: RecordFieldValue): boolean {
         const keysB = Object.keys(itemB);
         if (keysA.length !== keysB.length) return false;
         for (const key of keysA) {
-          if (String(itemA[key] ?? "") !== String(itemB[key] ?? "")) return false;
+          if (String(itemA[key] ?? "") !== String(itemB[key] ?? ""))
+            return false;
         }
         continue;
       }

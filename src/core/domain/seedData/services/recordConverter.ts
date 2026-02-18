@@ -1,12 +1,12 @@
+import {
+  hasCode,
+  hasOptionalType,
+  isKintoneSubtableRow,
+} from "@/core/domain/typeGuards";
 import type {
   KintoneRecordForParameter,
   KintoneRecordForResponse,
 } from "../ports/recordManager";
-import {
-  hasCode,
-  isKintoneSubtableRow,
-  hasOptionalType,
-} from "@/core/domain/typeGuards";
 import type { RecordFieldValue, SeedRecord, SubtableRow } from "../valueObject";
 
 const SYSTEM_FIELDS: ReadonlySet<string> = new Set([

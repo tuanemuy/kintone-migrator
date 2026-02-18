@@ -57,9 +57,7 @@ export function isKintoneSubtableRow(
 /**
  * Narrows `unknown` to `{ type?: string }`.
  */
-export function hasOptionalType(
-  value: unknown,
-): value is { type?: string } {
+export function hasOptionalType(value: unknown): value is { type?: string } {
   if (!isRecord(value)) return false;
   return value.type === undefined || typeof value.type === "string";
 }
