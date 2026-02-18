@@ -255,7 +255,7 @@ describe("init コマンド", () => {
     expect(handleCliError).not.toHaveBeenCalled();
     expect(createInitCliContainer).toHaveBeenCalledWith(
       expect.objectContaining({
-        configFilePath: "mydir/kintone-migrator.yaml",
+        configFilePath: "kintone-migrator.yaml",
       }),
     );
     expect(generateProjectConfig).toHaveBeenCalledWith(
