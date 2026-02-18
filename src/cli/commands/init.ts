@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
+import { createCliCaptureContainers } from "@/core/application/container/captureAllCli";
 import { createInitCliContainer } from "@/core/application/container/initCli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import {
@@ -9,9 +10,7 @@ import {
 } from "@/core/application/init/captureAllForApp";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
-import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName } from "@/core/domain/space/entity";
-import { createCliCaptureContainers } from "../captureContainerFactory";
 import { kintoneArgs, resolveAuth } from "../config";
 import { handleCliError } from "../handleError";
 
@@ -107,8 +106,8 @@ export default define({
       const s = p.spinner();
       s.start("Fetching space info...");
       const apps = await fetchSpaceApps({
-        spaceReader,
-        spaceId: values["space-id"],
+        container: { spaceReader },
+        input: { spaceId: values["space-id"] },
       });
       s.stop(`Found ${apps.length} app(s) in the space.`);
 
@@ -151,14 +150,13 @@ export default define({
         const appName = resolveAppName(app);
         p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
 
-        const containers = createCliCaptureContainers({
+        const { containers, paths } = createCliCaptureContainers({
           baseUrl,
           auth,
           appId: app.appId,
           guestSpaceId,
           appName,
         });
-        const paths = buildAppFilePaths(appName);
 
         const cs = p.spinner();
         cs.start(`Capturing all domains for ${appName}...`);

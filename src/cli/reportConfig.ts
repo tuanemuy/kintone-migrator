@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const reportArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveReportFilePath(
   cliValues: ReportCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["report-file"] ??
-    process.env.REPORT_FILE_PATH ??
-    app?.reportFile ??
-    (app ? `report/${app.name}.yaml` : "reports.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["report-file"],
+    envVar: process.env.REPORT_FILE_PATH,
+    appFileField: (a) => a.reportFile,
+    app,
+    defaultDir: "report",
+    defaultFileName: "reports.yaml",
+  });
 }
 
 export function resolveReportContainerConfig(

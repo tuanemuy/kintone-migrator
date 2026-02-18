@@ -12,6 +12,7 @@ import {
   isForbiddenError,
   isSystemError,
   isUnauthenticatedError,
+  SystemError,
   SystemErrorCode,
 } from "@/core/application/error";
 import { captureFieldPermission } from "@/core/application/fieldPermission/captureFieldPermission";
@@ -37,11 +38,25 @@ import { saveView } from "@/core/application/view/saveView";
 
 export type { CaptureAllContainers } from "@/core/application/container/captureAll";
 
-export type CaptureResult = Readonly<{
-  domain: string;
-  success: boolean;
-  error?: unknown;
-}>;
+export type CaptureDomain =
+  | "customize"
+  | "schema"
+  | "seed"
+  | "view"
+  | "settings"
+  | "notification"
+  | "report"
+  | "action"
+  | "process"
+  | "field-acl"
+  | "app-acl"
+  | "record-acl"
+  | "admin-notes"
+  | "plugin";
+
+export type CaptureResult =
+  | Readonly<{ domain: CaptureDomain; success: true }>
+  | Readonly<{ domain: CaptureDomain; success: false; error: unknown }>;
 
 export type CaptureAllForAppInput = Readonly<{
   appName: string;
@@ -50,12 +65,12 @@ export type CaptureAllForAppInput = Readonly<{
 }>;
 
 type CaptureTask = {
-  readonly domain: string;
+  readonly domain: CaptureDomain;
   readonly run: () => Promise<void>;
 };
 
 function buildStandardTask<C>(
-  domain: string,
+  domain: CaptureDomain,
   container: C,
   capture: (c: C) => Promise<{ configText: string }>,
   save: (c: C, text: string) => Promise<void>,
@@ -210,8 +225,17 @@ export async function captureAllForApp(
     } catch (error) {
       results.push({ domain: task.domain, success: false, error });
       if (isFatalError(error)) {
+        const skipError = new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Skipped due to fatal error in "${task.domain}"`,
+          error,
+        );
         for (const remaining of tasks.slice(tasks.indexOf(task) + 1)) {
-          results.push({ domain: remaining.domain, success: false, error });
+          results.push({
+            domain: remaining.domain,
+            success: false,
+            error: skipError,
+          });
         }
         break;
       }

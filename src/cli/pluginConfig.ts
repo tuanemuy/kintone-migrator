@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const pluginArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolvePluginFilePath(
   cliValues: PluginCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["plugin-file"] ??
-    process.env.PLUGIN_FILE_PATH ??
-    app?.pluginFile ??
-    (app ? `plugin/${app.name}.yaml` : "plugins.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["plugin-file"],
+    envVar: process.env.PLUGIN_FILE_PATH,
+    appFileField: (a) => a.pluginFile,
+    app,
+    defaultDir: "plugin",
+    defaultFileName: "plugins.yaml",
+  });
 }
 
 export function resolvePluginContainerConfig(

@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const appAclArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveAppAclFilePath(
   cliValues: AppAclCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["app-acl-file"] ??
-    process.env.APP_ACL_FILE_PATH ??
-    app?.appAclFile ??
-    (app ? `app-acl/${app.name}.yaml` : "app-acl.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["app-acl-file"],
+    envVar: process.env.APP_ACL_FILE_PATH,
+    appFileField: (a) => a.appAclFile,
+    app,
+    defaultDir: "app-acl",
+    defaultFileName: "app-acl.yaml",
+  });
 }
 
 export function resolveAppAclContainerConfig(

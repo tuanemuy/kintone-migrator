@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const recordAclArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveRecordAclFilePath(
   cliValues: RecordAclCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["record-acl-file"] ??
-    process.env.RECORD_ACL_FILE_PATH ??
-    app?.recordAclFile ??
-    (app ? `record-acl/${app.name}.yaml` : "record-acl.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["record-acl-file"],
+    envVar: process.env.RECORD_ACL_FILE_PATH,
+    appFileField: (a) => a.recordAclFile,
+    app,
+    defaultDir: "record-acl",
+    defaultFileName: "record-acl.yaml",
+  });
 }
 
 export function resolveRecordAclContainerConfig(

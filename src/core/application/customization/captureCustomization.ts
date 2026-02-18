@@ -1,4 +1,4 @@
-import { extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
@@ -27,6 +27,18 @@ type CaptureCustomizationArgs = {
 };
 
 const MAX_DEDUPLICATE_COUNTER = 10_000;
+
+// biome-ignore lint/suspicious/noControlCharactersInRegex: intentional control character match for file name sanitization
+const UNSAFE_FILE_CHARS = /[<>:"|?*\u0000-\u001f]/g;
+
+function sanitizeFileName(name: string): string {
+  const base = basename(name);
+  const sanitized = base.replace(UNSAFE_FILE_CHARS, "_");
+  if (sanitized === "" || sanitized === "." || sanitized === "..") {
+    return "_";
+  }
+  return sanitized;
+}
 
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {
@@ -78,7 +90,10 @@ function planResources(
     if (resource.type === "URL") {
       planned.push({ type: "URL", url: resource.url });
     } else {
-      const fileName = deduplicateFileName(resource.file.name, usedNames);
+      const fileName = deduplicateFileName(
+        sanitizeFileName(resource.file.name),
+        usedNames,
+      );
       const absolutePath = join(dir, fileName);
       const relativePath = join(relativeBaseDir, resourceType, fileName);
       planned.push({ type: "FILE", path: relativePath });

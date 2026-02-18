@@ -26,8 +26,8 @@ describe("fetchSpaceApps", () => {
     reader.setApps(apps);
 
     const result = await fetchSpaceApps({
-      spaceReader: reader,
-      spaceId: "space-1",
+      container: { spaceReader: reader },
+      input: { spaceId: "space-1" },
     });
 
     expect(result).toEqual(apps);
@@ -39,7 +39,10 @@ describe("fetchSpaceApps", () => {
     reader.setApps([]);
 
     await expect(
-      fetchSpaceApps({ spaceReader: reader, spaceId: "empty-space" }),
+      fetchSpaceApps({
+        container: { spaceReader: reader },
+        input: { spaceId: "empty-space" },
+      }),
     ).rejects.toThrow(ValidationError);
   });
 
@@ -48,8 +51,8 @@ describe("fetchSpaceApps", () => {
     reader.setApps([{ appId: "1", code: "single", name: "Single App" }]);
 
     const result = await fetchSpaceApps({
-      spaceReader: reader,
-      spaceId: "space-1",
+      container: { spaceReader: reader },
+      input: { spaceId: "space-1" },
     });
 
     expect(result).toHaveLength(1);

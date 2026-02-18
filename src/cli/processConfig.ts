@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const processArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveProcessFilePath(
   cliValues: ProcessCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["process-file"] ??
-    process.env.PROCESS_FILE_PATH ??
-    app?.processFile ??
-    (app ? `process/${app.name}.yaml` : "process.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["process-file"],
+    envVar: process.env.PROCESS_FILE_PATH,
+    appFileField: (a) => a.processFile,
+    app,
+    defaultDir: "process",
+    defaultFileName: "process.yaml",
+  });
 }
 
 export function resolveProcessContainerConfig(

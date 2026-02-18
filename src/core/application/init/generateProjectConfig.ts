@@ -1,4 +1,5 @@
 import { stringify as stringifyYaml } from "yaml";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
 
@@ -7,6 +8,8 @@ export type GenerateProjectConfigInput = Readonly<{
   domain: string;
   guestSpaceId?: string;
 }>;
+
+const MAX_DEDUPLICATE_COUNTER = 10_000;
 
 function deduplicateAppName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {
@@ -18,6 +21,12 @@ function deduplicateAppName(baseName: string, usedNames: Set<string>): string {
   let candidate = `${baseName}-${counter}`;
   while (usedNames.has(candidate)) {
     counter++;
+    if (counter > MAX_DEDUPLICATE_COUNTER) {
+      throw new SystemError(
+        SystemErrorCode.StorageError,
+        `Failed to deduplicate app name "${baseName}": exceeded maximum counter (${MAX_DEDUPLICATE_COUNTER})`,
+      );
+    }
     candidate = `${baseName}-${counter}`;
   }
   usedNames.add(candidate);
@@ -46,7 +55,7 @@ export function generateProjectConfig(
     domain: input.domain,
   };
 
-  if (input.guestSpaceId) {
+  if (input.guestSpaceId !== undefined) {
     config.guestSpaceId = input.guestSpaceId;
   }
 

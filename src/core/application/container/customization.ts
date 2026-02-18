@@ -25,6 +25,6 @@ export type CustomizationCaptureContainer = {
 export type CustomizationContainer = CustomizationApplyContainer &
   CustomizationCaptureContainer;
 
-export type CustomizationServiceArgs<T = undefined> = T extends undefined
-  ? { container: CustomizationContainer }
-  : { container: CustomizationContainer; input: T };
+export type CustomizationApplyServiceArgs<T = undefined> = T extends undefined
+  ? { container: CustomizationApplyContainer }
+  : { container: CustomizationApplyContainer; input: T };

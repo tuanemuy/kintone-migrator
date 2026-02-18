@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const actionArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveActionFilePath(
   cliValues: ActionCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["action-file"] ??
-    process.env.ACTION_FILE_PATH ??
-    app?.actionFile ??
-    (app ? `action/${app.name}.yaml` : "actions.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["action-file"],
+    envVar: process.env.ACTION_FILE_PATH,
+    appFileField: (a) => a.actionFile,
+    app,
+    defaultDir: "action",
+    defaultFileName: "actions.yaml",
+  });
 }
 
 export function resolveActionContainerConfig(

@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const customizeArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveCustomizeFilePath(
   cliValues: CustomizeCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["customize-file"] ??
-    process.env.CUSTOMIZE_FILE_PATH ??
-    app?.customizeFile ??
-    (app ? `customize/${app.name}.yaml` : "customize.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["customize-file"],
+    envVar: process.env.CUSTOMIZE_FILE_PATH,
+    appFileField: (a) => a.customizeFile,
+    app,
+    defaultDir: "customize",
+    defaultFileName: "customize.yaml",
+  });
 }
 
 export function resolveCustomizeConfig(

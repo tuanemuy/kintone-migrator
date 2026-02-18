@@ -239,6 +239,45 @@ describe("captureCustomization", () => {
     expect(parsed.mobile.css).toEqual([]);
   });
 
+  it("should sanitize file names containing path traversal sequences", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              name: "../../etc/passwd",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: { basePath, filePrefix },
+    });
+
+    const parsed = ConfigParser.parse(result.configText);
+    expect(parsed.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "customize/desktop/js/passwd",
+    });
+    expect(
+      container.fileWriter.writtenFiles.has(
+        "/project/customize/desktop/js/passwd",
+      ),
+    ).toBe(true);
+  });
+
   it("should propagate download errors", async () => {
     setup();
     container.customizationConfigurator.setCustomization({

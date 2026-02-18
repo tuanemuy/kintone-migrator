@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const settingsArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveSettingsFilePath(
   cliValues: SettingsCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["settings-file"] ??
-    process.env.SETTINGS_FILE_PATH ??
-    app?.settingsFile ??
-    (app ? `settings/${app.name}.yaml` : "settings.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["settings-file"],
+    envVar: process.env.SETTINGS_FILE_PATH,
+    appFileField: (a) => a.settingsFile,
+    app,
+    defaultDir: "settings",
+    defaultFileName: "settings.yaml",
+  });
 }
 
 export function resolveSettingsContainerConfig(

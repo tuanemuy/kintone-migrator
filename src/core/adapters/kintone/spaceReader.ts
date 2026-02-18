@@ -36,8 +36,17 @@ export class KintoneSpaceReader implements SpaceReader {
           (app): app is Record<string, unknown> =>
             typeof app === "object" && app !== null,
         )
+        .filter(
+          (app): app is Record<string, unknown> =>
+            app.appId !== undefined && app.appId !== null,
+        )
         .map((app) => ({
-          appId: String(app.appId ?? ""),
+          appId:
+            typeof app.appId === "string"
+              ? app.appId
+              : typeof app.appId === "number"
+                ? String(app.appId)
+                : "",
           code: typeof app.code === "string" ? app.code : "",
           name: typeof app.name === "string" ? app.name : "",
         }))

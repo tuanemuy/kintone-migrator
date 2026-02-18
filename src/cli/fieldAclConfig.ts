@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const fieldAclArgs = {
   ...kintoneArgs,
@@ -23,12 +24,14 @@ export function resolveFieldAclFilePath(
   cliValues: FieldAclCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["field-acl-file"] ??
-    process.env.FIELD_ACL_FILE_PATH ??
-    app?.fieldAclFile ??
-    (app ? `field-acl/${app.name}.yaml` : "field-acl.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["field-acl-file"],
+    envVar: process.env.FIELD_ACL_FILE_PATH,
+    appFileField: (a) => a.fieldAclFile,
+    app,
+    defaultDir: "field-acl",
+    defaultFileName: "field-acl.yaml",
+  });
 }
 
 export function resolveFieldAclContainerConfig(
