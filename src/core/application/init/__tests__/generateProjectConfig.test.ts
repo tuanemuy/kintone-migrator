@@ -28,7 +28,7 @@ describe("generateProjectConfig", () => {
     const parsed = parseYaml(result);
     expect(parsed.apps.myapp).toBeDefined();
     expect(parsed.apps.myapp.appId).toBe("1");
-    expect(parsed.apps.myapp.files.schema).toBe("schemas/myapp.yaml");
+    expect(parsed.apps.myapp.files.schema).toBe("myapp/schema.yaml");
   });
 
   it("codeが空の場合、アプリ名を使用する", () => {
@@ -43,7 +43,7 @@ describe("generateProjectConfig", () => {
     expect(parsed.apps["No Code App"]).toBeDefined();
     expect(parsed.apps["No Code App"].appId).toBe("42");
     expect(parsed.apps["No Code App"].files.schema).toBe(
-      "schemas/No Code App.yaml",
+      "No Code App/schema.yaml",
     );
   });
 
@@ -58,7 +58,7 @@ describe("generateProjectConfig", () => {
     const parsed = parseYaml(result);
     expect(parsed.apps["app-42"]).toBeDefined();
     expect(parsed.apps["app-42"].appId).toBe("42");
-    expect(parsed.apps["app-42"].files.schema).toBe("schemas/app-42.yaml");
+    expect(parsed.apps["app-42"].files.schema).toBe("app-42/schema.yaml");
   });
 
   it("複数アプリの設定を生成する", () => {
@@ -90,20 +90,20 @@ describe("generateProjectConfig", () => {
 
     const parsed = parseYaml(result);
     const files = parsed.apps.myapp.files;
-    expect(files.schema).toBe("schemas/myapp.yaml");
-    expect(files.seed).toBe("seeds/myapp.yaml");
-    expect(files.customize).toBe("customize/myapp.yaml");
-    expect(files.view).toBe("view/myapp.yaml");
-    expect(files.settings).toBe("settings/myapp.yaml");
-    expect(files.notification).toBe("notification/myapp.yaml");
-    expect(files.report).toBe("report/myapp.yaml");
-    expect(files.action).toBe("action/myapp.yaml");
-    expect(files.process).toBe("process/myapp.yaml");
-    expect(files.fieldAcl).toBe("field-acl/myapp.yaml");
-    expect(files.appAcl).toBe("app-acl/myapp.yaml");
-    expect(files.recordAcl).toBe("record-acl/myapp.yaml");
-    expect(files.adminNotes).toBe("admin-notes/myapp.yaml");
-    expect(files.plugin).toBe("plugin/myapp.yaml");
+    expect(files.schema).toBe("myapp/schema.yaml");
+    expect(files.seed).toBe("myapp/seed.yaml");
+    expect(files.customize).toBe("myapp/customize.yaml");
+    expect(files.view).toBe("myapp/view.yaml");
+    expect(files.settings).toBe("myapp/settings.yaml");
+    expect(files.notification).toBe("myapp/notification.yaml");
+    expect(files.report).toBe("myapp/report.yaml");
+    expect(files.action).toBe("myapp/action.yaml");
+    expect(files.process).toBe("myapp/process.yaml");
+    expect(files.fieldAcl).toBe("myapp/field-acl.yaml");
+    expect(files.appAcl).toBe("myapp/app-acl.yaml");
+    expect(files.recordAcl).toBe("myapp/record-acl.yaml");
+    expect(files.adminNotes).toBe("myapp/admin-notes.yaml");
+    expect(files.plugin).toBe("myapp/plugin.yaml");
   });
 
   it("guestSpaceIdが指定された場合、設定に含める", () => {
@@ -147,7 +147,7 @@ describe("generateProjectConfig", () => {
     expect(parsed.apps.myapp.appId).toBe("1");
     expect(parsed.apps["myapp-2"]).toBeDefined();
     expect(parsed.apps["myapp-2"].appId).toBe("2");
-    expect(parsed.apps["myapp-2"].files.schema).toBe("schemas/myapp-2.yaml");
+    expect(parsed.apps["myapp-2"].files.schema).toBe("myapp-2/schema.yaml");
   });
 
   it("生成された設定にauthフィールドが含まれない", () => {

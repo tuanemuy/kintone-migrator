@@ -25,19 +25,19 @@ export function buildAppFilePaths(
   const prefix = (path: string): string =>
     baseDir ? join(baseDir, path) : path;
   return {
-    schema: prefix(`schemas/${appName}.yaml`),
-    seed: prefix(`seeds/${appName}.yaml`),
-    customize: prefix(`customize/${appName}.yaml`),
-    view: prefix(`view/${appName}.yaml`),
-    settings: prefix(`settings/${appName}.yaml`),
-    notification: prefix(`notification/${appName}.yaml`),
-    report: prefix(`report/${appName}.yaml`),
-    action: prefix(`action/${appName}.yaml`),
-    process: prefix(`process/${appName}.yaml`),
-    fieldAcl: prefix(`field-acl/${appName}.yaml`),
-    appAcl: prefix(`app-acl/${appName}.yaml`),
-    recordAcl: prefix(`record-acl/${appName}.yaml`),
-    adminNotes: prefix(`admin-notes/${appName}.yaml`),
-    plugin: prefix(`plugin/${appName}.yaml`),
+    schema: prefix(`${appName}/schema.yaml`),
+    seed: prefix(`${appName}/seed.yaml`),
+    customize: prefix(`${appName}/customize.yaml`),
+    view: prefix(`${appName}/view.yaml`),
+    settings: prefix(`${appName}/settings.yaml`),
+    notification: prefix(`${appName}/notification.yaml`),
+    report: prefix(`${appName}/report.yaml`),
+    action: prefix(`${appName}/action.yaml`),
+    process: prefix(`${appName}/process.yaml`),
+    fieldAcl: prefix(`${appName}/field-acl.yaml`),
+    appAcl: prefix(`${appName}/app-acl.yaml`),
+    recordAcl: prefix(`${appName}/record-acl.yaml`),
+    adminNotes: prefix(`${appName}/admin-notes.yaml`),
+    plugin: prefix(`${appName}/plugin.yaml`),
   };
 }
