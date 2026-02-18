@@ -1,6 +1,6 @@
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
+import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
 
 export class EmptySeedStorage implements SeedStorage {
   async get(): Promise<StorageResult> {

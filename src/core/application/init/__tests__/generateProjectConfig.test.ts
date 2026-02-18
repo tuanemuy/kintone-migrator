@@ -31,8 +31,24 @@ describe("generateProjectConfig", () => {
     expect(parsed.apps.myapp.files.schema).toBe("schemas/myapp.yaml");
   });
 
-  it("codeが空の場合、app-{appId}をアプリ名として使用する", () => {
+  it("codeが空の場合、アプリ名を使用する", () => {
     const apps: SpaceApp[] = [{ appId: "42", code: "", name: "No Code App" }];
+
+    const result = generateProjectConfig({
+      apps,
+      domain: "example.cybozu.com",
+    });
+
+    const parsed = parseYaml(result);
+    expect(parsed.apps["No Code App"]).toBeDefined();
+    expect(parsed.apps["No Code App"].appId).toBe("42");
+    expect(parsed.apps["No Code App"].files.schema).toBe(
+      "schemas/No Code App.yaml",
+    );
+  });
+
+  it("codeとnameが両方空の場合、app-{appId}をフォールバックとして使用する", () => {
+    const apps: SpaceApp[] = [{ appId: "42", code: "", name: "" }];
 
     const result = generateProjectConfig({
       apps,
@@ -61,7 +77,7 @@ describe("generateProjectConfig", () => {
     expect(Object.keys(parsed.apps)).toHaveLength(3);
     expect(parsed.apps.app1).toBeDefined();
     expect(parsed.apps.app2).toBeDefined();
-    expect(parsed.apps["app-3"]).toBeDefined();
+    expect(parsed.apps["App 3"]).toBeDefined();
   });
 
   it("filesオブジェクトに全ドメインのファイルパスを含む", () => {

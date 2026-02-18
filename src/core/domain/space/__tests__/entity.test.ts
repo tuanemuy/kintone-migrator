@@ -7,8 +7,13 @@ describe("resolveAppName", () => {
     expect(resolveAppName(app)).toBe("myapp");
   });
 
-  it("codeが空文字の場合、app-{appId}を返す", () => {
+  it("codeが空文字の場合、アプリ名を返す", () => {
     const app: SpaceApp = { appId: "42", code: "", name: "My App" };
+    expect(resolveAppName(app)).toBe("My App");
+  });
+
+  it("codeとnameが両方空の場合、app-{appId}を返す", () => {
+    const app: SpaceApp = { appId: "42", code: "", name: "" };
     expect(resolveAppName(app)).toBe("app-42");
   });
 
