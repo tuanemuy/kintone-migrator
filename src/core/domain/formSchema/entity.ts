@@ -4,7 +4,6 @@ import type {
   FieldCode,
   FieldDefinition,
   LayoutElement,
-  LayoutField,
 } from "./valueObject";
 
 // Layout types
@@ -58,12 +57,11 @@ function enrichLayoutElement(
   fields: ReadonlyMap<FieldCode, FieldDefinition>,
 ): LayoutElement {
   if (!("field" in element)) return element;
-  const lf = element as LayoutField;
-  const fullField = fields.get(lf.field.code);
+  const fullField = fields.get(element.field.code);
   if (fullField === undefined) return element;
   return {
     field: fullField,
-    ...(lf.size !== undefined ? { size: lf.size } : {}),
+    ...(element.size !== undefined ? { size: element.size } : {}),
   };
 }
 

@@ -167,8 +167,8 @@ export const GeneralSettingsConfigParser = {
     }
 
     const obj = parsed as Record<string, unknown>;
-    const config: Record<string, unknown> = {};
 
+    let name: string | undefined;
     if (obj.name !== undefined && obj.name !== null) {
       if (typeof obj.name !== "string") {
         throw new BusinessRuleError(
@@ -176,9 +176,10 @@ export const GeneralSettingsConfigParser = {
           "name must be a string",
         );
       }
-      config.name = obj.name;
+      name = obj.name;
     }
 
+    let description: string | undefined;
     if (obj.description !== undefined && obj.description !== null) {
       if (typeof obj.description !== "string") {
         throw new BusinessRuleError(
@@ -186,13 +187,15 @@ export const GeneralSettingsConfigParser = {
           "description must be a string",
         );
       }
-      config.description = obj.description;
+      description = obj.description;
     }
 
+    let icon: IconConfig | undefined;
     if (obj.icon !== undefined && obj.icon !== null) {
-      config.icon = parseIcon(obj.icon);
+      icon = parseIcon(obj.icon);
     }
 
+    let theme: ThemeType | undefined;
     if (obj.theme !== undefined && obj.theme !== null) {
       if (typeof obj.theme !== "string" || !VALID_THEMES.has(obj.theme)) {
         throw new BusinessRuleError(
@@ -200,46 +203,54 @@ export const GeneralSettingsConfigParser = {
           `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(obj.theme)}`,
         );
       }
-      config.theme = obj.theme as ThemeType;
+      theme = obj.theme as ThemeType;
     }
 
+    let titleField: TitleFieldConfig | undefined;
     if (obj.titleField !== undefined && obj.titleField !== null) {
-      config.titleField = parseTitleField(obj.titleField);
+      titleField = parseTitleField(obj.titleField);
     }
 
+    let enableThumbnails: boolean | undefined;
     if (obj.enableThumbnails !== undefined && obj.enableThumbnails !== null) {
-      config.enableThumbnails = Boolean(obj.enableThumbnails);
+      enableThumbnails = Boolean(obj.enableThumbnails);
     }
 
+    let enableBulkDeletion: boolean | undefined;
     if (
       obj.enableBulkDeletion !== undefined &&
       obj.enableBulkDeletion !== null
     ) {
-      config.enableBulkDeletion = Boolean(obj.enableBulkDeletion);
+      enableBulkDeletion = Boolean(obj.enableBulkDeletion);
     }
 
+    let enableComments: boolean | undefined;
     if (obj.enableComments !== undefined && obj.enableComments !== null) {
-      config.enableComments = Boolean(obj.enableComments);
+      enableComments = Boolean(obj.enableComments);
     }
 
+    let enableDuplicateRecord: boolean | undefined;
     if (
       obj.enableDuplicateRecord !== undefined &&
       obj.enableDuplicateRecord !== null
     ) {
-      config.enableDuplicateRecord = Boolean(obj.enableDuplicateRecord);
+      enableDuplicateRecord = Boolean(obj.enableDuplicateRecord);
     }
 
+    let enableInlineRecordEditing: boolean | undefined;
     if (
       obj.enableInlineRecordEditing !== undefined &&
       obj.enableInlineRecordEditing !== null
     ) {
-      config.enableInlineRecordEditing = Boolean(obj.enableInlineRecordEditing);
+      enableInlineRecordEditing = Boolean(obj.enableInlineRecordEditing);
     }
 
+    let numberPrecision: NumberPrecisionConfig | undefined;
     if (obj.numberPrecision !== undefined && obj.numberPrecision !== null) {
-      config.numberPrecision = parseNumberPrecision(obj.numberPrecision);
+      numberPrecision = parseNumberPrecision(obj.numberPrecision);
     }
 
+    let firstMonthOfFiscalYear: number | undefined;
     if (
       obj.firstMonthOfFiscalYear !== undefined &&
       obj.firstMonthOfFiscalYear !== null
@@ -260,9 +271,28 @@ export const GeneralSettingsConfigParser = {
           `firstMonthOfFiscalYear must be an integer between 1 and 12, got: ${obj.firstMonthOfFiscalYear}`,
         );
       }
-      config.firstMonthOfFiscalYear = obj.firstMonthOfFiscalYear;
+      firstMonthOfFiscalYear = obj.firstMonthOfFiscalYear;
     }
 
-    return config as GeneralSettingsConfig;
+    const config: GeneralSettingsConfig = {
+      ...(name !== undefined ? { name } : {}),
+      ...(description !== undefined ? { description } : {}),
+      ...(icon !== undefined ? { icon } : {}),
+      ...(theme !== undefined ? { theme } : {}),
+      ...(titleField !== undefined ? { titleField } : {}),
+      ...(enableThumbnails !== undefined ? { enableThumbnails } : {}),
+      ...(enableBulkDeletion !== undefined ? { enableBulkDeletion } : {}),
+      ...(enableComments !== undefined ? { enableComments } : {}),
+      ...(enableDuplicateRecord !== undefined ? { enableDuplicateRecord } : {}),
+      ...(enableInlineRecordEditing !== undefined
+        ? { enableInlineRecordEditing }
+        : {}),
+      ...(numberPrecision !== undefined ? { numberPrecision } : {}),
+      ...(firstMonthOfFiscalYear !== undefined
+        ? { firstMonthOfFiscalYear }
+        : {}),
+    };
+
+    return config;
   },
 };

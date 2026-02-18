@@ -357,7 +357,7 @@ layout:
       expect(() => SchemaParser.parse("   ")).toThrow(BusinessRuleError);
     });
 
-    it("不正な YAML を渡すと InvalidSchemaJson エラーが発生する", () => {
+    it("不正な YAML を渡すと InvalidSchemaFormat エラーが発生する", () => {
       expect(() => SchemaParser.parse("{{invalid")).toThrow(BusinessRuleError);
     });
 
