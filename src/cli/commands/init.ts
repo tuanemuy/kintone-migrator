@@ -1,4 +1,4 @@
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
@@ -108,9 +108,7 @@ export default define({
       const guestSpaceId =
         values["guest-space-id"] ?? process.env.KINTONE_GUEST_SPACE_ID;
       const output = values.output;
-      const configPath = output
-        ? join(output, DEFAULT_CONFIG_PATH)
-        : DEFAULT_CONFIG_PATH;
+      const configPath = DEFAULT_CONFIG_PATH;
       const skipConfirm = values.yes ?? false;
       const dryRun = values["dry-run"] ?? false;
 
