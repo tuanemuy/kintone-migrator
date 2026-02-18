@@ -596,7 +596,7 @@ ROW 内の `fields` 配列に、フィールドと並べて装飾要素を配置
 | エラーコード | 条件 |
 | --- | --- |
 | `EMPTY_SCHEMA_TEXT` | スキーマテキストが空 |
-| `INVALID_SCHEMA_JSON` | YAML として不正なテキスト |
+| `INVALID_SCHEMA_FORMAT` | YAML として不正なテキスト |
 | `INVALID_SCHEMA_STRUCTURE` | `layout` キーが存在しない、または配列でない |
 | `INVALID_FIELD_TYPE` | 未知のフィールド型 |
 | `INVALID_LAYOUT_STRUCTURE` | レイアウト要素の構造が不正 |

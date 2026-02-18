@@ -46,7 +46,7 @@
     "lint": "biome lint",
     "lint:fix": "biome check --write",
     "format": "biome format --write",
-    "format:check": "biome format",
+    "format:check": "biome format --check",
     "typecheck": "tsgo",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"

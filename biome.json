@@ -19,7 +19,6 @@
     "includes": ["**"],
     "rules": {
       "recommended": true,
-      "nursery": {},
       "style": {
         "noParameterAssign": "error",
         "useAsConstAssertion": "error",
