@@ -191,7 +191,9 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.PcInvalidConfigStructure);
+        expect(error.code).toBe(
+          ProjectConfigErrorCode.PcInvalidConfigStructure,
+        );
       }
     }
   });
@@ -239,7 +241,9 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.PcInvalidConfigStructure);
+        expect(error.code).toBe(
+          ProjectConfigErrorCode.PcInvalidConfigStructure,
+        );
       }
     }
   });
