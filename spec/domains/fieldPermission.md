@@ -119,22 +119,7 @@ const FieldPermissionConfigParser = {
 
 #### 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: WRITE
-        entity:
-          type: USER
-          code: user1
-      - accessibility: READ
-        entity:
-          type: GROUP
-          code: group1
-        includeSubs: true
-```
+[フィールドアクセス権設定ファイル仕様](../fileFormats/fieldPermission.md) を参照。
 
 ### FieldPermissionConfigSerializer
 

@@ -1,5 +1,11 @@
 # プロジェクト設定ファイル仕様
 
+## kintone API リファレンス
+
+- [アプリの情報を取得する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/get-app/)
+- [アプリの一覧を取得する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/get-apps/)
+- [スペースの情報を取得する](https://cybozu.dev/ja/kintone/docs/rest-api/spaces/get-space/)
+
 ## 概要
 
 `kintone-migrator.yaml`（デフォルトパス）で複数のkintoneアプリを一括管理するためのプロジェクト設定ファイル。

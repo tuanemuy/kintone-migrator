@@ -128,45 +128,7 @@ kintoneアプリのプロセス管理設定を取得・更新するためのイ�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-enable: true
-states:
-  未処理:
-    index: 0
-    assignee:
-      type: ONE
-      entities:
-        - type: CREATOR
-  処理中:
-    index: 1
-    assignee:
-      type: ONE
-      entities:
-        - type: USER
-          code: manager
-  完了:
-    index: 2
-    assignee:
-      type: ONE
-      entities: []
-actions:
-  - name: 処理開始
-    from: 未処理
-    to: 処理中
-    filterCond: ""
-    type: PRIMARY
-    executableUser:
-      entities:
-        - type: USER
-          code: manager
-  - name: 完了にする
-    from: 処理中
-    to: 完了
-    filterCond: ""
-    type: PRIMARY
-```
+[プロセス管理設定ファイル仕様](../fileFormats/processManagement.md) を参照。
 
 ## CLI
 

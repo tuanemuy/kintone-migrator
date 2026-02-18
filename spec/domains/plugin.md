@@ -51,20 +51,7 @@ kintoneアプリのプラグイン設定を取得・更新するためのイン�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-plugins:
-  - id: djmhffjlbojgcbnahicgdjiahbegolkj
-    name: 条件分岐プラグイン
-    enabled: true
-  - id: pafgcfghlmjicbadmkohfoihfkblahhe
-    name: カレンダーPlusプラグイン
-    enabled: true
-  - id: kintone-plugin-example-id
-    name: テスト用プラグイン
-    enabled: false
-```
+[プラグイン設定ファイル仕様](../fileFormats/plugin.md) を参照。
 
 ## CLI
 

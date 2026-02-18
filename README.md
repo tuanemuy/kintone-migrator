@@ -166,7 +166,7 @@ In multi-app mode, each command resolves its config file path using a convention
 
 All file paths can be explicitly overridden per app in the project config. If not specified, the convention-based default path is used.
 
-For details, see [Project Config Specification](./spec/projectConfig.md).
+For details, see [Project Config Specification](./spec/fileFormats/projectConfig.md).
 
 ## Commands
 
@@ -637,8 +637,8 @@ Supported field types: `SINGLE_LINE_TEXT`, `MULTI_LINE_TEXT`, `RICH_TEXT`, `NUMB
 
 Lookup fields and reference tables are also supported. For details, see:
 
-- [Schema Specification](./spec/schema.md) -- format reference, all field types, and validation rules
-- [Sample Schema (YAML)](./spec/sample_schema.yaml) / [JSON](./spec/sample_schema.json) -- comprehensive examples
+- [Schema Specification](./spec/fileFormats/schema.md) -- format reference, all field types, and validation rules
+- [Sample Schema (YAML)](./spec/fileFormats/sample_schema.yaml) / [JSON](./spec/fileFormats/sample_schema.json) -- comprehensive examples
 
 ### Seed Data File
 
@@ -655,7 +655,7 @@ records:
       - "long-term"
 ```
 
-For field type mappings and details, see [Seed Data Specification](./spec/seed.md).
+For field type mappings and details, see [Seed Data Specification](./spec/fileFormats/seed.md).
 
 ### Customization Config File
 
@@ -678,7 +678,7 @@ mobile:
       path: ./dist/mobile.js
 ```
 
-For details, see [Customization Specification](./spec/domains/customization.md).
+For details, see [Customization Specification](./spec/fileFormats/customization.md).
 
 ### Field ACL File
 
@@ -703,7 +703,7 @@ rights:
           code: general_staff
 ```
 
-For details, see [Field Permission Specification](./spec/domains/fieldPermission.md).
+For details, see [Field Permission Specification](./spec/fileFormats/fieldPermission.md).
 
 ### View File
 
@@ -729,7 +729,7 @@ views:
     title: customer_name
 ```
 
-View types: `LIST`, `CALENDAR`, `CUSTOM`. For details, see [View Specification](./spec/domains/view.md).
+View types: `LIST`, `CALENDAR`, `CUSTOM`. For details, see [View Specification](./spec/fileFormats/view.md).
 
 ### App ACL File
 
@@ -761,7 +761,7 @@ rights:
     recordExportable: false
 ```
 
-For details, see [App Permission Specification](./spec/domains/appPermission.md).
+For details, see [App Permission Specification](./spec/fileFormats/appPermission.md).
 
 ### Record ACL File
 
@@ -787,7 +787,7 @@ rights:
         includeSubs: false
 ```
 
-For details, see [Record Permission Specification](./spec/domains/recordPermission.md).
+For details, see [Record Permission Specification](./spec/fileFormats/recordPermission.md).
 
 ### Process Management File
 
@@ -827,7 +827,7 @@ actions:
     type: PRIMARY
 ```
 
-For details, see [Process Management Specification](./spec/domains/processManagement.md).
+For details, see [Process Management Specification](./spec/fileFormats/processManagement.md).
 
 ### General Settings File
 
@@ -853,7 +853,7 @@ numberPrecision:
 firstMonthOfFiscalYear: 4
 ```
 
-For details, see [General Settings Specification](./spec/domains/generalSettings.md).
+For details, see [General Settings Specification](./spec/fileFormats/generalSettings.md).
 
 ### Notification File
 
@@ -892,7 +892,7 @@ reminder:
             code: creator
 ```
 
-For details, see [Notification Specification](./spec/domains/notification.md).
+For details, see [Notification Specification](./spec/fileFormats/notification.md).
 
 ### Report File
 
@@ -927,7 +927,7 @@ reports:
         order: DESC
 ```
 
-Chart types: `BAR`, `COLUMN`, `PIE`, `LINE`, `PIVOT_TABLE`, `TABLE`, `AREA`, `SPLINE`, `SPLINE_AREA`. For details, see [Report Specification](./spec/domains/report.md).
+Chart types: `BAR`, `COLUMN`, `PIE`, `LINE`, `PIVOT_TABLE`, `TABLE`, `AREA`, `SPLINE`, `SPLINE_AREA`. For details, see [Report Specification](./spec/fileFormats/report.md).
 
 ### Action File
 
@@ -951,7 +951,7 @@ actions:
     filterCond: status in ("approved")
 ```
 
-For details, see [Action Specification](./spec/domains/action.md).
+For details, see [Action Specification](./spec/fileFormats/action.md).
 
 ### Admin Notes File
 
@@ -964,7 +964,7 @@ content: |
 includeInTemplateAndDuplicates: true
 ```
 
-For details, see [Admin Notes Specification](./spec/domains/adminNotes.md).
+For details, see [Admin Notes Specification](./spec/fileFormats/adminNotes.md).
 
 ### Plugin File
 
@@ -980,7 +980,7 @@ plugins:
     enabled: false
 ```
 
-For details, see [Plugin Specification](./spec/domains/plugin.md).
+For details, see [Plugin Specification](./spec/fileFormats/plugin.md).
 
 ## License
 

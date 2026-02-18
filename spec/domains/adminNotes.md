@@ -38,18 +38,7 @@ kintoneアプリの管理者用メモを取得・更新するためのインタ�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-content: |
-  <h2>アプリ管理メモ</h2>
-  <p>このアプリは顧客管理用です。</p>
-  <ul>
-    <li>スキーマ変更はkintone-migratorで管理</li>
-    <li>手動変更禁止</li>
-  </ul>
-includeInTemplateAndDuplicates: true
-```
+[管理者用メモ設定ファイル仕様](../fileFormats/adminNotes.md) を参照。
 
 ## CLI
 

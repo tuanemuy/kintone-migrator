@@ -1,5 +1,13 @@
 # シードデータファイル仕様
 
+## kintone API リファレンス
+
+- [レコード](https://cybozu.dev/ja/kintone/docs/rest-api/records/)
+  - [レコードを取得する](https://cybozu.dev/ja/kintone/docs/rest-api/records/get-records/)
+  - [レコードを追加する](https://cybozu.dev/ja/kintone/docs/rest-api/records/add-records/)
+  - [レコードを更新する](https://cybozu.dev/ja/kintone/docs/rest-api/records/update-records/)
+  - [レコードを削除する](https://cybozu.dev/ja/kintone/docs/rest-api/records/delete-records/)
+
 ## 概要
 
 シードデータファイルは、kintoneアプリに投入するレコードデータをYAML/JSON形式で定義するファイル。`key`フィールドを指定した場合はUpsert方式（キーフィールドで既存レコードと突合し、存在すれば更新・なければ追加）で反映する。`key`フィールドを省略した場合はInsert-onlyモード（全レコードを単純に追加）で動作する。
