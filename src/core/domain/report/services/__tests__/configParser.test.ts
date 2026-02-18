@@ -899,5 +899,255 @@ reports:
         expect(config.reports.テスト.aggregations[0].type).toBe(aggType);
       }
     });
+
+    it("should parse periodicReport with minute", () => {
+      const yaml = `
+reports:
+  時間レポート:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: HOUR
+        minute: 30
+`;
+      const config = ReportConfigParser.parse(yaml);
+      const report = config.reports["時間レポート"];
+      expect(report.periodicReport?.period.minute).toBe(30);
+    });
+
+    it("should throw for non-boolean periodicReport.active", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: "yes"
+      period:
+        every: MONTH
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-object periodicReport", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport: not_an_object
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-object periodicReport.period", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period: not_an_object
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for invalid periodicReport.period.every", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: INVALID
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-object group", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups:
+      - not_an_object
+    aggregations: []
+    filterCond: ""
+    sorts: []
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for group with empty code", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups:
+      - code: ""
+    aggregations: []
+    filterCond: ""
+    sorts: []
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-object aggregation", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups: []
+    aggregations:
+      - not_an_object
+    filterCond: ""
+    sorts: []
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for aggregation with non-string code", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups: []
+    aggregations:
+      - type: SUM
+        code: 123
+    filterCond: ""
+    sorts: []
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-object sort", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups: []
+    aggregations: []
+    filterCond: ""
+    sorts:
+      - not_an_object
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-object report", () => {
+      const yaml = `
+reports:
+  テスト: not_an_object
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should default filterCond to empty string when not provided", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups: []
+    aggregations: []
+    sorts: []
+`;
+      const config = ReportConfigParser.parse(yaml);
+      expect(config.reports["テスト"].filterCond).toBe("");
+    });
+
+    it("should default groups, aggregations, sorts to empty arrays when not arrays", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    filterCond: ""
+`;
+      const config = ReportConfigParser.parse(yaml);
+      expect(config.reports["テスト"].groups).toEqual([]);
+      expect(config.reports["テスト"].aggregations).toEqual([]);
+      expect(config.reports["テスト"].sorts).toEqual([]);
+    });
+
+    it("should parse all periodic every values", () => {
+      const everyValues = ["YEAR", "QUARTER", "MONTH", "WEEK", "DAY", "HOUR"];
+      for (const every of everyValues) {
+        const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: ${every}
+`;
+        const config = ReportConfigParser.parse(yaml);
+        expect(config.reports["テスト"].periodicReport?.period.every).toBe(
+          every,
+        );
+      }
+    });
+
+    it("should parse all aggregation types", () => {
+      const aggregationTypes = ["COUNT", "SUM", "AVERAGE", "MAX", "MIN"];
+      for (const aggType of aggregationTypes) {
+        const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: 0
+    groups: []
+    aggregations:
+      - type: ${aggType}
+    filterCond: ""
+    sorts: []
+`;
+        const config = ReportConfigParser.parse(yaml);
+        expect(config.reports["テスト"].aggregations[0].type).toBe(aggType);
+      }
+    });
   });
 });
