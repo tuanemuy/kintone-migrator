@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type { AppEntry } from "@/core/domain/projectConfig/entity";
 
 export type ResolveFilePathOptions = Readonly<{
@@ -15,7 +16,7 @@ export function resolveFilePath(options: ResolveFilePathOptions): string {
     options.envVar ??
     (options.app && options.appFileField?.(options.app)) ??
     (options.app
-      ? `${options.defaultDir}/${options.app.name}.yaml`
+      ? join(options.defaultDir, `${options.app.name}.yaml`)
       : options.defaultFileName)
   );
 }

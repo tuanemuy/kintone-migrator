@@ -51,6 +51,12 @@ async function runCaptureCustomization(
   });
   s.stop("Customization captured.");
 
+  if (result.hasExistingConfig) {
+    p.log.warn(
+      `Overwriting existing config: ${pc.cyan(config.customizeFilePath)}`,
+    );
+  }
+
   await saveCustomization({
     container,
     input: { configText: result.configText },
@@ -62,10 +68,6 @@ async function runCaptureCustomization(
     p.log.info(
       `Downloaded ${result.fileResourceCount} file(s) to: ${pc.cyan(basePath)}`,
     );
-  }
-
-  if (result.hasExistingConfig) {
-    p.log.warn("Existing customization file was overwritten.");
   }
 }
 

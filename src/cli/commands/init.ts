@@ -11,6 +11,7 @@ import {
 } from "@/core/application/init/captureAllForApp";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
+import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName } from "@/core/domain/space/entity";
 import { kintoneArgs, resolveAuth, validateKintoneDomain } from "../config";
 import { handleCliError } from "../handleError";
@@ -38,6 +39,11 @@ const initArgs = {
     short: "y",
     description: "Skip confirmation prompts",
   },
+  "dry-run": {
+    type: "boolean" as const,
+    short: "n",
+    description: "Preview what would be created without writing any files",
+  },
 };
 
 type InitCliValues = {
@@ -49,6 +55,7 @@ type InitCliValues = {
   "guest-space-id"?: string;
   output?: string;
   yes?: boolean;
+  "dry-run"?: boolean;
 };
 
 function formatError(error: unknown): string {
@@ -102,6 +109,7 @@ export default define({
         values["guest-space-id"] ?? process.env.KINTONE_GUEST_SPACE_ID;
       const configPath = values.output ?? DEFAULT_CONFIG_PATH;
       const skipConfirm = values.yes ?? false;
+      const dryRun = values["dry-run"] ?? false;
 
       const { spaceReader, projectConfigStorage } = createInitCliContainer({
         baseUrl,
@@ -128,6 +136,35 @@ export default define({
         );
       }
 
+      // Generate config text (used by both normal and dry-run modes)
+      // Auth is intentionally omitted from the generated file to prevent
+      // credentials from being committed to version control. The user is
+      // expected to supply auth via environment variables or add it manually.
+      const configText = generateProjectConfig({
+        apps,
+        domain: kintoneDomain,
+        guestSpaceId,
+      });
+
+      if (dryRun) {
+        p.log.info(pc.dim("(dry-run mode - no files will be written)"));
+        p.log.step(`\nConfig file: ${pc.cyan(configPath)}`);
+        p.log.message(configText);
+
+        for (const app of apps) {
+          const appName = resolveAppName(app);
+          const paths = buildAppFilePaths(appName);
+          p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
+          p.log.message("  Files that would be created:");
+          for (const [domain, filePath] of Object.entries(paths)) {
+            p.log.message(`    ${domain}: ${pc.dim(filePath)}`);
+          }
+        }
+
+        p.log.success("\nDry run complete. No files were written.");
+        return;
+      }
+
       // Check if config file exists
       const existing = await projectConfigStorage.get();
 
@@ -141,15 +178,7 @@ export default define({
         }
       }
 
-      // Generate and write config
-      // Auth is intentionally omitted from the generated file to prevent
-      // credentials from being committed to version control. The user is
-      // expected to supply auth via environment variables or add it manually.
-      const configText = generateProjectConfig({
-        apps,
-        domain: kintoneDomain,
-        guestSpaceId,
-      });
+      // Write config
       await projectConfigStorage.update(configText);
       p.log.success(`Config written to: ${pc.cyan(configPath)}`);
 

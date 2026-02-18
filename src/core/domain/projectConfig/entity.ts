@@ -47,6 +47,13 @@ export type ProjectConfig = Readonly<{
 
 export type AppExecutionStatus = "succeeded" | "failed" | "skipped";
 
+/**
+ * Result of executing an operation for a single app.
+ *
+ * The `error` field is typed as `Error` (not `unknown`) by design.
+ * Callers that populate this field (e.g. `executeMultiApp`) are responsible
+ * for wrapping non-Error throwables via `error instanceof Error ? error : new Error(String(error))`.
+ */
 export type AppExecutionResult = Readonly<{
   name: AppName;
   status: AppExecutionStatus;

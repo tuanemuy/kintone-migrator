@@ -26,7 +26,11 @@ import {
   ValidationError,
   ValidationErrorCode,
 } from "@/core/application/error";
-import { captureAllForApp, isFatalError } from "../captureAllForApp";
+import {
+  CAPTURE_BATCH_SIZE,
+  captureAllForApp,
+  isFatalError,
+} from "../captureAllForApp";
 
 function createMockContainers(): CaptureAllContainers {
   return {
@@ -165,7 +169,7 @@ describe("captureAllForApp", () => {
     expect(successCount).toBe(13);
   });
 
-  it("致命的エラー (UnauthenticatedError) で残りがskipされる", async () => {
+  it("致命的エラー (UnauthenticatedError) で後続バッチがskipされる", async () => {
     const containers = createMockContainers();
 
     // Make the first domain (customize) fail with UnauthenticatedError
@@ -182,16 +186,17 @@ describe("captureAllForApp", () => {
     });
 
     expect(results).toHaveLength(14);
-    // First fails
+    // First domain fails fatally
     expect(results[0].domain).toBe("customize");
     expect(results[0].success).toBe(false);
-    // All remaining are also marked as failed
-    for (const result of results.slice(1)) {
+    // Other domains in the same batch may still succeed (concurrent execution)
+    // All domains in subsequent batches are skipped due to fatal error
+    for (const result of results.slice(CAPTURE_BATCH_SIZE)) {
       expect(result.success).toBe(false);
     }
   });
 
-  it("致命的エラー (NetworkError) で残りがskipされる", async () => {
+  it("致命的エラー (NetworkError) で後続バッチがskipされる", async () => {
     const containers = createMockContainers();
 
     // Make schema (second domain) fail with NetworkError
@@ -205,14 +210,15 @@ describe("captureAllForApp", () => {
     });
 
     expect(results).toHaveLength(14);
-    // customize succeeds
+    // customize succeeds (in same batch as the failing schema)
     expect(results[0].domain).toBe("customize");
     expect(results[0].success).toBe(true);
-    // schema fails
+    // schema fails with NetworkError (fatal)
     expect(results[1].domain).toBe("schema");
     expect(results[1].success).toBe(false);
-    // All remaining are marked as failed
-    for (const result of results.slice(2)) {
+    // Other domains in the same batch may still succeed
+    // All domains in subsequent batches are skipped due to fatal error
+    for (const result of results.slice(CAPTURE_BATCH_SIZE)) {
       expect(result.success).toBe(false);
     }
   });

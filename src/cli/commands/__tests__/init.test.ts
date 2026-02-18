@@ -159,6 +159,7 @@ describe("init コマンド", () => {
     vi.mocked(fetchSpaceApps).mockResolvedValue([
       { appId: "1", code: "app1", name: "App 1" },
     ]);
+    vi.mocked(generateProjectConfig).mockReturnValue("domain: test\n");
 
     await command.run({
       values: {
@@ -169,7 +170,9 @@ describe("init コマンド", () => {
     } as never);
 
     expect(p.log.warn).toHaveBeenCalledWith("Aborted.");
-    expect(generateProjectConfig).not.toHaveBeenCalled();
+    const container = vi.mocked(createInitCliContainer).mock.results[0].value;
+    expect(container.projectConfigStorage.update).not.toHaveBeenCalled();
+    expect(captureAllForApp).not.toHaveBeenCalled();
   });
 
   it("--yes で確認プロンプトをスキップする", async () => {

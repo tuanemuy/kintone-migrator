@@ -4,6 +4,18 @@ import { isBusinessRuleError } from "@/core/domain/error";
 import type { SpaceApp } from "@/core/domain/space/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
 
+/**
+ * Reads space information from the kintone REST API.
+ *
+ * Uses the "Get Space" endpoint (GET /k/v1/space.json) which returns an
+ * `attachedApps` array. This field is present in the API response but is
+ * NOT included in the @kintone/rest-api-client SDK type definitions, so
+ * it is accessed via runtime type narrowing. If the kintone API changes
+ * the response shape, the runtime checks below will throw a descriptive
+ * `SystemError` rather than silently returning incorrect data.
+ *
+ * @see https://kintone.dev/en/docs/kintone/rest-api/spaces/get-space/
+ */
 export class KintoneSpaceReader implements SpaceReader {
   constructor(private readonly client: KintoneRestAPIClient) {}
 

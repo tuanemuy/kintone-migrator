@@ -216,36 +216,58 @@ export function isFatalError(error: unknown): boolean {
   return false;
 }
 
+/** Number of domains to capture concurrently within each batch. */
+export const CAPTURE_BATCH_SIZE = 4;
+
+/**
+ * Capture all domains for a single app, processing tasks in concurrent batches.
+ *
+ * Domains within the same batch run in parallel via `Promise.allSettled`.
+ * After each batch, fatal errors (auth/network) abort all remaining batches.
+ * Non-fatal errors within a batch do not affect other tasks in the same batch
+ * or subsequent batches.
+ */
 export async function captureAllForApp(
   args: CaptureAllForAppArgs,
 ): Promise<readonly CaptureResult[]> {
   const tasks = buildCaptureTasks(args);
   const results: CaptureResult[] = [];
 
-  // NOTE: This orchestration function intentionally uses try-catch to record partial
-  // failures per domain and continue with remaining domains, deviating from the
-  // project convention of avoiding try-catch in the application layer.
-  for (const [i, task] of tasks.entries()) {
-    try {
-      await task.run();
-      results.push({ domain: task.domain, success: true });
-    } catch (error) {
-      results.push({ domain: task.domain, success: false, error });
-      if (isFatalError(error)) {
-        const skipError = new SystemError(
-          SystemErrorCode.InternalServerError,
-          `Skipped due to fatal error in "${task.domain}"`,
-          error,
-        );
-        for (const remaining of tasks.slice(i + 1)) {
-          results.push({
-            domain: remaining.domain,
-            success: false,
-            error: skipError,
-          });
+  for (let i = 0; i < tasks.length; i += CAPTURE_BATCH_SIZE) {
+    const batch = tasks.slice(i, i + CAPTURE_BATCH_SIZE);
+
+    const settled = await Promise.allSettled(batch.map((task) => task.run()));
+
+    let fatalDomain: CaptureDomain | undefined;
+    let fatalReason: unknown;
+
+    for (const [j, outcome] of settled.entries()) {
+      if (outcome.status === "fulfilled") {
+        results.push({ domain: batch[j].domain, success: true });
+      } else {
+        const error = outcome.reason;
+        results.push({ domain: batch[j].domain, success: false, error });
+        if (isFatalError(error) && fatalDomain === undefined) {
+          fatalDomain = batch[j].domain;
+          fatalReason = error;
         }
-        break;
       }
+    }
+
+    if (fatalDomain !== undefined) {
+      const skipError = new SystemError(
+        SystemErrorCode.InternalServerError,
+        `Skipped due to fatal error in "${fatalDomain}"`,
+        fatalReason,
+      );
+      for (const remaining of tasks.slice(i + CAPTURE_BATCH_SIZE)) {
+        results.push({
+          domain: remaining.domain,
+          success: false,
+          error: skipError,
+        });
+      }
+      break;
     }
   }
 

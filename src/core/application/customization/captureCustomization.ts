@@ -142,6 +142,14 @@ function planPlatform(
   };
 }
 
+/**
+ * Download all planned files concurrently.
+ *
+ * On partial failure, already-written files remain on disk. This is safe because
+ * retry is idempotent — files are overwritten on subsequent runs. The caller does
+ * not persist the config YAML until this function completes successfully, so a
+ * failed run will not leave an inconsistent config-to-files state.
+ */
 async function downloadFiles(
   files: readonly PlannedFile[],
   container: CustomizationCaptureContainer,

@@ -15,6 +15,16 @@ export function deduplicateName(
     maxCounter?: number;
   },
 ): string {
+  if (baseName === "") {
+    throw new Error("baseName must not be empty");
+  }
+  if (options.separator === "") {
+    throw new Error("separator must not be empty");
+  }
+  if (options.startCounter < 1) {
+    throw new Error("startCounter must be >= 1");
+  }
+
   if (!usedNames.has(baseName)) {
     usedNames.add(baseName);
     return baseName;
