@@ -1,16 +1,21 @@
-import { basename, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { deriveFilePrefix } from "../capture";
 
 describe("deriveFilePrefix", () => {
-  it("customize.yaml はカレントディレクトリ名を返す", () => {
-    // resolve("customize.yaml") → /cwd/customize.yaml → parentDir = cwd's basename
-    const expected = basename(resolve("."));
-    expect(deriveFilePrefix("customize.yaml")).toBe(expected);
+  it("customize.yaml は空文字を返す", () => {
+    expect(deriveFilePrefix("customize.yaml")).toBe("");
   });
 
-  it("ディレクトリ内の customize.yaml は親ディレクトリ名を返す", () => {
-    expect(deriveFilePrefix("myapp/customize.yaml")).toBe("myapp");
+  it("ディレクトリ内の customize.yaml は空文字を返す", () => {
+    expect(deriveFilePrefix("myapp/customize.yaml")).toBe("");
+  });
+
+  it("深いパスの customize.yaml は空文字を返す", () => {
+    expect(deriveFilePrefix("path/to/customer/customize.yaml")).toBe("");
+  });
+
+  it("絶対パスの customize.yaml は空文字を返す", () => {
+    expect(deriveFilePrefix("/project/apps/myapp/customize.yaml")).toBe("");
   });
 
   it("customize以外のファイル名はそのファイル名を返す", () => {
@@ -21,16 +26,8 @@ describe("deriveFilePrefix", () => {
     expect(deriveFilePrefix("some-dir/my-config.yaml")).toBe("my-config");
   });
 
-  it("深いパスの customize.yaml は直近の親ディレクトリ名を返す", () => {
-    expect(deriveFilePrefix("path/to/customer/customize.yaml")).toBe(
-      "customer",
-    );
-  });
-
-  it("絶対パスの customize.yaml は親ディレクトリ名を返す", () => {
-    expect(deriveFilePrefix("/project/apps/myapp/customize.yaml")).toBe(
-      "myapp",
-    );
+  it("マルチアプリ形式のパスはアプリ名を返す", () => {
+    expect(deriveFilePrefix("customize/customer.yaml")).toBe("customer");
   });
 
   it(".yml 拡張子のファイルも正しくファイル名を返す", () => {

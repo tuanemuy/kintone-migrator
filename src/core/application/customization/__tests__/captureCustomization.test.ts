@@ -11,7 +11,7 @@ describe("captureCustomization", () => {
   let container: TestCustomizationContainer;
 
   const basePath = "/project/customize";
-  const filePrefix = "customize";
+  const filePrefix = "myapp";
 
   function setup(): void {
     container = getContainer();
@@ -52,14 +52,14 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.js).toHaveLength(1);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "customize/desktop/js/app.js",
+      path: "myapp/desktop/js/app.js",
     });
 
     expect(container.fileDownloader.callLog).toContain("download");
     expect(container.fileWriter.writtenFiles.size).toBe(1);
     expect(
       container.fileWriter.writtenFiles.has(
-        "/project/customize/desktop/js/app.js",
+        "/project/customize/myapp/desktop/js/app.js",
       ),
     ).toBe(true);
   });
@@ -133,10 +133,10 @@ describe("captureCustomization", () => {
 
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([
-      { type: "FILE", path: "customize/desktop/js/desktop.js" },
+      { type: "FILE", path: "myapp/desktop/js/desktop.js" },
     ]);
     expect(parsed.mobile.js).toEqual([
-      { type: "FILE", path: "customize/mobile/js/mobile.js" },
+      { type: "FILE", path: "myapp/mobile/js/mobile.js" },
     ]);
 
     expect(container.fileWriter.writtenFiles.size).toBe(2);
@@ -186,7 +186,7 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "customize/desktop/js/app.js",
+      path: "myapp/desktop/js/app.js",
     });
     expect(parsed.desktop.js[1]).toEqual({
       type: "URL",
@@ -195,7 +195,7 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.css).toHaveLength(1);
     expect(parsed.desktop.css[0]).toEqual({
       type: "FILE",
-      path: "customize/desktop/css/style.css",
+      path: "myapp/desktop/css/style.css",
     });
   });
 
@@ -269,11 +269,11 @@ describe("captureCustomization", () => {
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "customize/desktop/js/passwd",
+      path: "myapp/desktop/js/passwd",
     });
     expect(
       container.fileWriter.writtenFiles.has(
-        "/project/customize/desktop/js/passwd",
+        "/project/customize/myapp/desktop/js/passwd",
       ),
     ).toBe(true);
   });
@@ -318,11 +318,11 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "customize/desktop/js/app.js",
+      path: "myapp/desktop/js/app.js",
     });
     expect(parsed.desktop.js[1]).toEqual({
       type: "FILE",
-      path: "customize/desktop/js/app_1.js",
+      path: "myapp/desktop/js/app_1.js",
     });
 
     expect(container.fileWriter.writtenFiles.size).toBe(2);
@@ -400,5 +400,43 @@ describe("captureCustomization", () => {
         input: { basePath, filePrefix },
       }),
     ).rejects.toThrow("getCustomization failed");
+  });
+
+  it("should download files directly under basePath when filePrefix is empty", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: { basePath: "/project/myapp", filePrefix: "" },
+    });
+
+    const parsed = ConfigParser.parse(result.configText);
+    expect(parsed.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "desktop/js/app.js",
+    });
+
+    expect(
+      container.fileWriter.writtenFiles.has("/project/myapp/desktop/js/app.js"),
+    ).toBe(true);
   });
 });

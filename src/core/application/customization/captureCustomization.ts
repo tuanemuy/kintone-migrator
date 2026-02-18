@@ -135,7 +135,11 @@ function planPlatform(
   filesToDownload: readonly PlannedFile[];
   fileCount: number;
 } {
-  const platformDir = join(args.input.basePath, platformName);
+  const platformDir = join(
+    args.input.basePath,
+    args.input.filePrefix,
+    platformName,
+  );
   const platformPrefix = join(args.input.filePrefix, platformName);
 
   const jsPlan = planResources(
