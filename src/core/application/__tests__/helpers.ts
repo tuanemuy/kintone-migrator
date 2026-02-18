@@ -57,6 +57,7 @@ import type { PluginConfig } from "@/core/domain/plugin/entity";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { StorageResult } from "@/core/domain/ports/storageResult";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import type { ProcessManagementConfigurator } from "@/core/domain/processManagement/ports/processManagementConfigurator";
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
@@ -193,10 +194,13 @@ export class InMemorySchemaStorage implements SchemaStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -358,10 +362,13 @@ export class InMemoryCustomizationStorage implements CustomizationStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -513,10 +520,13 @@ export class InMemoryFieldPermissionStorage implements FieldPermissionStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -652,10 +662,13 @@ export class InMemorySeedStorage implements SeedStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -833,10 +846,13 @@ export class InMemoryRecordPermissionStorage
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -947,10 +963,13 @@ export class InMemoryViewStorage implements ViewStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1069,10 +1088,13 @@ export class InMemoryProcessManagementStorage
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1192,10 +1214,13 @@ export class InMemoryAppPermissionStorage implements AppPermissionStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1308,10 +1333,13 @@ export class InMemoryGeneralSettingsStorage implements GeneralSettingsStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1422,10 +1450,13 @@ export class InMemoryReportStorage implements ReportStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1637,10 +1668,13 @@ export class InMemoryNotificationStorage implements NotificationStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1751,10 +1785,13 @@ export class InMemoryActionStorage implements ActionStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1868,10 +1905,13 @@ export class InMemoryAdminNotesStorage implements AdminNotesStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {
@@ -1980,10 +2020,13 @@ export class InMemoryPluginStorage implements PluginStorage {
     }
   }
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     this.callLog.push("get");
     this.checkFail("get");
-    return { content: this.content, exists: this._exists };
+    if (this._exists) {
+      return { content: this.content, exists: true };
+    }
+    return { exists: false };
   }
 
   async update(content: string): Promise<void> {

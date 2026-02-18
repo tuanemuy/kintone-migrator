@@ -28,7 +28,7 @@ describe("saveView", () => {
       });
 
       const result = await container.viewStorage.get();
-      expect(result.content).toBe("new content");
+      expect(result).toMatchObject({ content: "new content" });
     });
   });
 

@@ -19,7 +19,7 @@ enableThumbnails: true
 
     expect(container.generalSettingsStorage.callLog).toContain("update");
     const stored = await container.generalSettingsStorage.get();
-    expect(stored.content).toBe(configText);
+    expect(stored).toMatchObject({ content: configText });
     expect(stored.exists).toBe(true);
   });
 
@@ -33,7 +33,7 @@ enableThumbnails: true
     });
 
     const stored = await container.generalSettingsStorage.get();
-    expect(stored.content).toBe("new config");
+    expect(stored).toMatchObject({ content: "new config" });
   });
 
   it("should propagate storage write failure", async () => {

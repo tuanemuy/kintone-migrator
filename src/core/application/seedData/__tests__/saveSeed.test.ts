@@ -20,7 +20,7 @@ records:
 
     expect(container.seedStorage.callLog).toContain("update");
     const stored = await container.seedStorage.get();
-    expect(stored.content).toBe(seedText);
+    expect(stored).toMatchObject({ content: seedText });
     expect(stored.exists).toBe(true);
   });
 
@@ -38,7 +38,7 @@ records:
     await saveSeed({ container, input: { seedText: "new content" } });
 
     const stored = await container.seedStorage.get();
-    expect(stored.content).toBe("new content");
+    expect(stored).toMatchObject({ content: "new content" });
   });
 
   it("ストレージの書き込み失敗時にエラーが伝播する", async () => {

@@ -2,18 +2,19 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
+import type { StorageResult } from "@/core/domain/ports/storageResult";
 import { isNodeError } from "@/lib/nodeError";
 
 export class LocalFilePluginStorage implements PluginStorage {
   constructor(private readonly filePath: string) {}
 
-  async get(): Promise<{ content: string; exists: boolean }> {
+  async get(): Promise<StorageResult> {
     try {
       const content = await readFile(this.filePath, "utf-8");
       return { content, exists: true };
     } catch (error) {
       if (isNodeError(error) && error.code === "ENOENT") {
-        return { content: "", exists: false };
+        return { exists: false };
       }
       throw new SystemError(
         SystemErrorCode.StorageError,

@@ -28,7 +28,7 @@ rights:
 
     expect(container.appPermissionStorage.callLog).toContain("update");
     const stored = await container.appPermissionStorage.get();
-    expect(stored.content).toBe(configText);
+    expect(stored).toMatchObject({ content: configText });
     expect(stored.exists).toBe(true);
   });
 
@@ -42,7 +42,7 @@ rights:
     });
 
     const stored = await container.appPermissionStorage.get();
-    expect(stored.content).toBe("new config");
+    expect(stored).toMatchObject({ content: "new config" });
   });
 
   it("should propagate error when storage write fails", async () => {

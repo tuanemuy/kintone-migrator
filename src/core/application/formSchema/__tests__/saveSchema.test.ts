@@ -13,7 +13,7 @@ describe("saveSchema", () => {
     await saveSchema({ container, input: { schemaText } });
 
     const saved = await container.schemaStorage.get();
-    expect(saved.content).toBe(schemaText);
+    expect(saved).toMatchObject({ content: schemaText });
   });
 
   it("既存のスキーマを上書き保存する", async () => {
@@ -24,7 +24,7 @@ describe("saveSchema", () => {
     await saveSchema({ container, input: { schemaText: newSchema } });
 
     const saved = await container.schemaStorage.get();
-    expect(saved.content).toBe(newSchema);
+    expect(saved).toMatchObject({ content: newSchema });
   });
 
   it("空文字列でも保存できる", async () => {
@@ -34,7 +34,7 @@ describe("saveSchema", () => {
     await saveSchema({ container, input: { schemaText: "" } });
 
     const saved = await container.schemaStorage.get();
-    expect(saved.content).toBe("");
+    expect(saved).toMatchObject({ content: "" });
   });
 
   it("SchemaStorage.update()の通信に失敗した場合、SystemErrorがスローされる", async () => {

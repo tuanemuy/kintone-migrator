@@ -19,7 +19,7 @@ plugins:
 
     expect(container.pluginStorage.callLog).toContain("update");
     const stored = await container.pluginStorage.get();
-    expect(stored.content).toBe(configText);
+    expect(stored).toMatchObject({ content: configText });
     expect(stored.exists).toBe(true);
   });
 
@@ -33,7 +33,7 @@ plugins:
     });
 
     const stored = await container.pluginStorage.get();
-    expect(stored.content).toBe("new config");
+    expect(stored).toMatchObject({ content: "new config" });
   });
 
   it("ストレージの書き込み失敗時にエラーが伝播する", async () => {

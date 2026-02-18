@@ -19,7 +19,7 @@ includeInTemplateAndDuplicates: true
 
     expect(container.adminNotesStorage.callLog).toContain("update");
     const stored = await container.adminNotesStorage.get();
-    expect(stored.content).toBe(configText);
+    expect(stored).toMatchObject({ content: configText });
     expect(stored.exists).toBe(true);
   });
 
@@ -33,7 +33,7 @@ includeInTemplateAndDuplicates: true
     });
 
     const stored = await container.adminNotesStorage.get();
-    expect(stored.content).toBe("new config");
+    expect(stored).toMatchObject({ content: "new config" });
   });
 
   it("ストレージの書き込み失敗時にエラーが伝播する", async () => {
