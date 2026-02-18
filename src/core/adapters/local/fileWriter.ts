@@ -7,8 +7,9 @@ export class LocalFileWriter implements FileWriter {
   async write(filePath: string, data: ArrayBuffer): Promise<void> {
     try {
       await mkdir(dirname(filePath), { recursive: true });
-      await writeFile(filePath, Buffer.from(data));
+      await writeFile(filePath, Buffer.from(new Uint8Array(data)));
     } catch (error) {
+      if (error instanceof SystemError) throw error;
       throw new SystemError(
         SystemErrorCode.StorageError,
         `Failed to write file: ${filePath}`,

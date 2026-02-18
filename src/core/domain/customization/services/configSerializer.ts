@@ -5,9 +5,13 @@ import type {
   CustomizationResource,
 } from "../valueObject";
 
+type SerializedResource =
+  | { type: "FILE"; path: string }
+  | { type: "URL"; url: string };
+
 function serializeResource(
   resource: CustomizationResource,
-): Record<string, unknown> {
+): SerializedResource {
   if (resource.type === "FILE") {
     return { type: "FILE", path: resource.path };
   }
@@ -16,7 +20,7 @@ function serializeResource(
 
 function serializeResourceList(
   resources: readonly CustomizationResource[],
-): Record<string, unknown>[] {
+): SerializedResource[] {
   return resources.map(serializeResource);
 }
 
@@ -27,31 +31,27 @@ function hasPlatformResources(platform: CustomizationPlatform): boolean {
 function serializePlatform(
   platform: CustomizationPlatform,
 ): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  if (platform.js.length > 0) {
-    result.js = serializeResourceList(platform.js);
-  }
-  if (platform.css.length > 0) {
-    result.css = serializeResourceList(platform.css);
-  }
-  return result;
+  return {
+    ...(platform.js.length > 0
+      ? { js: serializeResourceList(platform.js) }
+      : {}),
+    ...(platform.css.length > 0
+      ? { css: serializeResourceList(platform.css) }
+      : {}),
+  };
 }
 
 export const CustomizationConfigSerializer = {
   serialize: (config: CustomizationConfig): string => {
-    const result: Record<string, unknown> = {};
-
-    if (config.scope !== undefined) {
-      result.scope = config.scope;
-    }
-
-    if (hasPlatformResources(config.desktop)) {
-      result.desktop = serializePlatform(config.desktop);
-    }
-
-    if (hasPlatformResources(config.mobile)) {
-      result.mobile = serializePlatform(config.mobile);
-    }
+    const result: Record<string, unknown> = {
+      ...(config.scope !== undefined ? { scope: config.scope } : {}),
+      ...(hasPlatformResources(config.desktop)
+        ? { desktop: serializePlatform(config.desktop) }
+        : {}),
+      ...(hasPlatformResources(config.mobile)
+        ? { mobile: serializePlatform(config.mobile) }
+        : {}),
+    };
 
     return stringifyYaml(result, {
       lineWidth: 0,

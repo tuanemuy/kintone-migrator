@@ -88,6 +88,35 @@ export const multiAppArgs = {
   },
 };
 
+export function validateKintoneDomain(domain: string): string {
+  try {
+    const url = new URL(`https://${domain}`);
+    if (url.hostname !== domain || url.pathname !== "/") {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Invalid kintone domain: "${domain}"`,
+      );
+    }
+    return `https://${domain}`;
+  } catch (error) {
+    if (error instanceof ValidationError) throw error;
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      `Invalid kintone domain: "${domain}"`,
+    );
+  }
+}
+
+export function parseApiTokens(apiToken: string): string | string[] {
+  if (apiToken.includes(",")) {
+    return apiToken
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+  }
+  return apiToken;
+}
+
 export function resolveConfig(cliValues: {
   domain?: string;
   username?: string;
@@ -127,7 +156,7 @@ export function resolveConfig(cliValues: {
   );
 
   return {
-    baseUrl: `https://${output.KINTONE_DOMAIN}`,
+    baseUrl: validateKintoneDomain(output.KINTONE_DOMAIN),
     auth,
     appId: output.KINTONE_APP_ID,
     guestSpaceId: output.KINTONE_GUEST_SPACE_ID,
@@ -141,10 +170,7 @@ export function resolveAuth(
   password: string | undefined,
 ): CliConfig["auth"] {
   if (apiToken) {
-    const tokens = apiToken.includes(",")
-      ? apiToken.split(",").map((t) => t.trim())
-      : apiToken;
-    return { type: "apiToken", apiToken: tokens };
+    return { type: "apiToken", apiToken: parseApiTokens(apiToken) };
   }
 
   if (username && password) {

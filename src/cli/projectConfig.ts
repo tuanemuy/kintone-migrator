@@ -2,7 +2,12 @@ import { access, readFile } from "node:fs/promises";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
 import type { KintoneAuth } from "@/core/application/container/cli";
-import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+import {
+  SystemError,
+  SystemErrorCode,
+  ValidationError,
+  ValidationErrorCode,
+} from "@/core/application/error";
 import type { MultiAppExecutor } from "@/core/application/projectConfig/executeMultiApp";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
 import { loadProjectConfig } from "@/core/application/projectConfig/loadProjectConfig";
@@ -14,10 +19,14 @@ import type {
   ExecutionPlan,
   ProjectConfig,
 } from "@/core/domain/projectConfig/entity";
-import type { CliConfig } from "./config";
+import {
+  type CliConfig,
+  parseApiTokens,
+  validateKintoneDomain,
+} from "./config";
 import { printAppHeader, printMultiAppResult } from "./output";
 
-const DEFAULT_CONFIG_PATH = "kintone-migrator.yaml";
+export const DEFAULT_CONFIG_PATH = "kintone-migrator.yaml";
 
 export type MultiAppCliValues = {
   app?: string;
@@ -133,7 +142,7 @@ export function resolveAppCliConfig(
     projectConfig.guestSpaceId;
 
   return {
-    baseUrl: `https://${domain}`,
+    baseUrl: validateKintoneDomain(domain),
     auth,
     appId: app.appId,
     guestSpaceId,
@@ -156,10 +165,7 @@ function resolveAuthForApp(
   const cliPassword = cliValues.password ?? process.env.KINTONE_PASSWORD;
 
   if (cliApiToken) {
-    const tokens = cliApiToken.includes(",")
-      ? cliApiToken.split(",").map((t) => t.trim())
-      : cliApiToken;
-    return { type: "apiToken", apiToken: tokens };
+    return { type: "apiToken", apiToken: parseApiTokens(cliApiToken) };
   }
 
   if (cliUsername && cliPassword) {
@@ -228,6 +234,12 @@ export async function routeMultiApp(
 
   if (target.mode === "single-app") {
     const app = target.plan.orderedApps[0];
+    if (!app) {
+      throw new SystemError(
+        SystemErrorCode.InternalServerError,
+        "Execution plan has no apps",
+      );
+    }
     printAppHeader(app.name, app.appId);
     await handlers.singleApp(app, target.config);
     return;
@@ -245,8 +257,8 @@ export async function runMultiAppWithFailCheck(
   printMultiAppResult(multiResult);
 
   if (multiResult.hasFailure) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
       "Execution stopped due to failure.",
     );
   }

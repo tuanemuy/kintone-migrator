@@ -9,5 +9,6 @@ export default define({
     apply: applyCommand,
     capture: captureCommand,
   },
+  // gunshi requires a run function; subCommands handle the actual logic.
   run: () => {},
 });

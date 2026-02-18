@@ -58,9 +58,9 @@ async function runCaptureCustomization(
 
   p.log.success(`Customization saved to: ${pc.cyan(config.customizeFilePath)}`);
 
-  if (result.downloadedFileCount > 0) {
+  if (result.fileResourceCount > 0) {
     p.log.info(
-      `Downloaded ${result.downloadedFileCount} file(s) to: ${pc.cyan(basePath)}`,
+      `Downloaded ${result.fileResourceCount} file(s) to: ${pc.cyan(basePath)}`,
     );
   }
 

@@ -15,7 +15,9 @@ export type AppFilePaths = {
   readonly plugin: string;
 };
 
-export function buildAppFilePaths(appName: string): AppFilePaths {
+import type { AppName } from "./valueObject";
+
+export function buildAppFilePaths(appName: AppName): AppFilePaths {
   return {
     schema: `schemas/${appName}.yaml`,
     seed: `seeds/${appName}.yaml`,

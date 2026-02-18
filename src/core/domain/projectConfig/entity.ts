@@ -50,7 +50,7 @@ export type AppExecutionStatus = "succeeded" | "failed" | "skipped";
 export type AppExecutionResult = Readonly<{
   name: AppName;
   status: AppExecutionStatus;
-  error?: unknown;
+  error?: Error;
 }>;
 
 export type ExecutionPlan = Readonly<{

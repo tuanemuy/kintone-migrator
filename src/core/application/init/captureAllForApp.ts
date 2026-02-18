@@ -218,7 +218,10 @@ export async function captureAllForApp(
   const tasks = buildCaptureTasks(input);
   const results: CaptureResult[] = [];
 
-  for (const task of tasks) {
+  // NOTE: This orchestration function intentionally uses try-catch to record partial
+  // failures per domain and continue with remaining domains, deviating from the
+  // project convention of avoiding try-catch in the application layer.
+  for (const [i, task] of tasks.entries()) {
     try {
       await task.run();
       results.push({ domain: task.domain, success: true });
@@ -230,7 +233,7 @@ export async function captureAllForApp(
           `Skipped due to fatal error in "${task.domain}"`,
           error,
         );
-        for (const remaining of tasks.slice(tasks.indexOf(task) + 1)) {
+        for (const remaining of tasks.slice(i + 1)) {
           results.push({
             domain: remaining.domain,
             success: false,

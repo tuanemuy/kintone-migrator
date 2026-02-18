@@ -28,6 +28,7 @@ export class LocalFileCustomizationStorage implements CustomizationStorage {
       await mkdir(dirname(this.filePath), { recursive: true });
       await writeFile(this.filePath, content, "utf-8");
     } catch (error) {
+      if (error instanceof SystemError) throw error;
       throw new SystemError(
         SystemErrorCode.StorageError,
         `Failed to write customization config file: ${this.filePath}`,

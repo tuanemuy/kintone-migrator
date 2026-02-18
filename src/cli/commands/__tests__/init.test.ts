@@ -22,7 +22,12 @@ vi.mock("@/cli/config", () => ({
     "api-token": { type: "string" },
     "guest-space-id": { type: "string" },
   },
-  resolveAuth: vi.fn(() => ({ username: "user", password: "pass" })),
+  resolveAuth: vi.fn(() => ({
+    type: "password",
+    username: "user",
+    password: "pass",
+  })),
+  validateKintoneDomain: vi.fn((domain: string) => `https://${domain}`),
 }));
 
 vi.mock("@/core/application/container/initCli", () => ({

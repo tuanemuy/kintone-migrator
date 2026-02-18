@@ -112,7 +112,9 @@ describe("ConfigParser.parse", () => {
       } catch (error) {
         expect(isBusinessRuleError(error)).toBe(true);
         if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(ProjectConfigErrorCode.EmptyApps);
+          expect(error.code).toBe(
+            ProjectConfigErrorCode.InvalidConfigStructure,
+          );
         }
       }
     }
@@ -174,6 +176,85 @@ describe("ConfigParser.parse", () => {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
         expect(error.code).toBe(ProjectConfigErrorCode.EmptyAppId);
+      }
+    }
+  });
+
+  it("throws InvalidConfigStructure when app value is not an object", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: { apiToken: "t" },
+        apps: { app1: "not-an-object" },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidConfigStructure);
+      }
+    }
+  });
+
+  it("throws InvalidAuthConfig when auth is not an object", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: "not-an-object",
+        apps: { app1: { appId: "1" } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+      }
+    }
+  });
+
+  it("throws InvalidAuthConfig when auth has neither apiToken nor username/password", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: { foo: "bar" },
+        apps: { app1: { appId: "1" } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+      }
+    }
+  });
+
+  it("throws InvalidConfigStructure when dependsOn contains non-string elements", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: { apiToken: "t" },
+        apps: { app1: { appId: "1", dependsOn: [42] } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidConfigStructure);
+      }
+    }
+  });
+
+  it("throws InvalidAuthConfig when app-level auth is not an object", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        apps: { app1: { appId: "1", auth: "invalid" } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
       }
     }
   });

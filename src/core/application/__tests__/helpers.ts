@@ -277,7 +277,7 @@ export class InMemoryCustomizationConfigurator
   }> {
     this.callLog.push("getCustomization");
     this.checkFail("getCustomization");
-    return { ...this.customization };
+    return structuredClone(this.customization);
   }
 
   async updateCustomization(params: {
@@ -596,10 +596,12 @@ export class InMemoryRecordManager implements RecordManager {
     this.checkFail("addRecords");
     for (const record of records) {
       const id = String(this.nextId++);
-      this.records.push({
-        ...record,
-        $id: { value: id },
-      } as unknown as KintoneRecordForResponse);
+      const response: KintoneRecordForResponse = Object.assign(
+        {} as Record<string, { value: unknown }>,
+        record,
+        { $id: { value: id } },
+      );
+      this.records.push(response);
     }
   }
 
@@ -614,10 +616,12 @@ export class InMemoryRecordManager implements RecordManager {
     for (const { id, record } of records) {
       const index = this.records.findIndex((r) => r.$id.value === id);
       if (index !== -1) {
-        this.records[index] = {
-          ...record,
-          $id: { value: id },
-        } as unknown as KintoneRecordForResponse;
+        const response: KintoneRecordForResponse = Object.assign(
+          {} as Record<string, { value: unknown }>,
+          record,
+          { $id: { value: id } },
+        );
+        this.records[index] = response;
       }
     }
   }

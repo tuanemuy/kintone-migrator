@@ -1,5 +1,4 @@
 import { basename, extname, join } from "node:path";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
 import type {
@@ -18,15 +17,13 @@ export type CaptureCustomizationInput = {
 export type CaptureCustomizationOutput = {
   readonly configText: string;
   readonly hasExistingConfig: boolean;
-  readonly downloadedFileCount: number;
+  readonly fileResourceCount: number;
 };
 
 type CaptureCustomizationArgs = {
   container: CustomizationCaptureContainer;
   input: CaptureCustomizationInput;
 };
-
-const MAX_DEDUPLICATE_COUNTER = 10_000;
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional control character match for file name sanitization
 const UNSAFE_FILE_CHARS = /[<>:"|?*\u0000-\u001f]/g;
@@ -52,12 +49,6 @@ function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   let candidate = `${stem}_${counter}${ext}`;
   while (usedNames.has(candidate)) {
     counter++;
-    if (counter > MAX_DEDUPLICATE_COUNTER) {
-      throw new SystemError(
-        SystemErrorCode.StorageError,
-        `Failed to deduplicate file name "${baseName}": exceeded maximum counter (${MAX_DEDUPLICATE_COUNTER})`,
-      );
-    }
     candidate = `${stem}_${counter}${ext}`;
   }
   usedNames.add(candidate);
@@ -148,10 +139,12 @@ async function downloadFiles(
   files: readonly PlannedFile[],
   container: CustomizationCaptureContainer,
 ): Promise<void> {
-  for (const file of files) {
-    const data = await container.fileDownloader.download(file.fileKey);
-    await container.fileWriter.write(file.absolutePath, data);
-  }
+  await Promise.all(
+    files.map(async (file) => {
+      const data = await container.fileDownloader.download(file.fileKey);
+      await container.fileWriter.write(file.absolutePath, data);
+    }),
+  );
 }
 
 export async function captureCustomization(
@@ -185,6 +178,6 @@ export async function captureCustomization(
   return {
     configText,
     hasExistingConfig: existing.exists,
-    downloadedFileCount: desktopPlan.fileCount + mobilePlan.fileCount,
+    fileResourceCount: desktopPlan.fileCount + mobilePlan.fileCount,
   };
 }

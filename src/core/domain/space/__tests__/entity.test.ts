@@ -25,4 +25,30 @@ describe("resolveAppName", () => {
     const app: SpaceApp = { appId: "1", code: "myapp...", name: "My App" };
     expect(resolveAppName(app)).toBe("myapp");
   });
+
+  it("スラッシュを含むcodeをサニタイズする", () => {
+    const app: SpaceApp = { appId: "1", code: "my/app/name", name: "My App" };
+    expect(resolveAppName(app)).toBe("my_app_name");
+  });
+
+  it("全unsafeパス文字をサニタイズする", () => {
+    const app: SpaceApp = {
+      appId: "1",
+      code: '<>:"/\\|?*\x00\x1f',
+      name: "My App",
+    };
+    const result = resolveAppName(app);
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: testing that control chars are sanitized
+    expect(result).not.toMatch(/[<>:"/\\|?*\x00-\x1f]/);
+  });
+
+  it("ドットのみのcodeの場合、_を返す", () => {
+    const app: SpaceApp = { appId: "1", code: "...", name: "My App" };
+    expect(resolveAppName(app)).toBe("_");
+  });
+
+  it("スラッシュのみのcodeはアンダースコアに変換される", () => {
+    const app: SpaceApp = { appId: "1", code: "///", name: "My App" };
+    expect(resolveAppName(app)).toBe("___");
+  });
 });

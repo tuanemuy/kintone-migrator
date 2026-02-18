@@ -8,6 +8,12 @@ export class KintoneSpaceReader implements SpaceReader {
   constructor(private readonly client: KintoneRestAPIClient) {}
 
   async getSpaceApps(spaceId: string): Promise<readonly SpaceApp[]> {
+    if (!spaceId) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "spaceId must not be empty",
+      );
+    }
     try {
       const space = await this.client.space.getSpace({ id: spaceId });
 
@@ -34,11 +40,10 @@ export class KintoneSpaceReader implements SpaceReader {
       return rawApps
         .filter(
           (app): app is Record<string, unknown> =>
-            typeof app === "object" && app !== null,
-        )
-        .filter(
-          (app): app is Record<string, unknown> =>
-            app.appId !== undefined && app.appId !== null,
+            typeof app === "object" &&
+            app !== null &&
+            (app as Record<string, unknown>).appId !== undefined &&
+            (app as Record<string, unknown>).appId !== null,
         )
         .map((app) => ({
           appId:

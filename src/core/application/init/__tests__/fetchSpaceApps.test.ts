@@ -6,12 +6,14 @@ import { fetchSpaceApps } from "../fetchSpaceApps";
 
 class InMemorySpaceReader implements SpaceReader {
   private apps: readonly SpaceApp[] = [];
+  lastSpaceId: string | undefined;
 
   setApps(apps: readonly SpaceApp[]): void {
     this.apps = apps;
   }
 
-  async getSpaceApps(_spaceId: string): Promise<readonly SpaceApp[]> {
+  async getSpaceApps(spaceId: string): Promise<readonly SpaceApp[]> {
+    this.lastSpaceId = spaceId;
     return this.apps;
   }
 }
@@ -32,6 +34,18 @@ describe("fetchSpaceApps", () => {
 
     expect(result).toEqual(apps);
     expect(result).toHaveLength(2);
+  });
+
+  it("正しいspaceIdがSpaceReaderに渡される", async () => {
+    const reader = new InMemorySpaceReader();
+    reader.setApps([{ appId: "1", code: "app1", name: "App 1" }]);
+
+    await fetchSpaceApps({
+      container: { spaceReader: reader },
+      input: { spaceId: "my-space-42" },
+    });
+
+    expect(reader.lastSpaceId).toBe("my-space-42");
   });
 
   it("アプリが0件の場合、ValidationErrorをスローする", async () => {

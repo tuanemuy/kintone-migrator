@@ -2,6 +2,7 @@ import {
   type AppFilePaths,
   buildAppFilePaths,
 } from "@/core/domain/projectConfig/appFilePaths";
+import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { createActionCliContainer } from "./actionCli";
 import { createAdminNotesCliContainer } from "./adminNotesCli";
 import { createAppPermissionCliContainer } from "./appPermissionCli";
@@ -26,7 +27,7 @@ export type CreateCaptureContainersInput = Readonly<{
   auth: KintoneAuth;
   appId: string;
   guestSpaceId?: string;
-  appName: string;
+  appName: AppName;
 }>;
 
 export type CreateCaptureContainersResult = Readonly<{

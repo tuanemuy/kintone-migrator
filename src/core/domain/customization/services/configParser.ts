@@ -59,7 +59,7 @@ function parseResourceList(raw: unknown): readonly CustomizationResource[] {
 }
 
 function parsePlatform(raw: unknown): CustomizationPlatform {
-  if (typeof raw !== "object" || raw === null) {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidConfigStructure,
       "Platform configuration must be an object",

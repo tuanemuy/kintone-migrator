@@ -1,3 +1,5 @@
+import { AppName } from "@/core/domain/projectConfig/valueObject";
+
 export type SpaceApp = Readonly<{
   appId: string;
   code: string;
@@ -8,10 +10,11 @@ export type SpaceApp = Readonly<{
 const UNSAFE_PATH_CHARS = /[<>:"/\\|?*\u0000-\u001f]/g;
 
 function sanitizeForFileSystem(name: string): string {
-  return name.replace(UNSAFE_PATH_CHARS, "_").replace(/\.+$/, "");
+  const sanitized = name.replace(UNSAFE_PATH_CHARS, "_").replace(/\.+$/, "");
+  return sanitized === "" ? "_" : sanitized;
 }
 
-export function resolveAppName(app: SpaceApp): string {
+export function resolveAppName(app: SpaceApp): AppName {
   const raw = app.code !== "" ? app.code : `app-${app.appId}`;
-  return sanitizeForFileSystem(raw);
+  return AppName.create(sanitizeForFileSystem(raw));
 }

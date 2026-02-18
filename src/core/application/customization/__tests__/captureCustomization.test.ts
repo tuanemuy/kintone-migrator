@@ -44,7 +44,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    expect(result.downloadedFileCount).toBe(1);
+    expect(result.fileResourceCount).toBe(1);
     expect(result.hasExistingConfig).toBe(false);
 
     const parsed = ConfigParser.parse(result.configText);
@@ -81,7 +81,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    expect(result.downloadedFileCount).toBe(0);
+    expect(result.fileResourceCount).toBe(0);
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([
       { type: "URL", url: "https://example.com/script.js" },
@@ -129,7 +129,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    expect(result.downloadedFileCount).toBe(2);
+    expect(result.fileResourceCount).toBe(2);
 
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([
@@ -180,7 +180,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    expect(result.downloadedFileCount).toBe(2);
+    expect(result.fileResourceCount).toBe(2);
 
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toHaveLength(2);
@@ -231,7 +231,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    expect(result.downloadedFileCount).toBe(0);
+    expect(result.fileResourceCount).toBe(0);
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([]);
     expect(parsed.desktop.css).toEqual([]);
@@ -276,6 +276,56 @@ describe("captureCustomization", () => {
         "/project/customize/desktop/js/passwd",
       ),
     ).toBe(true);
+  });
+
+  it("should deduplicate same-name files", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-2",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "200",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: { basePath, filePrefix },
+    });
+
+    const parsed = ConfigParser.parse(result.configText);
+    expect(parsed.desktop.js).toHaveLength(2);
+    expect(parsed.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "customize/desktop/js/app.js",
+    });
+    expect(parsed.desktop.js[1]).toEqual({
+      type: "FILE",
+      path: "customize/desktop/js/app_1.js",
+    });
+
+    expect(container.fileWriter.writtenFiles.size).toBe(2);
   });
 
   it("should propagate download errors", async () => {

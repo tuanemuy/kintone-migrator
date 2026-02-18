@@ -11,10 +11,9 @@ import {
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
 import { resolveAppName } from "@/core/domain/space/entity";
-import { kintoneArgs, resolveAuth } from "../config";
+import { kintoneArgs, resolveAuth, validateKintoneDomain } from "../config";
 import { handleCliError } from "../handleError";
-
-const DEFAULT_CONFIG_PATH = "kintone-migrator.yaml";
+import { DEFAULT_CONFIG_PATH } from "../projectConfig";
 
 const initArgs = {
   "space-id": {
@@ -88,7 +87,7 @@ export default define({
       const username = values.username ?? process.env.KINTONE_USERNAME;
       const password = values.password ?? process.env.KINTONE_PASSWORD;
 
-      const baseUrl = `https://${kintoneDomain}`;
+      const baseUrl = validateKintoneDomain(kintoneDomain);
       const auth = resolveAuth(apiToken, username, password);
       const guestSpaceId =
         values["guest-space-id"] ?? process.env.KINTONE_GUEST_SPACE_ID;
@@ -166,7 +165,7 @@ export default define({
           containers,
         });
         const successCount = results.filter((r) => r.success).length;
-        const failCount = results.filter((r) => !r.success).length;
+        const failCount = results.length - successCount;
         cs.stop(
           `Captured ${successCount}/${results.length} domains.` +
             (failCount > 0 ? pc.red(` (${failCount} failed)`) : ""),

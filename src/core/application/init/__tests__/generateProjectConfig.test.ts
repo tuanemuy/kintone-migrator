@@ -134,6 +134,18 @@ describe("generateProjectConfig", () => {
     expect(parsed.apps["myapp-2"].files.schema).toBe("schemas/myapp-2.yaml");
   });
 
+  it("生成された設定にauthフィールドが含まれない", () => {
+    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+
+    const result = generateProjectConfig({
+      apps,
+      domain: "example.cybozu.com",
+    });
+
+    const parsed = parseYaml(result);
+    expect(parsed.auth).toBeUndefined();
+  });
+
   it("同じcodeのアプリが3つある場合、-2と-3サフィックスを付与する", () => {
     const apps: SpaceApp[] = [
       { appId: "1", code: "dup", name: "Dup 1" },

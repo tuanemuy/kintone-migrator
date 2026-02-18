@@ -7,6 +7,12 @@ export class KintoneFileDownloader implements FileDownloader {
   constructor(private readonly client: KintoneRestAPIClient) {}
 
   async download(fileKey: string): Promise<ArrayBuffer> {
+    if (!fileKey) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "fileKey must not be empty",
+      );
+    }
     try {
       const response = await this.client.file.downloadFile({ fileKey });
       return response;
