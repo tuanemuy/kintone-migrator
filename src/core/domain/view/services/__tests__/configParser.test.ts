@@ -16,7 +16,7 @@ views:
 `;
       const result = ViewConfigParser.parse(yaml);
 
-      expect(result.views["一覧"]).toEqual({
+      expect(result.views.一覧).toEqual({
         type: "LIST",
         index: 0,
         name: "一覧",
@@ -54,7 +54,7 @@ views:
 `;
       const result = ViewConfigParser.parse(yaml);
 
-      expect(result.views["カレンダー"]).toEqual({
+      expect(result.views.カレンダー).toEqual({
         type: "CALENDAR",
         index: 1,
         name: "カレンダー",

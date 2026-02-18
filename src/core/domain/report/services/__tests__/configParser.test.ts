@@ -35,7 +35,7 @@ reports:
 
       expect(Object.keys(config.reports)).toHaveLength(2);
 
-      const report1 = config.reports["月次タスク集計"];
+      const report1 = config.reports.月次タスク集計;
       expect(report1.chartType).toBe("COLUMN");
       expect(report1.chartMode).toBe("NORMAL");
       expect(report1.index).toBe(0);
@@ -47,7 +47,7 @@ reports:
       expect(report1.sorts).toHaveLength(1);
       expect(report1.sorts[0]).toEqual({ by: "GROUP1", order: "ASC" });
 
-      const report2 = config.reports["担当者別タスク数"];
+      const report2 = config.reports.担当者別タスク数;
       expect(report2.chartType).toBe("PIE");
       expect(report2.name).toBe("担当者別タスク数");
     });
@@ -65,7 +65,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テストレポート"].name).toBe("テストレポート");
+      expect(config.reports.テストレポート.name).toBe("テストレポート");
     });
 
     it("should prefer explicit name property over map key", () => {
@@ -82,7 +82,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["キー名"].name).toBe("明示的な名前");
+      expect(config.reports.キー名.name).toBe("明示的な名前");
     });
 
     it("should parse config with periodicReport", () => {
@@ -107,7 +107,7 @@ reports:
         time: "08:00"
 `;
       const config = ReportConfigParser.parse(yaml);
-      const report = config.reports["定期レポート"];
+      const report = config.reports.定期レポート;
 
       expect(report.periodicReport).toBeDefined();
       expect(report.periodicReport?.active).toBe(true);
@@ -129,7 +129,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["シンプルレポート"].periodicReport).toBeUndefined();
+      expect(config.reports.シンプルレポート.periodicReport).toBeUndefined();
     });
 
     it("should parse aggregation with code", () => {
@@ -148,7 +148,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["集計レポート"].aggregations[0]).toEqual({
+      expect(config.reports.集計レポート.aggregations[0]).toEqual({
         type: "SUM",
         code: "金額",
       });
@@ -169,7 +169,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["グループレポート"].groups[0].per).toBeUndefined();
+      expect(config.reports.グループレポート.groups[0].per).toBeUndefined();
     });
 
     it("should parse all chart types", () => {
@@ -197,7 +197,7 @@ reports:
     sorts: []
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].chartType).toBe(chartType);
+        expect(config.reports.テスト.chartType).toBe(chartType);
       }
     });
 
@@ -216,7 +216,7 @@ reports:
     sorts: []
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].chartMode).toBe(chartMode);
+        expect(config.reports.テスト.chartMode).toBe(chartMode);
       }
     });
 
@@ -232,7 +232,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].index).toBe(0);
+      expect(config.reports.テスト.index).toBe(0);
     });
 
     it("should throw RtEmptyConfigText for empty text", () => {
@@ -441,7 +441,7 @@ reports:
         order: ASC
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].sorts[0].by).toBe(sortBy);
+        expect(config.reports.テスト.sorts[0].by).toBe(sortBy);
       }
     });
 
@@ -483,7 +483,7 @@ reports:
         time: "09:00"
 `;
       const config = ReportConfigParser.parse(yaml);
-      const report = config.reports["年次レポート"];
+      const report = config.reports.年次レポート;
       expect(report.periodicReport?.period.month).toBe(4);
     });
 
@@ -508,7 +508,7 @@ reports:
         time: "09:00"
 `;
       const config = ReportConfigParser.parse(yaml);
-      const report = config.reports["四半期レポート"];
+      const report = config.reports.四半期レポート;
       expect(report.periodicReport?.period.pattern).toBe("JAN_APR_JUL_OCT");
     });
 
@@ -555,7 +555,7 @@ reports:
         time: "09:00"
 `;
       const config = ReportConfigParser.parse(yaml);
-      const report = config.reports["月末レポート"];
+      const report = config.reports.月末レポート;
       expect(report.periodicReport?.period.dayOfMonth).toBe("END_OF_MONTH");
     });
 
@@ -611,7 +611,7 @@ reports:
         time: "09:00"
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].periodicReport?.period.dayOfWeek).toBe(
+        expect(config.reports.テスト.periodicReport?.period.dayOfWeek).toBe(
           day,
         );
       }
@@ -631,8 +631,8 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].chartType).toBe("PIE");
-      expect(config.reports["テスト"].chartMode).toBeUndefined();
+      expect(config.reports.テスト.chartType).toBe("PIE");
+      expect(config.reports.テスト.chartMode).toBeUndefined();
     });
 
     it("should parse report without chartMode (TABLE)", () => {
@@ -648,8 +648,8 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].chartType).toBe("TABLE");
-      expect(config.reports["テスト"].chartMode).toBeUndefined();
+      expect(config.reports.テスト.chartType).toBe("TABLE");
+      expect(config.reports.テスト.chartMode).toBeUndefined();
     });
 
     it("should parse periodicReport with minute", () => {
@@ -670,7 +670,7 @@ reports:
         minute: 30
 `;
       const config = ReportConfigParser.parse(yaml);
-      const report = config.reports["時間レポート"];
+      const report = config.reports.時間レポート;
       expect(report.periodicReport?.period.minute).toBe(30);
     });
 
@@ -841,7 +841,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].filterCond).toBe("");
+      expect(config.reports.テスト.filterCond).toBe("");
     });
 
     it("should default groups, aggregations, sorts to empty arrays when not arrays", () => {
@@ -853,9 +853,9 @@ reports:
     filterCond: ""
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].groups).toEqual([]);
-      expect(config.reports["テスト"].aggregations).toEqual([]);
-      expect(config.reports["テスト"].sorts).toEqual([]);
+      expect(config.reports.テスト.groups).toEqual([]);
+      expect(config.reports.テスト.aggregations).toEqual([]);
+      expect(config.reports.テスト.sorts).toEqual([]);
     });
 
     it("should parse all periodic every values", () => {
@@ -877,9 +877,7 @@ reports:
         every: ${every}
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].periodicReport?.period.every).toBe(
-          every,
-        );
+        expect(config.reports.テスト.periodicReport?.period.every).toBe(every);
       }
     });
 
@@ -898,7 +896,7 @@ reports:
     sorts: []
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].aggregations[0].type).toBe(aggType);
+        expect(config.reports.テスト.aggregations[0].type).toBe(aggType);
       }
     });
   });

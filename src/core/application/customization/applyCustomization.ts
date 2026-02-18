@@ -9,7 +9,7 @@ import type {
   ResolvedPlatform,
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
-import type { CustomizationServiceArgs } from "../container/customization";
+import type { CustomizationApplyServiceArgs } from "../container/customization";
 import { parseConfigText } from "./parseConfig";
 
 type ApplyCustomizationInput = {
@@ -61,7 +61,7 @@ function mergePlatform(
 export async function applyCustomization({
   container,
   input,
-}: CustomizationServiceArgs<ApplyCustomizationInput>): Promise<void> {
+}: CustomizationApplyServiceArgs<ApplyCustomizationInput>): Promise<void> {
   const result = await container.customizationStorage.get();
   if (!result.exists) {
     throw new ValidationError(

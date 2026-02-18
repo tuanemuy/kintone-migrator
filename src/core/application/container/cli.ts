@@ -1,10 +1,12 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneCustomizationConfigurator } from "@/core/adapters/kintone/customizationConfigurator";
+import { KintoneFileDownloader } from "@/core/adapters/kintone/fileDownloader";
 import { KintoneFileUploader } from "@/core/adapters/kintone/fileUploader";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
 import { LocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
+import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
 import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { LocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
 import type { Container } from "@/core/application/container";
@@ -100,6 +102,8 @@ export function createCustomizationCliContainer(
       config.customizeFilePath,
     ),
     fileUploader: new KintoneFileUploader(client),
+    fileDownloader: new KintoneFileDownloader(client),
+    fileWriter: new LocalFileWriter(),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

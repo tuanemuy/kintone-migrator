@@ -59,7 +59,7 @@ function parseResourceList(raw: unknown): readonly CustomizationResource[] {
 }
 
 function parsePlatform(raw: unknown): CustomizationPlatform {
-  if (typeof raw !== "object" || raw === null) {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidConfigStructure,
       "Platform configuration must be an object",
@@ -115,14 +115,10 @@ export const ConfigParser = {
       scope = obj.scope as CustomizationScope;
     }
 
-    if (obj.desktop === undefined || obj.desktop === null) {
-      throw new BusinessRuleError(
-        CustomizationErrorCode.CzInvalidConfigStructure,
-        'Config must have a "desktop" property',
-      );
-    }
-
-    const desktop = parsePlatform(obj.desktop);
+    const desktop: CustomizationPlatform =
+      obj.desktop === undefined || obj.desktop === null
+        ? { js: [], css: [] }
+        : parsePlatform(obj.desktop);
     const mobile: CustomizationPlatform =
       obj.mobile === undefined || obj.mobile === null
         ? { js: [], css: [] }

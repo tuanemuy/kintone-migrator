@@ -141,11 +141,11 @@ describe("ViewConfigSerializer", () => {
       const serialized = ViewConfigSerializer.serialize(original);
       const parsed = ViewConfigParser.parse(serialized);
 
-      expect(parsed.views["一覧"].type).toBe("LIST");
-      expect(parsed.views["一覧"].fields).toEqual(["field1", "field2"]);
-      expect(parsed.views["一覧"].filterCond).toBe('status = "active"');
-      expect(parsed.views["カレンダー"].type).toBe("CALENDAR");
-      expect(parsed.views["カレンダー"].date).toBe("date_field");
+      expect(parsed.views.一覧.type).toBe("LIST");
+      expect(parsed.views.一覧.fields).toEqual(["field1", "field2"]);
+      expect(parsed.views.一覧.filterCond).toBe('status = "active"');
+      expect(parsed.views.カレンダー.type).toBe("CALENDAR");
+      expect(parsed.views.カレンダー.date).toBe("date_field");
     });
 
     it("should round-trip CUSTOM view with html", () => {

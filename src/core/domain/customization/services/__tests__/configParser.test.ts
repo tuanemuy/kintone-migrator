@@ -163,18 +163,15 @@ mobile:
       );
     });
 
-    it("desktopが未定義の場合、InvalidConfigStructureをスローする", () => {
+    it("desktopが未定義の場合、空のdesktopとしてパースする", () => {
       const yaml = `
 mobile:
   js: []
   css: []
 `;
-      expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse(yaml)).toThrow(
-        expect.objectContaining({
-          code: CustomizationErrorCode.CzInvalidConfigStructure,
-        }),
-      );
+      const config = ConfigParser.parse(yaml);
+      expect(config.desktop.js).toEqual([]);
+      expect(config.desktop.css).toEqual([]);
     });
 
     it("mobileが未定義の場合、デフォルトの空プラットフォームが設定される", () => {

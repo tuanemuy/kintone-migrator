@@ -23,7 +23,7 @@ describe("ConfigParser.parse", () => {
     const customer = config.apps.get(AppName.create("customer"));
     expect(customer).toBeDefined();
     expect(customer?.appId).toBe("10");
-    expect(customer?.schemaFile).toBe("schemas/customer.yaml");
+    expect(customer?.schemaFile).toBeUndefined();
     expect(customer?.dependsOn).toEqual([]);
   });
 
@@ -112,7 +112,9 @@ describe("ConfigParser.parse", () => {
       } catch (error) {
         expect(isBusinessRuleError(error)).toBe(true);
         if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(ProjectConfigErrorCode.EmptyApps);
+          expect(error.code).toBe(
+            ProjectConfigErrorCode.InvalidConfigStructure,
+          );
         }
       }
     }
@@ -178,6 +180,85 @@ describe("ConfigParser.parse", () => {
     }
   });
 
+  it("throws InvalidConfigStructure when app value is not an object", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: { apiToken: "t" },
+        apps: { app1: "not-an-object" },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidConfigStructure);
+      }
+    }
+  });
+
+  it("throws InvalidAuthConfig when auth is not an object", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: "not-an-object",
+        apps: { app1: { appId: "1" } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+      }
+    }
+  });
+
+  it("throws InvalidAuthConfig when auth has neither apiToken nor username/password", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: { foo: "bar" },
+        apps: { app1: { appId: "1" } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+      }
+    }
+  });
+
+  it("throws InvalidConfigStructure when dependsOn contains non-string elements", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        auth: { apiToken: "t" },
+        apps: { app1: { appId: "1", dependsOn: [42] } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidConfigStructure);
+      }
+    }
+  });
+
+  it("throws InvalidAuthConfig when app-level auth is not an object", () => {
+    try {
+      ConfigParser.parse({
+        domain: "x",
+        apps: { app1: { appId: "1", auth: "invalid" } },
+      });
+      expect.fail("Should have thrown");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+      }
+    }
+  });
+
   it("parses config without domain (domain can be resolved via env vars later)", () => {
     const config = ConfigParser.parse({
       auth: { apiToken: "t" },
@@ -224,5 +305,161 @@ describe("ConfigParser.parse", () => {
 
     const app1 = config.apps.get(AppName.create("app1"));
     expect(app1?.auth).toEqual({ type: "apiToken", apiToken: "app-token" });
+  });
+
+  it("全ドメインのファイルパスオーバーライドをパースする", () => {
+    const config = ConfigParser.parse({
+      domain: "example.cybozu.com",
+      auth: { apiToken: "token" },
+      apps: {
+        app1: {
+          appId: "1",
+          customizeFile: "custom/customize.yaml",
+          fieldAclFile: "custom/field-acl.yaml",
+          viewFile: "custom/view.yaml",
+          appAclFile: "custom/app-acl.yaml",
+          recordAclFile: "custom/record-acl.yaml",
+          processFile: "custom/process.yaml",
+          settingsFile: "custom/settings.yaml",
+          notificationFile: "custom/notification.yaml",
+          reportFile: "custom/report.yaml",
+          actionFile: "custom/action.yaml",
+          adminNotesFile: "custom/admin-notes.yaml",
+          pluginFile: "custom/plugin.yaml",
+        },
+      },
+    });
+
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.customizeFile).toBe("custom/customize.yaml");
+    expect(app1?.fieldAclFile).toBe("custom/field-acl.yaml");
+    expect(app1?.viewFile).toBe("custom/view.yaml");
+    expect(app1?.appAclFile).toBe("custom/app-acl.yaml");
+    expect(app1?.recordAclFile).toBe("custom/record-acl.yaml");
+    expect(app1?.processFile).toBe("custom/process.yaml");
+    expect(app1?.settingsFile).toBe("custom/settings.yaml");
+    expect(app1?.notificationFile).toBe("custom/notification.yaml");
+    expect(app1?.reportFile).toBe("custom/report.yaml");
+    expect(app1?.actionFile).toBe("custom/action.yaml");
+    expect(app1?.adminNotesFile).toBe("custom/admin-notes.yaml");
+    expect(app1?.pluginFile).toBe("custom/plugin.yaml");
+  });
+
+  it("filesオブジェクト形式で全ファイルパスフィールドをパースする", () => {
+    const config = ConfigParser.parse({
+      domain: "example.cybozu.com",
+      auth: { apiToken: "token" },
+      apps: {
+        app1: {
+          appId: "1",
+          files: {
+            schema: "f/schema.yaml",
+            seed: "f/seed.yaml",
+            customize: "f/customize.yaml",
+            fieldAcl: "f/field-acl.yaml",
+            view: "f/view.yaml",
+            appAcl: "f/app-acl.yaml",
+            recordAcl: "f/record-acl.yaml",
+            process: "f/process.yaml",
+            settings: "f/settings.yaml",
+            notification: "f/notification.yaml",
+            report: "f/report.yaml",
+            action: "f/action.yaml",
+            adminNotes: "f/admin-notes.yaml",
+            plugin: "f/plugin.yaml",
+          },
+        },
+      },
+    });
+
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.schemaFile).toBe("f/schema.yaml");
+    expect(app1?.seedFile).toBe("f/seed.yaml");
+    expect(app1?.customizeFile).toBe("f/customize.yaml");
+    expect(app1?.fieldAclFile).toBe("f/field-acl.yaml");
+    expect(app1?.viewFile).toBe("f/view.yaml");
+    expect(app1?.appAclFile).toBe("f/app-acl.yaml");
+    expect(app1?.recordAclFile).toBe("f/record-acl.yaml");
+    expect(app1?.processFile).toBe("f/process.yaml");
+    expect(app1?.settingsFile).toBe("f/settings.yaml");
+    expect(app1?.notificationFile).toBe("f/notification.yaml");
+    expect(app1?.reportFile).toBe("f/report.yaml");
+    expect(app1?.actionFile).toBe("f/action.yaml");
+    expect(app1?.adminNotesFile).toBe("f/admin-notes.yaml");
+    expect(app1?.pluginFile).toBe("f/plugin.yaml");
+  });
+
+  it("filesオブジェクトがフラットフィールドより優先される", () => {
+    const config = ConfigParser.parse({
+      domain: "example.cybozu.com",
+      auth: { apiToken: "token" },
+      apps: {
+        app1: {
+          appId: "1",
+          schemaFile: "flat/schema.yaml",
+          seedFile: "flat/seed.yaml",
+          customizeFile: "flat/customize.yaml",
+          files: {
+            schema: "files/schema.yaml",
+            seed: "files/seed.yaml",
+            customize: "files/customize.yaml",
+          },
+        },
+      },
+    });
+
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.schemaFile).toBe("files/schema.yaml");
+    expect(app1?.seedFile).toBe("files/seed.yaml");
+    expect(app1?.customizeFile).toBe("files/customize.yaml");
+  });
+
+  it("filesオブジェクトの部分指定は指定されたフィールドのみ上書きする", () => {
+    const config = ConfigParser.parse({
+      domain: "example.cybozu.com",
+      auth: { apiToken: "token" },
+      apps: {
+        app1: {
+          appId: "1",
+          schemaFile: "flat/schema.yaml",
+          customizeFile: "flat/customize.yaml",
+          files: {
+            schema: "files/schema.yaml",
+          },
+        },
+      },
+    });
+
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.schemaFile).toBe("files/schema.yaml");
+    expect(app1?.seedFile).toBeUndefined();
+    expect(app1?.customizeFile).toBe("flat/customize.yaml");
+    expect(app1?.viewFile).toBeUndefined();
+  });
+
+  it("未指定のドメインファイルパスフィールドはundefinedになる", () => {
+    const config = ConfigParser.parse({
+      domain: "example.cybozu.com",
+      auth: { apiToken: "token" },
+      apps: {
+        app1: { appId: "1" },
+      },
+    });
+
+    const app1 = config.apps.get(AppName.create("app1"));
+    expect(app1?.schemaFile).toBeUndefined();
+    expect(app1?.seedFile).toBeUndefined();
+    expect(app1?.customizeFile).toBeUndefined();
+    expect(app1?.fieldAclFile).toBeUndefined();
+    expect(app1?.viewFile).toBeUndefined();
+    expect(app1?.appAclFile).toBeUndefined();
+    expect(app1?.recordAclFile).toBeUndefined();
+    expect(app1?.processFile).toBeUndefined();
+    expect(app1?.settingsFile).toBeUndefined();
+    expect(app1?.notificationFile).toBeUndefined();
+    expect(app1?.reportFile).toBeUndefined();
+    expect(app1?.actionFile).toBeUndefined();
+    expect(app1?.adminNotesFile).toBeUndefined();
+    expect(app1?.pluginFile).toBeUndefined();
   });
 });

@@ -6,17 +6,17 @@ import type {
 import { AppName } from "@/core/domain/projectConfig/valueObject";
 import { executeMultiApp } from "../executeMultiApp";
 
+function makeAppEntry(name: string, dependsOn: string[] = []): AppEntry {
+  return {
+    name: AppName.create(name),
+    appId: `${name}-id`,
+    dependsOn: dependsOn.map(AppName.create),
+  };
+}
+
 function makePlan(names: string[]): ExecutionPlan {
   return {
-    orderedApps: names.map((name) => {
-      const appName = AppName.create(name);
-      return {
-        name: appName,
-        appId: `${name}-id`,
-        schemaFile: `schemas/${name}.yaml`,
-        dependsOn: [],
-      } satisfies AppEntry;
-    }),
+    orderedApps: names.map((name) => makeAppEntry(name)),
   };
 }
 

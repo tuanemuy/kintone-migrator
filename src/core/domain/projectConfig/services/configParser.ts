@@ -12,15 +12,77 @@ function asOptionalString(value: unknown): string | undefined {
 }
 
 function asOptionalStringArray(value: unknown): string[] | undefined {
-  return Array.isArray(value)
-    ? value.filter((v) => typeof v === "string")
-    : undefined;
+  if (!Array.isArray(value)) return undefined;
+  for (const v of value) {
+    if (typeof v !== "string") {
+      throw new BusinessRuleError(
+        ProjectConfigErrorCode.InvalidConfigStructure,
+        `Array element must be a string, got ${typeof v}`,
+      );
+    }
+  }
+  return value as string[];
+}
+
+type FilePathFields = Pick<
+  AppEntry,
+  | "schemaFile"
+  | "seedFile"
+  | "customizeFile"
+  | "fieldAclFile"
+  | "viewFile"
+  | "appAclFile"
+  | "recordAclFile"
+  | "processFile"
+  | "settingsFile"
+  | "notificationFile"
+  | "reportFile"
+  | "actionFile"
+  | "adminNotesFile"
+  | "pluginFile"
+>;
+
+/** Merge `files` object and flat fields into resolved file path fields. `files` takes precedence. */
+function resolveFilePathFields(
+  filesObj: unknown,
+  rawApp: Record<string, unknown>,
+): FilePathFields {
+  const f = isRecord(filesObj) ? filesObj : {};
+  return {
+    schemaFile:
+      asOptionalString(f.schema) ?? asOptionalString(rawApp.schemaFile),
+    seedFile: asOptionalString(f.seed) ?? asOptionalString(rawApp.seedFile),
+    customizeFile:
+      asOptionalString(f.customize) ?? asOptionalString(rawApp.customizeFile),
+    fieldAclFile:
+      asOptionalString(f.fieldAcl) ?? asOptionalString(rawApp.fieldAclFile),
+    viewFile: asOptionalString(f.view) ?? asOptionalString(rawApp.viewFile),
+    appAclFile:
+      asOptionalString(f.appAcl) ?? asOptionalString(rawApp.appAclFile),
+    recordAclFile:
+      asOptionalString(f.recordAcl) ?? asOptionalString(rawApp.recordAclFile),
+    processFile:
+      asOptionalString(f.process) ?? asOptionalString(rawApp.processFile),
+    settingsFile:
+      asOptionalString(f.settings) ?? asOptionalString(rawApp.settingsFile),
+    notificationFile:
+      asOptionalString(f.notification) ??
+      asOptionalString(rawApp.notificationFile),
+    reportFile:
+      asOptionalString(f.report) ?? asOptionalString(rawApp.reportFile),
+    actionFile:
+      asOptionalString(f.action) ?? asOptionalString(rawApp.actionFile),
+    adminNotesFile:
+      asOptionalString(f.adminNotes) ?? asOptionalString(rawApp.adminNotesFile),
+    pluginFile:
+      asOptionalString(f.plugin) ?? asOptionalString(rawApp.pluginFile),
+  };
 }
 
 function parseProjectConfig(raw: unknown): ProjectConfig {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
-      ProjectConfigErrorCode.EmptyApps,
+      ProjectConfigErrorCode.InvalidConfigStructure,
       "Project config must be an object",
     );
   }
@@ -36,6 +98,13 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
 
   const topLevelDomain = asOptionalString(raw.domain);
   const topLevelGuestSpaceId = asOptionalString(raw.guestSpaceId);
+
+  if (raw.auth !== undefined && !isRecord(raw.auth)) {
+    throw new BusinessRuleError(
+      ProjectConfigErrorCode.InvalidAuthConfig,
+      "Top-level auth must be an object",
+    );
+  }
   const topLevelAuth = parseAuth(isRecord(raw.auth) ? raw.auth : undefined);
 
   const apps = new Map<AppName, AppEntry>();
@@ -43,7 +112,7 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
   for (const [name, rawAppValue] of Object.entries(rawApps)) {
     if (!isRecord(rawAppValue)) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.EmptyAppId,
+        ProjectConfigErrorCode.InvalidConfigStructure,
         `App "${name}" must be an object`,
       );
     }
@@ -56,6 +125,12 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
       );
     }
 
+    if (rawAppValue.auth !== undefined && !isRecord(rawAppValue.auth)) {
+      throw new BusinessRuleError(
+        ProjectConfigErrorCode.InvalidAuthConfig,
+        `App "${name}" auth must be an object`,
+      );
+    }
     const appAuth = parseAuth(
       isRecord(rawAppValue.auth) ? rawAppValue.auth : undefined,
     );
@@ -66,12 +141,12 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
       AppName.create,
     );
 
+    const filePaths = resolveFilePathFields(rawAppValue.files, rawAppValue);
+
     apps.set(appName, {
       name: appName,
       appId,
-      schemaFile:
-        asOptionalString(rawAppValue.schemaFile) ?? `schemas/${name}.yaml`,
-      seedFile: asOptionalString(rawAppValue.seedFile) ?? `seeds/${name}.yaml`,
+      ...filePaths,
       domain: appDomain,
       auth: appAuth,
       guestSpaceId: asOptionalString(rawAppValue.guestSpaceId),
@@ -93,17 +168,32 @@ function parseAuth(
   if (!raw) return undefined;
 
   const apiToken = asOptionalString(raw.apiToken);
-  if (apiToken) {
+  if (apiToken !== undefined) {
+    if (apiToken.trim().length === 0) {
+      throw new BusinessRuleError(
+        ProjectConfigErrorCode.InvalidAuthConfig,
+        "apiToken must not be empty",
+      );
+    }
     return { type: "apiToken", apiToken };
   }
 
   const username = asOptionalString(raw.username);
   const password = asOptionalString(raw.password);
-  if (username && password) {
+  if (username !== undefined && password !== undefined) {
+    if (username.trim().length === 0 || password.trim().length === 0) {
+      throw new BusinessRuleError(
+        ProjectConfigErrorCode.InvalidAuthConfig,
+        "username and password must not be empty",
+      );
+    }
     return { type: "password", username, password };
   }
 
-  return undefined;
+  throw new BusinessRuleError(
+    ProjectConfigErrorCode.InvalidAuthConfig,
+    "Auth must have either apiToken or username/password",
+  );
 }
 
 export const ConfigParser = {

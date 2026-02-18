@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const adminNotesArgs = {
   ...kintoneArgs,
@@ -23,11 +24,14 @@ export function resolveAdminNotesFilePath(
   cliValues: AdminNotesCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["admin-notes-file"] ??
-    process.env.ADMIN_NOTES_FILE_PATH ??
-    (app ? `admin-notes/${app.name}.yaml` : "admin-notes.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["admin-notes-file"],
+    envVar: process.env.ADMIN_NOTES_FILE_PATH,
+    appFileField: (a) => a.adminNotesFile,
+    app,
+    defaultDir: "admin-notes",
+    defaultFileName: "admin-notes.yaml",
+  });
 }
 
 export function resolveAdminNotesContainerConfig(

@@ -21,7 +21,7 @@ actions:
 `;
     const config = parseActionConfigText(rawText);
     expect(Object.keys(config.actions)).toHaveLength(1);
-    expect(config.actions["test"].name).toBe("test");
+    expect(config.actions.test.name).toBe("test");
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {

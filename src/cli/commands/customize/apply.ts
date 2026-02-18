@@ -7,77 +7,16 @@ import {
 } from "@/core/application/container/cli";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import { applyCustomization } from "@/core/application/customization/applyCustomization";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
+import { confirmArgs } from "../../config";
 import {
-  confirmArgs,
-  kintoneArgs,
-  multiAppArgs,
-  resolveConfig,
-} from "../../config";
+  type CustomizeCliValues,
+  customizeArgs,
+  resolveCustomizeAppConfig,
+  resolveCustomizeConfig,
+} from "../../customizeConfig";
 import { handleCliError } from "../../handleError";
 import { printAppHeader } from "../../output";
-import {
-  type MultiAppCliValues,
-  resolveAppCliConfig,
-  routeMultiApp,
-  runMultiAppWithFailCheck,
-} from "../../projectConfig";
-
-const customizeArgs = {
-  ...kintoneArgs,
-  ...multiAppArgs,
-  ...confirmArgs,
-  "customize-file": {
-    type: "string" as const,
-    description: "Customization config file path (default: customize.yaml)",
-  },
-};
-
-type CustomizeCliValues = MultiAppCliValues & {
-  "customize-file"?: string;
-};
-
-function resolveCustomizeFilePath(
-  cliValues: CustomizeCliValues,
-  app?: AppEntry,
-): string {
-  return (
-    cliValues["customize-file"] ??
-    process.env.CUSTOMIZE_FILE_PATH ??
-    (app ? `customize/${app.name}.yaml` : "customize.yaml")
-  );
-}
-
-function resolveCustomizeConfig(
-  cliValues: CustomizeCliValues,
-): CustomizationCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    customizeFilePath: resolveCustomizeFilePath(cliValues),
-  };
-}
-
-function resolveCustomizeAppConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: CustomizeCliValues,
-): CustomizationCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    customizeFilePath: resolveCustomizeFilePath(cliValues, app),
-  };
-}
+import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
 async function applyCustomizationForApp(
   config: CustomizationCliContainerConfig,
@@ -124,11 +63,11 @@ async function confirmAndDeploy(
 export default define({
   name: "apply",
   description: "Apply JS/CSS customization to kintone app",
-  args: customizeArgs,
+  args: { ...customizeArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as CustomizeCliValues;
-      const skipConfirm = ctx.values.yes === true;
+      const values = ctx.values as CustomizeCliValues & { yes?: boolean };
+      const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
         singleLegacy: async () => {

@@ -12,7 +12,6 @@ function makeApp(name: string, dependsOn: string[] = []): [AppName, AppEntry] {
     {
       name: appName,
       appId: `${name}-id`,
-      schemaFile: `schemas/${name}.yaml`,
       dependsOn: dependsOn.map(AppName.create),
     },
   ];

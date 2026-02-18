@@ -6,14 +6,16 @@ import type { SeedServiceArgs } from "../container/seed";
 import type { CaptureSeedOutput } from "./dto";
 
 export type CaptureSeedInput = {
-  readonly keyField: string;
+  readonly keyField?: string;
 };
 
 export async function captureSeed({
   container,
   input,
 }: SeedServiceArgs<CaptureSeedInput>): Promise<CaptureSeedOutput> {
-  const key: UpsertKey = UpsertKeyVO.create(input.keyField);
+  const key: UpsertKey | null = input.keyField
+    ? UpsertKeyVO.create(input.keyField)
+    : null;
 
   const kintoneRecords = await container.recordManager.getAllRecords();
 

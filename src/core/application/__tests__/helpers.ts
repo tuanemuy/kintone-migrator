@@ -25,7 +25,9 @@ import type { AppPermissionConfigurator } from "@/core/domain/appPermission/port
 import type { AppPermissionStorage } from "@/core/domain/appPermission/ports/appPermissionStorage";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
+import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
+import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
 import type {
   CustomizationScope,
   RemotePlatform,
@@ -275,7 +277,7 @@ export class InMemoryCustomizationConfigurator
   }> {
     this.callLog.push("getCustomization");
     this.checkFail("getCustomization");
-    return { ...this.customization };
+    return structuredClone(this.customization);
   }
 
   async updateCustomization(params: {
@@ -362,9 +364,74 @@ export class InMemoryCustomizationStorage implements CustomizationStorage {
     return { content: this.content, exists: this._exists };
   }
 
+  async update(content: string): Promise<void> {
+    this.callLog.push("update");
+    this.checkFail("update");
+    this.content = content;
+    this._exists = true;
+  }
+
   setContent(content: string): void {
     this.content = content;
     this._exists = true;
+  }
+}
+
+export class InMemoryFileDownloader implements FileDownloader {
+  private files: Map<string, ArrayBuffer> = new Map();
+  callLog: string[] = [];
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async download(fileKey: string): Promise<ArrayBuffer> {
+    this.callLog.push("download");
+    this.checkFail("download");
+    const data = this.files.get(fileKey);
+    if (data === undefined) {
+      return new TextEncoder().encode(`content-of-${fileKey}`).buffer;
+    }
+    return data;
+  }
+
+  setFile(fileKey: string, data: ArrayBuffer): void {
+    this.files.set(fileKey, data);
+  }
+}
+
+export class InMemoryFileWriter implements FileWriter {
+  writtenFiles: Map<string, ArrayBuffer> = new Map();
+  callLog: string[] = [];
+  private failOn: Set<string> = new Set();
+
+  setFailOn(methodName: string): void {
+    this.failOn.add(methodName);
+  }
+
+  private checkFail(methodName: string): void {
+    if (this.failOn.has(methodName)) {
+      throw new SystemError(
+        SystemErrorCode.StorageError,
+        `${methodName} failed (test)`,
+      );
+    }
+  }
+
+  async write(filePath: string, data: ArrayBuffer): Promise<void> {
+    this.callLog.push("write");
+    this.checkFail("write");
+    this.writtenFiles.set(filePath, data);
   }
 }
 
@@ -529,10 +596,12 @@ export class InMemoryRecordManager implements RecordManager {
     this.checkFail("addRecords");
     for (const record of records) {
       const id = String(this.nextId++);
-      this.records.push({
-        ...record,
-        $id: { value: id },
-      } as unknown as KintoneRecordForResponse);
+      const response: KintoneRecordForResponse = Object.assign(
+        {} as Record<string, { value: unknown }>,
+        record,
+        { $id: { value: id } },
+      );
+      this.records.push(response);
     }
   }
 
@@ -547,10 +616,12 @@ export class InMemoryRecordManager implements RecordManager {
     for (const { id, record } of records) {
       const index = this.records.findIndex((r) => r.$id.value === id);
       if (index !== -1) {
-        this.records[index] = {
-          ...record,
-          $id: { value: id },
-        } as unknown as KintoneRecordForResponse;
+        const response: KintoneRecordForResponse = Object.assign(
+          {} as Record<string, { value: unknown }>,
+          record,
+          { $id: { value: id } },
+        );
+        this.records[index] = response;
       }
     }
   }
@@ -668,6 +739,8 @@ export type TestCustomizationContainer = CustomizationContainer & {
   customizationConfigurator: InMemoryCustomizationConfigurator;
   customizationStorage: InMemoryCustomizationStorage;
   fileUploader: InMemoryFileUploader;
+  fileDownloader: InMemoryFileDownloader;
+  fileWriter: InMemoryFileWriter;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -676,6 +749,8 @@ export function createTestCustomizationContainer(): TestCustomizationContainer {
     customizationConfigurator: new InMemoryCustomizationConfigurator(),
     customizationStorage: new InMemoryCustomizationStorage(),
     fileUploader: new InMemoryFileUploader(),
+    fileDownloader: new InMemoryFileDownloader(),
+    fileWriter: new InMemoryFileWriter(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

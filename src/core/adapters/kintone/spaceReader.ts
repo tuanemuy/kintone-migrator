@@ -1,0 +1,97 @@
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { isBusinessRuleError } from "@/core/domain/error";
+import type { SpaceApp } from "@/core/domain/space/entity";
+import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
+
+/**
+ * Reads space information from the kintone REST API.
+ *
+ * Uses the "Get Space" endpoint (GET /k/v1/space.json) which returns an
+ * `attachedApps` array. This field is present in the API response but is
+ * NOT included in the @kintone/rest-api-client SDK type definitions, so
+ * it is accessed via runtime type narrowing. If the kintone API changes
+ * the response shape, the runtime checks below will throw a descriptive
+ * `SystemError` rather than silently returning incorrect data.
+ *
+ * @see https://kintone.dev/en/docs/kintone/rest-api/spaces/get-space/
+ */
+export class KintoneSpaceReader implements SpaceReader {
+  constructor(private readonly client: KintoneRestAPIClient) {}
+
+  async getSpaceApps(spaceId: string): Promise<readonly SpaceApp[]> {
+    if (!spaceId) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "spaceId must not be empty",
+      );
+    }
+    try {
+      const space = await this.client.space.getSpace({ id: spaceId });
+
+      // attachedApps is returned by the kintone API but not included in the SDK type definitions.
+      // If the API response shape changes and attachedApps is missing, we throw rather than
+      // silently returning an empty array, so the caller gets a clear signal.
+      const spaceRecord = space as Record<string, unknown>;
+      const rawApps = spaceRecord.attachedApps;
+
+      if (rawApps === undefined) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Space API response for space ID ${spaceId} does not contain attachedApps. The kintone API response format may have changed.`,
+        );
+      }
+
+      if (!Array.isArray(rawApps)) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Space API response for space ID ${spaceId} has unexpected attachedApps type: ${typeof rawApps}`,
+        );
+      }
+
+      const validApps: Record<string, unknown>[] = [];
+      for (const app of rawApps) {
+        if (
+          typeof app === "object" &&
+          app !== null &&
+          (app as Record<string, unknown>).appId !== undefined &&
+          (app as Record<string, unknown>).appId !== null
+        ) {
+          validApps.push(app as Record<string, unknown>);
+        }
+      }
+
+      const result: SpaceApp[] = [];
+      for (const app of validApps) {
+        const appId =
+          typeof app.appId === "string"
+            ? app.appId
+            : typeof app.appId === "number"
+              ? String(app.appId)
+              : "";
+
+        if (appId === "") {
+          // Skip apps with unparseable appId - this can happen if the API
+          // returns an unexpected type (e.g. boolean, object).
+          continue;
+        }
+
+        result.push({
+          appId,
+          code: typeof app.code === "string" ? app.code : "",
+          name: typeof app.name === "string" ? app.name : "",
+        });
+      }
+
+      return result;
+    } catch (error) {
+      if (isBusinessRuleError(error)) throw error;
+      if (error instanceof SystemError) throw error;
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Failed to get space info for space ID: ${spaceId}`,
+        error,
+      );
+    }
+  }
+}

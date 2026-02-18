@@ -42,7 +42,7 @@ actions:
 
       expect(Object.keys(config.actions)).toHaveLength(2);
 
-      const action1 = config.actions["見積書を作成"];
+      const action1 = config.actions.見積書を作成;
       expect(action1.name).toBe("見積書を作成");
       expect(action1.index).toBe(0);
       expect(action1.destApp).toEqual({ code: "estimate-app" });
@@ -60,7 +60,7 @@ actions:
       expect(action1.entities[0]).toEqual({ type: "GROUP", code: "everyone" });
       expect(action1.filterCond).toBe("");
 
-      const action2 = config.actions["請求書を作成"];
+      const action2 = config.actions.請求書を作成;
       expect(action2.name).toBe("請求書を作成");
       expect(action2.index).toBe(1);
       expect(action2.destApp).toEqual({ app: "42", code: "invoice-app" });
@@ -79,7 +79,7 @@ actions:
 `;
       const config = ActionConfigParser.parse(yaml);
 
-      expect(config.actions["テストアクション"].name).toBe("テストアクション");
+      expect(config.actions.テストアクション.name).toBe("テストアクション");
     });
 
     it("should parse config with empty mappings and entities", () => {
@@ -110,7 +110,7 @@ actions:
 `;
       const config = ActionConfigParser.parse(yaml);
 
-      expect(config.actions["test"].filterCond).toBe("");
+      expect(config.actions.test.filterCond).toBe("");
     });
 
     it("should throw AcEmptyConfigText for empty text", () => {

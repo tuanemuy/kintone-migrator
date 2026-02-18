@@ -25,7 +25,11 @@ export async function executeMultiApp(
       await executor(app);
       results.push({ name: app.name, status: "succeeded" });
     } catch (error) {
-      results.push({ name: app.name, status: "failed", error });
+      results.push({
+        name: app.name,
+        status: "failed",
+        error: error instanceof Error ? error : new Error(String(error)),
+      });
       failed = true;
     }
   }

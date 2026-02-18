@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const notificationArgs = {
   ...kintoneArgs,
@@ -23,11 +24,14 @@ export function resolveNotificationFilePath(
   cliValues: NotificationCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["notification-file"] ??
-    process.env.NOTIFICATION_FILE_PATH ??
-    (app ? `notification/${app.name}.yaml` : "notification.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["notification-file"],
+    envVar: process.env.NOTIFICATION_FILE_PATH,
+    appFileField: (a) => a.notificationFile,
+    app,
+    defaultDir: "notification",
+    defaultFileName: "notification.yaml",
+  });
 }
 
 export function resolveNotificationContainerConfig(

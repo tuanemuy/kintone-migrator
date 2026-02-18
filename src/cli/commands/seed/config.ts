@@ -8,6 +8,7 @@ import {
   type MultiAppCliValues,
   resolveAppCliConfig,
 } from "../../projectConfig";
+import { resolveFilePath } from "../../resolveFilePath";
 
 export type SeedCliValues = MultiAppCliValues & {
   clean?: boolean;
@@ -20,12 +21,14 @@ export function resolveSeedFilePath(
   cliValues: SeedCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["seed-file"] ??
-    process.env.SEED_FILE_PATH ??
-    app?.seedFile ??
-    (app ? `seeds/${app.name}.yaml` : "seed.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["seed-file"],
+    envVar: process.env.SEED_FILE_PATH,
+    appFileField: (a) => a.seedFile,
+    app,
+    defaultDir: "seeds",
+    defaultFileName: "seed.yaml",
+  });
 }
 
 export function resolveSeedConfig(

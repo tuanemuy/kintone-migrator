@@ -5,6 +5,7 @@ import type {
 } from "@/core/domain/projectConfig/entity";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
+import { resolveFilePath } from "./resolveFilePath";
 
 export const viewArgs = {
   ...kintoneArgs,
@@ -23,11 +24,14 @@ export function resolveViewFilePath(
   cliValues: ViewCliValues,
   app?: AppEntry,
 ): string {
-  return (
-    cliValues["view-file"] ??
-    process.env.VIEW_FILE_PATH ??
-    (app ? `view/${app.name}.yaml` : "views.yaml")
-  );
+  return resolveFilePath({
+    cliValue: cliValues["view-file"],
+    envVar: process.env.VIEW_FILE_PATH,
+    appFileField: (a) => a.viewFile,
+    app,
+    defaultDir: "view",
+    defaultFileName: "views.yaml",
+  });
 }
 
 export function resolveViewContainerConfig(
