@@ -1,6 +1,5 @@
-import { RecordConverter } from "@/core/domain/seedData/services/recordConverter";
 import { SeedSerializer } from "@/core/domain/seedData/services/seedSerializer";
-import type { SeedRecord, UpsertKey } from "@/core/domain/seedData/valueObject";
+import type { UpsertKey } from "@/core/domain/seedData/valueObject";
 import { UpsertKey as UpsertKeyVO } from "@/core/domain/seedData/valueObject";
 import type { SeedServiceArgs } from "../container/seed";
 import type { CaptureSeedOutput } from "./dto";
@@ -17,11 +16,9 @@ export async function captureSeed({
     ? UpsertKeyVO.create(input.keyField)
     : null;
 
-  const kintoneRecords = await container.recordManager.getAllRecords();
+  const existingRecords = await container.recordManager.getAllRecords();
 
-  const records: SeedRecord[] = kintoneRecords.map(
-    RecordConverter.fromKintoneRecord,
-  );
+  const records = existingRecords.map(({ record }) => record);
 
   const seedText = SeedSerializer.serialize({ key, records });
 

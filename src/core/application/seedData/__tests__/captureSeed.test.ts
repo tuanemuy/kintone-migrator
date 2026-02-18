@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KintoneRecordForResponse } from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
 import {
   setupTestSeedContainer,
   type TestSeedContainer,
@@ -8,25 +8,19 @@ import { captureSeed } from "../captureSeed";
 
 const getContainer = setupTestSeedContainer();
 
-function makeKintoneRecord(
+function makeSeedRecord(
   id: string,
-  fields: Record<string, unknown>,
-): KintoneRecordForResponse {
-  const record: Record<string, { value: unknown }> = {
-    $id: { value: id },
-  };
-  for (const [key, value] of Object.entries(fields)) {
-    record[key] = { value };
-  }
-  return record as unknown as KintoneRecordForResponse;
+  fields: Record<string, string>,
+): SeedRecordWithId {
+  return { id, record: fields };
 }
 
 describe("captureSeed", () => {
   it("レコードをキャプチャしてYAMLテキストを返す", async () => {
     const container: TestSeedContainer = getContainer();
     container.recordManager.setRecords([
-      makeKintoneRecord("10", { code: "001", name: "テスト1" }),
-      makeKintoneRecord("20", { code: "002", name: "テスト2" }),
+      makeSeedRecord("10", { code: "001", name: "テスト1" }),
+      makeSeedRecord("20", { code: "002", name: "テスト2" }),
     ]);
 
     const result = await captureSeed({
@@ -45,7 +39,7 @@ describe("captureSeed", () => {
     const container: TestSeedContainer = getContainer();
     container.seedStorage.setContent("existing seed");
     container.recordManager.setRecords([
-      makeKintoneRecord("10", { code: "001", name: "テスト" }),
+      makeSeedRecord("10", { code: "001", name: "テスト" }),
     ]);
 
     const result = await captureSeed({
@@ -72,7 +66,7 @@ describe("captureSeed", () => {
   it("keyField未指定時はkeyなしでYAMLを生成する", async () => {
     const container: TestSeedContainer = getContainer();
     container.recordManager.setRecords([
-      makeKintoneRecord("10", { code: "001", name: "テスト1" }),
+      makeSeedRecord("10", { code: "001", name: "テスト1" }),
     ]);
 
     const result = await captureSeed({

@@ -1,4 +1,3 @@
-import { RecordConverter } from "@/core/domain/seedData/services/recordConverter";
 import { SeedParser } from "@/core/domain/seedData/services/seedParser";
 import { UpsertPlanner } from "@/core/domain/seedData/services/upsertPlanner";
 import type { SeedServiceArgs } from "../container/seed";
@@ -25,11 +24,8 @@ export async function upsertSeed({
   if (input.clean) {
     const { deletedCount } = await container.recordManager.deleteAllRecords();
 
-    const kintoneRecords = seedData.records.map(
-      RecordConverter.toKintoneRecord,
-    );
-    if (kintoneRecords.length > 0) {
-      await container.recordManager.addRecords(kintoneRecords);
+    if (seedData.records.length > 0) {
+      await container.recordManager.addRecords(seedData.records);
     }
 
     return {
@@ -42,11 +38,8 @@ export async function upsertSeed({
   }
 
   if (seedData.key === null) {
-    const kintoneRecords = seedData.records.map(
-      RecordConverter.toKintoneRecord,
-    );
-    if (kintoneRecords.length > 0) {
-      await container.recordManager.addRecords(kintoneRecords);
+    if (seedData.records.length > 0) {
+      await container.recordManager.addRecords(seedData.records);
     }
     return {
       added: seedData.records.length,
@@ -66,16 +59,11 @@ export async function upsertSeed({
   );
 
   if (plan.toAdd.length > 0) {
-    const kintoneRecords = plan.toAdd.map(RecordConverter.toKintoneRecord);
-    await container.recordManager.addRecords(kintoneRecords);
+    await container.recordManager.addRecords(plan.toAdd);
   }
 
   if (plan.toUpdate.length > 0) {
-    const kintoneUpdates = plan.toUpdate.map((item) => ({
-      id: item.id,
-      record: RecordConverter.toKintoneRecord(item.record),
-    }));
-    await container.recordManager.updateRecords(kintoneUpdates);
+    await container.recordManager.updateRecords(plan.toUpdate);
   }
 
   return {

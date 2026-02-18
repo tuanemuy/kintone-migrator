@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { KintoneRecordForResponse } from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
 import {
   setupTestSeedContainer,
   type TestSeedContainer,
@@ -8,17 +8,11 @@ import { upsertSeed } from "../upsertSeed";
 
 const getContainer = setupTestSeedContainer();
 
-function makeKintoneRecord(
+function makeSeedRecord(
   id: string,
-  fields: Record<string, unknown>,
-): KintoneRecordForResponse {
-  const record: Record<string, { value: unknown }> = {
-    $id: { value: id },
-  };
-  for (const [key, value] of Object.entries(fields)) {
-    record[key] = { value };
-  }
-  return record as unknown as KintoneRecordForResponse;
+  fields: Record<string, string>,
+): SeedRecordWithId {
+  return { id, record: fields };
 }
 
 describe("upsertSeed", () => {
@@ -46,7 +40,7 @@ records:
   it("既存レコードを更新する", async () => {
     const container: TestSeedContainer = getContainer();
     container.recordManager.setRecords([
-      makeKintoneRecord("10", { code: "001", name: "更新前" }),
+      makeSeedRecord("10", { code: "001", name: "更新前" }),
     ]);
     container.seedStorage.setContent(`
 key: code
@@ -68,7 +62,7 @@ records:
   it("変更なしの場合はadd/updateを呼ばない", async () => {
     const container: TestSeedContainer = getContainer();
     container.recordManager.setRecords([
-      makeKintoneRecord("10", { code: "001", name: "テスト" }),
+      makeSeedRecord("10", { code: "001", name: "テスト" }),
     ]);
     container.seedStorage.setContent(`
 key: code
@@ -138,8 +132,8 @@ records: []
   it("追加・更新・変更なしを混在して処理する", async () => {
     const container: TestSeedContainer = getContainer();
     container.recordManager.setRecords([
-      makeKintoneRecord("10", { code: "001", name: "変更なし" }),
-      makeKintoneRecord("20", { code: "002", name: "更新前" }),
+      makeSeedRecord("10", { code: "001", name: "変更なし" }),
+      makeSeedRecord("20", { code: "002", name: "更新前" }),
     ]);
     container.seedStorage.setContent(`
 key: code
@@ -174,8 +168,8 @@ records:
     it("全削除→全追加が実行される", async () => {
       const container: TestSeedContainer = getContainer();
       container.recordManager.setRecords([
-        makeKintoneRecord("10", { code: "001", name: "既存1" }),
-        makeKintoneRecord("20", { code: "002", name: "既存2" }),
+        makeSeedRecord("10", { code: "001", name: "既存1" }),
+        makeSeedRecord("20", { code: "002", name: "既存2" }),
       ]);
       container.seedStorage.setContent(`
 key: code
@@ -228,7 +222,7 @@ records:
     it("レコード0件のシードの場合は削除のみ", async () => {
       const container: TestSeedContainer = getContainer();
       container.recordManager.setRecords([
-        makeKintoneRecord("10", { code: "001", name: "既存1" }),
+        makeSeedRecord("10", { code: "001", name: "既存1" }),
       ]);
       container.seedStorage.setContent(`
 records: []
@@ -251,7 +245,7 @@ records: []
     it("upsert keyが無視される（keyありでも全削除→全追加）", async () => {
       const container: TestSeedContainer = getContainer();
       container.recordManager.setRecords([
-        makeKintoneRecord("10", { code: "001", name: "既存" }),
+        makeSeedRecord("10", { code: "001", name: "既存" }),
       ]);
       container.seedStorage.setContent(`
 key: code

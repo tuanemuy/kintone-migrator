@@ -1,13 +1,13 @@
+import type {
+  RecordFieldValue,
+  SeedRecord,
+  SubtableRow,
+} from "@/core/domain/seedData/valueObject";
 import {
   hasCode,
   hasOptionalType,
   isKintoneSubtableRow,
 } from "@/core/domain/typeGuards";
-import type {
-  KintoneRecordForParameter,
-  KintoneRecordForResponse,
-} from "../ports/recordManager";
-import type { RecordFieldValue, SeedRecord, SubtableRow } from "../valueObject";
 
 const SYSTEM_FIELDS: ReadonlySet<string> = new Set([
   "$id",
@@ -46,7 +46,9 @@ function isSubtableRowArray(value: unknown): value is readonly SubtableRow[] {
   );
 }
 
-function toKintoneFieldValue(value: RecordFieldValue): { value: unknown } {
+export function toKintoneFieldValue(value: RecordFieldValue): {
+  value: unknown;
+} {
   if (typeof value === "string") {
     return { value };
   }
@@ -81,7 +83,7 @@ function toKintoneFieldValue(value: RecordFieldValue): { value: unknown } {
   return { value };
 }
 
-function fromKintoneFieldValue(value: unknown): RecordFieldValue {
+export function fromKintoneFieldValue(value: unknown): RecordFieldValue {
   if (value === null || value === undefined) {
     return "";
   }
@@ -129,25 +131,26 @@ function fromKintoneFieldValue(value: unknown): RecordFieldValue {
   return String(value);
 }
 
-export const RecordConverter = {
-  toKintoneRecord: (record: SeedRecord): KintoneRecordForParameter => {
-    const kintoneRecord: Record<string, { value: unknown }> = {};
-    for (const [fieldCode, fieldValue] of Object.entries(record)) {
-      if (SYSTEM_FIELDS.has(fieldCode)) continue;
-      kintoneRecord[fieldCode] = toKintoneFieldValue(fieldValue);
-    }
-    return kintoneRecord;
-  },
+export function toKintoneRecord(
+  record: SeedRecord,
+): Record<string, { value: unknown }> {
+  const kintoneRecord: Record<string, { value: unknown }> = {};
+  for (const [fieldCode, fieldValue] of Object.entries(record)) {
+    if (SYSTEM_FIELDS.has(fieldCode)) continue;
+    kintoneRecord[fieldCode] = toKintoneFieldValue(fieldValue);
+  }
+  return kintoneRecord;
+}
 
-  fromKintoneRecord: (record: KintoneRecordForResponse): SeedRecord => {
-    const seedRecord: Record<string, RecordFieldValue> = {};
-    for (const [fieldCode, cell] of Object.entries(record)) {
-      if (SYSTEM_FIELDS.has(fieldCode)) continue;
-      const fieldType = hasOptionalType(cell) ? cell.type : undefined;
-      if (fieldType !== undefined && SYSTEM_FIELD_TYPES.has(fieldType))
-        continue;
-      seedRecord[fieldCode] = fromKintoneFieldValue(cell.value);
-    }
-    return seedRecord as SeedRecord;
-  },
-};
+export function fromKintoneRecord(
+  record: Record<string, { value: unknown }> & { $id: { value: string } },
+): SeedRecord {
+  const seedRecord: Record<string, RecordFieldValue> = {};
+  for (const [fieldCode, cell] of Object.entries(record)) {
+    if (SYSTEM_FIELDS.has(fieldCode)) continue;
+    const fieldType = hasOptionalType(cell) ? cell.type : undefined;
+    if (fieldType !== undefined && SYSTEM_FIELD_TYPES.has(fieldType)) continue;
+    seedRecord[fieldCode] = fromKintoneFieldValue(cell.value);
+  }
+  return seedRecord as SeedRecord;
+}

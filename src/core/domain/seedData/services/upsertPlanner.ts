@@ -2,9 +2,7 @@ import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { SeedRecordWithId, UpsertPlan } from "../entity";
 import { SeedDataErrorCode } from "../errorCode";
-import type { KintoneRecordForResponse } from "../ports/recordManager";
 import type { RecordFieldValue, SeedRecord, UpsertKey } from "../valueObject";
-import { RecordConverter } from "./recordConverter";
 
 function deepEqual(a: RecordFieldValue, b: RecordFieldValue): boolean {
   if (typeof a === "string" && typeof b === "string") {
@@ -63,18 +61,16 @@ export const UpsertPlanner = {
   plan: (
     key: UpsertKey,
     seedRecords: readonly SeedRecord[],
-    existingRecords: readonly KintoneRecordForResponse[],
+    existingRecords: readonly SeedRecordWithId[],
   ): UpsertPlan => {
     const keyField = key as string;
 
     // Build lookup map: keyValue → { id, record }
     const existingMap = new Map<string, { id: string; record: SeedRecord }>();
-    for (const kintoneRecord of existingRecords) {
-      const id = kintoneRecord.$id.value;
-      const converted = RecordConverter.fromKintoneRecord(kintoneRecord);
-      const keyValue = converted[keyField];
+    for (const { id, record } of existingRecords) {
+      const keyValue = record[keyField];
       if (typeof keyValue === "string") {
-        existingMap.set(keyValue, { id, record: converted });
+        existingMap.set(keyValue, { id, record });
       }
     }
 

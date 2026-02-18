@@ -67,12 +67,10 @@ import type { RecordPermissionStorage } from "@/core/domain/recordPermission/por
 import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
 import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
-import type {
-  KintoneRecordForParameter,
-  KintoneRecordForResponse,
-  RecordManager,
-} from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
+import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
 import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
+import type { SeedRecord } from "@/core/domain/seedData/valueObject";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
@@ -569,7 +567,7 @@ export function setupTestContainer(): () => TestContainer {
 // Seed data test helpers
 
 export class InMemoryRecordManager implements RecordManager {
-  private records: KintoneRecordForResponse[] = [];
+  private records: SeedRecordWithId[] = [];
   private nextId = 1;
   callLog: string[] = [];
   private failOn: Set<string> = new Set();
@@ -589,43 +587,33 @@ export class InMemoryRecordManager implements RecordManager {
 
   async getAllRecords(
     _condition?: string,
-  ): Promise<readonly KintoneRecordForResponse[]> {
+  ): Promise<readonly SeedRecordWithId[]> {
     this.callLog.push("getAllRecords");
     this.checkFail("getAllRecords");
     return [...this.records];
   }
 
-  async addRecords(
-    records: readonly KintoneRecordForParameter[],
-  ): Promise<void> {
+  async addRecords(records: readonly SeedRecord[]): Promise<void> {
     this.callLog.push("addRecords");
     this.checkFail("addRecords");
     for (const record of records) {
       const id = String(this.nextId++);
-      const response: KintoneRecordForResponse = {
-        ...record,
-        $id: { value: id },
-      };
-      this.records.push(response);
+      this.records.push({ id, record });
     }
   }
 
   async updateRecords(
     records: readonly {
       id: string;
-      record: KintoneRecordForParameter;
+      record: SeedRecord;
     }[],
   ): Promise<void> {
     this.callLog.push("updateRecords");
     this.checkFail("updateRecords");
     for (const { id, record } of records) {
-      const index = this.records.findIndex((r) => r.$id.value === id);
+      const index = this.records.findIndex((r) => r.id === id);
       if (index !== -1) {
-        const response: KintoneRecordForResponse = {
-          ...record,
-          $id: { value: id },
-        };
-        this.records[index] = response;
+        this.records[index] = { id, record };
       }
     }
   }
@@ -638,7 +626,7 @@ export class InMemoryRecordManager implements RecordManager {
     return { deletedCount };
   }
 
-  setRecords(records: KintoneRecordForResponse[]): void {
+  setRecords(records: SeedRecordWithId[]): void {
     this.records = [...records];
   }
 }

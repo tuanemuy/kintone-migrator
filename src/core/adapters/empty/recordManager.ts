@@ -1,23 +1,19 @@
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import type {
-  KintoneRecordForParameter,
-  KintoneRecordForResponse,
-  RecordManager,
-} from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
+import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecord } from "@/core/domain/seedData/valueObject";
 
 export class EmptyRecordManager implements RecordManager {
   async getAllRecords(
     _condition?: string,
-  ): Promise<readonly KintoneRecordForResponse[]> {
+  ): Promise<readonly SeedRecordWithId[]> {
     throw new SystemError(
       SystemErrorCode.InternalServerError,
       "EmptyRecordManager.getAllRecords not implemented",
     );
   }
 
-  async addRecords(
-    _records: readonly KintoneRecordForParameter[],
-  ): Promise<void> {
+  async addRecords(_records: readonly SeedRecord[]): Promise<void> {
     throw new SystemError(
       SystemErrorCode.InternalServerError,
       "EmptyRecordManager.addRecords not implemented",
@@ -27,7 +23,7 @@ export class EmptyRecordManager implements RecordManager {
   async updateRecords(
     _records: readonly {
       id: string;
-      record: KintoneRecordForParameter;
+      record: SeedRecord;
     }[],
   ): Promise<void> {
     throw new SystemError(

@@ -1,21 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { isBusinessRuleError } from "@/core/domain/error";
+import type { SeedRecordWithId } from "../../entity";
 import { SeedDataErrorCode } from "../../errorCode";
-import type { KintoneRecordForResponse } from "../../ports/recordManager";
-import type { UpsertKey } from "../../valueObject";
+import type { SeedRecord, UpsertKey } from "../../valueObject";
 import { UpsertPlanner } from "../upsertPlanner";
 
-function makeKintoneRecord(
-  id: string,
-  fields: Record<string, unknown>,
-): KintoneRecordForResponse {
-  const record: Record<string, { value: unknown }> = {
-    $id: { value: id },
-  };
-  for (const [key, value] of Object.entries(fields)) {
-    record[key] = { value };
-  }
-  return record as unknown as KintoneRecordForResponse;
+function makeSeedRecord(id: string, record: SeedRecord): SeedRecordWithId {
+  return { id, record };
 }
 
 describe("UpsertPlanner エッジケース", () => {
@@ -32,24 +23,13 @@ describe("UpsertPlanner エッジケース", () => {
       },
     ];
 
+    // existingRecords already have converted SeedRecord format (adapter handles conversion)
     const existingRecords = [
-      makeKintoneRecord("10", {
+      makeSeedRecord("10", {
         code: "001",
         items: [
-          {
-            id: "100",
-            value: {
-              product: { value: "商品A" },
-              quantity: { value: "1" },
-            },
-          },
-          {
-            id: "101",
-            value: {
-              product: { value: "商品B" },
-              quantity: { value: "2" },
-            },
-          },
+          { product: "商品A", quantity: "1" },
+          { product: "商品B", quantity: "2" },
         ],
       }),
     ];
@@ -68,17 +48,9 @@ describe("UpsertPlanner エッジケース", () => {
     ];
 
     const existingRecords = [
-      makeKintoneRecord("10", {
+      makeSeedRecord("10", {
         code: "001",
-        items: [
-          {
-            id: "100",
-            value: {
-              product: { value: "商品A" },
-              quantity: { value: "1" },
-            },
-          },
-        ],
+        items: [{ product: "商品A", quantity: "1" }],
       }),
     ];
 
@@ -95,17 +67,9 @@ describe("UpsertPlanner エッジケース", () => {
     ];
 
     const existingRecords = [
-      makeKintoneRecord("10", {
+      makeSeedRecord("10", {
         code: "001",
-        items: [
-          {
-            id: "100",
-            value: {
-              product: { value: "商品A" },
-              quantity: { value: "1" },
-            },
-          },
-        ],
+        items: [{ product: "商品A", quantity: "1" }],
       }),
     ];
 
@@ -122,7 +86,7 @@ describe("UpsertPlanner エッジケース", () => {
     ];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", tags: ["VIP", "長期"] }),
+      makeSeedRecord("10", { code: "001", tags: ["VIP", "長期"] }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
@@ -139,7 +103,7 @@ describe("UpsertPlanner エッジケース", () => {
     ];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", name: "テスト" }),
+      makeSeedRecord("10", { code: "001", name: "テスト" }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
@@ -173,9 +137,7 @@ describe("UpsertPlanner エッジケース", () => {
       },
     ];
 
-    const existingRecords = [
-      makeKintoneRecord("10", { code: "001", tags: [] }),
-    ];
+    const existingRecords = [makeSeedRecord("10", { code: "001", tags: [] })];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
     expect(plan.unchanged).toBe(1);
@@ -191,7 +153,10 @@ describe("UpsertPlanner エッジケース", () => {
 
     // 既存レコードのキーフィールドが配列の場合
     const existingRecords = [
-      makeKintoneRecord("10", { code: ["not", "a", "string"], name: "テスト" }),
+      makeSeedRecord("10", {
+        code: ["not", "a", "string"] as unknown as string,
+        name: "テスト",
+      }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
