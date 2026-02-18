@@ -217,22 +217,29 @@ All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-
 Initializes a project from a kintone space. Fetches all apps in the specified space, generates a `kintone-migrator.yaml` config file with `files` object format, and captures all domain configurations for each app.
 
 ```bash
-kintone-migrator init <spaceId>
-kintone-migrator init <spaceId> --yes    # Skip confirmation prompts
+kintone-migrator init --space-id 1
+kintone-migrator init -s 1 --yes          # Skip confirmation prompts
+kintone-migrator init -s 1 --dry-run      # Preview without writing files
+kintone-migrator init -s 1 -o ./myproject  # Output to a specific directory
 ```
 
 | Option | Description |
 |---|---|
-| `<spaceId>` | kintone space ID (required argument) |
+| `--space-id`, `-s` | kintone space ID (required, must be numeric) |
 | `--domain`, `-d` | kintone domain |
 | `--api-token`, `-t` | API token |
 | `--username`, `-u` | Username |
 | `--password`, `-p` | Password |
 | `--guest-space-id`, `-g` | Guest space ID |
-| `--output`, `-o` | Output config file path (default: `kintone-migrator.yaml`) |
+| `--output`, `-o` | Output directory |
 | `--yes`, `-y` | Skip confirmation prompts |
+| `--dry-run`, `-n` | Preview what would be created without writing any files |
 
-The generated config uses the `files` object format with all domain file paths pre-configured. For each app, schema, view, settings, notification, report, action, process, field-acl, app-acl, record-acl, admin-notes, and plugin configurations are captured.
+The generated config uses the `files` object format with all domain file paths pre-configured. For each app, schema, seed, customize, view, settings, notification, report, action, process, field-acl, app-acl, record-acl, admin-notes, and plugin configurations are captured.
+
+App names in the generated config are resolved with the following priority: app code > app name > `app-{appId}`. Duplicate names are automatically suffixed (e.g., `-2`, `-3`). File paths follow the `<appName>/<domain>.yaml` convention (e.g., `customer/schema.yaml`).
+
+Authentication settings are intentionally omitted from the generated config to avoid committing credentials to version control. Set `KINTONE_API_TOKEN` or `KINTONE_USERNAME` + `KINTONE_PASSWORD` environment variables, or add `auth` to the config file manually.
 
 ### `schema` -- Form Schema Management
 
