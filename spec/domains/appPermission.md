@@ -85,33 +85,7 @@ kintoneアプリのアクセス権を取得・更新するためのインター�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-rights:
-  - entity:
-      type: USER
-      code: admin_user
-    includeSubs: false
-    appEditable: true
-    recordViewable: true
-    recordAddable: true
-    recordEditable: true
-    recordDeletable: true
-    recordImportable: true
-    recordExportable: true
-  - entity:
-      type: GROUP
-      code: general_staff
-    includeSubs: false
-    appEditable: false
-    recordViewable: true
-    recordAddable: true
-    recordEditable: true
-    recordDeletable: false
-    recordImportable: false
-    recordExportable: false
-```
+[アプリアクセス権設定ファイル仕様](../fileFormats/appPermission.md) を参照。
 
 ## CLI
 

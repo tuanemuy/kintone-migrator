@@ -85,36 +85,7 @@ kintoneアプリのレコードアクセス権を取得・更新するための�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-rights:
-  - filterCond: status in ("active")
-    entities:
-      - entity:
-          type: USER
-          code: admin_user
-        viewable: true
-        editable: true
-        deletable: true
-        includeSubs: false
-      - entity:
-          type: GROUP
-          code: general_staff
-        viewable: true
-        editable: false
-        deletable: false
-        includeSubs: false
-  - filterCond: ""
-    entities:
-      - entity:
-          type: FIELD_ENTITY
-          code: creator
-        viewable: true
-        editable: true
-        deletable: true
-        includeSubs: false
-```
+[レコードアクセス権設定ファイル仕様](../fileFormats/recordPermission.md) を参照。
 
 ## CLI
 

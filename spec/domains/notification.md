@@ -131,53 +131,7 @@ kintoneアプリの通知設定を取得・更新するためのインターフ�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-general:
-  notifyToCommenter: true
-  notifications:
-    - entity:
-        type: USER
-        code: admin_user
-      recordAdded: true
-      recordEdited: true
-      commentAdded: true
-      statusChanged: true
-      fileImported: false
-    - entity:
-        type: GROUP
-        code: managers
-      includeSubs: true
-      recordAdded: true
-      recordEdited: false
-      commentAdded: false
-      statusChanged: true
-      fileImported: false
-perRecord:
-  - filterCond: priority in ("high")
-    title: 高優先度レコードの更新
-    targets:
-      - entity:
-          type: USER
-          code: manager
-      - entity:
-          type: ORGANIZATION
-          code: sales_dept
-        includeSubs: true
-reminder:
-  timezone: Asia/Tokyo
-  notifications:
-    - code: deadline
-      daysLater: -1
-      time: "09:00"
-      filterCond: status not in ("完了")
-      title: 締切日リマインダー
-      targets:
-        - entity:
-            type: FIELD_ENTITY
-            code: creator
-```
+[通知設定ファイル仕様](../fileFormats/notification.md) を参照。
 
 ## CLI
 

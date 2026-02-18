@@ -102,30 +102,7 @@ kintoneアプリのアクション設定を取得・更新するためのイン�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-actions:
-  案件コピー:
-    index: 0
-    destApp:
-      app: "20"
-    mappings:
-      - srcType: FIELD
-        srcField: customer_name
-        destField: customer_name
-      - srcType: FIELD
-        srcField: amount
-        destField: amount
-      - srcType: RECORD_URL
-        destField: source_url
-    entities:
-      - type: USER
-        code: admin_user
-      - type: GROUP
-        code: sales_team
-    filterCond: status in ("approved")
-```
+[アクション設定ファイル仕様](../fileFormats/action.md) を参照。
 
 ## CLI
 

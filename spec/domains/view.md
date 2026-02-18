@@ -89,33 +89,7 @@ kintoneアプリのビュー設定を取得・更新するためのインター�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-views:
-  一覧:
-    type: LIST
-    index: 0
-    fields:
-      - customer_name
-      - customer_code
-      - status
-    filterCond: status in ("active")
-    sort: customer_code asc
-    pager: true
-    device: ANY
-  カレンダー:
-    type: CALENDAR
-    index: 1
-    date: scheduled_date
-    title: customer_name
-    filterCond: ""
-  カスタムビュー:
-    type: CUSTOM
-    index: 2
-    html: "<div id='my-view'></div>"
-    pager: false
-```
+[ビュー設定ファイル仕様](../fileFormats/view.md) を参照。
 
 ## CLI
 

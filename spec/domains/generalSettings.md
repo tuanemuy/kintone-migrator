@@ -114,29 +114,7 @@ kintoneアプリの一般設定を取得・更新するためのインターフ�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-name: 顧客管理
-description: 顧客情報を管理するアプリ
-icon:
-  type: PRESET
-  key: APP006
-theme: WHITE
-titleField:
-  selectionMode: MANUAL
-  code: customer_name
-enableThumbnails: true
-enableBulkDeletion: false
-enableComments: true
-enableDuplicateRecord: true
-enableInlineRecordEditing: true
-numberPrecision:
-  digits: 16
-  decimalPlaces: 4
-  roundingMode: HALF_EVEN
-firstMonthOfFiscalYear: 4
-```
+[一般設定ファイル仕様](../fileFormats/generalSettings.md) を参照。
 
 ## CLI
 

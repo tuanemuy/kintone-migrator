@@ -139,42 +139,7 @@ kintoneアプリのレポート設定を取得・更新するためのインタ�
 
 ## 設定ファイルのフォーマット
 
-YAML形式で記述する。
-
-```yaml
-reports:
-  月別売上:
-    chartType: COLUMN
-    chartMode: NORMAL
-    index: 0
-    groups:
-      - code: order_date
-        per: MONTH
-    aggregations:
-      - type: SUM
-        code: amount
-    filterCond: ""
-    sorts:
-      - by: GROUP1
-        order: ASC
-  担当者別件数:
-    chartType: PIE
-    index: 1
-    groups:
-      - code: assignee
-    aggregations:
-      - type: COUNT
-    filterCond: status in ("active")
-    sorts:
-      - by: TOTAL
-        order: DESC
-    periodicReport:
-      active: true
-      period:
-        every: MONTH
-        dayOfMonth: 1
-        time: "09:00"
-```
+[レポート設定ファイル仕様](../fileFormats/report.md) を参照。
 
 ## CLI
 

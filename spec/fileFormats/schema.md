@@ -2,6 +2,16 @@
 
 kintone フォーム設定を宣言的に定義するスキーマファイルのフォーマット仕様。
 
+## kintone API リファレンス
+
+- [フォーム](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/)
+  - [フィールドを取得する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/get-form-fields/)
+  - [フィールドを追加する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/add-form-fields/)
+  - [フィールドの設定を変更する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/update-form-fields/)
+  - [フィールドを削除する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/delete-form-fields/)
+  - [フォームのレイアウトを取得する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/get-form-layout/)
+  - [フォームのレイアウトを変更する](https://cybozu.dev/ja/kintone/docs/rest-api/apps/form/update-form-layout/)
+
 ## 概要
 
 スキーマは YAML 形式で記述する。ルートオブジェクトの `layout` キー配下にレイアウト要素の配列を定義し、kintone のフォームレイアウト構造に準拠した形式でフィールドと装飾要素を記述する。

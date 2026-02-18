@@ -577,54 +577,9 @@ const SchemaParser = {
 
 #### スキーマテキストのフォーマット
 
-スキーマはYAML形式で記述する。レイアウトベースの構造で、kintoneのフォームレイアウト設定に準拠し、SchemaSerializerが生成するテキストとラウンドトリップ整合性を保つ。
+[スキーマ仕様](../fileFormats/schema.md) を参照。
 
-```yaml
-layout:
-  - type: ROW
-    fields:
-      - code: customer_name
-        type: SINGLE_LINE_TEXT
-        label: 顧客名
-        required: true
-        unique: false
-        maxLength: "100"
-        size:
-          width: "200"
-  - type: ROW
-    fields:
-      - code: status
-        type: DROP_DOWN
-        label: ステータス
-        required: true
-        options:
-          未着手:
-            label: 未着手
-            index: "0"
-          進行中:
-            label: 進行中
-            index: "1"
-          完了:
-            label: 完了
-            index: "2"
-  - type: GROUP
-    code: detail_group
-    label: 詳細情報
-    openGroup: true
-    layout:
-      - type: ROW
-        fields:
-          - code: note
-            type: MULTI_LINE_TEXT
-            label: 備考
-```
-
-- ルートオブジェクトの `layout` キー配下にレイアウト要素の配列を記述する
-- 各レイアウト要素は `type` で種別を判別する（`ROW`、`GROUP`、`SUBTABLE`）
-- フィールド定義は `code`、`type`、`label` およびフィールド型固有のプロパティをフラットに記述する（`properties` でラップしない）
-- レイアウトサイズ情報は `size` オブジェクトで指定する
-- 装飾要素（`LABEL`、`SPACER`、`HR`）は `type` と `elementId` で記述する
-- システムフィールド（`RECORD_NUMBER`、`CREATOR` 等）はレイアウト上の配置情報のみを保持する
+- SchemaSerializerが生成するテキストとラウンドトリップ整合性を保つ
 - YAMLとして不正な文字列の場合は `BusinessRuleError` をスローする
 - 旧フォーマット（`fields` キーのみ）が検出された場合はエラーメッセージで新フォーマットへの移行を案内する
 
