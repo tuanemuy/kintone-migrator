@@ -8,39 +8,39 @@ describe("buildAppFilePaths", () => {
   it("returns paths without baseDir prefix when baseDir is omitted", () => {
     const paths = buildAppFilePaths(appName);
 
-    expect(paths.schema).toBe("schemas/customer.yaml");
-    expect(paths.seed).toBe("seeds/customer.yaml");
-    expect(paths.customize).toBe("customize/customer.yaml");
-    expect(paths.view).toBe("view/customer.yaml");
-    expect(paths.settings).toBe("settings/customer.yaml");
-    expect(paths.notification).toBe("notification/customer.yaml");
-    expect(paths.report).toBe("report/customer.yaml");
-    expect(paths.action).toBe("action/customer.yaml");
-    expect(paths.process).toBe("process/customer.yaml");
-    expect(paths.fieldAcl).toBe("field-acl/customer.yaml");
-    expect(paths.appAcl).toBe("app-acl/customer.yaml");
-    expect(paths.recordAcl).toBe("record-acl/customer.yaml");
-    expect(paths.adminNotes).toBe("admin-notes/customer.yaml");
-    expect(paths.plugin).toBe("plugin/customer.yaml");
+    expect(paths.schema).toBe("customer/schema.yaml");
+    expect(paths.seed).toBe("customer/seed.yaml");
+    expect(paths.customize).toBe("customer/customize.yaml");
+    expect(paths.view).toBe("customer/view.yaml");
+    expect(paths.settings).toBe("customer/settings.yaml");
+    expect(paths.notification).toBe("customer/notification.yaml");
+    expect(paths.report).toBe("customer/report.yaml");
+    expect(paths.action).toBe("customer/action.yaml");
+    expect(paths.process).toBe("customer/process.yaml");
+    expect(paths.fieldAcl).toBe("customer/field-acl.yaml");
+    expect(paths.appAcl).toBe("customer/app-acl.yaml");
+    expect(paths.recordAcl).toBe("customer/record-acl.yaml");
+    expect(paths.adminNotes).toBe("customer/admin-notes.yaml");
+    expect(paths.plugin).toBe("customer/plugin.yaml");
   });
 
   it("returns paths prefixed with baseDir when baseDir is provided", () => {
     const paths = buildAppFilePaths(appName, "output");
 
-    expect(paths.schema).toBe("output/schemas/customer.yaml");
-    expect(paths.seed).toBe("output/seeds/customer.yaml");
-    expect(paths.customize).toBe("output/customize/customer.yaml");
-    expect(paths.view).toBe("output/view/customer.yaml");
-    expect(paths.settings).toBe("output/settings/customer.yaml");
-    expect(paths.notification).toBe("output/notification/customer.yaml");
-    expect(paths.report).toBe("output/report/customer.yaml");
-    expect(paths.action).toBe("output/action/customer.yaml");
-    expect(paths.process).toBe("output/process/customer.yaml");
-    expect(paths.fieldAcl).toBe("output/field-acl/customer.yaml");
-    expect(paths.appAcl).toBe("output/app-acl/customer.yaml");
-    expect(paths.recordAcl).toBe("output/record-acl/customer.yaml");
-    expect(paths.adminNotes).toBe("output/admin-notes/customer.yaml");
-    expect(paths.plugin).toBe("output/plugin/customer.yaml");
+    expect(paths.schema).toBe("output/customer/schema.yaml");
+    expect(paths.seed).toBe("output/customer/seed.yaml");
+    expect(paths.customize).toBe("output/customer/customize.yaml");
+    expect(paths.view).toBe("output/customer/view.yaml");
+    expect(paths.settings).toBe("output/customer/settings.yaml");
+    expect(paths.notification).toBe("output/customer/notification.yaml");
+    expect(paths.report).toBe("output/customer/report.yaml");
+    expect(paths.action).toBe("output/customer/action.yaml");
+    expect(paths.process).toBe("output/customer/process.yaml");
+    expect(paths.fieldAcl).toBe("output/customer/field-acl.yaml");
+    expect(paths.appAcl).toBe("output/customer/app-acl.yaml");
+    expect(paths.recordAcl).toBe("output/customer/record-acl.yaml");
+    expect(paths.adminNotes).toBe("output/customer/admin-notes.yaml");
+    expect(paths.plugin).toBe("output/customer/plugin.yaml");
   });
 
   it("returns all 14 fields", () => {
