@@ -1,6 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
-import { isRecord, isStringRecord } from "@/core/domain/typeGuards";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { LayoutItem, LayoutRow, Schema } from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
@@ -337,7 +337,9 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
   };
 
   if (fieldType === "SUBTABLE") {
-    const rawFields = Array.isArray(raw.fields) ? (raw.fields as RawField[]) : [];
+    const rawFields = Array.isArray(raw.fields)
+      ? (raw.fields as RawField[])
+      : [];
     const subFields = new Map<FieldCode, FieldDefinition>();
     for (const subRaw of rawFields) {
       const subDef = parseFieldDefinitionFromFlat(subRaw);
@@ -393,7 +395,9 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
           relatedApp: refTable.relatedApp as { app: string },
           condition: {
             field: FieldCode.create(String(condition.field ?? "")),
-            relatedField: FieldCode.create(String(condition.relatedField ?? "")),
+            relatedField: FieldCode.create(
+              String(condition.relatedField ?? ""),
+            ),
           },
           ...(refTable.filterCond !== undefined
             ? { filterCond: String(refTable.filterCond) }
