@@ -402,6 +402,10 @@ export class KintoneNotificationConfigurator
         preview: true,
       });
 
+      // Double cast is required because the SDK's type for reminder notifications
+      // does not match the actual API response shape (e.g. timing field structure).
+      // We cast through `unknown` to our local KintoneReminderNotification type
+      // which accurately reflects the runtime data.
       const notifications = (
         response.notifications as unknown as KintoneReminderNotification[]
       ).map(fromKintoneReminderNotification);

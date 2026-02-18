@@ -129,63 +129,45 @@ function fromKintoneNumberPrecision(raw: {
 function fromKintoneSettings(
   raw: KintoneGeneralSettings,
 ): GeneralSettingsConfig {
-  const config: Record<string, unknown> = {};
-
-  if (raw.name !== undefined) {
-    config.name = raw.name;
+  if (raw.theme !== undefined && !VALID_THEMES.has(raw.theme)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected theme from kintone API: ${raw.theme}`,
+    );
   }
 
-  if (raw.description !== undefined) {
-    config.description = raw.description;
-  }
+  const config: GeneralSettingsConfig = {
+    ...(raw.name !== undefined ? { name: raw.name } : {}),
+    ...(raw.description !== undefined ? { description: raw.description } : {}),
+    ...(raw.icon !== undefined ? { icon: fromKintoneIcon(raw.icon) } : {}),
+    ...(raw.theme !== undefined ? { theme: raw.theme as ThemeType } : {}),
+    ...(raw.titleField !== undefined
+      ? { titleField: fromKintoneTitleField(raw.titleField) }
+      : {}),
+    ...(raw.enableThumbnails !== undefined
+      ? { enableThumbnails: raw.enableThumbnails }
+      : {}),
+    ...(raw.enableBulkDeletion !== undefined
+      ? { enableBulkDeletion: raw.enableBulkDeletion }
+      : {}),
+    ...(raw.enableComments !== undefined
+      ? { enableComments: raw.enableComments }
+      : {}),
+    ...(raw.enableDuplicateRecord !== undefined
+      ? { enableDuplicateRecord: raw.enableDuplicateRecord }
+      : {}),
+    ...(raw.enableInlineRecordEditing !== undefined
+      ? { enableInlineRecordEditing: raw.enableInlineRecordEditing }
+      : {}),
+    ...(raw.numberPrecision !== undefined
+      ? { numberPrecision: fromKintoneNumberPrecision(raw.numberPrecision) }
+      : {}),
+    ...(raw.firstMonthOfFiscalYear !== undefined
+      ? { firstMonthOfFiscalYear: Number(raw.firstMonthOfFiscalYear) }
+      : {}),
+  };
 
-  if (raw.icon !== undefined) {
-    config.icon = fromKintoneIcon(raw.icon);
-  }
-
-  if (raw.theme !== undefined) {
-    if (!VALID_THEMES.has(raw.theme)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `Unexpected theme from kintone API: ${raw.theme}`,
-      );
-    }
-    config.theme = raw.theme as ThemeType;
-  }
-
-  if (raw.titleField !== undefined) {
-    config.titleField = fromKintoneTitleField(raw.titleField);
-  }
-
-  if (raw.enableThumbnails !== undefined) {
-    config.enableThumbnails = raw.enableThumbnails;
-  }
-
-  if (raw.enableBulkDeletion !== undefined) {
-    config.enableBulkDeletion = raw.enableBulkDeletion;
-  }
-
-  if (raw.enableComments !== undefined) {
-    config.enableComments = raw.enableComments;
-  }
-
-  if (raw.enableDuplicateRecord !== undefined) {
-    config.enableDuplicateRecord = raw.enableDuplicateRecord;
-  }
-
-  if (raw.enableInlineRecordEditing !== undefined) {
-    config.enableInlineRecordEditing = raw.enableInlineRecordEditing;
-  }
-
-  if (raw.numberPrecision !== undefined) {
-    config.numberPrecision = fromKintoneNumberPrecision(raw.numberPrecision);
-  }
-
-  if (raw.firstMonthOfFiscalYear !== undefined) {
-    config.firstMonthOfFiscalYear = Number(raw.firstMonthOfFiscalYear);
-  }
-
-  return config as GeneralSettingsConfig;
+  return config;
 }
 
 function toKintoneIcon(icon: IconConfig): Record<string, unknown> {
@@ -288,6 +270,10 @@ export class KintoneGeneralSettingsConfigurator
         preview: true,
       });
 
+      // Double cast is required because the SDK's return type for getAppSettings()
+      // does not include all fields present in the actual API response (e.g. numberPrecision,
+      // firstMonthOfFiscalYear). We cast through `unknown` to our local KintoneGeneralSettings
+      // type which accurately reflects the runtime data.
       const raw = response as unknown as KintoneGeneralSettings;
       const config = fromKintoneSettings(raw);
 

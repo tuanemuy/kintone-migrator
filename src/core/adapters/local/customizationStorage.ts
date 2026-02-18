@@ -2,7 +2,6 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
-import { isBusinessRuleError } from "@/core/domain/error";
 import { isNodeError } from "@/lib/nodeError";
 
 export class LocalFileCustomizationStorage implements CustomizationStorage {
@@ -29,8 +28,6 @@ export class LocalFileCustomizationStorage implements CustomizationStorage {
       await mkdir(dirname(this.filePath), { recursive: true });
       await writeFile(this.filePath, content, "utf-8");
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
       throw new SystemError(
         SystemErrorCode.StorageError,
         `Failed to write customization config file: ${this.filePath}`,

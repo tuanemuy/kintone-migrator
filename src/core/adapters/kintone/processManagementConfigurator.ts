@@ -108,10 +108,15 @@ function fromKintoneState(raw: KintoneProcessState): ProcessState {
 }
 
 function fromKintoneAction(raw: KintoneProcessAction): ProcessAction {
+  if (raw.type !== undefined && !VALID_ACTION_TYPES.has(raw.type)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected action type from kintone API: ${raw.type}`,
+    );
+  }
+
   const actionType: ProcessActionType =
-    raw.type !== undefined && VALID_ACTION_TYPES.has(raw.type)
-      ? (raw.type as ProcessActionType)
-      : "PRIMARY";
+    raw.type !== undefined ? (raw.type as ProcessActionType) : "PRIMARY";
 
   const result: ProcessAction = {
     name: raw.name,

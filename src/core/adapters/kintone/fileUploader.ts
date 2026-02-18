@@ -7,6 +7,12 @@ export class KintoneFileUploader implements FileUploader {
   constructor(private readonly client: KintoneRestAPIClient) {}
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
+    if (!filePath) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "filePath must not be empty",
+      );
+    }
     try {
       const response = await this.client.file.uploadFile({
         file: { path: filePath },

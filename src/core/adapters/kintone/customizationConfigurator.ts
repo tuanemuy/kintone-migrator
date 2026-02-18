@@ -46,9 +46,13 @@ function fromKintoneResourceList(
   return raw.map(fromKintoneResource);
 }
 
+type KintoneCustomizeResourceForParameter =
+  | { type: "FILE"; file: { fileKey: string } }
+  | { type: "URL"; url: string };
+
 function toKintoneResource(
   resource: ResolvedResource,
-): Record<string, unknown> {
+): KintoneCustomizeResourceForParameter {
   if (resource.type === "FILE") {
     return {
       type: "FILE",
@@ -63,7 +67,7 @@ function toKintoneResource(
 
 function toKintoneResourceList(
   resources: readonly ResolvedResource[],
-): Record<string, unknown>[] {
+): KintoneCustomizeResourceForParameter[] {
   return resources.map(toKintoneResource);
 }
 
@@ -144,47 +148,43 @@ export class KintoneCustomizationConfigurator
     revision?: string;
   }): Promise<{ revision: string }> {
     try {
-      const requestParams: Record<string, unknown> = {
+      type UpdateParams = Parameters<
+        typeof this.client.app.updateAppCustomize
+      >[0];
+
+      const requestParams: UpdateParams = {
         app: this.appId,
+        ...(params.scope !== undefined ? { scope: params.scope } : {}),
+        ...(params.desktop !== undefined
+          ? {
+              desktop: {
+                ...(params.desktop.js !== undefined
+                  ? { js: toKintoneResourceList(params.desktop.js) }
+                  : {}),
+                ...(params.desktop.css !== undefined
+                  ? { css: toKintoneResourceList(params.desktop.css) }
+                  : {}),
+              },
+            }
+          : {}),
+        ...(params.mobile !== undefined
+          ? {
+              mobile: {
+                ...(params.mobile.js !== undefined
+                  ? { js: toKintoneResourceList(params.mobile.js) }
+                  : {}),
+                ...(params.mobile.css !== undefined
+                  ? { css: toKintoneResourceList(params.mobile.css) }
+                  : {}),
+              },
+            }
+          : {}),
+        ...(params.revision !== undefined ? { revision: params.revision } : {}),
       };
 
-      if (params.scope !== undefined) {
-        requestParams.scope = params.scope;
-      }
+      const response = await this.client.app.updateAppCustomize(requestParams);
 
-      if (params.desktop) {
-        const desktop: Record<string, unknown> = {};
-        if (params.desktop.js) {
-          desktop.js = toKintoneResourceList(params.desktop.js);
-        }
-        if (params.desktop.css) {
-          desktop.css = toKintoneResourceList(params.desktop.css);
-        }
-        requestParams.desktop = desktop;
-      }
-
-      if (params.mobile) {
-        const mobile: Record<string, unknown> = {};
-        if (params.mobile.js) {
-          mobile.js = toKintoneResourceList(params.mobile.js);
-        }
-        if (params.mobile.css) {
-          mobile.css = toKintoneResourceList(params.mobile.css);
-        }
-        requestParams.mobile = mobile;
-      }
-
-      if (params.revision !== undefined) {
-        requestParams.revision = params.revision;
-      }
-
-      const response = await this.client.app.updateAppCustomize(
-        requestParams as Parameters<
-          typeof this.client.app.updateAppCustomize
-        >[0],
-      );
-
-      return { revision: response.revision as string };
+      return { revision: String(response.revision) };
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
       if (error instanceof SystemError) throw error;

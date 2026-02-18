@@ -37,6 +37,48 @@ const VALID_CHART_MODES: ReadonlySet<string> = new Set([
   "PERCENTAGE",
 ]);
 
+const VALID_GROUP_PERS: ReadonlySet<string> = new Set([
+  "YEAR",
+  "QUARTER",
+  "MONTH",
+  "WEEK",
+  "DAY",
+  "HOUR",
+  "MINUTE",
+]);
+
+const VALID_AGGREGATION_TYPES: ReadonlySet<string> = new Set([
+  "COUNT",
+  "SUM",
+  "AVERAGE",
+  "MAX",
+  "MIN",
+]);
+
+const VALID_SORT_BYS: ReadonlySet<string> = new Set([
+  "TOTAL",
+  "GROUP1",
+  "GROUP2",
+  "GROUP3",
+]);
+
+const VALID_SORT_ORDERS: ReadonlySet<string> = new Set(["ASC", "DESC"]);
+
+const VALID_PERIODIC_REPORT_EVERYS: ReadonlySet<string> = new Set([
+  "YEAR",
+  "QUARTER",
+  "MONTH",
+  "WEEK",
+  "DAY",
+  "HOUR",
+]);
+
+const VALID_PERIODIC_REPORT_PATTERNS: ReadonlySet<string> = new Set([
+  "JAN_APR_JUL_OCT",
+  "FEB_MAY_AUG_NOV",
+  "MAR_JUN_SEP_DEC",
+]);
+
 type KintoneReportGroup = {
   code: string;
   per?: string;
@@ -84,6 +126,12 @@ function fromKintoneGroup(raw: KintoneReportGroup): ReportGroup {
   const result: ReportGroup = { code: raw.code };
 
   if (raw.per !== undefined) {
+    if (!VALID_GROUP_PERS.has(raw.per)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Unexpected group per value from kintone API: ${raw.per}`,
+      );
+    }
     return { ...result, per: raw.per as GroupPer };
   }
 
@@ -93,6 +141,13 @@ function fromKintoneGroup(raw: KintoneReportGroup): ReportGroup {
 function fromKintoneAggregation(
   raw: KintoneReportAggregation,
 ): ReportAggregation {
+  if (!VALID_AGGREGATION_TYPES.has(raw.type)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected aggregation type value from kintone API: ${raw.type}`,
+    );
+  }
+
   const result: ReportAggregation = {
     type: raw.type as AggregationType,
   };
@@ -105,6 +160,19 @@ function fromKintoneAggregation(
 }
 
 function fromKintoneSort(raw: KintoneReportSort): ReportSort {
+  if (!VALID_SORT_BYS.has(raw.by)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected sort by value from kintone API: ${raw.by}`,
+    );
+  }
+  if (!VALID_SORT_ORDERS.has(raw.order)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected sort order value from kintone API: ${raw.order}`,
+    );
+  }
+
   return {
     by: raw.by as SortBy,
     order: raw.order as SortOrder,
@@ -114,40 +182,52 @@ function fromKintoneSort(raw: KintoneReportSort): ReportSort {
 function fromKintonePeriodicReportPeriod(
   raw: KintonePeriodicReportPeriod,
 ): PeriodicReportPeriod {
-  const result: Record<string, unknown> = {
-    every: raw.every as PeriodicReportEvery,
-  };
-
-  if (raw.month !== undefined) {
-    result.month = Number(raw.month);
+  if (!VALID_PERIODIC_REPORT_EVERYS.has(raw.every)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected periodicReport every value from kintone API: ${raw.every}`,
+    );
   }
 
-  if (raw.pattern !== undefined) {
-    result.pattern = raw.pattern as PeriodicReportPattern;
+  if (
+    raw.pattern !== undefined &&
+    !VALID_PERIODIC_REPORT_PATTERNS.has(raw.pattern)
+  ) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected periodicReport pattern value from kintone API: ${raw.pattern}`,
+    );
   }
 
+  let dayOfMonth: number | string | undefined;
   if (raw.dayOfMonth !== undefined) {
-    const dayOfMonthStr = String(raw.dayOfMonth);
-    if (dayOfMonthStr === "END_OF_MONTH") {
-      result.dayOfMonth = "END_OF_MONTH";
+    if (String(raw.dayOfMonth) === "END_OF_MONTH") {
+      dayOfMonth = "END_OF_MONTH";
     } else {
-      result.dayOfMonth = Number(raw.dayOfMonth);
+      const parsed = Number(raw.dayOfMonth);
+      if (Number.isNaN(parsed)) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected periodicReport dayOfMonth value from kintone API: ${String(raw.dayOfMonth)}`,
+        );
+      }
+      dayOfMonth = parsed;
     }
   }
 
-  if (raw.time !== undefined) {
-    result.time = raw.time;
-  }
+  const period: PeriodicReportPeriod = {
+    every: raw.every as PeriodicReportEvery,
+    ...(raw.month !== undefined ? { month: Number(raw.month) } : {}),
+    ...(raw.pattern !== undefined
+      ? { pattern: raw.pattern as PeriodicReportPattern }
+      : {}),
+    ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
+    ...(raw.time !== undefined ? { time: raw.time } : {}),
+    ...(raw.dayOfWeek !== undefined ? { dayOfWeek: raw.dayOfWeek } : {}),
+    ...(raw.minute !== undefined ? { minute: raw.minute } : {}),
+  };
 
-  if (raw.dayOfWeek !== undefined) {
-    result.dayOfWeek = raw.dayOfWeek;
-  }
-
-  if (raw.minute !== undefined) {
-    result.minute = raw.minute;
-  }
-
-  return result as PeriodicReportPeriod;
+  return period;
 }
 
 function fromKintonePeriodicReport(raw: KintonePeriodicReport): PeriodicReport {

@@ -76,12 +76,82 @@ function isRevisionConflict(error: unknown): boolean {
   );
 }
 
+/**
+ * Tracks the latest known kintone form revision for optimistic concurrency control.
+ *
+ * kintone's form API uses revision numbers to detect concurrent modifications.
+ * This tracker is injected into the adapter so that the mutable revision state
+ * is explicit and owned by the composition root rather than hidden inside the adapter.
+ *
+ * The tracker is designed to be created per-request scope in the DI container.
+ */
+export class RevisionTracker {
+  private revision: string | undefined = undefined;
+
+  track(revision: string): void {
+    if (
+      this.revision === undefined ||
+      Number(revision) > Number(this.revision)
+    ) {
+      this.revision = revision;
+    }
+  }
+
+  get current(): string | undefined {
+    return this.revision;
+  }
+}
+
 type KintoneFieldProperty = Record<string, unknown> & {
   type: string;
   code: string;
   label: string;
   noLabel?: boolean;
 };
+
+function assertRecord(
+  value: unknown,
+  fieldPath: string,
+): asserts value is Record<string, unknown> {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Expected object at ${fieldPath}, got ${typeof value}`,
+    );
+  }
+}
+
+function assertStringArray(
+  value: unknown,
+  fieldPath: string,
+): asserts value is string[] {
+  if (!Array.isArray(value)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Expected array at ${fieldPath}, got ${typeof value}`,
+    );
+  }
+  for (let i = 0; i < value.length; i++) {
+    if (typeof value[i] !== "string") {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Expected string at ${fieldPath}[${i}], got ${typeof value[i]}`,
+      );
+    }
+  }
+}
+
+function assertString(
+  value: unknown,
+  fieldPath: string,
+): asserts value is string {
+  if (typeof value !== "string") {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Expected string at ${fieldPath}, got ${typeof value}`,
+    );
+  }
+}
 
 function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   const { type, code, label, noLabel, ...rest } = prop;
@@ -92,13 +162,18 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   };
 
   if (type === "SUBTABLE" && "fields" in rest) {
+    assertRecord(rest.fields, "SUBTABLE.fields");
     const kintoneSubFields = rest.fields as Record<
       string,
       KintoneFieldProperty
     >;
     const subFields = new Map<FieldCode, FieldDefinition>();
     for (const [subCode, subProp] of Object.entries(kintoneSubFields)) {
-      subFields.set(FieldCodeVO.create(subCode), fromKintoneProperty(subProp));
+      assertRecord(subProp, `SUBTABLE.fields.${subCode}`);
+      subFields.set(
+        FieldCodeVO.create(subCode),
+        fromKintoneProperty(subProp as KintoneFieldProperty),
+      );
     }
     return {
       ...base,
@@ -108,11 +183,34 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   }
 
   if (type === "REFERENCE_TABLE" && "referenceTable" in rest) {
-    const rt = rest.referenceTable as Record<string, unknown>;
-    const condition = rt.condition as { field: string; relatedField: string };
-    const displayFields = (rt.displayFields as string[]).map((f) =>
+    assertRecord(rest.referenceTable, "REFERENCE_TABLE.referenceTable");
+    const rt = rest.referenceTable;
+
+    assertRecord(rt.condition, "REFERENCE_TABLE.referenceTable.condition");
+    const condition = rt.condition;
+    assertString(
+      condition.field,
+      "REFERENCE_TABLE.referenceTable.condition.field",
+    );
+    assertString(
+      condition.relatedField,
+      "REFERENCE_TABLE.referenceTable.condition.relatedField",
+    );
+
+    assertStringArray(
+      rt.displayFields,
+      "REFERENCE_TABLE.referenceTable.displayFields",
+    );
+    const displayFields = rt.displayFields.map((f: string) =>
       FieldCodeVO.create(f),
     );
+
+    assertRecord(rt.relatedApp, "REFERENCE_TABLE.referenceTable.relatedApp");
+    assertString(
+      rt.relatedApp.app,
+      "REFERENCE_TABLE.referenceTable.relatedApp.app",
+    );
+
     return {
       ...base,
       type: "REFERENCE_TABLE",
@@ -124,11 +222,11 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
             relatedField: FieldCodeVO.create(condition.relatedField),
           },
           ...(rt.filterCond !== undefined
-            ? { filterCond: rt.filterCond as string }
+            ? { filterCond: String(rt.filterCond) }
             : {}),
           displayFields,
-          ...(rt.sort !== undefined ? { sort: rt.sort as string } : {}),
-          ...(rt.size !== undefined ? { size: rt.size as string } : {}),
+          ...(rt.sort !== undefined ? { sort: String(rt.sort) } : {}),
+          ...(rt.size !== undefined ? { size: String(rt.size) } : {}),
         },
       },
     } as FieldDefinition;
@@ -400,20 +498,14 @@ function toKintoneLayoutItem(item: LayoutItem): Record<string, unknown> {
 }
 
 export class KintoneFormConfigurator implements FormConfigurator {
-  private latestRevision: string | undefined = undefined;
+  private readonly revisionTracker: RevisionTracker;
 
   constructor(
     private readonly client: KintoneRestAPIClient,
     private readonly appId: string,
-  ) {}
-
-  private trackRevision(revision: string): void {
-    if (
-      this.latestRevision === undefined ||
-      Number(revision) > Number(this.latestRevision)
-    ) {
-      this.latestRevision = revision;
-    }
+    revisionTracker?: RevisionTracker,
+  ) {
+    this.revisionTracker = revisionTracker ?? new RevisionTracker();
   }
 
   async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
@@ -422,7 +514,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         app: this.appId,
         preview: true,
       });
-      this.trackRevision(revision);
+      this.revisionTracker.track(revision);
 
       const fields = new Map<FieldCode, FieldDefinition>();
       for (const [code, prop] of Object.entries(properties)) {
@@ -430,6 +522,10 @@ export class KintoneFormConfigurator implements FormConfigurator {
         if (SYSTEM_FIELD_TYPES.has(kintoneProp.type)) continue;
         const fieldDef = fromKintoneProperty(kintoneProp);
         fields.set(FieldCodeVO.create(code), fieldDef);
+        // Subtable inner fields are also registered at the top level so that
+        // diff detection and layout enrichment can look up any field by code.
+        // kintone guarantees field codes are unique across the entire form,
+        // including subtable inner fields, so no collision can occur.
         if (fieldDef.type === "SUBTABLE") {
           for (const [subCode, subDef] of fieldDef.properties.fields) {
             fields.set(subCode, subDef);
@@ -458,12 +554,12 @@ export class KintoneFormConfigurator implements FormConfigurator {
       const response = await this.client.app.addFormFields({
         app: this.appId,
         properties,
-        ...(this.latestRevision !== undefined
-          ? { revision: this.latestRevision }
+        ...(this.revisionTracker.current !== undefined
+          ? { revision: this.revisionTracker.current }
           : {}),
       });
       if (response.revision) {
-        this.trackRevision(response.revision);
+        this.revisionTracker.track(response.revision);
       }
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
@@ -492,12 +588,12 @@ export class KintoneFormConfigurator implements FormConfigurator {
       const response = await this.client.app.updateFormFields({
         app: this.appId,
         properties,
-        ...(this.latestRevision !== undefined
-          ? { revision: this.latestRevision }
+        ...(this.revisionTracker.current !== undefined
+          ? { revision: this.revisionTracker.current }
           : {}),
       });
       if (response.revision) {
-        this.trackRevision(response.revision);
+        this.revisionTracker.track(response.revision);
       }
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
@@ -519,15 +615,18 @@ export class KintoneFormConfigurator implements FormConfigurator {
 
   async deleteFields(fieldCodes: readonly FieldCode[]): Promise<void> {
     try {
+      // The SDK's type definition for deleteFormFields() does not include the `revision`
+      // property in its return type, but the kintone API does return it at runtime.
+      // We cast to access the revision for optimistic concurrency tracking.
       const response = (await this.client.app.deleteFormFields({
         app: this.appId,
         fields: fieldCodes.map((code) => code as string),
-        ...(this.latestRevision !== undefined
-          ? { revision: this.latestRevision }
+        ...(this.revisionTracker.current !== undefined
+          ? { revision: this.revisionTracker.current }
           : {}),
       })) as { revision?: string };
       if (response.revision) {
-        this.trackRevision(response.revision);
+        this.revisionTracker.track(response.revision);
       }
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
@@ -553,7 +652,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         app: this.appId,
         preview: true,
       });
-      this.trackRevision(response.revision);
+      this.revisionTracker.track(response.revision);
 
       return (response.layout as KintoneLayoutItem[]).map(
         fromKintoneLayoutItem,
@@ -578,10 +677,12 @@ export class KintoneFormConfigurator implements FormConfigurator {
           typeof this.client.app.updateFormLayout
         >[0]["layout"],
         revision:
-          this.latestRevision !== undefined ? Number(this.latestRevision) : -1,
+          this.revisionTracker.current !== undefined
+            ? Number(this.revisionTracker.current)
+            : -1,
       });
       if (response.revision) {
-        this.trackRevision(response.revision);
+        this.revisionTracker.track(response.revision);
       }
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
