@@ -1,19 +1,12 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
-import type {
-  KintoneRecordForParameter,
-  KintoneRecordForResponse,
-  RecordManager,
-} from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
+import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
+import type { SeedRecord } from "@/core/domain/seedData/valueObject";
+import { fromKintoneRecord, toKintoneRecord } from "./recordConverter";
 
-// kintone SDK returns records as Record<string, { value: unknown }> with $id field.
-// Our domain type KintoneRecordForResponse is structurally compatible but TypeScript
-// cannot verify this across library boundaries. These helpers bridge the gap.
-
-function toKintoneRecordForResponse(
-  record: Record<string, unknown>,
-): KintoneRecordForResponse {
+function extractId(record: Record<string, unknown>): string {
   const $id = record.$id as { value: string } | undefined;
   if (!$id || typeof $id.value !== "string") {
     throw new SystemError(
@@ -21,13 +14,7 @@ function toKintoneRecordForResponse(
       "Record missing $id field from kintone API response",
     );
   }
-  return record as KintoneRecordForResponse;
-}
-
-function toSdkRecord(
-  record: KintoneRecordForParameter,
-): Record<string, { value: unknown }> {
-  return record as Record<string, { value: unknown }>;
+  return $id.value;
 }
 
 export class KintoneRecordManager implements RecordManager {
@@ -38,15 +25,20 @@ export class KintoneRecordManager implements RecordManager {
 
   async getAllRecords(
     condition?: string,
-  ): Promise<readonly KintoneRecordForResponse[]> {
+  ): Promise<readonly SeedRecordWithId[]> {
     try {
       const records = await this.client.record.getAllRecords({
         app: this.appId,
         ...(condition !== undefined ? { condition } : {}),
       });
-      return records.map((r) =>
-        toKintoneRecordForResponse(r as Record<string, unknown>),
-      );
+      return records.map((r) => {
+        const raw = r as unknown as Record<string, { value: unknown }> & {
+          $id: { value: string };
+        };
+        const id = extractId(r as Record<string, unknown>);
+        const record = fromKintoneRecord(raw);
+        return { id, record };
+      });
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
       if (error instanceof SystemError) throw error;
@@ -58,14 +50,12 @@ export class KintoneRecordManager implements RecordManager {
     }
   }
 
-  async addRecords(
-    records: readonly KintoneRecordForParameter[],
-  ): Promise<void> {
+  async addRecords(records: readonly SeedRecord[]): Promise<void> {
     if (records.length === 0) return;
     try {
       await this.client.record.addAllRecords({
         app: this.appId,
-        records: records.map(toSdkRecord),
+        records: records.map(toKintoneRecord),
       });
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
@@ -81,7 +71,7 @@ export class KintoneRecordManager implements RecordManager {
   async updateRecords(
     records: readonly {
       id: string;
-      record: KintoneRecordForParameter;
+      record: SeedRecord;
     }[],
   ): Promise<void> {
     if (records.length === 0) return;
@@ -90,7 +80,7 @@ export class KintoneRecordManager implements RecordManager {
         app: this.appId,
         records: records.map((r) => ({
           id: Number(r.id),
-          record: toSdkRecord(r.record),
+          record: toKintoneRecord(r.record),
         })),
       });
     } catch (error) {
@@ -112,12 +102,12 @@ export class KintoneRecordManager implements RecordManager {
       });
       if (records.length === 0) return { deletedCount: 0 };
 
-      const validated = records.map((r) =>
-        toKintoneRecordForResponse(r as Record<string, unknown>),
-      );
+      const ids = records.map((r) => ({
+        id: Number(extractId(r as Record<string, unknown>)),
+      }));
       await this.client.record.deleteAllRecords({
         app: this.appId,
-        records: validated.map((r) => ({ id: Number(r.$id.value) })),
+        records: ids,
       });
       return { deletedCount: records.length };
     } catch (error) {

@@ -1,19 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { KintoneRecordForResponse } from "../../ports/recordManager";
-import type { UpsertKey } from "../../valueObject";
+import type { SeedRecordWithId } from "../../entity";
+import type { SeedRecord, UpsertKey } from "../../valueObject";
 import { UpsertPlanner } from "../upsertPlanner";
 
-function makeKintoneRecord(
-  id: string,
-  fields: Record<string, unknown>,
-): KintoneRecordForResponse {
-  const record: Record<string, { value: unknown }> = {
-    $id: { value: id },
-  };
-  for (const [key, value] of Object.entries(fields)) {
-    record[key] = { value };
-  }
-  return record as unknown as KintoneRecordForResponse;
+function makeSeedRecord(id: string, record: SeedRecord): SeedRecordWithId {
+  return { id, record };
 }
 
 describe("UpsertPlanner", () => {
@@ -36,7 +27,7 @@ describe("UpsertPlanner", () => {
     const seedRecords = [{ code: "001", name: "テスト1" }];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", name: "テスト1" }),
+      makeSeedRecord("10", { code: "001", name: "テスト1" }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
@@ -50,7 +41,7 @@ describe("UpsertPlanner", () => {
     const seedRecords = [{ code: "001", name: "更新後" }];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", name: "更新前" }),
+      makeSeedRecord("10", { code: "001", name: "更新前" }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
@@ -70,8 +61,8 @@ describe("UpsertPlanner", () => {
     ];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", name: "変更なし" }),
-      makeKintoneRecord("20", { code: "002", name: "更新前" }),
+      makeSeedRecord("10", { code: "001", name: "変更なし" }),
+      makeSeedRecord("20", { code: "002", name: "更新前" }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
@@ -87,7 +78,7 @@ describe("UpsertPlanner", () => {
     const seedRecords = [{ code: "001", tags: ["VIP", "長期"] }];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", tags: ["VIP", "長期"] }),
+      makeSeedRecord("10", { code: "001", tags: ["VIP", "長期"] }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
@@ -100,7 +91,7 @@ describe("UpsertPlanner", () => {
     const seedRecords = [{ code: "001", tags: ["VIP", "短期"] }];
 
     const existingRecords = [
-      makeKintoneRecord("10", { code: "001", tags: ["VIP", "長期"] }),
+      makeSeedRecord("10", { code: "001", tags: ["VIP", "長期"] }),
     ];
 
     const plan = UpsertPlanner.plan(key, seedRecords, existingRecords);
