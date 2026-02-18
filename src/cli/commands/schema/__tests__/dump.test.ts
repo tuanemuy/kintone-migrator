@@ -4,6 +4,7 @@ const mocks = vi.hoisted(() => ({
   getFormFields: vi.fn(),
   getFormLayout: vi.fn(),
   writeFile: vi.fn(),
+  mkdir: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
@@ -55,6 +56,7 @@ vi.mock("@kintone/rest-api-client", () => ({
 
 vi.mock("node:fs/promises", () => ({
   writeFile: mocks.writeFile,
+  mkdir: mocks.mkdir,
 }));
 
 vi.mock("@/cli/output", () => ({
@@ -68,10 +70,12 @@ vi.mock("@/cli/handleError", () => ({
 
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
+import { SystemError } from "@/core/application/error";
 import command from "../dump";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.mkdir.mockResolvedValue(undefined);
 });
 
 describe("dump コマンド", () => {
@@ -89,10 +93,12 @@ describe("dump コマンド", () => {
     expect(mocks.writeFile).toHaveBeenCalledWith(
       "fields.json",
       JSON.stringify(fieldsData, null, 2),
+      "utf-8",
     );
     expect(mocks.writeFile).toHaveBeenCalledWith(
       "layout.json",
       JSON.stringify(layoutData, null, 2),
+      "utf-8",
     );
   });
 
@@ -118,7 +124,7 @@ describe("dump コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(handleCliError).toHaveBeenCalledWith(error);
+    expect(handleCliError).toHaveBeenCalledWith(expect.any(SystemError));
   });
 
   it("ファイル書き込みエラー時にhandleCliErrorで処理される", async () => {
@@ -129,6 +135,6 @@ describe("dump コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(handleCliError).toHaveBeenCalledWith(error);
+    expect(handleCliError).toHaveBeenCalledWith(expect.any(SystemError));
   });
 });
