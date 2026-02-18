@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestSeedContainer,
@@ -20,8 +21,8 @@ records:
 
     expect(container.seedStorage.callLog).toContain("update");
     const stored = await container.seedStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(seedText);
-    expect(stored.exists).toBe(true);
   });
 
   it("空文字列でも保存できる", async () => {
@@ -38,6 +39,7 @@ records:
     await saveSeed({ container, input: { seedText: "new content" } });
 
     const stored = await container.seedStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new content");
   });
 
