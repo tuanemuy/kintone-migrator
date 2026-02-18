@@ -1,4 +1,4 @@
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
@@ -36,7 +36,7 @@ const initArgs = {
   output: {
     type: "string" as const,
     short: "o",
-    description: "Output config file path (default: kintone-migrator.yaml)",
+    description: "Output directory",
   },
   yes: {
     type: "boolean" as const,
@@ -107,7 +107,10 @@ export default define({
       const auth = resolveAuth(apiToken, username, password);
       const guestSpaceId =
         values["guest-space-id"] ?? process.env.KINTONE_GUEST_SPACE_ID;
-      const configPath = values.output ?? DEFAULT_CONFIG_PATH;
+      const output = values.output;
+      const configPath = output
+        ? join(output, DEFAULT_CONFIG_PATH)
+        : DEFAULT_CONFIG_PATH;
       const skipConfirm = values.yes ?? false;
       const dryRun = values["dry-run"] ?? false;
 
@@ -144,6 +147,7 @@ export default define({
         apps,
         domain: kintoneDomain,
         guestSpaceId,
+        baseDir: output,
       });
 
       if (dryRun) {
@@ -153,7 +157,7 @@ export default define({
 
         for (const app of apps) {
           const appName = resolveAppName(app);
-          const paths = buildAppFilePaths(appName);
+          const paths = buildAppFilePaths(appName, output);
           p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
           p.log.message("  Files that would be created:");
           for (const [domain, filePath] of Object.entries(paths)) {
@@ -193,6 +197,7 @@ export default define({
           appId: app.appId,
           guestSpaceId,
           appName,
+          baseDir: output,
         });
 
         const cs = p.spinner();

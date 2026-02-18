@@ -44,12 +44,35 @@ vi.mock("@/core/application/init/fetchSpaceApps");
 vi.mock("@/core/application/init/generateProjectConfig");
 vi.mock("@/core/application/init/captureAllForApp");
 
+vi.mock("@/core/application/container/captureAllCli", () => ({
+  createCliCaptureContainers: vi.fn(() => ({
+    containers: {},
+    paths: {
+      schema: "schemas/app.yaml",
+      seed: "seeds/app.yaml",
+      customize: "customize/app.yaml",
+      view: "view/app.yaml",
+      settings: "settings/app.yaml",
+      notification: "notification/app.yaml",
+      report: "report/app.yaml",
+      action: "action/app.yaml",
+      process: "process/app.yaml",
+      fieldAcl: "field-acl/app.yaml",
+      appAcl: "app-acl/app.yaml",
+      recordAcl: "record-acl/app.yaml",
+      adminNotes: "admin-notes/app.yaml",
+      plugin: "plugin/app.yaml",
+    },
+  })),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
 
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
+import { createCliCaptureContainers } from "@/core/application/container/captureAllCli";
 import { createInitCliContainer } from "@/core/application/container/initCli";
 import { captureAllForApp } from "@/core/application/init/captureAllForApp";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
@@ -202,6 +225,83 @@ describe("init コマンド", () => {
     expect(p.confirm).not.toHaveBeenCalled();
     const container = vi.mocked(createInitCliContainer).mock.results[0].value;
     expect(container.projectConfigStorage.update).toHaveBeenCalled();
+  });
+
+  it("--output でディレクトリを指定した場合に baseDir が渡される", async () => {
+    vi.mocked(createInitCliContainer).mockReturnValue({
+      spaceReader: {} as never,
+      projectConfigStorage: {
+        get: vi.fn().mockResolvedValue({ content: "", exists: false }),
+        update: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+    vi.mocked(fetchSpaceApps).mockResolvedValue([
+      { appId: "1", code: "myapp", name: "My App" },
+    ]);
+    vi.mocked(generateProjectConfig).mockReturnValue("domain: test\n");
+    vi.mocked(captureAllForApp).mockResolvedValue([
+      { domain: "schema", success: true },
+    ]);
+
+    await command.run({
+      values: {
+        "space-id": "1",
+        domain: "test.cybozu.com",
+        "api-token": "token",
+        output: "mydir",
+      },
+    } as never);
+
+    expect(handleCliError).not.toHaveBeenCalled();
+    expect(createInitCliContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configFilePath: "mydir/kintone-migrator.yaml",
+      }),
+    );
+    expect(generateProjectConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ baseDir: "mydir" }),
+    );
+    expect(createCliCaptureContainers).toHaveBeenCalledWith(
+      expect.objectContaining({ baseDir: "mydir" }),
+    );
+  });
+
+  it("--output 未指定の場合に baseDir が undefined になる", async () => {
+    vi.mocked(createInitCliContainer).mockReturnValue({
+      spaceReader: {} as never,
+      projectConfigStorage: {
+        get: vi.fn().mockResolvedValue({ content: "", exists: false }),
+        update: vi.fn().mockResolvedValue(undefined),
+      },
+    });
+    vi.mocked(fetchSpaceApps).mockResolvedValue([
+      { appId: "1", code: "myapp", name: "My App" },
+    ]);
+    vi.mocked(generateProjectConfig).mockReturnValue("domain: test\n");
+    vi.mocked(captureAllForApp).mockResolvedValue([
+      { domain: "schema", success: true },
+    ]);
+
+    await command.run({
+      values: {
+        "space-id": "1",
+        domain: "test.cybozu.com",
+        "api-token": "token",
+      },
+    } as never);
+
+    expect(handleCliError).not.toHaveBeenCalled();
+    expect(createInitCliContainer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        configFilePath: "kintone-migrator.yaml",
+      }),
+    );
+    expect(generateProjectConfig).toHaveBeenCalledWith(
+      expect.objectContaining({ baseDir: undefined }),
+    );
+    expect(createCliCaptureContainers).toHaveBeenCalledWith(
+      expect.objectContaining({ baseDir: undefined }),
+    );
   });
 
   it("fetchSpaceApps のエラーが handleCliError で処理される", async () => {

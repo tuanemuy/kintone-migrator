@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type { AppName } from "./valueObject";
 
 export type AppFilePaths = {
@@ -17,21 +18,26 @@ export type AppFilePaths = {
   readonly plugin: string;
 };
 
-export function buildAppFilePaths(appName: AppName): AppFilePaths {
+export function buildAppFilePaths(
+  appName: AppName,
+  baseDir?: string,
+): AppFilePaths {
+  const prefix = (path: string): string =>
+    baseDir ? join(baseDir, path) : path;
   return {
-    schema: `schemas/${appName}.yaml`,
-    seed: `seeds/${appName}.yaml`,
-    customize: `customize/${appName}.yaml`,
-    view: `view/${appName}.yaml`,
-    settings: `settings/${appName}.yaml`,
-    notification: `notification/${appName}.yaml`,
-    report: `report/${appName}.yaml`,
-    action: `action/${appName}.yaml`,
-    process: `process/${appName}.yaml`,
-    fieldAcl: `field-acl/${appName}.yaml`,
-    appAcl: `app-acl/${appName}.yaml`,
-    recordAcl: `record-acl/${appName}.yaml`,
-    adminNotes: `admin-notes/${appName}.yaml`,
-    plugin: `plugin/${appName}.yaml`,
+    schema: prefix(`schemas/${appName}.yaml`),
+    seed: prefix(`seeds/${appName}.yaml`),
+    customize: prefix(`customize/${appName}.yaml`),
+    view: prefix(`view/${appName}.yaml`),
+    settings: prefix(`settings/${appName}.yaml`),
+    notification: prefix(`notification/${appName}.yaml`),
+    report: prefix(`report/${appName}.yaml`),
+    action: prefix(`action/${appName}.yaml`),
+    process: prefix(`process/${appName}.yaml`),
+    fieldAcl: prefix(`field-acl/${appName}.yaml`),
+    appAcl: prefix(`app-acl/${appName}.yaml`),
+    recordAcl: prefix(`record-acl/${appName}.yaml`),
+    adminNotes: prefix(`admin-notes/${appName}.yaml`),
+    plugin: prefix(`plugin/${appName}.yaml`),
   };
 }

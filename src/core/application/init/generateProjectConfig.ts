@@ -8,6 +8,7 @@ export type GenerateProjectConfigInput = Readonly<{
   apps: readonly SpaceApp[];
   domain: string;
   guestSpaceId?: string;
+  baseDir?: string;
 }>;
 
 function deduplicateAppName(baseName: string, usedNames: Set<string>): AppName {
@@ -31,7 +32,7 @@ export function generateProjectConfig(
     const name = deduplicateAppName(baseName, usedNames);
     apps[name] = {
       appId: app.appId,
-      files: buildAppFilePaths(name),
+      files: buildAppFilePaths(name, input.baseDir),
     };
   }
 
