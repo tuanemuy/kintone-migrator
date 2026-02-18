@@ -20,19 +20,16 @@ import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
 export function deriveFilePrefix(customizeFilePath: string): string {
   const resolved = resolve(customizeFilePath);
-  const dir = dirname(resolved);
-  const parentDir = basename(dir);
   const fileName = basename(resolved, extname(resolved));
 
-  // parentDir is "" when the file is at the filesystem root (e.g. /customize.yaml)
-  if (parentDir === "") {
-    return fileName;
-  }
-
+  // When the file is named "customize" (e.g. myapp/customize.yaml), basePath
+  // already points to the app-specific directory, so no extra prefix is needed.
   if (fileName === "customize") {
-    return parentDir;
+    return "";
   }
 
+  // Otherwise the filename identifies the app (e.g. customize/customer.yaml in
+  // a multi-app layout). Use it as prefix to isolate downloaded files per app.
   return fileName;
 }
 
