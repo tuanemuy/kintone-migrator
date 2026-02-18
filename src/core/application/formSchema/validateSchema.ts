@@ -5,6 +5,7 @@ import {
   SchemaValidator,
   type ValidationResult,
 } from "@/core/domain/formSchema/services/schemaValidator";
+import type { Container } from "../container";
 import { ValidationError, ValidationErrorCode } from "../error";
 import type { ServiceArgs } from "../types";
 
@@ -16,7 +17,7 @@ export type ValidateSchemaOutput = Readonly<{
 
 export async function validateSchema({
   container,
-}: ServiceArgs): Promise<ValidateSchemaOutput> {
+}: ServiceArgs<Container>): Promise<ValidateSchemaOutput> {
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(

@@ -17,6 +17,7 @@ export class KintonePluginConfigurator implements PluginConfigurator {
     try {
       const response = await this.client.app.getPlugins({
         app: this.appId,
+        preview: true,
       });
 
       const plugins = response.plugins.map(

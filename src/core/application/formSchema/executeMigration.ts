@@ -8,13 +8,14 @@ import type {
   FieldCode,
   FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
+import type { Container } from "../container";
 import type { ServiceArgs } from "../types";
 import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
 
 export async function executeMigration({
   container,
-}: ServiceArgs): Promise<void> {
+}: ServiceArgs<Container>): Promise<void> {
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(

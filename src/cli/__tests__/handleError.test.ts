@@ -8,6 +8,8 @@ import {
   NotFoundErrorCode,
   SystemError,
   SystemErrorCode,
+  UnauthenticatedError,
+  UnauthenticatedErrorCode,
   ValidationError,
   ValidationErrorCode,
 } from "@/core/application/error";
@@ -26,9 +28,7 @@ vi.mock("@clack/prompts", () => ({
 // process.exit をモック（never 返却を回避）
 const mockExit = vi
   .spyOn(process, "exit")
-  .mockImplementation((() => {}) as unknown as (
-    code?: string | number | null,
-  ) => never);
+  .mockImplementation((_code?) => undefined as never);
 
 import * as p from "@clack/prompts";
 import { handleCliError } from "../handleError";
@@ -88,7 +88,7 @@ describe("handleCliError", () => {
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  it("NotFoundError（ApplicationError系）を受け取ると [NotFoundError] のフォーマットでログ出力し process.exit(1) する", () => {
+  it("NotFoundError を受け取ると [NotFoundError] のフォーマットとヒントメッセージでログ出力し process.exit(1) する", () => {
     const error = new NotFoundError(
       NotFoundErrorCode.NotFound,
       "リソースが見つかりません",
@@ -99,10 +99,16 @@ describe("handleCliError", () => {
     expect(p.log.error).toHaveBeenCalledWith(
       expect.stringContaining("[NotFoundError]"),
     );
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining(NotFoundErrorCode.NotFound),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: The specified resource was not found"),
+    );
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  it("ConflictError を受け取ると [ConflictError] のフォーマットでログ出力する", () => {
+  it("ConflictError を受け取ると [ConflictError] のフォーマットとヒントメッセージでログ出力する", () => {
     const error = new ConflictError(
       ConflictErrorCode.Conflict,
       "リビジョンが競合しました",
@@ -113,10 +119,30 @@ describe("handleCliError", () => {
     expect(p.log.error).toHaveBeenCalledWith(
       expect.stringContaining("[ConflictError]"),
     );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: A conflict was detected"),
+    );
     expect(mockExit).toHaveBeenCalledWith(1);
   });
 
-  it("ForbiddenError を受け取ると [ForbiddenError] のフォーマットでログ出力する", () => {
+  it("UnauthenticatedError を受け取ると [UnauthenticatedError] のフォーマットとヒントメッセージでログ出力する", () => {
+    const error = new UnauthenticatedError(
+      UnauthenticatedErrorCode.InvalidCredentials,
+      "認証に失敗しました",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining("[UnauthenticatedError]"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: Authentication failed"),
+    );
+    expect(mockExit).toHaveBeenCalledWith(1);
+  });
+
+  it("ForbiddenError を受け取ると [ForbiddenError] のフォーマットとヒントメッセージでログ出力する", () => {
     const error = new ForbiddenError(
       ForbiddenErrorCode.InsufficientPermissions,
       "権限がありません",
@@ -126,6 +152,9 @@ describe("handleCliError", () => {
 
     expect(p.log.error).toHaveBeenCalledWith(
       expect.stringContaining("[ForbiddenError]"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: Insufficient permissions"),
     );
     expect(mockExit).toHaveBeenCalledWith(1);
   });

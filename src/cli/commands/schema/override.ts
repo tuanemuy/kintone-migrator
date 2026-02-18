@@ -37,7 +37,7 @@ async function runSingleOverride(
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
       p.cancel("Force override cancelled.");
-      process.exit(0);
+      return;
     }
   }
 
@@ -66,7 +66,7 @@ async function runSingleReset(
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
       p.cancel("Reset cancelled.");
-      process.exit(0);
+      return;
     }
   }
 
@@ -136,7 +136,7 @@ export default define({
 
               if (p.isCancel(shouldContinue) || !shouldContinue) {
                 p.cancel("Reset cancelled.");
-                process.exit(0);
+                return;
               }
             }
 
@@ -181,7 +181,7 @@ export default define({
 
               if (p.isCancel(shouldContinue) || !shouldContinue) {
                 p.cancel("Force override cancelled.");
-                process.exit(0);
+                return;
               }
             }
 

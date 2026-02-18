@@ -55,7 +55,7 @@ export type CaptureDomain =
 
 export type CaptureResult =
   | Readonly<{ domain: CaptureDomain; success: true }>
-  | Readonly<{ domain: CaptureDomain; success: false; error: unknown }>;
+  | Readonly<{ domain: CaptureDomain; success: false; error: Error }>;
 
 export type CaptureAllForAppInput = Readonly<{
   appName: string;
@@ -245,7 +245,10 @@ export async function captureAllForApp(
       if (outcome.status === "fulfilled") {
         results.push({ domain: batch[j].domain, success: true });
       } else {
-        const error = outcome.reason;
+        const error =
+          outcome.reason instanceof Error
+            ? outcome.reason
+            : new Error(String(outcome.reason));
         results.push({ domain: batch[j].domain, success: false, error });
         if (isFatalError(error) && fatalDomain === undefined) {
           fatalDomain = batch[j].domain;

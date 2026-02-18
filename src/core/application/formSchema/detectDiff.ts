@@ -2,13 +2,14 @@ import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/entity";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
+import type { Container } from "../container";
 import type { ServiceArgs } from "../types";
 import type { DetectDiffOutput, DiffEntryDto, SchemaFieldDto } from "./dto";
 import { parseSchemaText } from "./parseSchema";
 
 function toFieldDto(field: FieldDefinition): DiffEntryDto["before"] {
   return {
-    code: field.code as string,
+    code: field.code,
     type: field.type,
     label: field.label,
     properties: field.properties as Record<string, unknown>,
@@ -17,7 +18,7 @@ function toFieldDto(field: FieldDefinition): DiffEntryDto["before"] {
 
 export async function detectDiff({
   container,
-}: ServiceArgs): Promise<DetectDiffOutput> {
+}: ServiceArgs<Container>): Promise<DetectDiffOutput> {
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(
@@ -42,7 +43,7 @@ export async function detectDiff({
 
   const entries: DiffEntryDto[] = diff.entries.map((entry) => ({
     type: entry.type,
-    fieldCode: entry.fieldCode as string,
+    fieldCode: entry.fieldCode,
     fieldLabel: entry.fieldLabel,
     details: entry.details,
     ...(entry.before ? { before: toFieldDto(entry.before) } : {}),
@@ -52,7 +53,7 @@ export async function detectDiff({
   const schemaFields: SchemaFieldDto[] = Array.from(
     schema.fields.entries(),
   ).map(([code, def]) => ({
-    fieldCode: code as string,
+    fieldCode: code,
     fieldLabel: def.label,
     fieldType: def.type,
   }));

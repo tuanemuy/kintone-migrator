@@ -1,4 +1,4 @@
-import type { NotificationCliContainerConfig } from "@/core/application/container/notification";
+import type { NotificationCliContainerConfig } from "@/core/application/container/notificationCli";
 import type {
   AppEntry,
   ProjectConfig,

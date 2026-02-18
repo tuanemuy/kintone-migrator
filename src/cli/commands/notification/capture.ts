@@ -1,10 +1,8 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import {
-  createNotificationCliContainer,
-  type NotificationCliContainerConfig,
-} from "@/core/application/container/notification";
+import type { NotificationCliContainerConfig } from "@/core/application/container/notificationCli";
+import { createNotificationCliContainer } from "@/core/application/container/notificationCli";
 import { captureNotification } from "@/core/application/notification/captureNotification";
 import { saveNotification } from "@/core/application/notification/saveNotification";
 import { handleCliError } from "../../handleError";

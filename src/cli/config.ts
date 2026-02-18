@@ -133,9 +133,7 @@ export function resolveConfig(cliValues: {
     KINTONE_PASSWORD: cliValues.password ?? process.env.KINTONE_PASSWORD,
     KINTONE_APP_ID: cliValues["app-id"] ?? process.env.KINTONE_APP_ID ?? "",
     KINTONE_GUEST_SPACE_ID:
-      cliValues["guest-space-id"] ??
-      process.env.KINTONE_GUEST_SPACE_ID ??
-      undefined,
+      cliValues["guest-space-id"] ?? process.env.KINTONE_GUEST_SPACE_ID,
     SCHEMA_FILE_PATH: cliValues["schema-file"] ?? process.env.SCHEMA_FILE_PATH,
   });
 

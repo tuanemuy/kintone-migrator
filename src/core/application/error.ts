@@ -1,4 +1,29 @@
+import { isBusinessRuleError } from "@/core/domain/error";
 import { AnyError } from "@/lib/error";
+
+/**
+ * Wraps a function that may throw a {@link BusinessRuleError} and converts it
+ * to a {@link ValidationError}. Non-BusinessRuleError exceptions are re-thrown
+ * as-is.
+ *
+ * This is used by all `parseXxx` / `parseConfigText` functions in the
+ * application layer to map domain-layer parse errors into application-layer
+ * validation errors.
+ */
+export function wrapBusinessRuleError<T>(fn: () => T): T {
+  try {
+    return fn();
+  } catch (error) {
+    if (isBusinessRuleError(error)) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        error.message,
+        error,
+      );
+    }
+    throw error;
+  }
+}
 
 export class ApplicationError extends AnyError {
   override readonly name: string = "ApplicationError";
@@ -37,7 +62,6 @@ export function isNotFoundError(error: unknown): error is NotFoundError {
 
 export const ConflictErrorCode = {
   Conflict: "CONFLICT",
-  // ${Entity}Conflict: "${ENTITY}_CONFLICT",
 } as const;
 export type ConflictErrorCode =
   (typeof ConflictErrorCode)[keyof typeof ConflictErrorCode];
@@ -60,11 +84,6 @@ export function isConflictError(error: unknown): error is ConflictError {
 
 export const UnauthenticatedErrorCode = {
   AuthenticationRequired: "AUTHENTICATION_REQUIRED",
-  TokenExpired: "TOKEN_EXPIRED",
-  InvalidToken: "INVALID_TOKEN",
-  UserNotFound: "USER_NOT_FOUND",
-  InvalidAuthType: "INVALID_AUTH_TYPE",
-  ProviderMismatch: "PROVIDER_MISMATCH",
   InvalidCredentials: "INVALID_CREDENTIALS",
 } as const;
 export type UnauthenticatedErrorCode =

@@ -138,9 +138,11 @@ describe("Application Error 型ガード", () => {
         "CONFLICT",
       );
       expect(
-        new UnauthenticatedError(UnauthenticatedErrorCode.TokenExpired, "test")
-          .code,
-      ).toBe("TOKEN_EXPIRED");
+        new UnauthenticatedError(
+          UnauthenticatedErrorCode.AuthenticationRequired,
+          "test",
+        ).code,
+      ).toBe("AUTHENTICATION_REQUIRED");
       expect(
         new ForbiddenError(ForbiddenErrorCode.InsufficientPermissions, "test")
           .code,

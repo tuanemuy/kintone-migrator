@@ -493,17 +493,56 @@ function parseLayoutRow(raw: Record<string, unknown>): LayoutRow {
   return { type: "ROW", fields };
 }
 
-function parseLayoutItem(
-  raw: Record<string, unknown>,
-  fieldMap: Map<FieldCode, FieldDefinition>,
-): LayoutItem {
+type ParseLayoutItemResult = Readonly<{
+  item: LayoutItem;
+  fields: ReadonlyMap<FieldCode, FieldDefinition>;
+}>;
+
+function collectFieldsFromElements(
+  elements: readonly LayoutElement[],
+): ReadonlyMap<FieldCode, FieldDefinition> {
+  const fields = new Map<FieldCode, FieldDefinition>();
+  for (const element of elements) {
+    if ("field" in element) {
+      checkDuplicateFieldCode(fields, element.field.code);
+      fields.set(element.field.code, element.field);
+    }
+  }
+  return fields;
+}
+
+function checkDuplicateFieldCode(
+  fieldMap: ReadonlyMap<FieldCode, FieldDefinition>,
+  code: FieldCode,
+): void {
+  if (fieldMap.has(code)) {
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.DuplicateFieldCode,
+      `Duplicate field code: "${code}"`,
+    );
+  }
+}
+
+function mergeFieldMaps(
+  target: Map<FieldCode, FieldDefinition>,
+  source: ReadonlyMap<FieldCode, FieldDefinition>,
+): Map<FieldCode, FieldDefinition> {
+  const merged = new Map(target);
+  for (const [code, def] of source) {
+    checkDuplicateFieldCode(merged, code);
+    merged.set(code, def);
+  }
+  return merged;
+}
+
+function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
   const type = String(raw.type);
 
   switch (type) {
     case "ROW": {
       const row = parseLayoutRow(raw);
-      collectFieldsFromElements(row.fields, fieldMap);
-      return row;
+      const fields = collectFieldsFromElements(row.fields);
+      return { item: row, fields };
     }
     case "GROUP": {
       const code = FieldCode.create(String(raw.code));
@@ -513,11 +552,15 @@ function parseLayoutItem(
       const openGroup =
         raw.openGroup !== undefined ? (raw.openGroup as boolean) : undefined;
       const rawLayout = (raw.layout ?? []) as Record<string, unknown>[];
-      const layout = rawLayout.map((r) => {
+
+      let groupFields = new Map<FieldCode, FieldDefinition>();
+      const layout: LayoutRow[] = [];
+      for (const r of rawLayout) {
         const row = parseLayoutRow(r);
-        collectFieldsFromElements(row.fields, fieldMap);
-        return row;
-      });
+        const rowFields = collectFieldsFromElements(row.fields);
+        groupFields = mergeFieldMaps(groupFields, rowFields);
+        layout.push(row);
+      }
 
       const groupDef: GroupFieldDefinition = {
         code,
@@ -528,15 +571,19 @@ function parseLayoutItem(
           ...(openGroup !== undefined ? { openGroup } : {}),
         },
       };
-      addFieldToMap(fieldMap, code, groupDef);
+      checkDuplicateFieldCode(groupFields, code);
+      groupFields.set(code, groupDef);
 
       return {
-        type: "GROUP",
-        code,
-        label,
-        ...(noLabel !== undefined ? { noLabel } : {}),
-        ...(openGroup !== undefined ? { openGroup } : {}),
-        layout,
+        item: {
+          type: "GROUP",
+          code,
+          label,
+          ...(noLabel !== undefined ? { noLabel } : {}),
+          ...(openGroup !== undefined ? { openGroup } : {}),
+          layout,
+        },
+        fields: groupFields,
       };
     }
     case "SUBTABLE": {
@@ -547,13 +594,7 @@ function parseLayoutItem(
       const rawFields = (raw.fields ?? []) as RawField[];
       const elements = rawFields.map(parseLayoutElement);
 
-      const subFields = new Map<FieldCode, FieldDefinition>();
-      collectFieldsFromElements(elements, subFields);
-
-      // サブテーブル内フィールドをグローバルmapにも登録（スコープ間の重複チェック）
-      for (const [subCode, subDef] of subFields) {
-        addFieldToMap(fieldMap, subCode, subDef);
-      }
+      const subFields = collectFieldsFromElements(elements);
 
       const subtableDef: SubtableFieldDefinition = {
         code,
@@ -562,14 +603,21 @@ function parseLayoutItem(
         type: "SUBTABLE",
         properties: { fields: subFields },
       };
-      addFieldToMap(fieldMap, code, subtableDef);
+
+      // Include subtable inner fields and the subtable definition itself
+      const allFields = new Map(subFields);
+      checkDuplicateFieldCode(allFields, code);
+      allFields.set(code, subtableDef);
 
       return {
-        type: "SUBTABLE",
-        code,
-        label,
-        ...(noLabel !== undefined ? { noLabel } : {}),
-        fields: elements,
+        item: {
+          type: "SUBTABLE",
+          code,
+          label,
+          ...(noLabel !== undefined ? { noLabel } : {}),
+          fields: elements,
+        },
+        fields: allFields,
       };
     }
     default:
@@ -577,31 +625,6 @@ function parseLayoutItem(
         FormSchemaErrorCode.InvalidLayoutStructure,
         `Unknown layout item type: "${type}"`,
       );
-  }
-}
-
-function addFieldToMap(
-  fieldMap: Map<FieldCode, FieldDefinition>,
-  code: FieldCode,
-  definition: FieldDefinition,
-): void {
-  if (fieldMap.has(code)) {
-    throw new BusinessRuleError(
-      FormSchemaErrorCode.DuplicateFieldCode,
-      `Duplicate field code: "${code}"`,
-    );
-  }
-  fieldMap.set(code, definition);
-}
-
-function collectFieldsFromElements(
-  elements: readonly LayoutElement[],
-  fieldMap: Map<FieldCode, FieldDefinition>,
-): void {
-  for (const element of elements) {
-    if ("field" in element) {
-      addFieldToMap(fieldMap, element.field.code, element.field);
-    }
   }
 }
 
@@ -619,7 +642,7 @@ export const SchemaParser = {
       parsed = parseYaml(rawText);
     } catch {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaJson,
+        FormSchemaErrorCode.InvalidSchemaFormat,
         "Schema text is not valid YAML/JSON",
       );
     }
@@ -636,7 +659,7 @@ export const SchemaParser = {
     if ("fields" in obj && !("layout" in obj)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.InvalidSchemaStructure,
-        '"fields" キーが検出されました。スキーマフォーマットが変更されています。「現在の設定を取り込む」で新しいフォーマットのスキーマを生成してください。',
+        '"fields" key detected. Schema format has changed. Please use "capture" to generate a new format schema.',
       );
     }
 
@@ -648,11 +671,13 @@ export const SchemaParser = {
     }
 
     const rawLayout = obj.layout as Record<string, unknown>[];
-    const fieldMap = new Map<FieldCode, FieldDefinition>();
+    let fieldMap = new Map<FieldCode, FieldDefinition>();
     const layout: LayoutItem[] = [];
 
     for (const rawItem of rawLayout) {
-      layout.push(parseLayoutItem(rawItem, fieldMap));
+      const result = parseLayoutItem(rawItem);
+      layout.push(result.item);
+      fieldMap = mergeFieldMaps(fieldMap, result.fields);
     }
 
     return { fields: fieldMap, layout };

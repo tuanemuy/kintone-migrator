@@ -79,6 +79,11 @@ function resolveFilePathFields(
   };
 }
 
+/**
+ * Parses an already-deserialized config object into a typed ProjectConfig.
+ * YAML parsing is handled by the application layer (loadProjectConfig) before
+ * calling this function, so no try-catch for YAML syntax errors is needed here.
+ */
 function parseProjectConfig(raw: unknown): ProjectConfig {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(

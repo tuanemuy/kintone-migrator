@@ -1,6 +1,7 @@
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
 import type { FieldPermissionStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ServiceArgs } from "../types";
 
 export type FieldPermissionContainer = {
   fieldPermissionConfigurator: FieldPermissionConfigurator;
@@ -8,6 +9,7 @@ export type FieldPermissionContainer = {
   appDeployer: AppDeployer;
 };
 
-export type FieldPermissionServiceArgs<T = undefined> = T extends undefined
-  ? { container: FieldPermissionContainer }
-  : { container: FieldPermissionContainer; input: T };
+export type FieldPermissionServiceArgs<T = undefined> = ServiceArgs<
+  FieldPermissionContainer,
+  T
+>;

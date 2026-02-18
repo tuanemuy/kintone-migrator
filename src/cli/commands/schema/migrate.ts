@@ -43,7 +43,7 @@ async function runSingleMigrate(
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
       p.cancel("Migration cancelled.");
-      process.exit(0);
+      return;
     }
   }
 
@@ -118,7 +118,7 @@ export default define({
 
             if (p.isCancel(shouldContinue) || !shouldContinue) {
               p.cancel("Migration cancelled.");
-              process.exit(0);
+              return;
             }
           }
 

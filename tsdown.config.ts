@@ -9,5 +9,5 @@ export default defineConfig({
   clean: true,
   dts: false,
   shims: true,
-  sourcemap: false,
+  sourcemap: true,
 });

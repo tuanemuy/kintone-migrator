@@ -201,14 +201,21 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
     );
   }
 
-  const result: Record<string, unknown> = {
-    every: obj.every as PeriodicReportEvery,
-  };
+  const every = obj.every as PeriodicReportEvery;
 
+  let month: number | undefined;
   if (obj.month !== undefined && obj.month !== null) {
-    result.month = Number(obj.month);
+    const parsed = Number(obj.month);
+    if (Number.isNaN(parsed)) {
+      throw new BusinessRuleError(
+        ReportErrorCode.RtInvalidConfigStructure,
+        `periodicReport.period has invalid month: ${String(obj.month)}. Must be a number`,
+      );
+    }
+    month = parsed;
   }
 
+  let pattern: PeriodicReportPattern | undefined;
   if (obj.pattern !== undefined && obj.pattern !== null) {
     if (
       typeof obj.pattern !== "string" ||
@@ -219,21 +226,31 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
         `periodicReport.period has invalid pattern: ${String(obj.pattern)}. Must be JAN_APR_JUL_OCT, FEB_MAY_AUG_NOV, or MAR_JUN_SEP_DEC`,
       );
     }
-    result.pattern = obj.pattern as PeriodicReportPattern;
+    pattern = obj.pattern as PeriodicReportPattern;
   }
 
+  let dayOfMonth: number | string | undefined;
   if (obj.dayOfMonth !== undefined && obj.dayOfMonth !== null) {
     if (obj.dayOfMonth === "END_OF_MONTH") {
-      result.dayOfMonth = "END_OF_MONTH";
+      dayOfMonth = "END_OF_MONTH";
     } else {
-      result.dayOfMonth = Number(obj.dayOfMonth);
+      const parsed = Number(obj.dayOfMonth);
+      if (Number.isNaN(parsed)) {
+        throw new BusinessRuleError(
+          ReportErrorCode.RtInvalidConfigStructure,
+          `periodicReport.period has invalid dayOfMonth: ${String(obj.dayOfMonth)}. Must be a number or "END_OF_MONTH"`,
+        );
+      }
+      dayOfMonth = parsed;
     }
   }
 
+  let time: string | undefined;
   if (obj.time !== undefined && obj.time !== null) {
-    result.time = String(obj.time);
+    time = String(obj.time);
   }
 
+  let dayOfWeek: string | undefined;
   if (obj.dayOfWeek !== undefined && obj.dayOfWeek !== null) {
     const dayStr = String(obj.dayOfWeek);
     if (!VALID_DAY_OF_WEEK.has(dayStr)) {
@@ -242,14 +259,32 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
         `periodicReport.period has invalid dayOfWeek: ${dayStr}. Must be SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, or SATURDAY`,
       );
     }
-    result.dayOfWeek = dayStr;
+    dayOfWeek = dayStr;
   }
 
+  let minute: number | undefined;
   if (obj.minute !== undefined && obj.minute !== null) {
-    result.minute = Number(obj.minute);
+    const parsed = Number(obj.minute);
+    if (Number.isNaN(parsed)) {
+      throw new BusinessRuleError(
+        ReportErrorCode.RtInvalidConfigStructure,
+        `periodicReport.period has invalid minute: ${String(obj.minute)}. Must be a number`,
+      );
+    }
+    minute = parsed;
   }
 
-  return result as PeriodicReportPeriod;
+  const result: PeriodicReportPeriod = {
+    every,
+    ...(month !== undefined ? { month } : {}),
+    ...(pattern !== undefined ? { pattern } : {}),
+    ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
+    ...(time !== undefined ? { time } : {}),
+    ...(dayOfWeek !== undefined ? { dayOfWeek } : {}),
+    ...(minute !== undefined ? { minute } : {}),
+  };
+
+  return result;
 }
 
 function parsePeriodicReport(raw: unknown): PeriodicReport {

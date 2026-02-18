@@ -25,11 +25,6 @@ const seedApplyArgs = {
     description:
       "Delete all existing records before applying seed data (clean apply)",
   },
-  "key-field": {
-    type: "string" as const,
-    short: "k",
-    description: "Key field code for upsert",
-  },
   "seed-file": {
     type: "string" as const,
     short: "s",
@@ -56,10 +51,15 @@ function printUpsertResult(result: {
   p.log.info(`Records: ${parts} (${result.total} total)`);
 }
 
-async function confirmClean(skipConfirm: boolean): Promise<void> {
-  p.log.warn(
-    `${pc.bold(pc.red("WARNING:"))} This will delete ALL existing records before applying seed data.`,
-  );
+async function confirmClean(
+  skipConfirm: boolean,
+  showWarning = true,
+): Promise<boolean> {
+  if (showWarning) {
+    p.log.warn(
+      `${pc.bold(pc.red("WARNING:"))} This will delete ALL existing records before applying seed data.`,
+    );
+  }
 
   if (!skipConfirm) {
     const shouldContinue = await p.confirm({
@@ -68,18 +68,22 @@ async function confirmClean(skipConfirm: boolean): Promise<void> {
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
       p.cancel("Clean seed cancelled.");
-      process.exit(0);
+      return false;
     }
   }
+
+  return true;
 }
 
 async function runUpsert(
   config: SeedCliContainerConfig,
   clean: boolean,
   skipConfirm: boolean,
+  showWarning = true,
 ): Promise<void> {
   if (clean) {
-    await confirmClean(skipConfirm);
+    const confirmed = await confirmClean(skipConfirm, showWarning);
+    if (!confirmed) return;
   }
 
   const container = createSeedCliContainer(config);
@@ -115,7 +119,8 @@ export default define({
         },
         multiApp: async (plan, projectConfig) => {
           if (clean) {
-            await confirmClean(skipConfirm);
+            const confirmed = await confirmClean(skipConfirm);
+            if (!confirmed) return;
           }
 
           await runMultiAppWithFailCheck(
@@ -123,7 +128,7 @@ export default define({
             async (app) => {
               const config = resolveSeedAppConfig(app, projectConfig, values);
               printAppHeader(app.name, app.appId);
-              await runUpsert(config, clean, true);
+              await runUpsert(config, clean, true, false);
             },
             "All seed applications completed successfully.",
           );

@@ -38,7 +38,7 @@ vi.mock("@/cli/output", () => ({
   printAppHeader: vi.fn(),
 }));
 
-vi.mock("@/core/application/container/notification", () => ({
+vi.mock("@/core/application/container/notificationCli", () => ({
   createNotificationCliContainer: vi.fn(() => ({})),
 }));
 

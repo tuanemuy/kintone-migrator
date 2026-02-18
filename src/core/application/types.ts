@@ -1,5 +1,3 @@
-import type { Container } from "./container";
-
-export type ServiceArgs<T = undefined> = T extends undefined
-  ? { container: Container }
-  : { container: Container; input: T };
+export type ServiceArgs<C, T = undefined> = T extends undefined
+  ? { container: C }
+  : { container: C; input: T };

@@ -1,7 +1,11 @@
 import * as p from "@clack/prompts";
 import {
-  type ApplicationError,
+  ApplicationError,
+  isConflictError,
+  isForbiddenError,
+  isNotFoundError,
   isSystemError,
+  isUnauthenticatedError,
   isValidationError,
 } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
@@ -14,13 +18,49 @@ export function logError(error: unknown): void {
   }
 
   if (isValidationError(error)) {
-    p.log.error(`[ValidationError] ${error.message}`);
+    p.log.error(`[ValidationError] ${error.code}: ${error.message}`);
     logErrorDetails(error);
     return;
   }
 
   if (isSystemError(error)) {
     p.log.error(`[SystemError] ${error.code}: ${error.message}`);
+    logErrorDetails(error);
+    return;
+  }
+
+  if (isNotFoundError(error)) {
+    p.log.error(`[NotFoundError] ${error.code}: ${error.message}`);
+    p.log.warn(
+      "Hint: The specified resource was not found. Please verify the app ID or resource identifier.",
+    );
+    logErrorDetails(error);
+    return;
+  }
+
+  if (isConflictError(error)) {
+    p.log.error(`[ConflictError] ${error.code}: ${error.message}`);
+    p.log.warn(
+      "Hint: A conflict was detected. Another change may have been made. Please retry the operation.",
+    );
+    logErrorDetails(error);
+    return;
+  }
+
+  if (isUnauthenticatedError(error)) {
+    p.log.error(`[UnauthenticatedError] ${error.code}: ${error.message}`);
+    p.log.warn(
+      "Hint: Authentication failed. Please verify your API token or username/password credentials.",
+    );
+    logErrorDetails(error);
+    return;
+  }
+
+  if (isForbiddenError(error)) {
+    p.log.error(`[ForbiddenError] ${error.code}: ${error.message}`);
+    p.log.warn(
+      "Hint: Insufficient permissions. Please check that your credentials have the required access rights.",
+    );
     logErrorDetails(error);
     return;
   }
@@ -46,7 +86,7 @@ export function handleCliError(error: unknown): never {
   process.exit(1);
 }
 
-function formatErrorForDisplay(error: unknown): string {
+export function formatErrorForDisplay(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
@@ -113,9 +153,5 @@ function logNestedErrorProperties(target: unknown): void {
 }
 
 function isApplicationError(error: unknown): error is ApplicationError {
-  return (
-    error instanceof Error &&
-    "code" in error &&
-    error.name !== "BusinessRuleError"
-  );
+  return error instanceof ApplicationError;
 }

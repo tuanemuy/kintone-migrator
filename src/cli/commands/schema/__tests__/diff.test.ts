@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { FieldCode } from "@/core/domain/formSchema/valueObject";
 
 vi.mock("@clack/prompts", () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
@@ -92,11 +93,11 @@ describe("diff コマンド", () => {
       entries: [
         {
           type: "added",
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           details: "新規追加",
           after: {
-            code: "name",
+            code: "name" as FieldCode,
             type: "SINGLE_LINE_TEXT",
             label: "名前",
             properties: {},
@@ -105,7 +106,7 @@ describe("diff コマンド", () => {
       ],
       schemaFields: [
         {
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           fieldType: "SINGLE_LINE_TEXT",
         },

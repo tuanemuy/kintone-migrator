@@ -1,7 +1,7 @@
 export const FormSchemaErrorCode = {
   EmptyFieldCode: "EMPTY_FIELD_CODE",
   EmptySchemaText: "EMPTY_SCHEMA_TEXT",
-  InvalidSchemaJson: "INVALID_SCHEMA_JSON",
+  InvalidSchemaFormat: "INVALID_SCHEMA_FORMAT",
   InvalidSchemaStructure: "INVALID_SCHEMA_STRUCTURE",
   DuplicateFieldCode: "DUPLICATE_FIELD_CODE",
   InvalidFieldType: "INVALID_FIELD_TYPE",

@@ -918,7 +918,7 @@ reports:
         minute: 30
 `;
       const config = ReportConfigParser.parse(yaml);
-      const report = config.reports["時間レポート"];
+      const report = config.reports.時間レポート;
       expect(report.periodicReport?.period.minute).toBe(30);
     });
 
@@ -1089,7 +1089,7 @@ reports:
     sorts: []
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].filterCond).toBe("");
+      expect(config.reports.テスト.filterCond).toBe("");
     });
 
     it("should default groups, aggregations, sorts to empty arrays when not arrays", () => {
@@ -1101,9 +1101,9 @@ reports:
     filterCond: ""
 `;
       const config = ReportConfigParser.parse(yaml);
-      expect(config.reports["テスト"].groups).toEqual([]);
-      expect(config.reports["テスト"].aggregations).toEqual([]);
-      expect(config.reports["テスト"].sorts).toEqual([]);
+      expect(config.reports.テスト.groups).toEqual([]);
+      expect(config.reports.テスト.aggregations).toEqual([]);
+      expect(config.reports.テスト.sorts).toEqual([]);
     });
 
     it("should parse all periodic every values", () => {
@@ -1125,9 +1125,7 @@ reports:
         every: ${every}
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].periodicReport?.period.every).toBe(
-          every,
-        );
+        expect(config.reports.テスト.periodicReport?.period.every).toBe(every);
       }
     });
 
@@ -1146,7 +1144,7 @@ reports:
     sorts: []
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports["テスト"].aggregations[0].type).toBe(aggType);
+        expect(config.reports.テスト.aggregations[0].type).toBe(aggType);
       }
     });
   });

@@ -15,7 +15,7 @@ import {
   resolveCustomizeConfig,
 } from "../../customizeConfig";
 import { handleCliError } from "../../handleError";
-import { printAppHeader } from "../../output";
+import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 
 async function applyCustomizationForApp(
@@ -35,31 +35,6 @@ async function applyCustomizationForApp(
   return container;
 }
 
-async function confirmAndDeploy(
-  containers: readonly CustomizationContainer[],
-  skipConfirm: boolean,
-): Promise<void> {
-  if (!skipConfirm) {
-    const shouldDeploy = await p.confirm({
-      message: "Deploy to production?",
-    });
-
-    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn("Applied to preview, but not deployed to production.");
-      return;
-    }
-  }
-
-  const ds = p.spinner();
-  ds.start("Deploying to production...");
-  for (const container of containers) {
-    await container.appDeployer.deploy();
-  }
-  ds.stop("Deployed to production.");
-
-  p.log.success("Customization applied and deployed successfully.");
-}
-
 export default define({
   name: "apply",
   description: "Apply JS/CSS customization to kintone app",
@@ -73,12 +48,20 @@ export default define({
         singleLegacy: async () => {
           const config = resolveCustomizeConfig(values);
           const container = await applyCustomizationForApp(config);
-          await confirmAndDeploy([container], skipConfirm);
+          await confirmAndDeploy(
+            [container],
+            skipConfirm,
+            "Customization applied and deployed successfully.",
+          );
         },
         singleApp: async (app, projectConfig) => {
           const config = resolveCustomizeAppConfig(app, projectConfig, values);
           const container = await applyCustomizationForApp(config);
-          await confirmAndDeploy([container], skipConfirm);
+          await confirmAndDeploy(
+            [container],
+            skipConfirm,
+            "Customization applied and deployed successfully.",
+          );
         },
         multiApp: async (plan, projectConfig) => {
           const containers: CustomizationContainer[] = [];
@@ -96,7 +79,11 @@ export default define({
             },
             undefined,
           );
-          await confirmAndDeploy(containers, skipConfirm);
+          await confirmAndDeploy(
+            containers,
+            skipConfirm,
+            "Customization applied and deployed successfully.",
+          );
         },
       });
     } catch (error) {

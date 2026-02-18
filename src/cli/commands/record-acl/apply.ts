@@ -6,7 +6,7 @@ import { createRecordPermissionCliContainer } from "@/core/application/container
 import { applyRecordPermission } from "@/core/application/recordPermission/applyRecordPermission";
 import { confirmArgs } from "../../config";
 import { handleCliError } from "../../handleError";
-import { printAppHeader } from "../../output";
+import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 import {
   type RecordAclCliValues,
@@ -28,31 +28,6 @@ async function runRecordAcl(
   p.log.success("Record access permissions applied successfully.");
 
   return container;
-}
-
-async function confirmAndDeploy(
-  containers: readonly RecordPermissionContainer[],
-  skipConfirm: boolean,
-): Promise<void> {
-  if (!skipConfirm) {
-    const shouldDeploy = await p.confirm({
-      message: "Deploy to production?",
-    });
-
-    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn("Applied to preview, but not deployed to production.");
-      return;
-    }
-  }
-
-  const ds = p.spinner();
-  ds.start("Deploying to production...");
-  for (const container of containers) {
-    await container.appDeployer.deploy();
-  }
-  ds.stop("Deployed to production.");
-
-  p.log.success("Deployed to production.");
 }
 
 export default define({

@@ -1,3 +1,4 @@
+import type { Container } from "../container";
 import type { ServiceArgs } from "../types";
 
 export type SaveSchemaInput = {
@@ -7,6 +8,6 @@ export type SaveSchemaInput = {
 export async function saveSchema({
   container,
   input,
-}: ServiceArgs<SaveSchemaInput>): Promise<void> {
+}: ServiceArgs<Container, SaveSchemaInput>): Promise<void> {
   await container.schemaStorage.update(input.schemaText);
 }

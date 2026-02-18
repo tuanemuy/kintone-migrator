@@ -45,12 +45,37 @@ export class KintoneAppDeployer implements AppDeployer {
   }
 
   private async waitForDeployment(): Promise<void> {
+    let lastPollError: unknown;
+    let consecutivePollFailures = 0;
+    const maxConsecutivePollFailures = 5;
+
     for (let i = 0; i < this.maxRetries; i++) {
       await this.sleep(this.pollIntervalMs);
 
-      const { apps } = await this.client.app.getDeployStatus({
-        apps: [this.appId],
-      });
+      let apps: { status: string }[];
+      try {
+        const response = await this.client.app.getDeployStatus({
+          apps: [this.appId],
+        });
+        apps = response.apps;
+        consecutivePollFailures = 0;
+      } catch (error) {
+        // Rethrow known application/domain errors immediately
+        if (isBusinessRuleError(error)) throw error;
+        if (error instanceof SystemError) throw error;
+        // Transient network errors during polling should retry, but give up
+        // after too many consecutive failures to avoid masking permanent errors.
+        lastPollError = error;
+        consecutivePollFailures++;
+        if (consecutivePollFailures >= maxConsecutivePollFailures) {
+          throw new SystemError(
+            SystemErrorCode.ExternalApiError,
+            `Deploy status polling failed ${maxConsecutivePollFailures} consecutive times`,
+            lastPollError,
+          );
+        }
+        continue;
+      }
 
       const status = apps[0]?.status as DeployStatus | undefined;
 
@@ -85,6 +110,7 @@ export class KintoneAppDeployer implements AppDeployer {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       "App deployment timed out",
+      lastPollError,
     );
   }
 

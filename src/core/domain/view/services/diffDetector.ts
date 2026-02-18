@@ -1,21 +1,5 @@
 import type { ViewConfig } from "../entity";
-
-export type ViewDiffEntry = {
-  readonly type: "added" | "modified" | "deleted";
-  readonly viewName: string;
-  readonly details: string;
-};
-
-export type ViewDiff = {
-  readonly entries: readonly ViewDiffEntry[];
-  readonly summary: {
-    readonly added: number;
-    readonly modified: number;
-    readonly deleted: number;
-    readonly total: number;
-  };
-  readonly isEmpty: boolean;
-};
+import type { ViewDiff, ViewDiffEntry } from "../valueObject";
 
 function isArrayEqual(a: readonly string[], b: readonly string[]): boolean {
   if (a.length !== b.length) return false;

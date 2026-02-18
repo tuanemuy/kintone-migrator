@@ -38,7 +38,8 @@ vi.mock("@/cli/projectConfig", () => ({
   runMultiAppWithFailCheck: vi.fn(),
 }));
 
-vi.mock("@/cli/output", () => ({
+vi.mock("@/cli/output", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/cli/output")>()),
   printAppHeader: vi.fn(),
 }));
 
