@@ -67,19 +67,8 @@ import { forceOverrideForm } from "@/core/application/formSchema/forceOverrideFo
 import { resetForm } from "@/core/application/formSchema/resetForm";
 import command from "../override";
 
-// process.exit をモック（throwして後続の実行を止める）
-const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-  _code?: number,
-) => {
-  throw new Error("process.exit");
-}) as never);
-
 beforeEach(() => {
   vi.clearAllMocks();
-  // process.exit mock を再設定
-  exitSpy.mockImplementation(((_code?: number) => {
-    throw new Error("process.exit");
-  }) as never);
   // デフォルトのモック実装を再設定
   vi.mocked(p.isCancel).mockReturnValue(false);
 });
@@ -125,7 +114,6 @@ describe("override コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(p.cancel).toHaveBeenCalledWith(expect.stringContaining("cancelled"));
-    expect(exitSpy).toHaveBeenCalledWith(0);
     expect(forceOverrideForm).not.toHaveBeenCalled();
   });
 
@@ -136,7 +124,6 @@ describe("override コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(p.cancel).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
     expect(forceOverrideForm).not.toHaveBeenCalled();
   });
 
@@ -183,7 +170,6 @@ describe("override --reset コマンド", () => {
     await command.run({ values: { reset: true } } as never);
 
     expect(p.cancel).toHaveBeenCalledWith(expect.stringContaining("cancelled"));
-    expect(exitSpy).toHaveBeenCalledWith(0);
     expect(resetForm).not.toHaveBeenCalled();
   });
 

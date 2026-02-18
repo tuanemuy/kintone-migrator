@@ -36,7 +36,8 @@ vi.mock("@/core/application/container/cli", () => ({
 
 vi.mock("@/core/application/customization/applyCustomization");
 
-vi.mock("@/cli/output", () => ({
+vi.mock("@/cli/output", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/cli/output")>()),
   printDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),

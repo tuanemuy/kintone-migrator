@@ -38,7 +38,8 @@ vi.mock("@/cli/projectConfig", () => ({
   runMultiAppWithFailCheck: vi.fn(),
 }));
 
-vi.mock("@/cli/output", () => ({
+vi.mock("@/cli/output", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/cli/output")>()),
   printAppHeader: vi.fn(),
 }));
 
@@ -46,7 +47,7 @@ vi.mock("@/cli/config", () => ({
   confirmArgs: {},
 }));
 
-vi.mock("@/core/application/container/notification", () => ({
+vi.mock("@/core/application/container/notificationCli", () => ({
   createNotificationCliContainer: vi.fn(() => ({
     appDeployer: { deploy: mockDeploy },
   })),

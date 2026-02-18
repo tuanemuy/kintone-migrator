@@ -14,7 +14,7 @@ import { generateProjectConfig } from "@/core/application/init/generateProjectCo
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { resolveAppName } from "@/core/domain/space/entity";
 import { kintoneArgs, resolveAuth, validateKintoneDomain } from "../config";
-import { handleCliError } from "../handleError";
+import { formatErrorForDisplay, handleCliError } from "../handleError";
 import { DEFAULT_CONFIG_PATH } from "../projectConfig";
 
 const initArgs = {
@@ -58,18 +58,13 @@ type InitCliValues = {
   "dry-run"?: boolean;
 };
 
-function formatError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
-
 function printCaptureResults(results: readonly CaptureResult[]): void {
   for (const result of results) {
     if (result.success) {
       p.log.success(`  ${pc.green("\u2713")} ${result.domain}`);
     } else {
       p.log.error(
-        `  ${pc.red("\u2717")} ${result.domain}: ${pc.dim(formatError(result.error))}`,
+        `  ${pc.red("\u2717")} ${result.domain}: ${pc.dim(formatErrorForDisplay(result.error))}`,
       );
     }
   }

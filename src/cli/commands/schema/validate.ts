@@ -1,10 +1,7 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import { EmptyAppDeployer } from "@/core/adapters/empty/appDeployer";
-import { EmptyFormConfigurator } from "@/core/adapters/empty/formConfigurator";
-import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
-import type { Container } from "@/core/application/container";
+import { createValidateCliContainer } from "@/core/application/container/validateCli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import {
   type ValidateSchemaOutput,
@@ -87,22 +84,10 @@ function printValidationResult(
   return isValid;
 }
 
-function createValidateContainer(schemaFilePath: string): Container {
-  return {
-    formConfigurator: new EmptyFormConfigurator(),
-    schemaStorage: new LocalFileSchemaStorage(schemaFilePath),
-    appDeployer: new EmptyAppDeployer(),
-  };
-}
-
-async function runValidate(schemaFilePath: string): Promise<void> {
-  const container = createValidateContainer(schemaFilePath);
+async function runValidate(schemaFilePath: string): Promise<boolean> {
+  const container = createValidateCliContainer({ schemaFilePath });
   const result = await validateSchema({ container });
-  const valid = printValidationResult(result, schemaFilePath);
-  if (!valid) {
-    p.outro("Validation failed.");
-    process.exit(1);
-  }
+  return printValidationResult(result, schemaFilePath);
 }
 
 function resolveSchemaFilePath(
@@ -126,11 +111,21 @@ export default define({
       const values = ctx.values as MultiAppCliValues;
       await routeMultiApp(values, {
         singleLegacy: async () => {
-          await runValidate(resolveSchemaFilePath(values));
+          const valid = await runValidate(resolveSchemaFilePath(values));
+          if (!valid) {
+            p.outro("Validation failed.");
+            process.exit(1);
+          }
           p.outro("Validation passed.");
         },
         singleApp: async (app) => {
-          await runValidate(resolveSchemaFilePath(values, app.schemaFile));
+          const valid = await runValidate(
+            resolveSchemaFilePath(values, app.schemaFile),
+          );
+          if (!valid) {
+            p.outro("Validation failed.");
+            process.exit(1);
+          }
           p.outro("Validation passed.");
         },
         multiApp: async (plan) => {
@@ -142,7 +137,7 @@ export default define({
                 values,
                 app.schemaFile,
               );
-              const container = createValidateContainer(schemaFilePath);
+              const container = createValidateCliContainer({ schemaFilePath });
               const result = await validateSchema({ container });
               const valid = printValidationResult(result, schemaFilePath);
               if (!valid) {

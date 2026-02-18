@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { FieldCode } from "@/core/domain/formSchema/valueObject";
 
 vi.mock("@clack/prompts", () => ({
   log: {
@@ -26,6 +27,7 @@ import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { logError } from "../handleError";
 import {
+  confirmAndDeploy,
   printAppHeader,
   printDiffResult,
   printMultiAppResult,
@@ -60,14 +62,14 @@ describe("printDiffResult", () => {
       entries: [
         {
           type: "added",
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           details: "SINGLE_LINE_TEXT を追加",
         },
       ],
       schemaFields: [
         {
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           fieldType: "SINGLE_LINE_TEXT",
         },
@@ -96,17 +98,17 @@ describe("printDiffResult", () => {
       entries: [
         {
           type: "modified",
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           details: "ラベルが変更されました",
           before: {
-            code: "name",
+            code: "name" as FieldCode,
             type: "SINGLE_LINE_TEXT",
             label: "旧名前",
             properties: {},
           },
           after: {
-            code: "name",
+            code: "name" as FieldCode,
             type: "SINGLE_LINE_TEXT",
             label: "名前",
             properties: {},
@@ -115,7 +117,7 @@ describe("printDiffResult", () => {
       ],
       schemaFields: [
         {
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           fieldType: "SINGLE_LINE_TEXT",
         },
@@ -142,11 +144,11 @@ describe("printDiffResult", () => {
       entries: [
         {
           type: "deleted",
-          fieldCode: "old_field",
+          fieldCode: "old_field" as FieldCode,
           fieldLabel: "旧フィールド",
           details: "フィールドを削除",
           before: {
-            code: "old_field",
+            code: "old_field" as FieldCode,
             type: "SINGLE_LINE_TEXT",
             label: "旧フィールド",
             properties: {},
@@ -176,7 +178,7 @@ describe("printDiffResult", () => {
       entries: [],
       schemaFields: [
         {
-          fieldCode: "name",
+          fieldCode: "name" as FieldCode,
           fieldLabel: "名前",
           fieldType: "SINGLE_LINE_TEXT",
         },
@@ -196,23 +198,23 @@ describe("printDiffResult", () => {
       entries: [
         {
           type: "added",
-          fieldCode: "new1",
+          fieldCode: "new1" as FieldCode,
           fieldLabel: "新規",
           details: "追加",
         },
         {
           type: "modified",
-          fieldCode: "mod1",
+          fieldCode: "mod1" as FieldCode,
           fieldLabel: "変更",
           details: "変更",
         },
         {
           type: "deleted",
-          fieldCode: "del1",
+          fieldCode: "del1" as FieldCode,
           fieldLabel: "削除",
           details: "削除",
           before: {
-            code: "del1",
+            code: "del1" as FieldCode,
             type: "SINGLE_LINE_TEXT",
             label: "削除",
             properties: {},
@@ -238,7 +240,7 @@ describe("printDiffResult", () => {
       entries: [
         {
           type: "added",
-          fieldCode: "email",
+          fieldCode: "email" as FieldCode,
           fieldLabel: "メール",
           details: "SINGLE_LINE_TEXT を追加",
         },
@@ -550,5 +552,93 @@ describe("promptDeploy", () => {
     expect(p.log.success).toHaveBeenCalledWith(
       expect.stringContaining("Deployed to production"),
     );
+  });
+});
+
+describe("confirmAndDeploy", () => {
+  it("skipConfirm が true の場合、確認なしで全コンテナの deploy が呼ばれる", async () => {
+    const containers = [
+      { appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) } },
+      { appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) } },
+    ];
+
+    await confirmAndDeploy(containers, true);
+
+    expect(p.confirm).not.toHaveBeenCalled();
+    expect(containers[0].appDeployer.deploy).toHaveBeenCalled();
+    expect(containers[1].appDeployer.deploy).toHaveBeenCalled();
+    expect(p.log.success).toHaveBeenCalledWith("Deployed to production.");
+  });
+
+  it("ユーザーが確認を承認した場合、全コンテナの deploy が呼ばれる", async () => {
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(p.isCancel).mockReturnValueOnce(false);
+
+    const containers = [
+      { appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) } },
+    ];
+
+    await confirmAndDeploy(containers, false);
+
+    expect(p.confirm).toHaveBeenCalled();
+    expect(containers[0].appDeployer.deploy).toHaveBeenCalled();
+    expect(p.log.success).toHaveBeenCalledWith("Deployed to production.");
+  });
+
+  it("ユーザーがキャンセルした場合、deploy は呼ばれず警告が表示される", async () => {
+    vi.mocked(p.confirm).mockResolvedValueOnce(false);
+    vi.mocked(p.isCancel).mockReturnValueOnce(false);
+
+    const containers = [{ appDeployer: { deploy: vi.fn() } }];
+
+    await confirmAndDeploy(containers, false);
+
+    expect(containers[0].appDeployer.deploy).not.toHaveBeenCalled();
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("not deployed to production"),
+    );
+  });
+
+  it("ユーザーが Ctrl+C でキャンセルした場合、deploy は呼ばれない", async () => {
+    vi.mocked(p.confirm).mockResolvedValueOnce(Symbol("cancel") as never);
+    vi.mocked(p.isCancel).mockReturnValueOnce(true);
+
+    const containers = [{ appDeployer: { deploy: vi.fn() } }];
+
+    await confirmAndDeploy(containers, false);
+
+    expect(containers[0].appDeployer.deploy).not.toHaveBeenCalled();
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("not deployed to production"),
+    );
+  });
+
+  it("カスタム成功メッセージが指定された場合、そのメッセージが表示される", async () => {
+    const containers = [
+      { appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) } },
+    ];
+
+    await confirmAndDeploy(containers, true, "Custom success!");
+
+    expect(p.log.success).toHaveBeenCalledWith("Custom success!");
+  });
+
+  it("deploy エラー時にスピナーが停止しエラーが再スローされる", async () => {
+    const deployError = new Error("deploy failed");
+    const containers = [
+      { appDeployer: { deploy: vi.fn().mockRejectedValue(deployError) } },
+    ];
+
+    await expect(confirmAndDeploy(containers, true)).rejects.toThrow(
+      "deploy failed",
+    );
+
+    expect(p.log.success).not.toHaveBeenCalled();
+  });
+
+  it("空のコンテナ配列の場合、deploy なしで成功メッセージが表示される", async () => {
+    await confirmAndDeploy([], true);
+
+    expect(p.log.success).toHaveBeenCalledWith("Deployed to production.");
   });
 });

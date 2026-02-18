@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { FieldCode } from "@/core/domain/formSchema/valueObject";
 
 vi.mock("@clack/prompts", () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
@@ -68,19 +69,8 @@ import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { executeMigration } from "@/core/application/formSchema/executeMigration";
 import command from "../migrate";
 
-// process.exit をモック（throwして後続の実行を止める）
-const exitSpy = vi.spyOn(process, "exit").mockImplementation(((
-  _code?: number,
-) => {
-  throw new Error("process.exit");
-}) as never);
-
 beforeEach(() => {
   vi.clearAllMocks();
-  // process.exit mock を再設定（clearAllMocksで実装が消えるため）
-  exitSpy.mockImplementation(((_code?: number) => {
-    throw new Error("process.exit");
-  }) as never);
   // デフォルトのモック実装を再設定
   vi.mocked(p.isCancel).mockReturnValue(false);
 });
@@ -100,11 +90,11 @@ function hasDiffResult(): DetectDiffOutput {
     entries: [
       {
         type: "added",
-        fieldCode: "name",
+        fieldCode: "name" as FieldCode,
         fieldLabel: "名前",
         details: "新規追加",
         after: {
-          code: "name",
+          code: "name" as FieldCode,
           type: "SINGLE_LINE_TEXT",
           label: "名前",
           properties: {},
@@ -112,7 +102,11 @@ function hasDiffResult(): DetectDiffOutput {
       },
     ],
     schemaFields: [
-      { fieldCode: "name", fieldLabel: "名前", fieldType: "SINGLE_LINE_TEXT" },
+      {
+        fieldCode: "name" as FieldCode,
+        fieldLabel: "名前",
+        fieldType: "SINGLE_LINE_TEXT",
+      },
     ],
     summary: { added: 1, modified: 0, deleted: 0, total: 1 },
     isEmpty: false,
@@ -180,7 +174,6 @@ describe("migrate コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(p.cancel).toHaveBeenCalledWith(expect.stringContaining("cancelled"));
-    expect(exitSpy).toHaveBeenCalledWith(0);
     expect(executeMigration).not.toHaveBeenCalled();
   });
 
@@ -192,7 +185,6 @@ describe("migrate コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(p.cancel).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(0);
     expect(executeMigration).not.toHaveBeenCalled();
   });
 
