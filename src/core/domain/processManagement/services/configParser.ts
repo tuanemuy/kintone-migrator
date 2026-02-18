@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { ProcessManagementConfig, ProcessState } from "../entity";
 import { ProcessManagementErrorCode } from "../errorCode";
 import type {
@@ -30,14 +31,14 @@ const VALID_ACTION_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 function parseProcessEntity(raw: unknown, index: number): ProcessEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -63,14 +64,14 @@ function parseProcessEntity(raw: unknown, index: number): ProcessEntity {
 }
 
 function parseAssignee(raw: unknown, stateName: string): ProcessAssignee {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Assignee for state "${stateName}" must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ASSIGNEE_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -97,14 +98,14 @@ function parseAssignee(raw: unknown, stateName: string): ProcessAssignee {
 }
 
 function parseState(raw: unknown, stateName: string): ProcessState {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `State "${stateName}" must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.index !== "number") {
     throw new BusinessRuleError(
@@ -132,14 +133,14 @@ function parseExecutableUser(
   raw: unknown,
   actionIndex: number,
 ): { entities: readonly ProcessEntity[] } {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Action at index ${actionIndex}: executableUser must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (!Array.isArray(obj.entities)) {
     throw new BusinessRuleError(
@@ -156,14 +157,14 @@ function parseExecutableUser(
 }
 
 function parseAction(raw: unknown, index: number): ProcessAction {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Action at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.name !== "string") {
     throw new BusinessRuleError(
@@ -243,14 +244,14 @@ export const ProcessManagementConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         ProcessManagementErrorCode.PmInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     const enable =
       obj.enable !== undefined && obj.enable !== null
@@ -260,7 +261,7 @@ export const ProcessManagementConfigParser = {
     if (
       obj.states !== undefined &&
       obj.states !== null &&
-      (typeof obj.states !== "object" || Array.isArray(obj.states))
+      !isRecord(obj.states)
     ) {
       throw new BusinessRuleError(
         ProcessManagementErrorCode.PmInvalidConfigStructure,
@@ -268,7 +269,7 @@ export const ProcessManagementConfigParser = {
       );
     }
 
-    const rawStates = (obj.states as Record<string, unknown> | undefined) ?? {};
+    const rawStates = isRecord(obj.states) ? obj.states : {};
     const states: Record<string, ProcessState> = {};
 
     for (const [name, value] of Object.entries(rawStates)) {

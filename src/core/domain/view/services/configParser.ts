@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { ViewConfig, ViewsConfig } from "../entity";
 import { ViewErrorCode } from "../errorCode";
 import {
@@ -10,14 +11,14 @@ import {
 } from "../valueObject";
 
 function parseViewConfig(name: string, raw: unknown): ViewConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ViewErrorCode.VwInvalidConfigStructure,
       `View "${name}" must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_VIEW_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -78,27 +79,23 @@ export const ViewConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         ViewErrorCode.VwInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
-    if (
-      typeof obj.views !== "object" ||
-      obj.views === null ||
-      Array.isArray(obj.views)
-    ) {
+    if (!isRecord(obj.views)) {
       throw new BusinessRuleError(
         ViewErrorCode.VwInvalidConfigStructure,
         'Config must have a "views" object',
       );
     }
 
-    const viewsObj = obj.views as Record<string, unknown>;
+    const viewsObj = obj.views;
     const views: Record<string, ViewConfig> = {};
 
     for (const [name, value] of Object.entries(viewsObj)) {

@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { LayoutItem, LayoutRow, Schema } from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
@@ -161,9 +162,8 @@ const SUBTABLE_ATTRIBUTES: ReadonlySet<string> = new Set(["fields"]);
 type RawField = Record<string, unknown>;
 
 function parseSize(raw: unknown): ElementSize | undefined {
-  if (raw === undefined || raw === null) return undefined;
-  if (typeof raw !== "object") return undefined;
-  const obj = raw as Record<string, unknown>;
+  if (!isRecord(raw)) return undefined;
+  const obj = raw;
   return {
     ...(obj.width !== undefined ? { width: String(obj.width) } : {}),
     ...(obj.height !== undefined ? { height: String(obj.height) } : {}),
@@ -333,11 +333,13 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
   const base = {
     code: fieldCode,
     label,
-    ...(raw.noLabel !== undefined ? { noLabel: raw.noLabel as boolean } : {}),
+    ...(typeof raw.noLabel === "boolean" ? { noLabel: raw.noLabel } : {}),
   };
 
   if (fieldType === "SUBTABLE") {
-    const rawFields = (raw.fields ?? []) as RawField[];
+    const rawFields = Array.isArray(raw.fields)
+      ? (raw.fields as RawField[])
+      : [];
     const subFields = new Map<FieldCode, FieldDefinition>();
     for (const subRaw of rawFields) {
       const subDef = parseFieldDefinitionFromFlat(subRaw);
@@ -352,34 +354,22 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
   }
 
   if (fieldType === "REFERENCE_TABLE") {
-    if (
-      raw.referenceTable === undefined ||
-      raw.referenceTable === null ||
-      typeof raw.referenceTable !== "object"
-    ) {
+    if (!isRecord(raw.referenceTable)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.InvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have a "referenceTable" property`,
       );
     }
-    const refTable = raw.referenceTable as Record<string, unknown>;
+    const refTable = raw.referenceTable;
 
-    if (
-      refTable.relatedApp === undefined ||
-      refTable.relatedApp === null ||
-      typeof refTable.relatedApp !== "object"
-    ) {
+    if (!isRecord(refTable.relatedApp)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.InvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have "referenceTable.relatedApp"`,
       );
     }
 
-    if (
-      refTable.condition === undefined ||
-      refTable.condition === null ||
-      typeof refTable.condition !== "object"
-    ) {
+    if (!isRecord(refTable.condition)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.InvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have "referenceTable.condition"`,
@@ -393,7 +383,7 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
       );
     }
 
-    const condition = refTable.condition as Record<string, string>;
+    const condition = refTable.condition;
     const displayFields = (refTable.displayFields as string[]).map((f) =>
       FieldCode.create(f),
     );
@@ -404,15 +394,17 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
         referenceTable: {
           relatedApp: refTable.relatedApp as { app: string },
           condition: {
-            field: FieldCode.create(condition.field),
-            relatedField: FieldCode.create(condition.relatedField),
+            field: FieldCode.create(String(condition.field ?? "")),
+            relatedField: FieldCode.create(
+              String(condition.relatedField ?? ""),
+            ),
           },
           ...(refTable.filterCond !== undefined
-            ? { filterCond: refTable.filterCond as string }
+            ? { filterCond: String(refTable.filterCond) }
             : {}),
           displayFields,
           ...(refTable.sort !== undefined
-            ? { sort: refTable.sort as string }
+            ? { sort: String(refTable.sort) }
             : {}),
           ...(refTable.size !== undefined
             ? { size: String(refTable.size) }
@@ -487,7 +479,7 @@ function parseLayoutRow(raw: Record<string, unknown>): LayoutRow {
     );
   }
 
-  const rawFields = (raw.fields ?? []) as RawField[];
+  const rawFields = Array.isArray(raw.fields) ? (raw.fields as RawField[]) : [];
   const fields = rawFields.map(parseLayoutElement);
 
   return { type: "ROW", fields };
@@ -548,10 +540,12 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
       const code = FieldCode.create(String(raw.code));
       const label = String(raw.label ?? "");
       const noLabel =
-        raw.noLabel !== undefined ? (raw.noLabel as boolean) : undefined;
+        typeof raw.noLabel === "boolean" ? raw.noLabel : undefined;
       const openGroup =
-        raw.openGroup !== undefined ? (raw.openGroup as boolean) : undefined;
-      const rawLayout = (raw.layout ?? []) as Record<string, unknown>[];
+        typeof raw.openGroup === "boolean" ? raw.openGroup : undefined;
+      const rawLayout = Array.isArray(raw.layout)
+        ? (raw.layout as unknown[]).filter(isRecord)
+        : [];
 
       let groupFields = new Map<FieldCode, FieldDefinition>();
       const layout: LayoutRow[] = [];
@@ -590,8 +584,10 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
       const code = FieldCode.create(String(raw.code));
       const label = String(raw.label ?? "");
       const noLabel =
-        raw.noLabel !== undefined ? (raw.noLabel as boolean) : undefined;
-      const rawFields = (raw.fields ?? []) as RawField[];
+        typeof raw.noLabel === "boolean" ? raw.noLabel : undefined;
+      const rawFields = Array.isArray(raw.fields)
+        ? (raw.fields as RawField[])
+        : [];
       const elements = rawFields.map(parseLayoutElement);
 
       const subFields = collectFieldsFromElements(elements);
@@ -647,14 +643,14 @@ export const SchemaParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.InvalidSchemaStructure,
         "Schema must be an object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     if ("fields" in obj && !("layout" in obj)) {
       throw new BusinessRuleError(
@@ -670,7 +666,7 @@ export const SchemaParser = {
       );
     }
 
-    const rawLayout = obj.layout as Record<string, unknown>[];
+    const rawLayout = (obj.layout as unknown[]).filter(isRecord);
     let fieldMap = new Map<FieldCode, FieldDefinition>();
     const layout: LayoutItem[] = [];
 

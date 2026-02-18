@@ -1,3 +1,4 @@
+import { isRecord } from "@/core/domain/typeGuards";
 import type { DiffEntry, FormDiff, FormLayout, Schema } from "../entity";
 import { FormDiff as FormDiffFactory } from "../entity";
 import type { FieldCode, FieldDefinition } from "../valueObject";
@@ -30,11 +31,8 @@ function isValueEqual(a: unknown, b: unknown): boolean {
   if (a === null || b === null) return a === b;
   if (typeof a !== typeof b) return false;
   if (Array.isArray(a)) return isArrayEqual(a, b);
-  if (typeof a === "object") {
-    return isRecordEqual(
-      a as Record<string, unknown>,
-      b as Record<string, unknown>,
-    );
+  if (isRecord(a) && isRecord(b)) {
+    return isRecordEqual(a, b);
   }
   return false;
 }

@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { SeedData } from "../entity";
 import { SeedDataErrorCode } from "../errorCode";
 import type { RecordFieldValue, SeedRecord } from "../valueObject";
@@ -38,9 +39,9 @@ function normalizeValue(value: unknown): RecordFieldValue {
       return value as readonly { code: string }[];
     }
     // Subtable rows
-    return value.map((row) => {
+    return value.filter(isRecord).map((row) => {
       const normalized: Record<string, string> = {};
-      for (const [k, v] of Object.entries(row as Record<string, unknown>)) {
+      for (const [k, v] of Object.entries(row)) {
         normalized[k] = v === null || v === undefined ? "" : String(v);
       }
       return normalized;
@@ -50,7 +51,7 @@ function normalizeValue(value: unknown): RecordFieldValue {
 }
 
 function parseRecord(raw: unknown, index: number): SeedRecord {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       SeedDataErrorCode.InvalidSeedStructure,
       `Record at index ${index} must be an object`,
@@ -58,7 +59,7 @@ function parseRecord(raw: unknown, index: number): SeedRecord {
   }
 
   const record: Record<string, RecordFieldValue> = {};
-  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+  for (const [key, value] of Object.entries(raw)) {
     record[key] = normalizeValue(value);
   }
   return record as SeedRecord;
@@ -83,14 +84,14 @@ export const SeedParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         SeedDataErrorCode.InvalidSeedStructure,
         "Seed data must be an object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     const key =
       "key" in obj && typeof obj.key === "string"
