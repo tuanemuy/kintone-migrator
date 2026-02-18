@@ -119,7 +119,7 @@ type KintoneReportConfig = {
   aggregations: KintoneReportAggregation[];
   filterCond: string;
   sorts: KintoneReportSort[];
-  periodicReport?: KintonePeriodicReport;
+  periodicReport?: KintonePeriodicReport | null;
 };
 
 function fromKintoneGroup(raw: KintoneReportGroup): ReportGroup {
@@ -270,7 +270,7 @@ function fromKintoneReportConfig(raw: KintoneReportConfig): ReportConfig {
     sorts: raw.sorts.map(fromKintoneSort),
   };
 
-  if (raw.periodicReport !== undefined) {
+  if (raw.periodicReport != null) {
     return {
       ...result,
       periodicReport: fromKintonePeriodicReport(raw.periodicReport),
