@@ -1125,9 +1125,7 @@ reports:
         every: ${every}
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports.テスト.periodicReport?.period.every).toBe(
-          every,
-        );
+        expect(config.reports.テスト.periodicReport?.period.every).toBe(every);
       }
     });
 
