@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestProcessManagementContainer,
@@ -26,8 +27,8 @@ actions: []
 
     expect(container.processManagementStorage.callLog).toContain("update");
     const stored = await container.processManagementStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(configText);
-    expect(stored.exists).toBe(true);
   });
 
   it("既存の設定を上書き保存する", async () => {
@@ -40,6 +41,7 @@ actions: []
     });
 
     const stored = await container.processManagementStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new config");
   });
 

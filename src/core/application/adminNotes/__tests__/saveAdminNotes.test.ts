@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestAdminNotesContainer,
@@ -19,8 +20,8 @@ includeInTemplateAndDuplicates: true
 
     expect(container.adminNotesStorage.callLog).toContain("update");
     const stored = await container.adminNotesStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(configText);
-    expect(stored.exists).toBe(true);
   });
 
   it("既存の設定を上書き保存する", async () => {
@@ -33,6 +34,7 @@ includeInTemplateAndDuplicates: true
     });
 
     const stored = await container.adminNotesStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new config");
   });
 

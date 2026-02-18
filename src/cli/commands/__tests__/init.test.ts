@@ -34,7 +34,7 @@ vi.mock("@/core/application/container/initCli", () => ({
   createInitCliContainer: vi.fn(() => ({
     spaceReader: {},
     projectConfigStorage: {
-      get: vi.fn().mockResolvedValue({ content: "", exists: false }),
+      get: vi.fn().mockResolvedValue({ exists: false }),
       update: vi.fn().mockResolvedValue(undefined),
     },
   })),

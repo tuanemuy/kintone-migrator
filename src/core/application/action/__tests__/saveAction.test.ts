@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestActionContainer,
@@ -23,8 +24,8 @@ actions:
 
     expect(container.actionStorage.callLog).toContain("update");
     const stored = await container.actionStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(configText);
-    expect(stored.exists).toBe(true);
   });
 
   it("既存の設定を上書き保存する", async () => {
@@ -37,6 +38,7 @@ actions:
     });
 
     const stored = await container.actionStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new config");
   });
 

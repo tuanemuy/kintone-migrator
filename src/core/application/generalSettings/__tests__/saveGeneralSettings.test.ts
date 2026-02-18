@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestGeneralSettingsContainer,
@@ -19,8 +20,8 @@ enableThumbnails: true
 
     expect(container.generalSettingsStorage.callLog).toContain("update");
     const stored = await container.generalSettingsStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(configText);
-    expect(stored.exists).toBe(true);
   });
 
   it("should overwrite existing settings", async () => {
@@ -33,6 +34,7 @@ enableThumbnails: true
     });
 
     const stored = await container.generalSettingsStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new config");
   });
 

@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import { setupTestViewContainer } from "@/core/application/__tests__/helpers";
 import { isSystemError } from "@/core/application/error";
@@ -28,6 +29,7 @@ describe("saveView", () => {
       });
 
       const result = await container.viewStorage.get();
+      assert(result.exists);
       expect(result.content).toBe("new content");
     });
   });

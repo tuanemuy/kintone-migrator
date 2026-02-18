@@ -22,7 +22,7 @@ describe("LocalFilePluginStorage", () => {
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
-      expect(result).toEqual({ content: "", exists: false });
+      expect(result).toEqual({ exists: false });
     });
 
     it("ファイルが存在する場合、exists: true と内容を返す", async () => {

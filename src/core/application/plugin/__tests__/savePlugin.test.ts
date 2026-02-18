@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestPluginContainer,
@@ -19,8 +20,8 @@ plugins:
 
     expect(container.pluginStorage.callLog).toContain("update");
     const stored = await container.pluginStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(configText);
-    expect(stored.exists).toBe(true);
   });
 
   it("既存の設定を上書き保存する", async () => {
@@ -33,6 +34,7 @@ plugins:
     });
 
     const stored = await container.pluginStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new config");
   });
 

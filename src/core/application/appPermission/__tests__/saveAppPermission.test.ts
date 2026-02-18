@@ -1,3 +1,4 @@
+import assert from "node:assert";
 import { describe, expect, it } from "vitest";
 import {
   setupTestAppPermissionContainer,
@@ -28,8 +29,8 @@ rights:
 
     expect(container.appPermissionStorage.callLog).toContain("update");
     const stored = await container.appPermissionStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe(configText);
-    expect(stored.exists).toBe(true);
   });
 
   it("should overwrite existing config", async () => {
@@ -42,6 +43,7 @@ rights:
     });
 
     const stored = await container.appPermissionStorage.get();
+    assert(stored.exists);
     expect(stored.content).toBe("new config");
   });
 
