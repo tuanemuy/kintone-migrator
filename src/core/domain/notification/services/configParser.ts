@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type {
   GeneralNotification,
   GeneralNotificationConfig,
@@ -24,14 +25,14 @@ const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 function parseEntity(raw: unknown, context: string): NotificationEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `${context}: entity must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -54,14 +55,14 @@ function parseGeneralNotification(
   raw: unknown,
   index: number,
 ): GeneralNotification {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `General notification at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
   const entity = parseEntity(
     obj.entity,
     `General notification at index ${index}`,
@@ -84,14 +85,14 @@ function parseGeneralNotification(
 }
 
 function parseGeneralConfig(raw: unknown): GeneralNotificationConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       '"general" must be an object',
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (!Array.isArray(obj.notifications)) {
     throw new BusinessRuleError(
@@ -114,14 +115,14 @@ function parsePerRecordTarget(
   raw: unknown,
   index: number,
 ): PerRecordNotificationTarget {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Per-record target at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
   const entity = parseEntity(obj.entity, `Per-record target at index ${index}`);
 
   const result: PerRecordNotificationTarget = { entity };
@@ -137,14 +138,14 @@ function parsePerRecordNotification(
   raw: unknown,
   index: number,
 ): PerRecordNotification {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Per-record notification at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (!Array.isArray(obj.targets)) {
     throw new BusinessRuleError(
@@ -188,14 +189,14 @@ function parseReminderTarget(
   raw: unknown,
   index: number,
 ): ReminderNotificationTarget {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Reminder target at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
   const entity = parseEntity(obj.entity, `Reminder target at index ${index}`);
 
   const result: ReminderNotificationTarget = { entity };
@@ -211,14 +212,14 @@ function parseReminderNotification(
   raw: unknown,
   index: number,
 ): ReminderNotification {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Reminder notification at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.code !== "string" || obj.code.length === 0) {
     throw new BusinessRuleError(
@@ -281,14 +282,14 @@ function parseReminderNotification(
 }
 
 function parseReminderConfig(raw: unknown): ReminderNotificationConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       '"reminder" must be an object',
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (!Array.isArray(obj.notifications)) {
     throw new BusinessRuleError(
@@ -326,14 +327,14 @@ export const NotificationConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         NotificationErrorCode.NtInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     const config: {
       general?: GeneralNotificationConfig;

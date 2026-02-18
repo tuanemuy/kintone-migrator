@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { FieldPermissionConfig, FieldRight } from "../entity";
 import { FieldPermissionErrorCode } from "../errorCode";
 import type {
@@ -22,14 +23,14 @@ const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 function parseEntity(raw: unknown, index: number): FieldPermissionEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       FieldPermissionErrorCode.FpInvalidConfigStructure,
       `Entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -49,14 +50,14 @@ function parseEntity(raw: unknown, index: number): FieldPermissionEntity {
 }
 
 function parseFieldRightEntity(raw: unknown, index: number): FieldRightEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       FieldPermissionErrorCode.FpInvalidConfigStructure,
       `Field right entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (
     typeof obj.accessibility !== "string" ||
@@ -83,14 +84,14 @@ function parseFieldRightEntity(raw: unknown, index: number): FieldRightEntity {
 }
 
 function parseFieldRight(raw: unknown, index: number): FieldRight {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       FieldPermissionErrorCode.FpInvalidConfigStructure,
       `Field right at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.code !== "string" || obj.code.length === 0) {
     throw new BusinessRuleError(
@@ -132,14 +133,14 @@ export const FieldPermissionConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         FieldPermissionErrorCode.FpInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     if (!Array.isArray(obj.rights)) {
       throw new BusinessRuleError(

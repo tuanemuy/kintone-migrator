@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { CustomizationConfig } from "../entity";
 import { CustomizationErrorCode } from "../errorCode";
 import type {
@@ -12,14 +13,14 @@ const VALID_SCOPES: ReadonlySet<string> = new Set(["ALL", "ADMIN", "NONE"]);
 const VALID_RESOURCE_TYPES: ReadonlySet<string> = new Set(["FILE", "URL"]);
 
 function parseResource(raw: unknown, index: number): CustomizationResource {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidConfigStructure,
       `Resource at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
   const type = obj.type;
 
   if (typeof type !== "string" || !VALID_RESOURCE_TYPES.has(type)) {
@@ -59,14 +60,14 @@ function parseResourceList(raw: unknown): readonly CustomizationResource[] {
 }
 
 function parsePlatform(raw: unknown): CustomizationPlatform {
-  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidConfigStructure,
       "Platform configuration must be an object",
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   const js =
     obj.js === undefined || obj.js === null ? [] : parseResourceList(obj.js);
@@ -95,14 +96,14 @@ export const ConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         CustomizationErrorCode.CzInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     let scope: CustomizationScope | undefined;
     if (obj.scope !== undefined && obj.scope !== null) {

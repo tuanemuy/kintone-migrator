@@ -2,6 +2,11 @@ import type {
   KintoneRecordForParameter,
   KintoneRecordForResponse,
 } from "../ports/recordManager";
+import {
+  hasCode,
+  isKintoneSubtableRow,
+  hasOptionalType,
+} from "@/core/domain/typeGuards";
 import type { RecordFieldValue, SeedRecord, SubtableRow } from "../valueObject";
 
 const SYSTEM_FIELDS: ReadonlySet<string> = new Set([
@@ -61,9 +66,10 @@ function toKintoneFieldValue(value: RecordFieldValue): { value: unknown } {
     ) {
       return { value };
     }
-    // Subtable rows
+    // Subtable rows — value is readonly SubtableRow[] here
+    const subtableRows = value as readonly SubtableRow[];
     return {
-      value: (value as readonly SubtableRow[]).map((row) => {
+      value: subtableRows.map((row) => {
         const kintoneRow: Record<string, { value: unknown }> = {};
         for (const [k, cellValue] of Object.entries(row)) {
           kintoneRow[k] = { value: cellValue };
@@ -96,13 +102,12 @@ function fromKintoneFieldValue(value: unknown): RecordFieldValue {
     if (typeof first === "object" && first !== null) {
       // User entity: { code: string, name?: string }
       if ("code" in first && !("value" in first)) {
-        return value.map((u) => ({ code: (u as { code: string }).code }));
+        return value.filter(hasCode).map((u) => ({ code: u.code }));
       }
       // Subtable row: { id: string, value: { field: { value: ... } } }
       if ("value" in first) {
-        return value.map((row) => {
-          const cells = (row as { value: Record<string, { value: unknown }> })
-            .value;
+        return value.filter(isKintoneSubtableRow).map((row) => {
+          const cells = row.value;
           const flat: Record<string, string | readonly string[]> = {};
           for (const [k, cell] of Object.entries(cells)) {
             if (SYSTEM_FIELDS.has(k)) continue;
@@ -138,7 +143,7 @@ export const RecordConverter = {
     const seedRecord: Record<string, RecordFieldValue> = {};
     for (const [fieldCode, cell] of Object.entries(record)) {
       if (SYSTEM_FIELDS.has(fieldCode)) continue;
-      const fieldType = (cell as { type?: string }).type;
+      const fieldType = hasOptionalType(cell) ? cell.type : undefined;
       if (fieldType !== undefined && SYSTEM_FIELD_TYPES.has(fieldType))
         continue;
       seedRecord[fieldCode] = fromKintoneFieldValue(cell.value);

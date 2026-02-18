@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import { ReportErrorCode } from "../errorCode";
 import type {
@@ -89,14 +90,14 @@ const VALID_PERIODIC_EVERY: ReadonlySet<string> = new Set([
 ]);
 
 function parseGroup(raw: unknown, index: number): ReportGroup {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Group at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.code !== "string" || obj.code.length === 0) {
     throw new BusinessRuleError(
@@ -121,14 +122,14 @@ function parseGroup(raw: unknown, index: number): ReportGroup {
 }
 
 function parseAggregation(raw: unknown, index: number): ReportAggregation {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Aggregation at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_AGGREGATION_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -155,14 +156,14 @@ function parseAggregation(raw: unknown, index: number): ReportAggregation {
 }
 
 function parseSort(raw: unknown, index: number): ReportSort {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Sort at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.by !== "string" || !VALID_SORT_BY.has(obj.by)) {
     throw new BusinessRuleError(
@@ -185,14 +186,14 @@ function parseSort(raw: unknown, index: number): ReportSort {
 }
 
 function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       "periodicReport.period must be an object",
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.every !== "string" || !VALID_PERIODIC_EVERY.has(obj.every)) {
     throw new BusinessRuleError(
@@ -288,14 +289,14 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
 }
 
 function parsePeriodicReport(raw: unknown): PeriodicReport {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       "periodicReport must be an object",
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.active !== "boolean") {
     throw new BusinessRuleError(
@@ -313,14 +314,14 @@ function parsePeriodicReport(raw: unknown): PeriodicReport {
 }
 
 function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Report "${reportName}" must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (
     typeof obj.chartType !== "string" ||
@@ -415,23 +416,23 @@ export const ReportConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
-    if (typeof obj.reports !== "object" || obj.reports === null) {
+    if (!isRecord(obj.reports)) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
         'Config must have a "reports" object',
       );
     }
 
-    const rawReports = obj.reports as Record<string, unknown>;
+    const rawReports = obj.reports;
     const reports: Record<string, ReportConfig> = {};
 
     for (const [name, value] of Object.entries(rawReports)) {

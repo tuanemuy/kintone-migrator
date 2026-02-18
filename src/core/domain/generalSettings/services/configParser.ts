@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { GeneralSettingsConfig } from "../entity";
 import { GeneralSettingsErrorCode } from "../errorCode";
 import type {
@@ -36,14 +37,14 @@ const VALID_ROUNDING_MODES: ReadonlySet<string> = new Set([
 ]);
 
 function parseIcon(raw: unknown): IconConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       'icon must be an object with "type" and "key" properties',
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ICON_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -63,14 +64,14 @@ function parseIcon(raw: unknown): IconConfig {
 }
 
 function parseTitleField(raw: unknown): TitleFieldConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       'titleField must be an object with "selectionMode" property',
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (
     typeof obj.selectionMode !== "string" ||
@@ -100,14 +101,14 @@ function parseTitleField(raw: unknown): TitleFieldConfig {
 }
 
 function parseNumberPrecision(raw: unknown): NumberPrecisionConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       "numberPrecision must be an object",
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.digits !== "number") {
     throw new BusinessRuleError(
@@ -159,14 +160,14 @@ export const GeneralSettingsConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         GeneralSettingsErrorCode.GsInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     let name: string | undefined;
     if (obj.name !== undefined && obj.name !== null) {

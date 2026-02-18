@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { AppPermissionConfig, AppRight } from "../entity";
 import { AppPermissionErrorCode } from "../errorCode";
 import type {
@@ -15,14 +16,14 @@ const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
 ]);
 
 function parseEntity(raw: unknown, index: number): AppPermissionEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       AppPermissionErrorCode.ApInvalidConfigStructure,
       `Entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -64,14 +65,14 @@ function parseBooleanField(
 }
 
 function parseAppRight(raw: unknown, index: number): AppRight {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       AppPermissionErrorCode.ApInvalidConfigStructure,
       `App right at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   const entity = parseEntity(obj.entity, index);
 
@@ -107,14 +108,14 @@ export const AppPermissionConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         AppPermissionErrorCode.ApInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     if (!Array.isArray(obj.rights)) {
       throw new BusinessRuleError(

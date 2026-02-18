@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
 import { RecordPermissionErrorCode } from "../errorCode";
 import type {
@@ -33,14 +34,14 @@ function parseBooleanField(
 }
 
 function parseEntity(raw: unknown, index: number): RecordPermissionEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       RecordPermissionErrorCode.RpInvalidConfigStructure,
       `Entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -63,14 +64,14 @@ function parseRecordRightEntity(
   raw: unknown,
   index: number,
 ): RecordPermissionRightEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       RecordPermissionErrorCode.RpInvalidConfigStructure,
       `Record right entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   const entity = parseEntity(obj.entity, index);
 
@@ -86,14 +87,14 @@ function parseRecordRightEntity(
 }
 
 function parseRecordRight(raw: unknown, index: number): RecordRight {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       RecordPermissionErrorCode.RpInvalidConfigStructure,
       `Record right at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (!Array.isArray(obj.entities)) {
     throw new BusinessRuleError(
@@ -131,14 +132,14 @@ export const RecordPermissionConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         RecordPermissionErrorCode.RpInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     if (!Array.isArray(obj.rights)) {
       throw new BusinessRuleError(

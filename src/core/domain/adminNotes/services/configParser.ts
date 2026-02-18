@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { AdminNotesConfig } from "../entity";
 import { AdminNotesErrorCode } from "../errorCode";
 
@@ -22,14 +23,14 @@ export const AdminNotesConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         AdminNotesErrorCode.AnInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     if (typeof obj.content !== "string") {
       throw new BusinessRuleError(

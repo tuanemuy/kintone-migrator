@@ -1,4 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { SeedRecordWithId, UpsertPlan } from "../entity";
 import { SeedDataErrorCode } from "../errorCode";
 import type { KintoneRecordForResponse } from "../ports/recordManager";
@@ -21,14 +22,12 @@ function deepEqual(a: RecordFieldValue, b: RecordFieldValue): boolean {
         continue;
       }
 
-      if (typeof itemA === "object" && typeof itemB === "object") {
-        const objA = itemA as Record<string, unknown>;
-        const objB = itemB as Record<string, unknown>;
-        const keysA = Object.keys(objA);
-        const keysB = Object.keys(objB);
+      if (isRecord(itemA) && isRecord(itemB)) {
+        const keysA = Object.keys(itemA);
+        const keysB = Object.keys(itemB);
         if (keysA.length !== keysB.length) return false;
         for (const key of keysA) {
-          if (String(objA[key] ?? "") !== String(objB[key] ?? "")) return false;
+          if (String(itemA[key] ?? "") !== String(itemB[key] ?? "")) return false;
         }
         continue;
       }

@@ -1,5 +1,6 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import { ActionErrorCode } from "../errorCode";
 import type {
@@ -12,14 +13,14 @@ import type {
 import { VALID_ENTITY_TYPES, VALID_SRC_TYPES } from "../valueObject";
 
 function parseDestApp(raw: unknown, actionName: string): ActionDestApp {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" destApp must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
   const result: { app?: string; code?: string } = {};
 
   if (obj.app !== undefined && obj.app !== null) {
@@ -38,14 +39,14 @@ function parseMapping(
   index: number,
   actionName: string,
 ): ActionMapping {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" mapping at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.srcType !== "string" || !VALID_SRC_TYPES.has(obj.srcType)) {
     throw new BusinessRuleError(
@@ -79,14 +80,14 @@ function parseEntity(
   index: number,
   actionName: string,
 ): ActionEntity {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" entity at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
     throw new BusinessRuleError(
@@ -106,14 +107,14 @@ function parseEntity(
 }
 
 function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (actionName.length === 0) {
     throw new BusinessRuleError(
@@ -129,7 +130,7 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
     );
   }
 
-  if (typeof obj.destApp !== "object" || obj.destApp === null) {
+  if (!isRecord(obj.destApp)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have a "destApp" object`,
@@ -191,23 +192,23 @@ export const ActionConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         ActionErrorCode.AcInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
-    if (typeof obj.actions !== "object" || obj.actions === null) {
+    if (!isRecord(obj.actions)) {
       throw new BusinessRuleError(
         ActionErrorCode.AcInvalidConfigStructure,
         'Config must have an "actions" object',
       );
     }
 
-    const rawActions = obj.actions as Record<string, unknown>;
+    const rawActions = obj.actions;
     const actions: Record<string, ActionConfig> = {};
 
     for (const [key, value] of Object.entries(rawActions)) {

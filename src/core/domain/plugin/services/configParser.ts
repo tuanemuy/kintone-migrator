@@ -1,17 +1,18 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { PluginConfig, PluginsConfig } from "../entity";
 import { PluginErrorCode } from "../errorCode";
 
 function parsePluginEntry(raw: unknown, index: number): PluginConfig {
-  if (typeof raw !== "object" || raw === null) {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       PluginErrorCode.PlInvalidConfigStructure,
       `Plugin at index ${index} must be an object`,
     );
   }
 
-  const obj = raw as Record<string, unknown>;
+  const obj = raw;
 
   if (typeof obj.id !== "string" || obj.id.length === 0) {
     throw new BusinessRuleError(
@@ -46,14 +47,14 @@ export const PluginConfigParser = {
       );
     }
 
-    if (typeof parsed !== "object" || parsed === null) {
+    if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         PluginErrorCode.PlInvalidConfigStructure,
         "Config must be a YAML object",
       );
     }
 
-    const obj = parsed as Record<string, unknown>;
+    const obj = parsed;
 
     if (!Array.isArray(obj.plugins)) {
       throw new BusinessRuleError(
