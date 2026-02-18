@@ -1,6 +1,6 @@
 import type { SpaceApp } from "@/core/domain/space/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
-import { ValidationError, ValidationErrorCode } from "../error";
+import { NotFoundError, NotFoundErrorCode } from "../error";
 
 export type FetchSpaceAppsContainer = Readonly<{
   spaceReader: SpaceReader;
@@ -19,8 +19,8 @@ export async function fetchSpaceApps(args: {
   );
 
   if (apps.length === 0) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+    throw new NotFoundError(
+      NotFoundErrorCode.NotFound,
       `No apps found in space ID: ${args.input.spaceId}`,
     );
   }

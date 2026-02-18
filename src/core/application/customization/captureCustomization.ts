@@ -7,6 +7,7 @@ import type {
   RemotePlatform,
   RemoteResource,
 } from "@/core/domain/customization/valueObject";
+import { deduplicateName } from "@/lib/deduplicateName";
 import type { CustomizationCaptureContainer } from "../container/customization";
 
 export type CaptureCustomizationInput = {
@@ -37,8 +38,15 @@ function sanitizeFileName(name: string): string {
   return sanitized;
 }
 
-const MAX_DEDUP_COUNTER = 10_000;
-
+/**
+ * Deduplicate a file name by inserting a counter between the stem and extension.
+ *
+ * Unlike {@link deduplicateName} from `@/lib/deduplicateName`, this function is
+ * file-name-aware: it inserts the counter before the extension (e.g. `file_1.js`)
+ * rather than appending it at the end (which would produce `file.js_1`).
+ * This extension-aware behavior cannot be achieved by the generic lib utility,
+ * so a local implementation is necessary.
+ */
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {
     usedNames.add(baseName);
@@ -47,19 +55,31 @@ function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
 
   const ext = extname(baseName);
   const stem = baseName.slice(0, baseName.length - ext.length);
-  let counter = 1;
-  let candidate = `${stem}_${counter}${ext}`;
-  while (usedNames.has(candidate)) {
-    counter++;
-    if (counter > MAX_DEDUP_COUNTER) {
-      throw new Error(
-        `Failed to deduplicate file name "${baseName}": exceeded maximum counter (${MAX_DEDUP_COUNTER})`,
-      );
+  const dedupedStem = deduplicateName(
+    stem || "_",
+    usedStemsFor(usedNames, ext),
+    {
+      separator: "_",
+      startCounter: 1,
+    },
+  );
+  const result = `${dedupedStem}${ext}`;
+  usedNames.add(result);
+  return result;
+}
+
+/**
+ * Build a derived set of stems that are already taken for a given extension.
+ * This allows {@link deduplicateName} to find the next available counter.
+ */
+function usedStemsFor(usedNames: Set<string>, ext: string): Set<string> {
+  const stems = new Set<string>();
+  for (const name of usedNames) {
+    if (name.endsWith(ext)) {
+      stems.add(name.slice(0, name.length - ext.length));
     }
-    candidate = `${stem}_${counter}${ext}`;
   }
-  usedNames.add(candidate);
-  return candidate;
+  return stems;
 }
 
 type PlannedFile = {

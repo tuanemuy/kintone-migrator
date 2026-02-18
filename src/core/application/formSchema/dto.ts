@@ -1,16 +1,18 @@
+import type { FieldCode } from "@/core/domain/formSchema/valueObject";
+
 export type DiffEntryDto = {
   readonly type: "added" | "modified" | "deleted";
-  readonly fieldCode: string;
+  readonly fieldCode: FieldCode;
   readonly fieldLabel: string;
   readonly details: string;
   readonly before?: {
-    readonly code: string;
+    readonly code: FieldCode;
     readonly type: string;
     readonly label: string;
     readonly properties: Record<string, unknown>;
   };
   readonly after?: {
-    readonly code: string;
+    readonly code: FieldCode;
     readonly type: string;
     readonly label: string;
     readonly properties: Record<string, unknown>;
@@ -18,7 +20,7 @@ export type DiffEntryDto = {
 };
 
 export type SchemaFieldDto = {
-  readonly fieldCode: string;
+  readonly fieldCode: FieldCode;
   readonly fieldLabel: string;
   readonly fieldType: string;
 };

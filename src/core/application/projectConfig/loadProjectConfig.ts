@@ -7,6 +7,11 @@ export type LoadProjectConfigInput = Readonly<{
   content: string;
 }>;
 
+/**
+ * Pure function that parses YAML text into a ProjectConfig.
+ * Intentionally does not use the container/context object pattern
+ * because it has no external dependencies (no I/O, no ports).
+ */
 export function loadProjectConfig(
   input: LoadProjectConfigInput,
 ): ProjectConfig {

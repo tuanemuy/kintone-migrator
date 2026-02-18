@@ -1,6 +1,7 @@
 import type { ActionConfigurator } from "@/core/domain/action/ports/actionConfigurator";
 import type { ActionStorage } from "@/core/domain/action/ports/actionStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ServiceArgs } from "../types";
 
 export type ActionContainer = {
   actionConfigurator: ActionConfigurator;
@@ -8,6 +9,4 @@ export type ActionContainer = {
   appDeployer: AppDeployer;
 };
 
-export type ActionServiceArgs<T = undefined> = T extends undefined
-  ? { container: ActionContainer }
-  : { container: ActionContainer; input: T };
+export type ActionServiceArgs<T = undefined> = ServiceArgs<ActionContainer, T>;

@@ -1,16 +1,5 @@
-export type ViewDiffEntry = {
-  readonly type: "added" | "modified" | "deleted";
-  readonly viewName: string;
-  readonly details: string;
-};
+import type { ViewDiff } from "@/core/domain/view/valueObject";
 
-export type DetectViewDiffOutput = {
-  readonly entries: readonly ViewDiffEntry[];
-  readonly summary: {
-    readonly added: number;
-    readonly modified: number;
-    readonly deleted: number;
-    readonly total: number;
-  };
-  readonly isEmpty: boolean;
-};
+export type { ViewDiffEntry } from "@/core/domain/view/valueObject";
+
+export type DetectViewDiffOutput = ViewDiff;

@@ -15,7 +15,7 @@ import {
 } from "./cli";
 import { createFieldPermissionCliContainer } from "./fieldPermissionCli";
 import { createGeneralSettingsCliContainer } from "./generalSettingsCli";
-import { createNotificationCliContainer } from "./notification";
+import { createNotificationCliContainer } from "./notificationCli";
 import { createPluginCliContainer } from "./pluginCli";
 import { createProcessManagementCliContainer } from "./processManagementCli";
 import { createRecordPermissionCliContainer } from "./recordPermissionCli";

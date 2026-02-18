@@ -1,4 +1,4 @@
-import { afterEach, beforeEach } from "vitest";
+import { beforeEach } from "vitest";
 import type { Container } from "@/core/application/container";
 import type { ActionContainer } from "@/core/application/container/action";
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
@@ -553,10 +553,6 @@ export function setupTestContainer(): () => TestContainer {
     container = createTestContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -596,11 +592,10 @@ export class InMemoryRecordManager implements RecordManager {
     this.checkFail("addRecords");
     for (const record of records) {
       const id = String(this.nextId++);
-      const response: KintoneRecordForResponse = Object.assign(
-        {} as Record<string, { value: unknown }>,
-        record,
-        { $id: { value: id } },
-      );
+      const response: KintoneRecordForResponse = {
+        ...record,
+        $id: { value: id },
+      };
       this.records.push(response);
     }
   }
@@ -616,11 +611,10 @@ export class InMemoryRecordManager implements RecordManager {
     for (const { id, record } of records) {
       const index = this.records.findIndex((r) => r.$id.value === id);
       if (index !== -1) {
-        const response: KintoneRecordForResponse = Object.assign(
-          {} as Record<string, { value: unknown }>,
-          record,
-          { $id: { value: id } },
-        );
+        const response: KintoneRecordForResponse = {
+          ...record,
+          $id: { value: id },
+        };
         this.records[index] = response;
       }
     }
@@ -696,10 +690,6 @@ export function setupTestSeedContainer(): () => TestSeedContainer {
     container = createTestSeedContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -724,10 +714,6 @@ export function setupTestFieldPermissionContainer(): () => TestFieldPermissionCo
 
   beforeEach(() => {
     container = createTestFieldPermissionContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;
@@ -760,10 +746,6 @@ export function setupTestCustomizationContainer(): () => TestCustomizationContai
 
   beforeEach(() => {
     container = createTestCustomizationContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;
@@ -891,10 +873,6 @@ export function setupTestRecordPermissionContainer(): () => TestRecordPermission
     container = createTestRecordPermissionContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -1007,10 +985,6 @@ export function setupTestViewContainer(): () => TestViewContainer {
 
   beforeEach(() => {
     container = createTestViewContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;
@@ -1133,10 +1107,6 @@ export function setupTestProcessManagementContainer(): () => TestProcessManageme
 
   beforeEach(() => {
     container = createTestProcessManagementContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;
@@ -1262,10 +1232,6 @@ export function setupTestAppPermissionContainer(): () => TestAppPermissionContai
     container = createTestAppPermissionContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -1382,10 +1348,6 @@ export function setupTestGeneralSettingsContainer(): () => TestGeneralSettingsCo
     container = createTestGeneralSettingsContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -1498,10 +1460,6 @@ export function setupTestReportContainer(): () => TestReportContainer {
 
   beforeEach(() => {
     container = createTestReportContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;
@@ -1719,10 +1677,6 @@ export function setupTestNotificationContainer(): () => TestNotificationContaine
     container = createTestNotificationContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -1835,10 +1789,6 @@ export function setupTestActionContainer(): () => TestActionContainer {
 
   beforeEach(() => {
     container = createTestActionContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;
@@ -1958,10 +1908,6 @@ export function setupTestAdminNotesContainer(): () => TestAdminNotesContainer {
     container = createTestAdminNotesContainer();
   });
 
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
-  });
-
   return () => container;
 }
 
@@ -2072,10 +2018,6 @@ export function setupTestPluginContainer(): () => TestPluginContainer {
 
   beforeEach(() => {
     container = createTestPluginContainer();
-  });
-
-  afterEach(() => {
-    // No cleanup needed for in-memory adapters
   });
 
   return () => container;

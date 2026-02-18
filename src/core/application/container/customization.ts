@@ -4,6 +4,7 @@ import type { FileDownloader } from "@/core/domain/customization/ports/fileDownl
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ServiceArgs } from "../types";
 
 /** Ports needed by customize apply */
 export type CustomizationApplyContainer = {
@@ -25,6 +26,7 @@ export type CustomizationCaptureContainer = {
 export type CustomizationContainer = CustomizationApplyContainer &
   CustomizationCaptureContainer;
 
-export type CustomizationApplyServiceArgs<T = undefined> = T extends undefined
-  ? { container: CustomizationApplyContainer }
-  : { container: CustomizationApplyContainer; input: T };
+export type CustomizationApplyServiceArgs<T = undefined> = ServiceArgs<
+  CustomizationApplyContainer,
+  T
+>;

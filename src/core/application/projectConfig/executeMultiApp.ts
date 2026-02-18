@@ -21,6 +21,9 @@ export async function executeMultiApp(
       continue;
     }
 
+    // Intentional try-catch: multi-app orchestration must catch per-app errors
+    // so that the result of each app is recorded and remaining apps are marked
+    // as skipped rather than letting the error propagate and abort the loop.
     try {
       await executor(app);
       results.push({ name: app.name, status: "succeeded" });

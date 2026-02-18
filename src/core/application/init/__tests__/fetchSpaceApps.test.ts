@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ValidationError } from "@/core/application/error";
+import { NotFoundError } from "@/core/application/error";
 import type { SpaceApp } from "@/core/domain/space/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
 import { fetchSpaceApps } from "../fetchSpaceApps";
@@ -48,7 +48,7 @@ describe("fetchSpaceApps", () => {
     expect(reader.lastSpaceId).toBe("my-space-42");
   });
 
-  it("アプリが0件の場合、ValidationErrorをスローする", async () => {
+  it("アプリが0件の場合、NotFoundErrorをスローする", async () => {
     const reader = new InMemorySpaceReader();
     reader.setApps([]);
 
@@ -57,7 +57,7 @@ describe("fetchSpaceApps", () => {
         container: { spaceReader: reader },
         input: { spaceId: "empty-space" },
       }),
-    ).rejects.toThrow(ValidationError);
+    ).rejects.toThrow(NotFoundError);
   });
 
   it("アプリが1件の場合でも正常に返す", async () => {
