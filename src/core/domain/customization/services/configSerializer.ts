@@ -28,9 +28,10 @@ function hasPlatformResources(platform: CustomizationPlatform): boolean {
   return platform.js.length > 0 || platform.css.length > 0;
 }
 
-function serializePlatform(
-  platform: CustomizationPlatform,
-): Record<string, unknown> {
+function serializePlatform(platform: CustomizationPlatform): {
+  js?: SerializedResource[];
+  css?: SerializedResource[];
+} {
   return {
     ...(platform.js.length > 0
       ? { js: serializeResourceList(platform.js) }

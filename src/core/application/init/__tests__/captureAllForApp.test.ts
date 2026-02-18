@@ -109,13 +109,13 @@ describe("isFatalError", () => {
 describe("captureAllForApp", () => {
   const baseInput = {
     appName: "test-app",
-    customizeFilePath: "apps/test-app/customize.yaml",
+    customizeBasePath: "apps/test-app",
   };
 
   it("全14ドメインが成功する", async () => {
     const results = await captureAllForApp({
-      ...baseInput,
-      containers: createMockContainers(),
+      container: createMockContainers(),
+      input: baseInput,
     });
 
     expect(results).toHaveLength(14);
@@ -152,8 +152,8 @@ describe("captureAllForApp", () => {
     };
 
     const results = await captureAllForApp({
-      ...baseInput,
-      containers,
+      container: containers,
+      input: baseInput,
     });
 
     expect(results).toHaveLength(14);
@@ -177,8 +177,8 @@ describe("captureAllForApp", () => {
     };
 
     const results = await captureAllForApp({
-      ...baseInput,
-      containers,
+      container: containers,
+      input: baseInput,
     });
 
     expect(results).toHaveLength(14);
@@ -200,8 +200,8 @@ describe("captureAllForApp", () => {
     };
 
     const results = await captureAllForApp({
-      ...baseInput,
-      containers,
+      container: containers,
+      input: baseInput,
     });
 
     expect(results).toHaveLength(14);

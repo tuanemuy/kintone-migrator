@@ -168,13 +168,25 @@ function parseAuth(
   if (!raw) return undefined;
 
   const apiToken = asOptionalString(raw.apiToken);
-  if (apiToken) {
+  if (apiToken !== undefined) {
+    if (apiToken.trim().length === 0) {
+      throw new BusinessRuleError(
+        ProjectConfigErrorCode.InvalidAuthConfig,
+        "apiToken must not be empty",
+      );
+    }
     return { type: "apiToken", apiToken };
   }
 
   const username = asOptionalString(raw.username);
   const password = asOptionalString(raw.password);
-  if (username && password) {
+  if (username !== undefined && password !== undefined) {
+    if (username.trim().length === 0 || password.trim().length === 0) {
+      throw new BusinessRuleError(
+        ProjectConfigErrorCode.InvalidAuthConfig,
+        "username and password must not be empty",
+      );
+    }
     return { type: "password", username, password };
   }
 

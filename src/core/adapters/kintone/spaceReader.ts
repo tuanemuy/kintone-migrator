@@ -37,25 +37,41 @@ export class KintoneSpaceReader implements SpaceReader {
         );
       }
 
-      return rawApps
-        .filter(
-          (app): app is Record<string, unknown> =>
-            typeof app === "object" &&
-            app !== null &&
-            (app as Record<string, unknown>).appId !== undefined &&
-            (app as Record<string, unknown>).appId !== null,
-        )
-        .map((app) => ({
-          appId:
-            typeof app.appId === "string"
-              ? app.appId
-              : typeof app.appId === "number"
-                ? String(app.appId)
-                : "",
+      const validApps: Record<string, unknown>[] = [];
+      for (const app of rawApps) {
+        if (
+          typeof app === "object" &&
+          app !== null &&
+          (app as Record<string, unknown>).appId !== undefined &&
+          (app as Record<string, unknown>).appId !== null
+        ) {
+          validApps.push(app as Record<string, unknown>);
+        }
+      }
+
+      const result: SpaceApp[] = [];
+      for (const app of validApps) {
+        const appId =
+          typeof app.appId === "string"
+            ? app.appId
+            : typeof app.appId === "number"
+              ? String(app.appId)
+              : "";
+
+        if (appId === "") {
+          // Skip apps with unparseable appId - this can happen if the API
+          // returns an unexpected type (e.g. boolean, object).
+          continue;
+        }
+
+        result.push({
+          appId,
           code: typeof app.code === "string" ? app.code : "",
           name: typeof app.name === "string" ? app.name : "",
-        }))
-        .filter((app) => app.appId !== "");
+        });
+      }
+
+      return result;
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
       if (error instanceof SystemError) throw error;

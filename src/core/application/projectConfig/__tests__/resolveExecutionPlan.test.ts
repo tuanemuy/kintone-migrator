@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isNotFoundError, NotFoundErrorCode } from "@/core/application/error";
+import { NotFoundErrorCode } from "@/core/application/error";
 import type {
   AppEntry,
   ProjectConfig,
@@ -68,15 +68,13 @@ describe("resolveExecutionPlan", () => {
   it("throws AppNotFound for unknown app name", () => {
     const config = makeConfig([{ name: "customer" }]);
 
-    try {
-      resolveExecutionPlan({ config, appName: "nonexistent" });
-      expect.fail("Should have thrown");
-    } catch (error) {
-      expect(isNotFoundError(error)).toBe(true);
-      if (isNotFoundError(error)) {
-        expect(error.code).toBe(NotFoundErrorCode.AppNotFound);
-        expect(error.message).toContain("nonexistent");
-      }
-    }
+    expect(() =>
+      resolveExecutionPlan({ config, appName: "nonexistent" }),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotFoundErrorCode.AppNotFound,
+        message: expect.stringContaining("nonexistent"),
+      }),
+    );
   });
 });

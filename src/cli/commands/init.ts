@@ -1,3 +1,4 @@
+import { dirname, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
@@ -75,6 +76,14 @@ export default define({
     try {
       const values = ctx.values as InitCliValues;
 
+      const spaceId = values["space-id"];
+      if (!/^\d+$/.test(spaceId)) {
+        throw new ValidationError(
+          ValidationErrorCode.InvalidInput,
+          `Invalid space ID: "${spaceId}" (must be a numeric value)`,
+        );
+      }
+
       const kintoneDomain = values.domain ?? process.env.KINTONE_DOMAIN;
       if (!kintoneDomain) {
         throw new ValidationError(
@@ -106,7 +115,7 @@ export default define({
       s.start("Fetching space info...");
       const apps = await fetchSpaceApps({
         container: { spaceReader },
-        input: { spaceId: values["space-id"] },
+        input: { spaceId },
       });
       s.stop(`Found ${apps.length} app(s) in the space.`);
 
@@ -160,9 +169,11 @@ export default define({
         const cs = p.spinner();
         cs.start(`Capturing all domains for ${appName}...`);
         const results = await captureAllForApp({
-          appName,
-          customizeFilePath: paths.customize,
-          containers,
+          container: containers,
+          input: {
+            appName,
+            customizeBasePath: dirname(resolve(paths.customize)),
+          },
         });
         const successCount = results.filter((r) => r.success).length;
         const failCount = results.length - successCount;

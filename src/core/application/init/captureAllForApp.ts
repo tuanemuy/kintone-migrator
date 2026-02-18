@@ -1,4 +1,3 @@
-import { dirname, resolve } from "node:path";
 import { captureAction } from "@/core/application/action/captureAction";
 import { saveAction } from "@/core/application/action/saveAction";
 import { captureAdminNotes } from "@/core/application/adminNotes/captureAdminNotes";
@@ -60,8 +59,12 @@ export type CaptureResult =
 
 export type CaptureAllForAppInput = Readonly<{
   appName: string;
-  customizeFilePath: string;
-  containers: CaptureAllContainers;
+  customizeBasePath: string;
+}>;
+
+export type CaptureAllForAppArgs = Readonly<{
+  container: CaptureAllContainers;
+  input: CaptureAllForAppInput;
 }>;
 
 type CaptureTask = {
@@ -84,19 +87,20 @@ function buildStandardTask<C>(
   };
 }
 
-function buildCaptureTasks(
-  input: CaptureAllForAppInput,
-): readonly CaptureTask[] {
-  const c = input.containers;
+function buildCaptureTasks(args: CaptureAllForAppArgs): readonly CaptureTask[] {
+  const c = args.container;
+  const input = args.input;
 
   return [
     {
       domain: "customize",
       run: async () => {
-        const basePath = dirname(resolve(input.customizeFilePath));
         const result = await captureCustomization({
           container: c.customization,
-          input: { basePath, filePrefix: input.appName },
+          input: {
+            basePath: input.customizeBasePath,
+            filePrefix: input.appName,
+          },
         });
         await saveCustomization({
           container: c.customization,
@@ -213,9 +217,9 @@ export function isFatalError(error: unknown): boolean {
 }
 
 export async function captureAllForApp(
-  input: CaptureAllForAppInput,
+  args: CaptureAllForAppArgs,
 ): Promise<readonly CaptureResult[]> {
-  const tasks = buildCaptureTasks(input);
+  const tasks = buildCaptureTasks(args);
   const results: CaptureResult[] = [];
 
   // NOTE: This orchestration function intentionally uses try-catch to record partial
@@ -229,7 +233,7 @@ export async function captureAllForApp(
       results.push({ domain: task.domain, success: false, error });
       if (isFatalError(error)) {
         const skipError = new SystemError(
-          SystemErrorCode.ExternalApiError,
+          SystemErrorCode.InternalServerError,
           `Skipped due to fatal error in "${task.domain}"`,
           error,
         );

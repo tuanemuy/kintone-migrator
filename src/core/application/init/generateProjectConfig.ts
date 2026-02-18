@@ -37,15 +37,18 @@ export function generateProjectConfig(
 
   // auth is intentionally omitted from the generated config to avoid writing
   // credentials to disk. The CLI prompts the user to add auth settings manually.
-  const config: Record<string, unknown> = {
+  const config: {
+    domain: string;
+    guestSpaceId?: string;
+    apps: Record<string, { appId: string; files: Record<string, string> }>;
+  } = {
     domain: input.domain,
+    apps,
   };
 
   if (input.guestSpaceId !== undefined) {
     config.guestSpaceId = input.guestSpaceId;
   }
-
-  config.apps = apps;
 
   return stringifyYaml(config, { lineWidth: 0 });
 }

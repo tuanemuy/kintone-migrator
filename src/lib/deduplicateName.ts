@@ -1,7 +1,11 @@
-import { SystemError, SystemErrorCode } from "@/core/application/error";
-
 const DEFAULT_MAX_COUNTER = 10_000;
 
+/**
+ * Generate a unique name by appending a counter suffix if the base name is already taken.
+ *
+ * NOTE: This function mutates `usedNames` by adding the returned name to the set.
+ * This is intentional to allow sequential calls to track used names efficiently.
+ */
 export function deduplicateName(
   baseName: string,
   usedNames: Set<string>,
@@ -22,8 +26,7 @@ export function deduplicateName(
   while (usedNames.has(candidate)) {
     counter++;
     if (counter > max) {
-      throw new SystemError(
-        SystemErrorCode.StorageError,
+      throw new Error(
         `Failed to deduplicate name "${baseName}": exceeded maximum counter (${max})`,
       );
     }

@@ -37,6 +37,8 @@ function sanitizeFileName(name: string): string {
   return sanitized;
 }
 
+const MAX_DEDUP_COUNTER = 10_000;
+
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {
     usedNames.add(baseName);
@@ -49,6 +51,11 @@ function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   let candidate = `${stem}_${counter}${ext}`;
   while (usedNames.has(candidate)) {
     counter++;
+    if (counter > MAX_DEDUP_COUNTER) {
+      throw new Error(
+        `Failed to deduplicate file name "${baseName}": exceeded maximum counter (${MAX_DEDUP_COUNTER})`,
+      );
+    }
     candidate = `${stem}_${counter}${ext}`;
   }
   usedNames.add(candidate);

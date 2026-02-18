@@ -1,3 +1,5 @@
+import type { AppName } from "./valueObject";
+
 export type AppFilePaths = {
   readonly schema: string;
   readonly seed: string;
@@ -14,8 +16,6 @@ export type AppFilePaths = {
   readonly adminNotes: string;
   readonly plugin: string;
 };
-
-import type { AppName } from "./valueObject";
 
 export function buildAppFilePaths(appName: AppName): AppFilePaths {
   return {
