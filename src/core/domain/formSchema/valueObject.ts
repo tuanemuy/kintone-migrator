@@ -23,7 +23,7 @@ export const FieldCode = {
   create: (code: string): FieldCode => {
     if (code.length === 0) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.EmptyFieldCode,
+        FormSchemaErrorCode.FsEmptyFieldCode,
         "Field code cannot be empty",
       );
     }

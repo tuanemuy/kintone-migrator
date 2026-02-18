@@ -53,7 +53,7 @@ function normalizeValue(value: unknown): RecordFieldValue {
 function parseRecord(raw: unknown, index: number): SeedRecord {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
-      SeedDataErrorCode.InvalidSeedStructure,
+      SeedDataErrorCode.SdInvalidSeedStructure,
       `Record at index ${index} must be an object`,
     );
   }
@@ -69,7 +69,7 @@ export const SeedParser = {
   parse: (rawText: string): SeedData => {
     if (rawText.trim().length === 0) {
       throw new BusinessRuleError(
-        SeedDataErrorCode.EmptySeedText,
+        SeedDataErrorCode.SdEmptySeedText,
         "Seed text cannot be empty",
       );
     }
@@ -79,14 +79,14 @@ export const SeedParser = {
       parsed = parseYaml(rawText);
     } catch {
       throw new BusinessRuleError(
-        SeedDataErrorCode.InvalidSeedYaml,
+        SeedDataErrorCode.SdInvalidSeedYaml,
         "Seed text is not valid YAML",
       );
     }
 
     if (!isRecord(parsed)) {
       throw new BusinessRuleError(
-        SeedDataErrorCode.InvalidSeedStructure,
+        SeedDataErrorCode.SdInvalidSeedStructure,
         "Seed data must be an object",
       );
     }
@@ -100,7 +100,7 @@ export const SeedParser = {
 
     if (!("records" in obj) || !Array.isArray(obj.records)) {
       throw new BusinessRuleError(
-        SeedDataErrorCode.InvalidSeedStructure,
+        SeedDataErrorCode.SdInvalidSeedStructure,
         'Seed data must have a "records" array',
       );
     }
@@ -114,7 +114,7 @@ export const SeedParser = {
       if (key !== null) {
         if (!((key as string) in record)) {
           throw new BusinessRuleError(
-            SeedDataErrorCode.MissingKeyField,
+            SeedDataErrorCode.SdMissingKeyField,
             `Record at index ${i} is missing key field "${key}"`,
           );
         }
@@ -122,14 +122,14 @@ export const SeedParser = {
         const keyValue = record[key as string];
         if (typeof keyValue !== "string") {
           throw new BusinessRuleError(
-            SeedDataErrorCode.InvalidSeedStructure,
+            SeedDataErrorCode.SdInvalidSeedStructure,
             `Key field "${key}" value at index ${i} must be a string`,
           );
         }
 
         if (seenKeys.has(keyValue)) {
           throw new BusinessRuleError(
-            SeedDataErrorCode.DuplicateKeyValue,
+            SeedDataErrorCode.SdDuplicateKeyValue,
             `Duplicate key value "${keyValue}" at index ${i}`,
           );
         }

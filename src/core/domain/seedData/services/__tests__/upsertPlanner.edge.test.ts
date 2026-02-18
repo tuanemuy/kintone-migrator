@@ -124,7 +124,7 @@ describe("UpsertPlanner エッジケース", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidKeyFieldValue);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidKeyFieldValue);
       }
     }
   });

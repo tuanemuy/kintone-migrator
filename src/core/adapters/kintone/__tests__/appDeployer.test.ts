@@ -137,7 +137,7 @@ describe("KintoneAppDeployer", () => {
 
     it("BusinessRuleErrorはそのまま再スローする", async () => {
       const bizError = new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         "test error",
       );
       const client = createMockClient({

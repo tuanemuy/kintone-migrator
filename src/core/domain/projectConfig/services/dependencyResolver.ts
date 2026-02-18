@@ -63,7 +63,7 @@ function resolveExecutionOrder(
       (name) => !orderedNames.includes(name),
     );
     throw new BusinessRuleError(
-      ProjectConfigErrorCode.CircularDependency,
+      ProjectConfigErrorCode.PcCircularDependency,
       `Circular dependency detected among: ${cycleNodes.join(", ")}`,
     );
   }
@@ -83,7 +83,7 @@ function validateDependencyReferences(
     for (const dep of entry.dependsOn) {
       if (!apps.has(dep)) {
         throw new BusinessRuleError(
-          ProjectConfigErrorCode.UnknownDependency,
+          ProjectConfigErrorCode.PcUnknownDependency,
           `App "${name}" depends on unknown app "${dep}"`,
         );
       }

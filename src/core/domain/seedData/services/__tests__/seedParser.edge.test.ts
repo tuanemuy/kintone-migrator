@@ -71,7 +71,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
         expect(error.message).toContain("must be an object");
       }
     }
@@ -84,7 +84,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
       }
     }
   });
@@ -101,7 +101,7 @@ data:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
         expect(error.message).toContain("records");
       }
     }
@@ -121,7 +121,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
         expect(error.message).toContain("must be a string");
       }
     }
@@ -134,7 +134,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.EmptySeedText);
+        expect(error.code).toBe(SeedDataErrorCode.SdEmptySeedText);
       }
     }
   });
@@ -159,7 +159,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
       }
     }
   });
