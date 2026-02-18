@@ -28,6 +28,7 @@ export type CreateCaptureContainersInput = Readonly<{
   appId: string;
   guestSpaceId?: string;
   appName: AppName;
+  baseDir?: string;
 }>;
 
 export type CreateCaptureContainersResult = Readonly<{
@@ -44,7 +45,7 @@ export function createCliCaptureContainers(
     appId: input.appId,
     guestSpaceId: input.guestSpaceId,
   };
-  const paths = buildAppFilePaths(input.appName);
+  const paths = buildAppFilePaths(input.appName, input.baseDir);
 
   return {
     paths,
