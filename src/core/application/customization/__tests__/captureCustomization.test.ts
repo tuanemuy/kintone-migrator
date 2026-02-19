@@ -52,7 +52,7 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.js).toHaveLength(1);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "myapp/desktop/js/app.js",
+      path: "desktop/js/app.js",
     });
 
     expect(container.fileDownloader.callLog).toContain("download");
@@ -133,10 +133,10 @@ describe("captureCustomization", () => {
 
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([
-      { type: "FILE", path: "myapp/desktop/js/desktop.js" },
+      { type: "FILE", path: "desktop/js/desktop.js" },
     ]);
     expect(parsed.mobile.js).toEqual([
-      { type: "FILE", path: "myapp/mobile/js/mobile.js" },
+      { type: "FILE", path: "mobile/js/mobile.js" },
     ]);
 
     expect(container.fileWriter.writtenFiles.size).toBe(2);
@@ -186,7 +186,7 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "myapp/desktop/js/app.js",
+      path: "desktop/js/app.js",
     });
     expect(parsed.desktop.js[1]).toEqual({
       type: "URL",
@@ -195,7 +195,7 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.css).toHaveLength(1);
     expect(parsed.desktop.css[0]).toEqual({
       type: "FILE",
-      path: "myapp/desktop/css/style.css",
+      path: "desktop/css/style.css",
     });
   });
 
@@ -269,7 +269,7 @@ describe("captureCustomization", () => {
     const parsed = ConfigParser.parse(result.configText);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "myapp/desktop/js/passwd",
+      path: "desktop/js/passwd",
     });
     expect(
       container.fileWriter.writtenFiles.has(
@@ -318,11 +318,11 @@ describe("captureCustomization", () => {
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
-      path: "myapp/desktop/js/app.js",
+      path: "desktop/js/app.js",
     });
     expect(parsed.desktop.js[1]).toEqual({
       type: "FILE",
-      path: "myapp/desktop/js/app_1.js",
+      path: "desktop/js/app_1.js",
     });
 
     expect(container.fileWriter.writtenFiles.size).toBe(2);

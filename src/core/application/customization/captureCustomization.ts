@@ -140,7 +140,7 @@ function planPlatform(
     args.input.filePrefix,
     platformName,
   );
-  const platformPrefix = join(args.input.filePrefix, platformName);
+  const platformPrefix = platformName;
 
   const jsPlan = planResources(
     remotePlatform.js,

@@ -1,4 +1,4 @@
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import {
@@ -17,12 +17,14 @@ import {
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { deriveFilePrefix } from "./capture";
 
 async function applyCustomizationForApp(
   config: CustomizationCliContainerConfig,
 ): Promise<CustomizationContainer> {
   const container = createCustomizationCliContainer(config);
-  const basePath = dirname(resolve(config.customizeFilePath));
+  const filePrefix = deriveFilePrefix(config.customizeFilePath);
+  const basePath = join(dirname(resolve(config.customizeFilePath)), filePrefix);
 
   const s = p.spinner();
   s.start("Applying customization...");
