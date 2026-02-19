@@ -16,14 +16,11 @@ import type {
 } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type {
-  DecorationElement,
   ElementSize,
   FieldCode,
   FieldDefinition,
   FieldType,
   LayoutElement,
-  LayoutField,
-  SystemFieldLayout,
 } from "@/core/domain/formSchema/valueObject";
 import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
 
@@ -343,21 +340,21 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
           label: String(raw.label ?? ""),
           elementId,
           size,
-        } as DecorationElement;
+        };
       case "SPACER":
         return {
           kind: "decoration",
           type: "SPACER",
           elementId,
           size,
-        } as DecorationElement;
+        };
       case "HR":
         return {
           kind: "decoration",
           type: "HR",
           elementId,
           size,
-        } as DecorationElement;
+        };
       default:
         throw new SystemError(
           SystemErrorCode.ExternalApiError,
@@ -372,7 +369,7 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
       code: String(raw.code ?? ""),
       type,
       ...(raw.size !== undefined ? { size: parseElementSize(raw.size) } : {}),
-    } as SystemFieldLayout;
+    };
   }
 
   if (!KNOWN_FIELD_TYPES.has(type)) {
@@ -397,7 +394,7 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
       properties: {},
     } as FieldDefinition,
     ...(size !== undefined ? { size } : {}),
-  } as LayoutField;
+  };
 }
 
 function fromKintoneLayoutRow(raw: KintoneLayoutRow): LayoutRow {
@@ -439,35 +436,35 @@ function fromKintoneLayoutItem(raw: KintoneLayoutItem): LayoutItem {
 function toKintoneLayoutElement(
   element: LayoutElement,
 ): Record<string, unknown> {
-  if (element.kind === "field") {
-    const result: Record<string, unknown> = {
-      type: element.field.type,
-      code: element.field.code as string,
-    };
-    if (element.size !== undefined) {
-      result.size = element.size;
+  switch (element.kind) {
+    case "field": {
+      const result: Record<string, unknown> = {
+        type: element.field.type,
+        code: element.field.code as string,
+      };
+      if (element.size !== undefined) {
+        result.size = element.size;
+      }
+      return result;
     }
-    return result;
-  }
-
-  if (element.kind === "decoration") {
-    const result: Record<string, unknown> = {
-      type: element.type,
-      elementId: element.elementId,
-      size: element.size,
-    };
-    if (element.type === "LABEL") {
-      result.label = element.label;
+    case "decoration": {
+      const result: Record<string, unknown> = {
+        type: element.type,
+        elementId: element.elementId,
+        size: element.size,
+      };
+      if (element.type === "LABEL") {
+        result.label = element.label;
+      }
+      return result;
     }
-    return result;
+    case "systemField":
+      return {
+        type: element.type,
+        code: element.code,
+        ...(element.size !== undefined ? { size: element.size } : {}),
+      };
   }
-
-  // element.kind === "systemField"
-  return {
-    type: element.type,
-    code: element.code,
-    ...(element.size !== undefined ? { size: element.size } : {}),
-  };
 }
 
 function toKintoneLayoutRow(row: LayoutRow): Record<string, unknown> {

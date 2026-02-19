@@ -61,31 +61,31 @@ function serializeFlatField(
 function serializeLayoutElement(
   element: LayoutElement,
 ): Record<string, unknown> {
-  if (element.kind === "field") {
-    return serializeFlatField(element.field, element.size);
-  }
-
-  if (element.kind === "decoration") {
-    const result: Record<string, unknown> = { type: element.type };
-    if (element.type === "LABEL") {
-      result.label = element.label;
+  switch (element.kind) {
+    case "field":
+      return serializeFlatField(element.field, element.size);
+    case "decoration": {
+      const result: Record<string, unknown> = { type: element.type };
+      if (element.type === "LABEL") {
+        result.label = element.label;
+      }
+      result.elementId = element.elementId;
+      if (element.size !== undefined) {
+        result.size = serializeSize(element.size);
+      }
+      return result;
     }
-    result.elementId = element.elementId;
-    if (element.size !== undefined) {
-      result.size = serializeSize(element.size);
+    case "systemField": {
+      const result: Record<string, unknown> = {
+        code: element.code,
+        type: element.type,
+      };
+      if (element.size !== undefined) {
+        result.size = serializeSize(element.size);
+      }
+      return result;
     }
-    return result;
   }
-
-  // element.kind === "systemField"
-  const result: Record<string, unknown> = {
-    code: element.code,
-    type: element.type,
-  };
-  if (element.size !== undefined) {
-    result.size = serializeSize(element.size);
-  }
-  return result;
 }
 
 function serializeLayoutRow(row: LayoutRow): Record<string, unknown> {

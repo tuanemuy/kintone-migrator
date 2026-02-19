@@ -1007,20 +1007,20 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
-              kind: "decoration" as const,
+              kind: "decoration",
               type: "LABEL" as const,
               label: "見出し",
               elementId: "el1",
               size: { width: "400" },
             },
             {
-              kind: "decoration" as const,
+              kind: "decoration",
               type: "SPACER" as const,
               elementId: "el2",
               size: { width: "100" },
             },
             {
-              kind: "decoration" as const,
+              kind: "decoration",
               type: "HR" as const,
               elementId: "el3",
               size: { width: "600" },
@@ -1552,7 +1552,7 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
-              kind: "systemField" as const,
+              kind: "systemField",
               code: "レコード番号",
               type: "RECORD_NUMBER",
               size: { width: "100" },
@@ -1584,7 +1584,7 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
-              kind: "systemField" as const,
+              kind: "systemField",
               code: "CREATOR",
               type: "CREATOR",
             },
@@ -1846,7 +1846,7 @@ describe("KintoneFormConfigurator", () => {
 
       if (layout[0].type === "ROW") {
         const el = layout[0].fields[0];
-        if ("code" in el && "type" in el) {
+        if (el.kind === "systemField") {
           expect(el).not.toHaveProperty("size");
         }
       }

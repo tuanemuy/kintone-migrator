@@ -344,7 +344,7 @@ layout:
       const row = schema.layout[0];
       if (row.type === "ROW") {
         const el = row.fields[0];
-        if ("field" in el) {
+        if (el.kind === "field") {
           expect(el.size).toEqual({ width: "200", innerHeight: "100" });
         }
       }
@@ -1523,8 +1523,8 @@ layout:
       const row = schema.layout[0];
       if (row.type === "ROW") {
         const el = row.fields[0];
-        expect("code" in el).toBe(true);
-        if ("code" in el && !("field" in el)) {
+        expect(el.kind).toBe("systemField");
+        if (el.kind === "systemField") {
           expect(el.type).toBe("RECORD_NUMBER");
           expect(el.size).toEqual({ width: "100" });
         }
@@ -1544,7 +1544,7 @@ layout:
       const row = schema.layout[0];
       if (row.type === "ROW") {
         const el = row.fields[0];
-        if ("field" in el) {
+        if (el.kind === "field") {
           expect(el.size).toBeUndefined();
         }
       }
