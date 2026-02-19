@@ -25,7 +25,7 @@ function makeValidSchema(): Schema {
     layout: [
       {
         type: "ROW",
-        fields: [{ field }],
+        fields: [{ kind: "field", field }],
       },
     ],
   };
@@ -41,7 +41,7 @@ function makeInvalidSchema(): Schema {
     layout: [
       {
         type: "ROW",
-        fields: [{ field }],
+        fields: [{ kind: "field", field }],
       },
     ],
   };

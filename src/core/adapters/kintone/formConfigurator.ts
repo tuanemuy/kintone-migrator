@@ -16,14 +16,11 @@ import type {
 } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type {
-  DecorationElement,
   ElementSize,
   FieldCode,
   FieldDefinition,
   FieldType,
   LayoutElement,
-  LayoutField,
-  SystemFieldLayout,
 } from "@/core/domain/formSchema/valueObject";
 import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
 
@@ -338,15 +335,26 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
     switch (type) {
       case "LABEL":
         return {
+          kind: "decoration",
           type: "LABEL",
           label: String(raw.label ?? ""),
           elementId,
           size,
-        } as DecorationElement;
+        };
       case "SPACER":
-        return { type: "SPACER", elementId, size } as DecorationElement;
+        return {
+          kind: "decoration",
+          type: "SPACER",
+          elementId,
+          size,
+        };
       case "HR":
-        return { type: "HR", elementId, size } as DecorationElement;
+        return {
+          kind: "decoration",
+          type: "HR",
+          elementId,
+          size,
+        };
       default:
         throw new SystemError(
           SystemErrorCode.ExternalApiError,
@@ -357,10 +365,11 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
 
   if (SYSTEM_FIELD_TYPES.has(type)) {
     return {
+      kind: "systemField",
       code: String(raw.code ?? ""),
       type,
       ...(raw.size !== undefined ? { size: parseElementSize(raw.size) } : {}),
-    } as SystemFieldLayout;
+    };
   }
 
   if (!KNOWN_FIELD_TYPES.has(type)) {
@@ -377,6 +386,7 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
   const code = FieldCodeVO.create(String(raw.code ?? ""));
   const size = parseElementSize(raw.size);
   return {
+    kind: "field",
     field: {
       type: fieldType,
       code,
@@ -384,7 +394,7 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
       properties: {},
     } as FieldDefinition,
     ...(size !== undefined ? { size } : {}),
-  } as LayoutField;
+  };
 }
 
 function fromKintoneLayoutRow(raw: KintoneLayoutRow): LayoutRow {
@@ -426,37 +436,35 @@ function fromKintoneLayoutItem(raw: KintoneLayoutItem): LayoutItem {
 function toKintoneLayoutElement(
   element: LayoutElement,
 ): Record<string, unknown> {
-  if ("field" in element) {
-    const lf = element as LayoutField;
-    const result: Record<string, unknown> = {
-      type: lf.field.type,
-      code: lf.field.code as string,
-    };
-    if (lf.size !== undefined) {
-      result.size = lf.size;
+  switch (element.kind) {
+    case "field": {
+      const result: Record<string, unknown> = {
+        type: element.field.type,
+        code: element.field.code as string,
+      };
+      if (element.size !== undefined) {
+        result.size = element.size;
+      }
+      return result;
     }
-    return result;
-  }
-
-  if ("elementId" in element && !("code" in element)) {
-    const dec = element as DecorationElement;
-    const result: Record<string, unknown> = {
-      type: dec.type,
-      elementId: dec.elementId,
-      size: dec.size,
-    };
-    if (dec.type === "LABEL") {
-      result.label = dec.label;
+    case "decoration": {
+      const result: Record<string, unknown> = {
+        type: element.type,
+        elementId: element.elementId,
+        size: element.size,
+      };
+      if (element.type === "LABEL") {
+        result.label = element.label;
+      }
+      return result;
     }
-    return result;
+    case "systemField":
+      return {
+        type: element.type,
+        code: element.code,
+        ...(element.size !== undefined ? { size: element.size } : {}),
+      };
   }
-
-  const sys = element as SystemFieldLayout;
-  return {
-    type: sys.type,
-    code: sys.code,
-    ...(sys.size !== undefined ? { size: sys.size } : {}),
-  };
 }
 
 function toKintoneLayoutRow(row: LayoutRow): Record<string, unknown> {

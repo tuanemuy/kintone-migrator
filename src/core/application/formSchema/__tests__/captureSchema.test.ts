@@ -37,7 +37,7 @@ describe("captureSchema", () => {
     container.formConfigurator.setLayout([
       {
         type: "ROW",
-        fields: [{ field: nameField }],
+        fields: [{ kind: "field", field: nameField }],
       },
     ]);
 
@@ -80,8 +80,8 @@ describe("captureSchema", () => {
       ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: name }] },
-      { type: "ROW", fields: [{ field: price }] },
+      { type: "ROW", fields: [{ kind: "field", field: name }] },
+      { type: "ROW", fields: [{ kind: "field", field: price }] },
     ]);
 
     const result = await captureSchema({ container });
@@ -107,6 +107,7 @@ describe("captureSchema", () => {
         type: "ROW",
         fields: [
           {
+            kind: "field",
             field: {
               code: FieldCode.create("email"),
               type: "SINGLE_LINE_TEXT",
@@ -146,7 +147,7 @@ describe("captureSchema", () => {
       new Map([[FieldCode.create("name"), name]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: name }] },
+      { type: "ROW", fields: [{ kind: "field", field: name }] },
     ]);
 
     const result = await captureSchema({ container });
@@ -178,7 +179,9 @@ describe("captureSchema", () => {
         code: FieldCode.create("grp"),
         label: "グループ",
         openGroup: true,
-        layout: [{ type: "ROW", fields: [{ field: innerField }] }],
+        layout: [
+          { type: "ROW", fields: [{ kind: "field", field: innerField }] },
+        ],
       },
     ]);
 
@@ -197,24 +200,29 @@ describe("captureSchema", () => {
       {
         type: "ROW",
         fields: [
-          { field: nameField },
+          { kind: "field", field: nameField },
           {
+            kind: "systemField",
             code: "RECORD_NUMBER",
             type: "RECORD_NUMBER",
           },
           {
+            kind: "systemField",
             code: "CREATOR",
             type: "CREATOR",
           },
           {
+            kind: "systemField",
             code: "CREATED_TIME",
             type: "CREATED_TIME",
           },
           {
+            kind: "systemField",
             code: "MODIFIER",
             type: "MODIFIER",
           },
           {
+            kind: "systemField",
             code: "UPDATED_TIME",
             type: "UPDATED_TIME",
           },
@@ -278,7 +286,7 @@ describe("captureSchema", () => {
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: innerField }],
+        fields: [{ kind: "field", field: innerField }],
       },
     ]);
 
@@ -323,7 +331,7 @@ describe("captureSchema", () => {
       new Map([[FieldCode.create("ref"), refField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: refField }] },
+      { type: "ROW", fields: [{ kind: "field", field: refField }] },
     ]);
 
     const result = await captureSchema({ container });
@@ -364,13 +372,21 @@ describe("captureSchema", () => {
       ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: name }, { field: price }] },
+      {
+        type: "ROW",
+        fields: [
+          { kind: "field", field: name },
+          { kind: "field", field: price },
+        ],
+      },
       {
         type: "GROUP",
         code: FieldCode.create("grp"),
         label: "グループ",
         openGroup: true,
-        layout: [{ type: "ROW", fields: [{ field: innerField }] }],
+        layout: [
+          { type: "ROW", fields: [{ kind: "field", field: innerField }] },
+        ],
       },
     ]);
 

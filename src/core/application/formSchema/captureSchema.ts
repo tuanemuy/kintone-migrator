@@ -1,4 +1,4 @@
-import { enrichLayoutWithFields } from "@/core/domain/formSchema/entity";
+import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import { SchemaSerializer } from "@/core/domain/formSchema/services/schemaSerializer";
 import type { Container } from "../container";
 import type { ServiceArgs } from "../types";

@@ -13,7 +13,6 @@ import type {
   LayoutField,
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
-  SystemFieldLayout,
 } from "../valueObject";
 import { FieldCode } from "../valueObject";
 
@@ -429,15 +428,16 @@ function parseDecorationElement(raw: RawField): DecorationElement {
   switch (type) {
     case "LABEL":
       return {
+        kind: "decoration",
         type: "LABEL",
         label: String(raw.label ?? ""),
         elementId,
         size,
       };
     case "SPACER":
-      return { type: "SPACER", elementId, size };
+      return { kind: "decoration", type: "SPACER", elementId, size };
     case "HR":
-      return { type: "HR", elementId, size };
+      return { kind: "decoration", type: "HR", elementId, size };
     default:
       throw new BusinessRuleError(
         FormSchemaErrorCode.FsInvalidDecorationElement,
@@ -454,17 +454,18 @@ function parseLayoutElement(raw: RawField): LayoutElement {
   }
 
   if (SYSTEM_FIELD_TYPES.has(type)) {
-    const sysField: SystemFieldLayout = {
+    return {
+      kind: "systemField",
       code: String(raw.code),
       type,
       ...(raw.size !== undefined ? { size: parseSize(raw.size) } : {}),
     };
-    return sysField;
   }
 
   const field = parseFieldDefinitionFromFlat(raw);
   const size = parseSize(raw.size);
   const layoutField: LayoutField = {
+    kind: "field",
     field,
     ...(size !== undefined ? { size } : {}),
   };
@@ -495,7 +496,7 @@ function collectFieldsFromElements(
 ): ReadonlyMap<FieldCode, FieldDefinition> {
   const fields = new Map<FieldCode, FieldDefinition>();
   for (const element of elements) {
-    if ("field" in element) {
+    if (element.kind === "field") {
       checkDuplicateFieldCode(fields, element.field.code);
       fields.set(element.field.code, element.field);
     }

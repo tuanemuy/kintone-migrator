@@ -1,5 +1,5 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
-import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/entity";
+import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/services/layoutEnricher";
 import type {
   FieldCode,
   FieldDefinition,

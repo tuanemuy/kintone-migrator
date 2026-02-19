@@ -1,6 +1,6 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
-import { enrichLayoutWithFields } from "@/core/domain/formSchema/entity";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
+import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
 import type { Container } from "../container";
 import type { ServiceArgs } from "../types";

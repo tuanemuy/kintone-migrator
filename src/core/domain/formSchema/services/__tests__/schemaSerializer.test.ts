@@ -31,7 +31,7 @@ describe("SchemaSerializer", () => {
       const layout: FormLayout = [
         {
           type: "ROW",
-          fields: [{ field, size: { width: "200" } }],
+          fields: [{ kind: "field", field, size: { width: "200" } }],
         },
       ];
       const yaml = SchemaSerializer.serialize(layout);
@@ -51,7 +51,7 @@ describe("SchemaSerializer", () => {
           code: "grp" as FieldCode,
           label: "グループ",
           openGroup: true,
-          layout: [{ type: "ROW", fields: [{ field }] }],
+          layout: [{ type: "ROW", fields: [{ kind: "field", field }] }],
         },
       ];
       const yaml = SchemaSerializer.serialize(layout);
@@ -67,7 +67,7 @@ describe("SchemaSerializer", () => {
           type: "SUBTABLE",
           code: "tbl" as FieldCode,
           label: "テーブル",
-          fields: [{ field }],
+          fields: [{ kind: "field", field }],
         },
       ];
       const yaml = SchemaSerializer.serialize(layout);
@@ -79,13 +79,19 @@ describe("SchemaSerializer", () => {
     it("デコレーション要素をシリアライズできる", () => {
       const elements: LayoutElement[] = [
         {
+          kind: "decoration",
           type: "LABEL",
           label: "ラベル",
           elementId: "el1",
           size: { width: "200" },
         },
-        { type: "SPACER", elementId: "el2", size: {} },
-        { type: "HR", elementId: "el3", size: { width: "400" } },
+        { kind: "decoration", type: "SPACER", elementId: "el2", size: {} },
+        {
+          kind: "decoration",
+          type: "HR",
+          elementId: "el3",
+          size: { width: "400" },
+        },
       ];
       const layout: FormLayout = [{ type: "ROW", fields: elements }];
       const yaml = SchemaSerializer.serialize(layout);
@@ -99,8 +105,13 @@ describe("SchemaSerializer", () => {
 
     it("システムフィールドをシリアライズできる", () => {
       const elements: LayoutElement[] = [
-        { code: "RECORD_NUMBER", type: "RECORD_NUMBER" },
-        { code: "CREATOR", type: "CREATOR", size: { width: "100" } },
+        { kind: "systemField", code: "RECORD_NUMBER", type: "RECORD_NUMBER" },
+        {
+          kind: "systemField",
+          code: "CREATOR",
+          type: "CREATOR",
+          size: { width: "100" },
+        },
       ];
       const layout: FormLayout = [{ type: "ROW", fields: elements }];
       const yaml = SchemaSerializer.serialize(layout);
@@ -126,7 +137,9 @@ describe("SchemaSerializer", () => {
           },
         },
       };
-      const layout: FormLayout = [{ type: "ROW", fields: [{ field }] }];
+      const layout: FormLayout = [
+        { type: "ROW", fields: [{ kind: "field", field }] },
+      ];
       const yaml = SchemaSerializer.serialize(layout);
       expect(yaml).toContain("type: REFERENCE_TABLE");
       expect(yaml).toContain('app: "5"');
@@ -142,7 +155,9 @@ describe("SchemaSerializer", () => {
         noLabel: true,
         properties: { required: true },
       } as FieldDefinition;
-      const layout: FormLayout = [{ type: "ROW", fields: [{ field }] }];
+      const layout: FormLayout = [
+        { type: "ROW", fields: [{ kind: "field", field }] },
+      ];
       const yaml = SchemaSerializer.serialize(layout);
       expect(yaml).toContain("noLabel: true");
       expect(yaml).toContain("code: hidden");
@@ -157,7 +172,7 @@ describe("SchemaSerializer", () => {
           label: "グループ",
           noLabel: true,
           openGroup: false,
-          layout: [{ type: "ROW", fields: [{ field }] }],
+          layout: [{ type: "ROW", fields: [{ kind: "field", field }] }],
         },
       ];
       const yaml = SchemaSerializer.serialize(layout);
@@ -173,7 +188,7 @@ describe("SchemaSerializer", () => {
           code: "tbl" as FieldCode,
           label: "テーブル",
           noLabel: true,
-          fields: [{ field }],
+          fields: [{ kind: "field", field }],
         },
       ];
       const yaml = SchemaSerializer.serialize(layout);
@@ -193,6 +208,7 @@ describe("SchemaSerializer", () => {
           type: "ROW",
           fields: [
             {
+              kind: "field",
               field,
               size: { width: "500", height: "200", innerHeight: "150" },
             },
@@ -212,7 +228,9 @@ describe("SchemaSerializer", () => {
           type: "GROUP",
           code: "grp" as FieldCode,
           label: "グループ",
-          layout: [{ type: "ROW", fields: [{ field: innerField }] }],
+          layout: [
+            { type: "ROW", fields: [{ kind: "field", field: innerField }] },
+          ],
         },
       ];
       const yaml = SchemaSerializer.serialize(layout);
@@ -240,7 +258,9 @@ describe("SchemaSerializer", () => {
           },
         },
       };
-      const layout: FormLayout = [{ type: "ROW", fields: [{ field }] }];
+      const layout: FormLayout = [
+        { type: "ROW", fields: [{ kind: "field", field }] },
+      ];
       const yaml = SchemaSerializer.serialize(layout);
       expect(yaml).toContain('size: "10"');
     });
@@ -248,6 +268,7 @@ describe("SchemaSerializer", () => {
     it("デコレーション要素の size が undefined の場合、size が出力されない", () => {
       const elements: LayoutElement[] = [
         {
+          kind: "decoration",
           type: "SPACER",
           elementId: "el1",
           size: undefined as unknown as Record<string, string>,
@@ -261,7 +282,9 @@ describe("SchemaSerializer", () => {
 
     it("size のない LayoutField をシリアライズすると size が出力されない", () => {
       const field = makeField("name", "SINGLE_LINE_TEXT", "名前");
-      const layout: FormLayout = [{ type: "ROW", fields: [{ field }] }];
+      const layout: FormLayout = [
+        { type: "ROW", fields: [{ kind: "field", field }] },
+      ];
       const yaml = SchemaSerializer.serialize(layout);
       expect(yaml).toContain("code: name");
       expect(yaml).not.toContain("size:");

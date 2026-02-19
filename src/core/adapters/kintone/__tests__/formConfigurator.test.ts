@@ -718,8 +718,8 @@ describe("KintoneFormConfigurator", () => {
       if (layout[0].type === "ROW") {
         expect(layout[0].fields).toHaveLength(1);
         const el = layout[0].fields[0];
-        expect("field" in el).toBe(true);
-        if ("field" in el) {
+        expect(el.kind).toBe("field");
+        if (el.kind === "field") {
           expect(el.field.type).toBe("SINGLE_LINE_TEXT");
           expect(el.size).toEqual({ width: "200" });
         }
@@ -882,12 +882,12 @@ describe("KintoneFormConfigurator", () => {
       if (layout[0].type === "ROW") {
         const [recNum, creator] = layout[0].fields;
         // システムフィールドは SystemFieldLayout として変換
-        expect("code" in recNum && !("field" in recNum)).toBe(true);
-        if ("code" in recNum && "type" in recNum) {
+        expect(recNum.kind).toBe("systemField");
+        if (recNum.kind === "systemField") {
           expect(recNum.code).toBe("レコード番号");
           expect(recNum.type).toBe("RECORD_NUMBER");
         }
-        if ("code" in creator && "type" in creator) {
+        if (creator.kind === "systemField") {
           expect(creator.code).toBe("作成者");
           expect(creator.type).toBe("CREATOR");
         }
@@ -916,6 +916,7 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
+              kind: "field",
               field: {
                 code: "name" as FieldCode,
                 type: "SINGLE_LINE_TEXT",
@@ -977,6 +978,7 @@ describe("KintoneFormConfigurator", () => {
           label: "テーブル",
           fields: [
             {
+              kind: "field",
               field: {
                 code: "col1" as FieldCode,
                 type: "SINGLE_LINE_TEXT",
@@ -1005,17 +1007,20 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
+              kind: "decoration",
               type: "LABEL" as const,
               label: "見出し",
               elementId: "el1",
               size: { width: "400" },
             },
             {
+              kind: "decoration",
               type: "SPACER" as const,
               elementId: "el2",
               size: { width: "100" },
             },
             {
+              kind: "decoration",
               type: "HR" as const,
               elementId: "el3",
               size: { width: "600" },
@@ -1547,6 +1552,7 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
+              kind: "systemField",
               code: "レコード番号",
               type: "RECORD_NUMBER",
               size: { width: "100" },
@@ -1578,6 +1584,7 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
+              kind: "systemField",
               code: "CREATOR",
               type: "CREATOR",
             },
@@ -1780,7 +1787,7 @@ describe("KintoneFormConfigurator", () => {
 
       if (layout[0].type === "ROW") {
         const el = layout[0].fields[0];
-        if ("field" in el) {
+        if (el.kind === "field") {
           expect(el.size).toBeUndefined();
         }
       }
@@ -1795,6 +1802,7 @@ describe("KintoneFormConfigurator", () => {
           type: "ROW",
           fields: [
             {
+              kind: "field",
               field: {
                 code: "name" as FieldCode,
                 type: "SINGLE_LINE_TEXT",
@@ -1838,7 +1846,7 @@ describe("KintoneFormConfigurator", () => {
 
       if (layout[0].type === "ROW") {
         const el = layout[0].fields[0];
-        if ("code" in el && "type" in el) {
+        if (el.kind === "systemField") {
           expect(el).not.toHaveProperty("size");
         }
       }
@@ -1954,7 +1962,7 @@ describe("KintoneFormConfigurator", () => {
 
       if (layout[0].type === "ROW") {
         const el = layout[0].fields[0];
-        if ("field" in el) {
+        if (el.kind === "field") {
           expect(el.size).toEqual({ height: "200", innerHeight: "180" });
           expect(el.size).not.toHaveProperty("width");
         }

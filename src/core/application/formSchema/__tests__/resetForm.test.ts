@@ -78,7 +78,7 @@ describe("resetForm", () => {
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
     container.formConfigurator.callLog = [];
 

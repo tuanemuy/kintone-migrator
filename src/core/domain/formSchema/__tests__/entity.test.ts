@@ -1,13 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { DiffEntry } from "../entity";
+import { FormDiff, type FormLayout, type LayoutRow, Schema } from "../entity";
 import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
-  FormDiff,
-  type FormLayout,
-  type LayoutRow,
-  Schema,
-} from "../entity";
+} from "../services/layoutEnricher";
 import {
   FieldCode,
   type FieldDefinition,
@@ -169,7 +166,7 @@ describe("Schema.create", () => {
     const layout: FormLayout = [
       {
         type: "ROW",
-        fields: [{ field: textField("name", "名前") }],
+        fields: [{ kind: "field", field: textField("name", "名前") }],
       },
     ];
     const schema = Schema.create(fields, layout);
@@ -194,6 +191,7 @@ describe("enrichLayoutWithFields", () => {
         type: "ROW",
         fields: [
           {
+            kind: "field",
             field: textField("name", "名前"),
             size: { width: "200" },
           },
@@ -204,8 +202,8 @@ describe("enrichLayoutWithFields", () => {
     const enriched = enrichLayoutWithFields(layout, fields);
     const row = enriched[0] as LayoutRow;
     const element = row.fields[0];
-    expect("field" in element).toBe(true);
-    if ("field" in element) {
+    expect(element.kind).toBe("field");
+    if (element.kind === "field") {
       expect(element.field).toEqual(fullField);
       expect(element.size).toEqual({ width: "200" });
     }
@@ -226,7 +224,7 @@ describe("enrichLayoutWithFields", () => {
         layout: [
           {
             type: "ROW",
-            fields: [{ field: numberField("price", "金額") }],
+            fields: [{ kind: "field", field: numberField("price", "金額") }],
           },
         ],
       },
@@ -240,7 +238,7 @@ describe("enrichLayoutWithFields", () => {
       expect(group.openGroup).toBe(true);
       const row = group.layout[0];
       const el = row.fields[0];
-      if ("field" in el) {
+      if (el.kind === "field") {
         expect(el.field).toEqual(innerField);
       }
     }
@@ -261,7 +259,7 @@ describe("enrichLayoutWithFields", () => {
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "旧ラベル",
-        fields: [{ field: textField("item", "品目") }],
+        fields: [{ kind: "field", field: textField("item", "品目") }],
       },
     ];
 
@@ -271,7 +269,7 @@ describe("enrichLayoutWithFields", () => {
     if (subtable.type === "SUBTABLE") {
       expect(subtable.label).toBe("明細");
       const el = subtable.fields[0];
-      if ("field" in el) {
+      if (el.kind === "field") {
         expect(el.field).toEqual(subField);
       }
     }
@@ -284,12 +282,14 @@ describe("enrichLayoutWithFields", () => {
         type: "ROW",
         fields: [
           {
+            kind: "decoration",
             type: "LABEL",
             label: "見出し",
             elementId: "lbl1",
             size: { width: "200" },
           },
           {
+            kind: "decoration",
             type: "HR",
             elementId: "hr1",
             size: { width: "100" },
@@ -302,6 +302,7 @@ describe("enrichLayoutWithFields", () => {
     const row = enriched[0] as LayoutRow;
     expect(row.fields).toHaveLength(2);
     expect(row.fields[0]).toEqual({
+      kind: "decoration",
       type: "LABEL",
       label: "見出し",
       elementId: "lbl1",
@@ -315,14 +316,14 @@ describe("enrichLayoutWithFields", () => {
     const layout: FormLayout = [
       {
         type: "ROW",
-        fields: [{ field: orphanField }],
+        fields: [{ kind: "field", field: orphanField }],
       },
     ];
 
     const enriched = enrichLayoutWithFields(layout, fields);
     const row = enriched[0] as LayoutRow;
     const el = row.fields[0];
-    if ("field" in el) {
+    if (el.kind === "field") {
       expect(el.field).toEqual(orphanField);
     }
   });
@@ -393,7 +394,7 @@ describe("enrichLayoutWithFields", () => {
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "旧ラベル",
-        fields: [{ field: textField("item", "品目") }],
+        fields: [{ kind: "field", field: textField("item", "品目") }],
       },
     ];
 
@@ -403,7 +404,7 @@ describe("enrichLayoutWithFields", () => {
       expect(subtable.label).toBe("明細");
       expect(subtable.noLabel).toBe(true);
       const el = subtable.fields[0];
-      if ("field" in el) {
+      if (el.kind === "field") {
         expect(el.field).toEqual(inner);
       }
     }
@@ -417,7 +418,7 @@ describe("enrichLayoutWithFields", () => {
         type: "SUBTABLE",
         code: FieldCode.create("orphan_table"),
         label: "孤児テーブル",
-        fields: [{ field: orphanInner }],
+        fields: [{ kind: "field", field: orphanInner }],
       },
     ];
 
@@ -427,7 +428,7 @@ describe("enrichLayoutWithFields", () => {
       expect(subtable.label).toBe("孤児テーブル");
       // fieldsにないのでフィールド補完はされない
       const el = subtable.fields[0];
-      if ("field" in el) {
+      if (el.kind === "field") {
         expect(el.field).toEqual(orphanInner);
       }
     }
@@ -441,14 +442,14 @@ describe("enrichLayoutWithFields", () => {
     const layout: FormLayout = [
       {
         type: "ROW",
-        fields: [{ field: textField("name", "名前") }],
+        fields: [{ kind: "field", field: textField("name", "名前") }],
       },
     ];
 
     const enriched = enrichLayoutWithFields(layout, fields);
     const row = enriched[0] as LayoutRow;
     const element = row.fields[0];
-    if ("field" in element) {
+    if (element.kind === "field") {
       expect(element.size).toBeUndefined();
     }
   });

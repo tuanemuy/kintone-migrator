@@ -41,7 +41,7 @@ describe("executeMigration", () => {
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
 
     await executeMigration({ container });
@@ -58,7 +58,7 @@ describe("executeMigration", () => {
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
     container.formConfigurator.callLog = [];
 
@@ -94,7 +94,7 @@ describe("executeMigration", () => {
       new Map([[FieldCode.create("name"), oldField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldField }] },
+      { type: "ROW", fields: [{ kind: "field", field: oldField }] },
     ]);
 
     await executeMigration({ container });
@@ -116,7 +116,13 @@ describe("executeMigration", () => {
       ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: existing }, { field: extra }] },
+      {
+        type: "ROW",
+        fields: [
+          { kind: "field", field: existing },
+          { kind: "field", field: extra },
+        ],
+      },
     ]);
 
     await executeMigration({ container });
@@ -165,7 +171,7 @@ describe("executeMigration", () => {
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
 
     // レイアウトが同じなので変更なし
@@ -258,7 +264,13 @@ layout:
       ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldName }, { field: toDelete }] },
+      {
+        type: "ROW",
+        fields: [
+          { kind: "field", field: oldName },
+          { kind: "field", field: toDelete },
+        ],
+      },
     ]);
 
     await executeMigration({ container });
@@ -292,7 +304,7 @@ layout:
     );
     // スキーマとは異なるレイアウト（行が2つある）
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
       { type: "ROW", fields: [] },
     ]);
 
@@ -313,7 +325,7 @@ layout:
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
       { type: "ROW", fields: [] },
     ]);
     container.formConfigurator.callLog = [];
@@ -338,7 +350,7 @@ layout:
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
 
     // executeMigration前の状態を記録
@@ -391,7 +403,7 @@ layout:
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: existingInner }],
+        fields: [{ kind: "field", field: existingInner }],
       },
     ]);
     container.formConfigurator.callLog = [];
@@ -456,7 +468,10 @@ layout:
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: col1 }, { field: col2 }],
+        fields: [
+          { kind: "field", field: col1 },
+          { kind: "field", field: col2 },
+        ],
       },
     ]);
 
@@ -506,7 +521,7 @@ layout:
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: oldInner }],
+        fields: [{ kind: "field", field: oldInner }],
       },
     ]);
 
@@ -557,7 +572,7 @@ layout:
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: col1New }],
+        fields: [{ kind: "field", field: col1New }],
       },
     ]);
 
@@ -584,7 +599,7 @@ layout:
     );
     // レイアウトにはスキーマと同じ name だけ配置 (extra はレイアウト外)
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
 
     await executeMigration({ container });
@@ -634,7 +649,7 @@ layout:
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: oldInner }],
+        fields: [{ kind: "field", field: oldInner }],
       },
     ]);
 
@@ -677,7 +692,7 @@ layout:
       new Map([[FieldCode.create("name"), oldField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldField }] },
+      { type: "ROW", fields: [{ kind: "field", field: oldField }] },
     ]);
     container.formConfigurator.callLog = [];
 
@@ -740,7 +755,13 @@ layout:
       ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldName }, { field: toDelete }] },
+      {
+        type: "ROW",
+        fields: [
+          { kind: "field", field: oldName },
+          { kind: "field", field: toDelete },
+        ],
+      },
     ]);
     container.formConfigurator.callLog = [];
 
@@ -789,7 +810,7 @@ layout:
       new Map([[FieldCode.create("name"), oldField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldField }] },
+      { type: "ROW", fields: [{ kind: "field", field: oldField }] },
     ]);
 
     await executeMigration({ container });
@@ -814,7 +835,7 @@ layout:
       ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: existing }] },
+      { type: "ROW", fields: [{ kind: "field", field: existing }] },
     ]);
 
     await executeMigration({ container });
@@ -1010,7 +1031,7 @@ layout:
         code: FieldCode.create("grp1"),
         label: "基本情報",
         openGroup: true,
-        layout: [{ type: "ROW", fields: [{ field: inner }] }],
+        layout: [{ type: "ROW", fields: [{ kind: "field", field: inner }] }],
       },
     ]);
 
@@ -1124,7 +1145,7 @@ layout:
       new Map([[FieldCode.create("ref"), currentRef]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: currentRef }] },
+      { type: "ROW", fields: [{ kind: "field", field: currentRef }] },
     ]);
 
     await executeMigration({ container });

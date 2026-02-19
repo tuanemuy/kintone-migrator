@@ -1,29 +1,10 @@
 import { stringify as stringifyYaml } from "yaml";
 import type { FormLayout, LayoutItem, LayoutRow } from "../entity";
 import type {
-  DecorationElement,
   ElementSize,
   FieldDefinition,
   LayoutElement,
-  LayoutField,
-  SystemFieldLayout,
 } from "../valueObject";
-
-function isLayoutField(element: LayoutElement): element is LayoutField {
-  return "field" in element;
-}
-
-function isDecorationElement(
-  element: LayoutElement,
-): element is DecorationElement {
-  return "elementId" in element;
-}
-
-function isSystemFieldLayout(
-  element: LayoutElement,
-): element is SystemFieldLayout {
-  return !("field" in element) && !("elementId" in element);
-}
 
 function serializeSize(size: ElementSize): Record<string, string> {
   const result: Record<string, string> = {};
@@ -80,36 +61,31 @@ function serializeFlatField(
 function serializeLayoutElement(
   element: LayoutElement,
 ): Record<string, unknown> {
-  if (isLayoutField(element)) {
-    return serializeFlatField(element.field, element.size);
-  }
-
-  if (isDecorationElement(element)) {
-    const dec = element;
-    const result: Record<string, unknown> = { type: dec.type };
-    if (dec.type === "LABEL") {
-      result.label = dec.label;
+  switch (element.kind) {
+    case "field":
+      return serializeFlatField(element.field, element.size);
+    case "decoration": {
+      const result: Record<string, unknown> = { type: element.type };
+      if (element.type === "LABEL") {
+        result.label = element.label;
+      }
+      result.elementId = element.elementId;
+      if (element.size !== undefined) {
+        result.size = serializeSize(element.size);
+      }
+      return result;
     }
-    result.elementId = dec.elementId;
-    if (dec.size !== undefined) {
-      result.size = serializeSize(dec.size);
+    case "systemField": {
+      const result: Record<string, unknown> = {
+        code: element.code,
+        type: element.type,
+      };
+      if (element.size !== undefined) {
+        result.size = serializeSize(element.size);
+      }
+      return result;
     }
-    return result;
   }
-
-  if (isSystemFieldLayout(element)) {
-    const sys = element;
-    const result: Record<string, unknown> = {
-      code: sys.code,
-      type: sys.type,
-    };
-    if (sys.size !== undefined) {
-      result.size = serializeSize(sys.size);
-    }
-    return result;
-  }
-
-  return element as Record<string, unknown>;
 }
 
 function serializeLayoutRow(row: LayoutRow): Record<string, unknown> {
