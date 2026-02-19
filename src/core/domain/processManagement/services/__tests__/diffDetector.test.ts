@@ -21,6 +21,9 @@ function makeAction(overrides: Partial<ProcessAction> = {}): ProcessAction {
     to: "処理中",
     filterCond: "",
     type: "PRIMARY",
+    executableUser: {
+      entities: [{ type: "USER", code: "user1" }],
+    },
     ...overrides,
   };
 }
@@ -206,6 +209,39 @@ describe("ProcessManagementDiffDetector", () => {
       expect(result.entries[0].details).toContain("assignee.entities changed");
     });
 
+    it("should detect multiple state property changes simultaneously", () => {
+      const local = makeConfig({
+        states: {
+          未処理: makeState({
+            index: 5,
+            assignee: {
+              type: "ALL",
+              entities: [{ type: "GROUP", code: "group1" }],
+            },
+          }),
+        },
+      });
+      const remote = makeConfig({
+        states: {
+          未処理: makeState({
+            index: 0,
+            assignee: {
+              type: "ONE",
+              entities: [{ type: "USER", code: "user1" }],
+            },
+          }),
+        },
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("index");
+      expect(result.entries[0].details).toContain("assignee.type");
+      expect(result.entries[0].details).toContain("assignee.entities changed");
+    });
+
     it("should detect entities change when includeSubs differs", () => {
       const local = makeConfig({
         states: {
@@ -370,6 +406,52 @@ describe("ProcessManagementDiffDetector", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("executableUser changed");
+    });
+
+    it("should detect executableUser change between undefined and empty entities", () => {
+      const local = makeConfig({
+        actions: [makeAction({ executableUser: undefined })],
+      });
+      const remote = makeConfig({
+        actions: [makeAction({ executableUser: { entities: [] } })],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("executableUser changed");
+    });
+
+    it("should report no change when both executableUser are undefined", () => {
+      const local = makeConfig({
+        actions: [makeAction({ executableUser: undefined })],
+      });
+      const remote = makeConfig({
+        actions: [makeAction({ executableUser: undefined })],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should report no change when executableUser entities are identical", () => {
+      const config = makeConfig({
+        actions: [
+          makeAction({
+            executableUser: {
+              entities: [
+                { type: "USER", code: "admin" },
+                { type: "GROUP", code: "managers" },
+              ],
+            },
+          }),
+        ],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(config, config);
+
+      expect(result.isEmpty).toBe(true);
     });
   });
 

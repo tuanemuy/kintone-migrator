@@ -13,6 +13,8 @@ function isEntityEqual(a: ProcessEntity, b: ProcessEntity): boolean {
   return true;
 }
 
+// Order-sensitive comparison: kintone API preserves entity order,
+// and reordering entities may reflect intentional priority changes.
 function isEntitiesEqual(
   a: readonly ProcessEntity[],
   b: readonly ProcessEntity[],
@@ -22,6 +24,15 @@ function isEntitiesEqual(
     if (!isEntityEqual(a[i], b[i])) return false;
   }
   return true;
+}
+
+function isExecutableUserEqual(
+  a: ProcessAction["executableUser"],
+  b: ProcessAction["executableUser"],
+): boolean {
+  if (a === undefined && b === undefined) return true;
+  if (a === undefined || b === undefined) return false;
+  return isEntitiesEqual(a.entities, b.entities);
 }
 
 function compareActions(
@@ -43,15 +54,18 @@ function compareActions(
   if (localAction.type !== remoteAction.type) {
     diffs.push(`type: ${remoteAction.type} -> ${localAction.type}`);
   }
-  const localEntities = localAction.executableUser?.entities ?? [];
-  const remoteEntities = remoteAction.executableUser?.entities ?? [];
-  if (!isEntitiesEqual(localEntities, remoteEntities)) {
+  if (
+    !isExecutableUserEqual(
+      localAction.executableUser,
+      remoteAction.executableUser,
+    )
+  ) {
     diffs.push("executableUser changed");
   }
   return diffs;
 }
 
-function diffConfigs(
+function compareConfigs(
   local: ProcessManagementConfig,
   remote: ProcessManagementConfig,
 ): ProcessManagementDiffEntry[] {
@@ -168,7 +182,7 @@ export const ProcessManagementDiffDetector = {
     local: ProcessManagementConfig,
     remote: ProcessManagementConfig,
   ): ProcessManagementDiff => {
-    const entries = diffConfigs(local, remote);
+    const entries = compareConfigs(local, remote);
 
     const added = entries.filter((e) => e.type === "added").length;
     const modified = entries.filter((e) => e.type === "modified").length;

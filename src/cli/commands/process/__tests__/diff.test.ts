@@ -44,7 +44,7 @@ vi.mock("@/core/application/container/processManagementCli", () => ({
   createProcessManagementCliContainer: vi.fn(() => ({})),
 }));
 
-vi.mock("@/core/application/processManagement/diffProcessManagement");
+vi.mock("@/core/application/processManagement/detectProcessManagementDiff");
 
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
@@ -52,7 +52,7 @@ vi.mock("@/cli/handleError", () => ({
 
 import { handleCliError } from "@/cli/handleError";
 import { printProcessDiffResult } from "@/cli/output";
-import { diffProcessManagement } from "@/core/application/processManagement/diffProcessManagement";
+import { detectProcessManagementDiff } from "@/core/application/processManagement/detectProcessManagementDiff";
 import command from "../diff";
 
 afterEach(() => {
@@ -73,11 +73,11 @@ describe("process diff コマンド", () => {
       isEmpty: false,
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
     };
-    vi.mocked(diffProcessManagement).mockResolvedValue(mockResult);
+    vi.mocked(detectProcessManagementDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    expect(diffProcessManagement).toHaveBeenCalled();
+    expect(detectProcessManagementDiff).toHaveBeenCalled();
     expect(printProcessDiffResult).toHaveBeenCalledWith(mockResult);
   });
 
@@ -87,7 +87,7 @@ describe("process diff コマンド", () => {
       isEmpty: true,
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
     };
-    vi.mocked(diffProcessManagement).mockResolvedValue(mockResult);
+    vi.mocked(detectProcessManagementDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
@@ -96,7 +96,7 @@ describe("process diff コマンド", () => {
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {
     const error = new Error("Diff failed");
-    vi.mocked(diffProcessManagement).mockRejectedValue(error);
+    vi.mocked(detectProcessManagementDiff).mockRejectedValue(error);
 
     await command.run({ values: {} } as never);
 

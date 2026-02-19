@@ -1,12 +1,12 @@
 import { ProcessManagementDiffDetector } from "@/core/domain/processManagement/services/diffDetector";
 import type { ProcessManagementServiceArgs } from "../container/processManagement";
 import { ValidationError, ValidationErrorCode } from "../error";
-import type { DiffProcessManagementOutput } from "./dto";
+import type { DetectProcessManagementDiffOutput } from "./dto";
 import { parseProcessManagementConfigText } from "./parseConfig";
 
-export async function diffProcessManagement({
+export async function detectProcessManagementDiff({
   container,
-}: ProcessManagementServiceArgs): Promise<DiffProcessManagementOutput> {
+}: ProcessManagementServiceArgs): Promise<DetectProcessManagementDiffOutput> {
   const result = await container.processManagementStorage.get();
   if (!result.exists) {
     throw new ValidationError(
