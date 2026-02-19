@@ -104,7 +104,7 @@ describe("forceOverrideForm", () => {
       new Map([[FieldCode.create("name"), sameField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: sameField }] },
+      { type: "ROW", fields: [{ kind: "field", field: sameField }] },
     ]);
     container.formConfigurator.callLog = [];
 

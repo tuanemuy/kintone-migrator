@@ -1,4 +1,4 @@
-import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/entity";
+import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/services/layoutEnricher";
 import type { FieldCode } from "@/core/domain/formSchema/valueObject";
 import type { Container } from "../container";
 import type { ServiceArgs } from "../types";

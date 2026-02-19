@@ -616,8 +616,12 @@ describe("DiffDetector", () => {
     it("フィールド内容が異なる場合 true を返す", () => {
       const fieldA = makeField("a", "SINGLE_LINE_TEXT", "A");
       const fieldB = makeField("a", "SINGLE_LINE_TEXT", "B");
-      const a: FormLayout = [{ type: "ROW", fields: [{ field: fieldA }] }];
-      const b: FormLayout = [{ type: "ROW", fields: [{ field: fieldB }] }];
+      const a: FormLayout = [
+        { type: "ROW", fields: [{ kind: "field", field: fieldA }] },
+      ];
+      const b: FormLayout = [
+        { type: "ROW", fields: [{ kind: "field", field: fieldB }] },
+      ];
       expect(DiffDetector.detectLayoutChanges(a, b)).toBe(true);
     });
 
@@ -633,7 +637,7 @@ describe("DiffDetector", () => {
           type: "GROUP",
           code: "grp" as FieldCode,
           label: "グループ",
-          layout: [{ type: "ROW", fields: [{ field: fieldA }] }],
+          layout: [{ type: "ROW", fields: [{ kind: "field", field: fieldA }] }],
         },
       ];
       const b: FormLayout = [
@@ -641,7 +645,7 @@ describe("DiffDetector", () => {
           type: "GROUP",
           code: "grp" as FieldCode,
           label: "グループ",
-          layout: [{ type: "ROW", fields: [{ field: fieldB }] }],
+          layout: [{ type: "ROW", fields: [{ kind: "field", field: fieldB }] }],
         },
       ];
       expect(DiffDetector.detectLayoutChanges(a, b)).toBe(true);

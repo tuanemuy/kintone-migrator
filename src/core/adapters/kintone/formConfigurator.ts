@@ -338,15 +338,26 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
     switch (type) {
       case "LABEL":
         return {
+          kind: "decoration",
           type: "LABEL",
           label: String(raw.label ?? ""),
           elementId,
           size,
         } as DecorationElement;
       case "SPACER":
-        return { type: "SPACER", elementId, size } as DecorationElement;
+        return {
+          kind: "decoration",
+          type: "SPACER",
+          elementId,
+          size,
+        } as DecorationElement;
       case "HR":
-        return { type: "HR", elementId, size } as DecorationElement;
+        return {
+          kind: "decoration",
+          type: "HR",
+          elementId,
+          size,
+        } as DecorationElement;
       default:
         throw new SystemError(
           SystemErrorCode.ExternalApiError,
@@ -357,6 +368,7 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
 
   if (SYSTEM_FIELD_TYPES.has(type)) {
     return {
+      kind: "systemField",
       code: String(raw.code ?? ""),
       type,
       ...(raw.size !== undefined ? { size: parseElementSize(raw.size) } : {}),
@@ -377,6 +389,7 @@ function fromKintoneLayoutElement(raw: KintoneLayoutField): LayoutElement {
   const code = FieldCodeVO.create(String(raw.code ?? ""));
   const size = parseElementSize(raw.size);
   return {
+    kind: "field",
     field: {
       type: fieldType,
       code,
@@ -426,36 +439,34 @@ function fromKintoneLayoutItem(raw: KintoneLayoutItem): LayoutItem {
 function toKintoneLayoutElement(
   element: LayoutElement,
 ): Record<string, unknown> {
-  if ("field" in element) {
-    const lf = element as LayoutField;
+  if (element.kind === "field") {
     const result: Record<string, unknown> = {
-      type: lf.field.type,
-      code: lf.field.code as string,
+      type: element.field.type,
+      code: element.field.code as string,
     };
-    if (lf.size !== undefined) {
-      result.size = lf.size;
+    if (element.size !== undefined) {
+      result.size = element.size;
     }
     return result;
   }
 
-  if ("elementId" in element && !("code" in element)) {
-    const dec = element as DecorationElement;
+  if (element.kind === "decoration") {
     const result: Record<string, unknown> = {
-      type: dec.type,
-      elementId: dec.elementId,
-      size: dec.size,
+      type: element.type,
+      elementId: element.elementId,
+      size: element.size,
     };
-    if (dec.type === "LABEL") {
-      result.label = dec.label;
+    if (element.type === "LABEL") {
+      result.label = element.label;
     }
     return result;
   }
 
-  const sys = element as SystemFieldLayout;
+  // element.kind === "systemField"
   return {
-    type: sys.type,
-    code: sys.code,
-    ...(sys.size !== undefined ? { size: sys.size } : {}),
+    type: element.type,
+    code: element.code,
+    ...(element.size !== undefined ? { size: element.size } : {}),
   };
 }
 

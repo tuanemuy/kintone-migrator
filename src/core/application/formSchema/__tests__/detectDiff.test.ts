@@ -43,7 +43,7 @@ describe("detectDiff", () => {
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
 
     const result = await detectDiff({ container });
@@ -81,7 +81,7 @@ layout:
       new Map([[FieldCode.create("extra"), extra]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: extra }] },
+      { type: "ROW", fields: [{ kind: "field", field: extra }] },
     ]);
 
     const result = await detectDiff({ container });
@@ -98,7 +98,7 @@ layout:
       new Map([[FieldCode.create("name"), oldField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldField }] },
+      { type: "ROW", fields: [{ kind: "field", field: oldField }] },
     ]);
 
     const result = await detectDiff({ container });
@@ -181,7 +181,10 @@ layout:
     container.formConfigurator.setLayout([
       {
         type: "ROW",
-        fields: [{ field: oldName }, { field: toDelete }],
+        fields: [
+          { kind: "field", field: oldName },
+          { kind: "field", field: toDelete },
+        ],
       },
     ]);
 
@@ -209,7 +212,7 @@ layout:
       new Map([[FieldCode.create("name"), oldField]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: oldField }] },
+      { type: "ROW", fields: [{ kind: "field", field: oldField }] },
     ]);
 
     const result = await detectDiff({ container });
@@ -250,7 +253,7 @@ layout:
       new Map([[FieldCode.create("extra"), extra]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: extra }] },
+      { type: "ROW", fields: [{ kind: "field", field: extra }] },
     ]);
 
     const result = await detectDiff({ container });
@@ -270,7 +273,7 @@ layout:
     );
     // スキーマのレイアウトとは異なる(行が2つ)
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field }] },
+      { type: "ROW", fields: [{ kind: "field", field }] },
       { type: "ROW", fields: [] },
     ]);
 
@@ -494,7 +497,7 @@ layout:
         type: "SUBTABLE",
         code: FieldCode.create("items"),
         label: "明細",
-        fields: [{ field: oldInner }],
+        fields: [{ kind: "field", field: oldInner }],
       },
     ]);
 
@@ -572,7 +575,7 @@ layout:
       new Map([[FieldCode.create("ref"), currentRef]]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ field: currentRef }] },
+      { type: "ROW", fields: [{ kind: "field", field: currentRef }] },
     ]);
 
     const result = await detectDiff({ container });

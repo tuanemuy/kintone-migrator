@@ -1,9 +1,9 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
-} from "@/core/domain/formSchema/entity";
-import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
+} from "@/core/domain/formSchema/services/layoutEnricher";
 import type {
   FieldCode,
   FieldDefinition,

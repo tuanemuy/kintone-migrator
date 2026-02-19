@@ -313,6 +313,7 @@ export type ElementSize = Readonly<{
 export type LayoutElementType = "LABEL" | "SPACER" | "HR";
 
 export type LabelElement = Readonly<{
+  kind: "decoration";
   type: "LABEL";
   label: string;
   elementId: string;
@@ -320,12 +321,14 @@ export type LabelElement = Readonly<{
 }>;
 
 export type SpacerElement = Readonly<{
+  kind: "decoration";
   type: "SPACER";
   elementId: string;
   size: ElementSize;
 }>;
 
 export type HrElement = Readonly<{
+  kind: "decoration";
   type: "HR";
   elementId: string;
   size: ElementSize;
@@ -334,11 +337,13 @@ export type HrElement = Readonly<{
 export type DecorationElement = LabelElement | SpacerElement | HrElement;
 
 export type LayoutField = Readonly<{
+  kind: "field";
   field: FieldDefinition;
   size?: ElementSize;
 }>;
 
 export type SystemFieldLayout = Readonly<{
+  kind: "systemField";
   code: string;
   type: string;
   size?: ElementSize;
