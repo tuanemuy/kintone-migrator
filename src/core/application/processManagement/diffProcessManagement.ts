@@ -1,12 +1,8 @@
 import { ProcessManagementDiffDetector } from "@/core/domain/processManagement/services/diffDetector";
-import type { ProcessManagementDiff } from "@/core/domain/processManagement/valueObject";
 import type { ProcessManagementServiceArgs } from "../container/processManagement";
 import { ValidationError, ValidationErrorCode } from "../error";
+import type { DiffProcessManagementOutput } from "./dto";
 import { parseProcessManagementConfigText } from "./parseConfig";
-
-export type { ProcessManagementDiffEntry } from "@/core/domain/processManagement/valueObject";
-
-export type DiffProcessManagementOutput = ProcessManagementDiff;
 
 export async function diffProcessManagement({
   container,

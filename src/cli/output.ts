@@ -3,7 +3,7 @@ import pc from "picocolors";
 import type { Container } from "@/core/application/container";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
-import type { DiffProcessManagementOutput } from "@/core/application/processManagement/diffProcessManagement";
+import type { DiffProcessManagementOutput } from "@/core/application/processManagement/dto";
 import type { DetectViewDiffOutput } from "@/core/application/view/dto";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import { logError } from "./handleError";

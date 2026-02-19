@@ -49,6 +49,7 @@ export type ProcessManagementDiffSummary = Readonly<{
   added: number;
   modified: number;
   deleted: number;
+  total: number;
 }>;
 
 export type ProcessManagementDiff = Readonly<{

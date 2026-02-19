@@ -1,9 +1,28 @@
 import type { ProcessManagementConfig } from "../entity";
 import type {
   ProcessAction,
+  ProcessEntity,
   ProcessManagementDiff,
   ProcessManagementDiffEntry,
 } from "../valueObject";
+
+function isEntityEqual(a: ProcessEntity, b: ProcessEntity): boolean {
+  if (a.type !== b.type) return false;
+  if (a.code !== b.code) return false;
+  if (Boolean(a.includeSubs) !== Boolean(b.includeSubs)) return false;
+  return true;
+}
+
+function isEntitiesEqual(
+  a: readonly ProcessEntity[],
+  b: readonly ProcessEntity[],
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (!isEntityEqual(a[i], b[i])) return false;
+  }
+  return true;
+}
 
 function compareActions(
   localAction: ProcessAction,
@@ -24,10 +43,9 @@ function compareActions(
   if (localAction.type !== remoteAction.type) {
     diffs.push(`type: ${remoteAction.type} -> ${localAction.type}`);
   }
-  if (
-    JSON.stringify(localAction.executableUser) !==
-    JSON.stringify(remoteAction.executableUser)
-  ) {
+  const localEntities = localAction.executableUser?.entities ?? [];
+  const remoteEntities = remoteAction.executableUser?.entities ?? [];
+  if (!isEntitiesEqual(localEntities, remoteEntities)) {
     diffs.push("executableUser changed");
   }
   return diffs;
@@ -75,8 +93,10 @@ function diffConfigs(
         );
       }
       if (
-        JSON.stringify(localState.assignee.entities) !==
-        JSON.stringify(remoteState.assignee.entities)
+        !isEntitiesEqual(
+          localState.assignee.entities,
+          remoteState.assignee.entities,
+        )
       ) {
         stateDiffs.push("assignee.entities changed");
       }
@@ -150,12 +170,17 @@ export const ProcessManagementDiffDetector = {
   ): ProcessManagementDiff => {
     const entries = diffConfigs(local, remote);
 
+    const added = entries.filter((e) => e.type === "added").length;
+    const modified = entries.filter((e) => e.type === "modified").length;
+    const deleted = entries.filter((e) => e.type === "deleted").length;
+
     return {
       entries,
       summary: {
-        added: entries.filter((e) => e.type === "added").length,
-        modified: entries.filter((e) => e.type === "modified").length,
-        deleted: entries.filter((e) => e.type === "deleted").length,
+        added,
+        modified,
+        deleted,
+        total: added + modified + deleted,
       },
       isEmpty: entries.length === 0,
     };

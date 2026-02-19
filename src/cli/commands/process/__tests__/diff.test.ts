@@ -71,7 +71,7 @@ describe("process diff コマンド", () => {
         },
       ],
       isEmpty: false,
-      summary: { added: 1, modified: 0, deleted: 0 },
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
     };
     vi.mocked(diffProcessManagement).mockResolvedValue(mockResult);
 
@@ -85,7 +85,7 @@ describe("process diff コマンド", () => {
     const mockResult = {
       entries: [],
       isEmpty: true,
-      summary: { added: 0, modified: 0, deleted: 0 },
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
     };
     vi.mocked(diffProcessManagement).mockResolvedValue(mockResult);
 
