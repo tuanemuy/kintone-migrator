@@ -85,7 +85,7 @@ describe("DependencyResolver.resolve", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.CircularDependency);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcCircularDependency);
         expect(error.message).toContain("a");
         expect(error.message).toContain("b");
       }
@@ -105,7 +105,7 @@ describe("DependencyResolver.resolve", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.CircularDependency);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcCircularDependency);
       }
     }
   });
@@ -119,7 +119,7 @@ describe("DependencyResolver.resolve", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.UnknownDependency);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcUnknownDependency);
         expect(error.message).toContain("nonexistent");
       }
     }

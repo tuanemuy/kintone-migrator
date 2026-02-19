@@ -86,7 +86,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.EmptySeedText);
+        expect(error.code).toBe(SeedDataErrorCode.SdEmptySeedText);
       }
     }
   });
@@ -98,7 +98,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedYaml);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedYaml);
       }
     }
   });
@@ -146,7 +146,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.InvalidSeedStructure);
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
       }
     }
   });
@@ -163,7 +163,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.MissingKeyField);
+        expect(error.code).toBe(SeedDataErrorCode.SdMissingKeyField);
       }
     }
   });
@@ -183,7 +183,7 @@ records:
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.DuplicateKeyValue);
+        expect(error.code).toBe(SeedDataErrorCode.SdDuplicateKeyValue);
       }
     }
   });

@@ -16,7 +16,7 @@ describe("FieldCode", () => {
     } catch (e) {
       expect(e).toBeInstanceOf(BusinessRuleError);
       expect((e as BusinessRuleError).code).toBe(
-        FormSchemaErrorCode.EmptyFieldCode,
+        FormSchemaErrorCode.FsEmptyFieldCode,
       );
     }
   });

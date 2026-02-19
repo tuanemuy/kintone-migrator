@@ -113,7 +113,7 @@ describe("ConfigParser.parse", () => {
         expect(isBusinessRuleError(error)).toBe(true);
         if (isBusinessRuleError(error)) {
           expect(error.code).toBe(
-            ProjectConfigErrorCode.InvalidConfigStructure,
+            ProjectConfigErrorCode.PcInvalidConfigStructure,
           );
         }
       }
@@ -127,7 +127,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.EmptyApps);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcEmptyApps);
       }
     }
   });
@@ -143,7 +143,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.EmptyApps);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcEmptyApps);
       }
     }
   });
@@ -159,7 +159,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.EmptyAppId);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcEmptyAppId);
       }
     }
   });
@@ -175,7 +175,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.EmptyAppId);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcEmptyAppId);
       }
     }
   });
@@ -191,7 +191,9 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.InvalidConfigStructure);
+        expect(error.code).toBe(
+          ProjectConfigErrorCode.PcInvalidConfigStructure,
+        );
       }
     }
   });
@@ -207,7 +209,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcInvalidAuthConfig);
       }
     }
   });
@@ -223,7 +225,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcInvalidAuthConfig);
       }
     }
   });
@@ -239,7 +241,9 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.InvalidConfigStructure);
+        expect(error.code).toBe(
+          ProjectConfigErrorCode.PcInvalidConfigStructure,
+        );
       }
     }
   });
@@ -254,7 +258,7 @@ describe("ConfigParser.parse", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(ProjectConfigErrorCode.InvalidAuthConfig);
+        expect(error.code).toBe(ProjectConfigErrorCode.PcInvalidAuthConfig);
       }
     }
   });

@@ -48,7 +48,7 @@ function validateEnumProperty(
 ): void {
   if (value !== undefined && !validValues.has(value as string)) {
     throw new BusinessRuleError(
-      FormSchemaErrorCode.InvalidSchemaStructure,
+      FormSchemaErrorCode.FsInvalidSchemaStructure,
       `Invalid ${propName} "${String(value)}" for field "${fieldCode}". Expected one of: ${[...validValues].join(", ")}`,
     );
   }
@@ -321,7 +321,7 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
 
   if (!VALID_FIELD_TYPES.has(type)) {
     throw new BusinessRuleError(
-      FormSchemaErrorCode.InvalidFieldType,
+      FormSchemaErrorCode.FsInvalidFieldType,
       `Invalid field type "${type}" for field "${code}"`,
     );
   }
@@ -356,7 +356,7 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
   if (fieldType === "REFERENCE_TABLE") {
     if (!isRecord(raw.referenceTable)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have a "referenceTable" property`,
       );
     }
@@ -364,21 +364,21 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
 
     if (!isRecord(refTable.relatedApp)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have "referenceTable.relatedApp"`,
       );
     }
 
     if (!isRecord(refTable.condition)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have "referenceTable.condition"`,
       );
     }
 
     if (!Array.isArray(refTable.displayFields)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         `Field "${code}" of type REFERENCE_TABLE must have "referenceTable.displayFields" array`,
       );
     }
@@ -440,7 +440,7 @@ function parseDecorationElement(raw: RawField): DecorationElement {
       return { type: "HR", elementId, size };
     default:
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidDecorationElement,
+        FormSchemaErrorCode.FsInvalidDecorationElement,
         `Unknown decoration element type: "${type}"`,
       );
   }
@@ -474,7 +474,7 @@ function parseLayoutElement(raw: RawField): LayoutElement {
 function parseLayoutRow(raw: Record<string, unknown>): LayoutRow {
   if (raw.type !== "ROW") {
     throw new BusinessRuleError(
-      FormSchemaErrorCode.InvalidLayoutStructure,
+      FormSchemaErrorCode.FsInvalidLayoutStructure,
       `Expected layout row type "ROW", got "${String(raw.type)}"`,
     );
   }
@@ -509,7 +509,7 @@ function checkDuplicateFieldCode(
 ): void {
   if (fieldMap.has(code)) {
     throw new BusinessRuleError(
-      FormSchemaErrorCode.DuplicateFieldCode,
+      FormSchemaErrorCode.FsDuplicateFieldCode,
       `Duplicate field code: "${code}"`,
     );
   }
@@ -618,7 +618,7 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
     }
     default:
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidLayoutStructure,
+        FormSchemaErrorCode.FsInvalidLayoutStructure,
         `Unknown layout item type: "${type}"`,
       );
   }
@@ -628,7 +628,7 @@ export const SchemaParser = {
   parse: (rawText: string): Schema => {
     if (rawText.trim().length === 0) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.EmptySchemaText,
+        FormSchemaErrorCode.FsEmptySchemaText,
         "Schema text cannot be empty",
       );
     }
@@ -638,14 +638,14 @@ export const SchemaParser = {
       parsed = parseYaml(rawText);
     } catch {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaFormat,
+        FormSchemaErrorCode.FsInvalidSchemaFormat,
         "Schema text is not valid YAML/JSON",
       );
     }
 
     if (!isRecord(parsed)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         "Schema must be an object",
       );
     }
@@ -654,14 +654,14 @@ export const SchemaParser = {
 
     if ("fields" in obj && !("layout" in obj)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidSchemaStructure,
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
         '"fields" key detected. Schema format has changed. Please use "capture" to generate a new format schema.',
       );
     }
 
     if (!("layout" in obj) || !Array.isArray(obj.layout)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.InvalidLayoutStructure,
+        FormSchemaErrorCode.FsInvalidLayoutStructure,
         'Schema must have a "layout" array',
       );
     }

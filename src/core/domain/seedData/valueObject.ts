@@ -8,7 +8,7 @@ export const UpsertKey = {
   create: (key: string): UpsertKey => {
     if (key.length === 0) {
       throw new BusinessRuleError(
-        SeedDataErrorCode.EmptyUpsertKey,
+        SeedDataErrorCode.SdEmptyUpsertKey,
         "Upsert key cannot be empty",
       );
     }

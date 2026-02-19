@@ -383,7 +383,7 @@ fields:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -403,7 +403,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidFieldType,
+          FormSchemaErrorCode.FsInvalidFieldType,
         );
       }
     });
@@ -442,7 +442,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.DuplicateFieldCode,
+          FormSchemaErrorCode.FsDuplicateFieldCode,
         );
       }
     });
@@ -469,7 +469,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.DuplicateFieldCode,
+          FormSchemaErrorCode.FsDuplicateFieldCode,
         );
       }
     });
@@ -489,7 +489,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -515,7 +515,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -540,7 +540,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -566,7 +566,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -582,7 +582,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidLayoutStructure,
+          FormSchemaErrorCode.FsInvalidLayoutStructure,
         );
       }
     });
@@ -603,7 +603,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -623,7 +623,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.EmptyFieldCode,
+          FormSchemaErrorCode.FsEmptyFieldCode,
         );
       }
     });
@@ -645,7 +645,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -668,7 +668,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -689,7 +689,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -712,7 +712,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidSchemaStructure,
+          FormSchemaErrorCode.FsInvalidSchemaStructure,
         );
       }
     });
@@ -733,7 +733,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidLayoutStructure,
+          FormSchemaErrorCode.FsInvalidLayoutStructure,
         );
       }
     });
@@ -749,7 +749,7 @@ layout:
       } catch (e) {
         expect(e).toBeInstanceOf(BusinessRuleError);
         expect((e as BusinessRuleError).code).toBe(
-          FormSchemaErrorCode.InvalidLayoutStructure,
+          FormSchemaErrorCode.FsInvalidLayoutStructure,
         );
       }
     });

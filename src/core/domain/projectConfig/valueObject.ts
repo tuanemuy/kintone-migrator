@@ -7,7 +7,7 @@ export const AppName = {
   create: (name: string): AppName => {
     if (name.length === 0) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.EmptyAppName,
+        ProjectConfigErrorCode.PcEmptyAppName,
         "App name cannot be empty",
       );
     }

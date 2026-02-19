@@ -16,7 +16,7 @@ function asOptionalStringArray(value: unknown): string[] | undefined {
   for (const v of value) {
     if (typeof v !== "string") {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.InvalidConfigStructure,
+        ProjectConfigErrorCode.PcInvalidConfigStructure,
         `Array element must be a string, got ${typeof v}`,
       );
     }
@@ -87,7 +87,7 @@ function resolveFilePathFields(
 function parseProjectConfig(raw: unknown): ProjectConfig {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
-      ProjectConfigErrorCode.InvalidConfigStructure,
+      ProjectConfigErrorCode.PcInvalidConfigStructure,
       "Project config must be an object",
     );
   }
@@ -96,7 +96,7 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
 
   if (!isRecord(rawApps) || Object.keys(rawApps).length === 0) {
     throw new BusinessRuleError(
-      ProjectConfigErrorCode.EmptyApps,
+      ProjectConfigErrorCode.PcEmptyApps,
       "Project config must have at least one app defined in 'apps'",
     );
   }
@@ -106,7 +106,7 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
 
   if (raw.auth !== undefined && !isRecord(raw.auth)) {
     throw new BusinessRuleError(
-      ProjectConfigErrorCode.InvalidAuthConfig,
+      ProjectConfigErrorCode.PcInvalidAuthConfig,
       "Top-level auth must be an object",
     );
   }
@@ -117,7 +117,7 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
   for (const [name, rawAppValue] of Object.entries(rawApps)) {
     if (!isRecord(rawAppValue)) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.InvalidConfigStructure,
+        ProjectConfigErrorCode.PcInvalidConfigStructure,
         `App "${name}" must be an object`,
       );
     }
@@ -125,14 +125,14 @@ function parseProjectConfig(raw: unknown): ProjectConfig {
     const appId = asOptionalString(rawAppValue.appId);
     if (!appId || appId.trim().length === 0) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.EmptyAppId,
+        ProjectConfigErrorCode.PcEmptyAppId,
         `App "${name}" must have a non-empty appId`,
       );
     }
 
     if (rawAppValue.auth !== undefined && !isRecord(rawAppValue.auth)) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.InvalidAuthConfig,
+        ProjectConfigErrorCode.PcInvalidAuthConfig,
         `App "${name}" auth must be an object`,
       );
     }
@@ -176,7 +176,7 @@ function parseAuth(
   if (apiToken !== undefined) {
     if (apiToken.trim().length === 0) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.InvalidAuthConfig,
+        ProjectConfigErrorCode.PcInvalidAuthConfig,
         "apiToken must not be empty",
       );
     }
@@ -188,7 +188,7 @@ function parseAuth(
   if (username !== undefined && password !== undefined) {
     if (username.trim().length === 0 || password.trim().length === 0) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.InvalidAuthConfig,
+        ProjectConfigErrorCode.PcInvalidAuthConfig,
         "username and password must not be empty",
       );
     }
@@ -196,7 +196,7 @@ function parseAuth(
   }
 
   throw new BusinessRuleError(
-    ProjectConfigErrorCode.InvalidAuthConfig,
+    ProjectConfigErrorCode.PcInvalidAuthConfig,
     "Auth must have either apiToken or username/password",
   );
 }

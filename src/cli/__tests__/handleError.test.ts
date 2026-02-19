@@ -40,7 +40,7 @@ afterEach(() => {
 describe("handleCliError", () => {
   it("BusinessRuleError を受け取ると [BusinessRuleError] のフォーマットでログ出力し process.exit(1) する", () => {
     const error = new BusinessRuleError(
-      FormSchemaErrorCode.EmptyFieldCode,
+      FormSchemaErrorCode.FsEmptyFieldCode,
       "フィールドコードが空です",
     );
 
@@ -50,7 +50,7 @@ describe("handleCliError", () => {
       expect.stringContaining("[BusinessRuleError]"),
     );
     expect(p.log.error).toHaveBeenCalledWith(
-      expect.stringContaining(FormSchemaErrorCode.EmptyFieldCode),
+      expect.stringContaining(FormSchemaErrorCode.FsEmptyFieldCode),
     );
     expect(p.outro).toHaveBeenCalledWith("Failed.");
     expect(mockExit).toHaveBeenCalledWith(1);

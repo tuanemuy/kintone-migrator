@@ -82,7 +82,7 @@ export const UpsertPlanner = {
       const keyValue = seedRecord[keyField];
       if (typeof keyValue !== "string") {
         throw new BusinessRuleError(
-          SeedDataErrorCode.InvalidKeyFieldValue,
+          SeedDataErrorCode.SdInvalidKeyFieldValue,
           `Key field "${keyField}" value must be a string, got ${typeof keyValue}`,
         );
       }

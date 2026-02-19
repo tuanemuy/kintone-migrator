@@ -16,7 +16,7 @@ describe("UpsertKey", () => {
     } catch (error) {
       expect(isBusinessRuleError(error)).toBe(true);
       if (isBusinessRuleError(error)) {
-        expect(error.code).toBe(SeedDataErrorCode.EmptyUpsertKey);
+        expect(error.code).toBe(SeedDataErrorCode.SdEmptyUpsertKey);
       }
     }
   });
