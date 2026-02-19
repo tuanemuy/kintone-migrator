@@ -31,3 +31,28 @@ export type ProcessAction = Readonly<{
     entities: readonly ProcessEntity[];
   }>;
 }>;
+
+// Diff types
+
+export type ProcessManagementDiffType = "added" | "modified" | "deleted";
+
+export type ProcessManagementDiffCategory = "enable" | "state" | "action";
+
+export type ProcessManagementDiffEntry = Readonly<{
+  type: ProcessManagementDiffType;
+  category: ProcessManagementDiffCategory;
+  name: string;
+  details: string;
+}>;
+
+export type ProcessManagementDiffSummary = Readonly<{
+  added: number;
+  modified: number;
+  deleted: number;
+}>;
+
+export type ProcessManagementDiff = Readonly<{
+  entries: readonly ProcessManagementDiffEntry[];
+  summary: ProcessManagementDiffSummary;
+  isEmpty: boolean;
+}>;
