@@ -1,25 +1,39 @@
-import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
-import type { ProcessAction } from "@/core/domain/processManagement/valueObject";
-import type { ProcessManagementServiceArgs } from "../container/processManagement";
-import { ValidationError, ValidationErrorCode } from "../error";
-import { parseProcessManagementConfigText } from "./parseConfig";
+import type { ProcessManagementConfig } from "../entity";
+import type {
+  ProcessAction,
+  ProcessEntity,
+  ProcessManagementDiff,
+  ProcessManagementDiffEntry,
+} from "../valueObject";
 
-export type ProcessManagementDiffEntry = {
-  readonly type: "added" | "modified" | "deleted";
-  readonly category: "enable" | "state" | "action";
-  readonly name: string;
-  readonly details: string;
-};
+function isEntityEqual(a: ProcessEntity, b: ProcessEntity): boolean {
+  if (a.type !== b.type) return false;
+  if (a.code !== b.code) return false;
+  if (Boolean(a.includeSubs) !== Boolean(b.includeSubs)) return false;
+  return true;
+}
 
-export type DiffProcessManagementOutput = {
-  readonly entries: readonly ProcessManagementDiffEntry[];
-  readonly isEmpty: boolean;
-  readonly summary: {
-    readonly added: number;
-    readonly modified: number;
-    readonly deleted: number;
-  };
-};
+// Order-sensitive comparison: kintone API preserves entity order,
+// and reordering entities may reflect intentional priority changes.
+function isEntitiesEqual(
+  a: readonly ProcessEntity[],
+  b: readonly ProcessEntity[],
+): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (!isEntityEqual(a[i], b[i])) return false;
+  }
+  return true;
+}
+
+function isExecutableUserEqual(
+  a: ProcessAction["executableUser"],
+  b: ProcessAction["executableUser"],
+): boolean {
+  if (a === undefined && b === undefined) return true;
+  if (a === undefined || b === undefined) return false;
+  return isEntitiesEqual(a.entities, b.entities);
+}
 
 function compareActions(
   localAction: ProcessAction,
@@ -41,15 +55,17 @@ function compareActions(
     diffs.push(`type: ${remoteAction.type} -> ${localAction.type}`);
   }
   if (
-    JSON.stringify(localAction.executableUser) !==
-    JSON.stringify(remoteAction.executableUser)
+    !isExecutableUserEqual(
+      localAction.executableUser,
+      remoteAction.executableUser,
+    )
   ) {
     diffs.push("executableUser changed");
   }
   return diffs;
 }
 
-function diffConfigs(
+function compareConfigs(
   local: ProcessManagementConfig,
   remote: ProcessManagementConfig,
 ): ProcessManagementDiffEntry[] {
@@ -80,29 +96,31 @@ function diffConfigs(
     } else {
       const localState = local.states[name];
       const remoteState = remote.states[name];
-      const diffs: string[] = [];
+      const stateDiffs: string[] = [];
 
       if (localState.index !== remoteState.index) {
-        diffs.push(`index: ${remoteState.index} -> ${localState.index}`);
+        stateDiffs.push(`index: ${remoteState.index} -> ${localState.index}`);
       }
       if (localState.assignee.type !== remoteState.assignee.type) {
-        diffs.push(
+        stateDiffs.push(
           `assignee.type: ${remoteState.assignee.type} -> ${localState.assignee.type}`,
         );
       }
       if (
-        JSON.stringify(localState.assignee.entities) !==
-        JSON.stringify(remoteState.assignee.entities)
+        !isEntitiesEqual(
+          localState.assignee.entities,
+          remoteState.assignee.entities,
+        )
       ) {
-        diffs.push("assignee.entities changed");
+        stateDiffs.push("assignee.entities changed");
       }
 
-      if (diffs.length > 0) {
+      if (stateDiffs.length > 0) {
         entries.push({
           type: "modified",
           category: "state",
           name,
-          details: diffs.join(", "),
+          details: stateDiffs.join(", "),
         });
       }
     }
@@ -133,13 +151,13 @@ function diffConfigs(
         details: `${localAction.from} -> ${localAction.to}`,
       });
     } else {
-      const diffs = compareActions(localAction, remoteAction);
-      if (diffs.length > 0) {
+      const actionDiffs = compareActions(localAction, remoteAction);
+      if (actionDiffs.length > 0) {
         entries.push({
           type: "modified",
           category: "action",
           name,
-          details: diffs.join(", "),
+          details: actionDiffs.join(", "),
         });
       }
     }
@@ -159,30 +177,26 @@ function diffConfigs(
   return entries;
 }
 
-export async function diffProcessManagement({
-  container,
-}: ProcessManagementServiceArgs): Promise<DiffProcessManagementOutput> {
-  const result = await container.processManagementStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "Process management config file not found",
-    );
-  }
-  const localConfig = parseProcessManagementConfigText(result.content);
+export const ProcessManagementDiffDetector = {
+  detect: (
+    local: ProcessManagementConfig,
+    remote: ProcessManagementConfig,
+  ): ProcessManagementDiff => {
+    const entries = compareConfigs(local, remote);
 
-  const { config: remoteConfig } =
-    await container.processManagementConfigurator.getProcessManagement();
+    const added = entries.filter((e) => e.type === "added").length;
+    const modified = entries.filter((e) => e.type === "modified").length;
+    const deleted = entries.filter((e) => e.type === "deleted").length;
 
-  const entries = diffConfigs(localConfig, remoteConfig);
-
-  return {
-    entries,
-    isEmpty: entries.length === 0,
-    summary: {
-      added: entries.filter((e) => e.type === "added").length,
-      modified: entries.filter((e) => e.type === "modified").length,
-      deleted: entries.filter((e) => e.type === "deleted").length,
-    },
-  };
-}
+    return {
+      entries,
+      summary: {
+        added,
+        modified,
+        deleted,
+        total: added + modified + deleted,
+      },
+      isEmpty: entries.length === 0,
+    };
+  },
+};

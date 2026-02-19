@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { setupTestProcessManagementContainer } from "@/core/application/__tests__/helpers";
 import { isSystemError, isValidationError } from "@/core/application/error";
-import { diffProcessManagement } from "../diffProcessManagement";
+import { detectProcessManagementDiff } from "../detectProcessManagementDiff";
 
 const VALID_CONFIG = `
 enable: true
@@ -27,7 +27,7 @@ actions:
     filterCond: ""
 `;
 
-describe("diffProcessManagement", () => {
+describe("detectProcessManagementDiff", () => {
   const getContainer = setupTestProcessManagementContainer();
 
   describe("success cases", () => {
@@ -63,7 +63,7 @@ describe("diffProcessManagement", () => {
         ],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
@@ -101,7 +101,7 @@ describe("diffProcessManagement", () => {
         ],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       expect(result.isEmpty).toBe(false);
       const enableEntry = result.entries.find((e) => e.category === "enable");
@@ -126,7 +126,7 @@ describe("diffProcessManagement", () => {
         actions: [],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       const addedState = result.entries.find(
         (e) => e.category === "state" && e.type === "added",
@@ -172,7 +172,7 @@ actions: []
         actions: [],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       const deletedState = result.entries.find(
         (e) => e.category === "state" && e.type === "deleted",
@@ -214,7 +214,7 @@ actions: []
         ],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       const modifiedState = result.entries.find(
         (e) => e.category === "state" && e.type === "modified",
@@ -248,7 +248,7 @@ actions: []
         actions: [],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       const addedAction = result.entries.find(
         (e) => e.category === "action" && e.type === "added",
@@ -308,7 +308,7 @@ actions: []
         ],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       const deletedAction = result.entries.find(
         (e) => e.category === "action" && e.type === "deleted",
@@ -349,7 +349,7 @@ actions: []
         ],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       const modifiedAction = result.entries.find(
         (e) => e.category === "action" && e.type === "modified",
@@ -368,7 +368,7 @@ actions: []
         actions: [],
       });
 
-      const result = await diffProcessManagement({ container });
+      const result = await detectProcessManagementDiff({ container });
 
       expect(result.summary.added).toBeGreaterThanOrEqual(1);
       expect(result.summary.modified).toBeGreaterThanOrEqual(1);
@@ -380,18 +380,18 @@ actions: []
     it("設定ファイル未存在時に ValidationError をスローする", async () => {
       const container = getContainer();
 
-      await expect(diffProcessManagement({ container })).rejects.toSatisfy(
-        isValidationError,
-      );
+      await expect(
+        detectProcessManagementDiff({ container }),
+      ).rejects.toSatisfy(isValidationError);
     });
 
     it("storage.get 失敗時に SystemError をスローする", async () => {
       const container = getContainer();
       container.processManagementStorage.setFailOn("get");
 
-      await expect(diffProcessManagement({ container })).rejects.toSatisfy(
-        isSystemError,
-      );
+      await expect(
+        detectProcessManagementDiff({ container }),
+      ).rejects.toSatisfy(isSystemError);
     });
 
     it("getProcessManagement 失敗時に SystemError をスローする", async () => {
@@ -399,9 +399,9 @@ actions: []
       container.processManagementStorage.setContent(VALID_CONFIG);
       container.processManagementConfigurator.setFailOn("getProcessManagement");
 
-      await expect(diffProcessManagement({ container })).rejects.toSatisfy(
-        isSystemError,
-      );
+      await expect(
+        detectProcessManagementDiff({ container }),
+      ).rejects.toSatisfy(isSystemError);
     });
   });
 });

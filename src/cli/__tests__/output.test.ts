@@ -21,7 +21,7 @@ vi.mock("../handleError", () => ({
 }));
 
 import * as p from "@clack/prompts";
-import type { DiffProcessManagementOutput } from "@/core/application/processManagement/diffProcessManagement";
+import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
 import type { DetectViewDiffOutput } from "@/core/application/view/dto";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
@@ -336,9 +336,9 @@ describe("printViewDiffResult", () => {
 
 describe("printProcessDiffResult", () => {
   it("差分がない場合、'No changes detected.' とログ出力される", () => {
-    const result: DiffProcessManagementOutput = {
+    const result: DetectProcessManagementDiffOutput = {
       entries: [],
-      summary: { added: 0, modified: 0, deleted: 0 },
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
     };
     printProcessDiffResult(result);
@@ -347,7 +347,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("追加エントリがある場合、'+N added' と 'Process Management Diff Details' ノートが出力される", () => {
-    const result: DiffProcessManagementOutput = {
+    const result: DetectProcessManagementDiffOutput = {
       entries: [
         {
           type: "added",
@@ -356,7 +356,7 @@ describe("printProcessDiffResult", () => {
           details: "assignee: ONE",
         },
       ],
-      summary: { added: 1, modified: 0, deleted: 0 },
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
     };
     printProcessDiffResult(result);
@@ -371,7 +371,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("変更エントリがある場合、'~N modified' がログ出力される", () => {
-    const result: DiffProcessManagementOutput = {
+    const result: DetectProcessManagementDiffOutput = {
       entries: [
         {
           type: "modified",
@@ -380,7 +380,7 @@ describe("printProcessDiffResult", () => {
           details: "false -> true",
         },
       ],
-      summary: { added: 0, modified: 1, deleted: 0 },
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
     };
     printProcessDiffResult(result);
@@ -390,7 +390,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
-    const result: DiffProcessManagementOutput = {
+    const result: DetectProcessManagementDiffOutput = {
       entries: [
         {
           type: "deleted",
@@ -399,7 +399,7 @@ describe("printProcessDiffResult", () => {
           details: "未処理 -> 処理済",
         },
       ],
-      summary: { added: 0, modified: 0, deleted: 1 },
+      summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
     };
     printProcessDiffResult(result);

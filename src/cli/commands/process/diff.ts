@@ -4,7 +4,7 @@ import {
   createProcessManagementCliContainer,
   type ProcessManagementCliContainerConfig,
 } from "@/core/application/container/processManagementCli";
-import { diffProcessManagement } from "@/core/application/processManagement/diffProcessManagement";
+import { detectProcessManagementDiff } from "@/core/application/processManagement/detectProcessManagementDiff";
 import { handleCliError } from "../../handleError";
 import { printAppHeader, printProcessDiffResult } from "../../output";
 import {
@@ -22,7 +22,7 @@ async function runDiffProcess(
 
   const s = p.spinner();
   s.start("Comparing process management settings...");
-  const result = await diffProcessManagement({ container });
+  const result = await detectProcessManagementDiff({ container });
   s.stop("Comparison complete.");
 
   printProcessDiffResult(result);
