@@ -1,33 +1,24 @@
-import { beforeEach } from "vitest";
 import type { ViewContainer } from "@/core/application/container/view";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
-export class InMemoryViewConfigurator implements ViewConfigurator {
+export class InMemoryViewConfigurator
+  extends TestDouble
+  implements ViewConfigurator
+{
   private views: Record<string, ViewConfig> = {};
   private revision = "1";
-  callLog: string[] = [];
   lastUpdateParams: {
     views: Readonly<Record<string, ViewConfig>>;
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getViews(): Promise<{
     views: Readonly<Record<string, ViewConfig>>;
@@ -75,11 +66,5 @@ export function createTestViewContainer(): TestViewContainer {
 }
 
 export function setupTestViewContainer(): () => TestViewContainer {
-  let container: TestViewContainer;
-
-  beforeEach(() => {
-    container = createTestViewContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestViewContainer);
 }

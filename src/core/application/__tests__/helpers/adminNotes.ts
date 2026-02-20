@@ -1,36 +1,27 @@
-import { beforeEach } from "vitest";
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AdminNotesConfig } from "@/core/domain/adminNotes/entity";
 import type { AdminNotesConfigurator } from "@/core/domain/adminNotes/ports/adminNotesConfigurator";
 import type { AdminNotesStorage } from "@/core/domain/adminNotes/ports/adminNotesStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
-export class InMemoryAdminNotesConfigurator implements AdminNotesConfigurator {
+export class InMemoryAdminNotesConfigurator
+  extends TestDouble
+  implements AdminNotesConfigurator
+{
   private config: AdminNotesConfig = {
     content: "",
     includeInTemplateAndDuplicates: false,
   };
   private revision = "1";
-  callLog: string[] = [];
   lastUpdateParams: {
     config: AdminNotesConfig;
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getAdminNotes(): Promise<{
     config: AdminNotesConfig;
@@ -78,11 +69,5 @@ export function createTestAdminNotesContainer(): TestAdminNotesContainer {
 }
 
 export function setupTestAdminNotesContainer(): () => TestAdminNotesContainer {
-  let container: TestAdminNotesContainer;
-
-  beforeEach(() => {
-    container = createTestAdminNotesContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestAdminNotesContainer);
 }

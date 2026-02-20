@@ -1,6 +1,5 @@
-import { beforeEach } from "vitest";
 import type { CustomizationContainer } from "@/core/application/container/customization";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
@@ -11,9 +10,15 @@ import type {
   RemotePlatform,
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
 export class InMemoryCustomizationConfigurator
+  extends TestDouble
   implements CustomizationConfigurator
 {
   private customization: {
@@ -27,7 +32,6 @@ export class InMemoryCustomizationConfigurator
     mobile: { js: [], css: [] },
     revision: "1",
   };
-  callLog: string[] = [];
   lastUpdateParams: {
     scope?: CustomizationScope;
     desktop?: {
@@ -40,20 +44,6 @@ export class InMemoryCustomizationConfigurator
     };
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getCustomization(): Promise<{
     scope: CustomizationScope;
@@ -96,24 +86,9 @@ export class InMemoryCustomizationConfigurator
   }
 }
 
-export class InMemoryFileUploader implements FileUploader {
+export class InMemoryFileUploader extends TestDouble implements FileUploader {
   private fileKeyCounter = 0;
   uploadedFiles: Map<string, string> = new Map();
-  callLog: string[] = [];
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
     this.callLog.push("upload");
@@ -129,23 +104,11 @@ export class InMemoryCustomizationStorage
   extends InMemoryFileStorage
   implements CustomizationStorage {}
 
-export class InMemoryFileDownloader implements FileDownloader {
+export class InMemoryFileDownloader
+  extends TestDouble
+  implements FileDownloader
+{
   private files: Map<string, ArrayBuffer> = new Map();
-  callLog: string[] = [];
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async download(fileKey: string): Promise<ArrayBuffer> {
     this.callLog.push("download");
@@ -162,22 +125,11 @@ export class InMemoryFileDownloader implements FileDownloader {
   }
 }
 
-export class InMemoryFileWriter implements FileWriter {
+export class InMemoryFileWriter extends TestDouble implements FileWriter {
   writtenFiles: Map<string, ArrayBuffer> = new Map();
-  callLog: string[] = [];
-  private failOn: Set<string> = new Set();
 
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.StorageError,
-        `${methodName} failed (test)`,
-      );
-    }
+  constructor() {
+    super(SystemErrorCode.StorageError);
   }
 
   async write(filePath: string, data: ArrayBuffer): Promise<void> {
@@ -208,11 +160,5 @@ export function createTestCustomizationContainer(): TestCustomizationContainer {
 }
 
 export function setupTestCustomizationContainer(): () => TestCustomizationContainer {
-  let container: TestCustomizationContainer;
-
-  beforeEach(() => {
-    container = createTestCustomizationContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestCustomizationContainer);
 }

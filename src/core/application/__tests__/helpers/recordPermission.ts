@@ -1,12 +1,16 @@
-import { beforeEach } from "vitest";
 import type { RecordPermissionContainer } from "@/core/application/container/recordPermission";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { RecordRight } from "@/core/domain/recordPermission/entity";
 import type { RecordPermissionConfigurator } from "@/core/domain/recordPermission/ports/recordPermissionConfigurator";
 import type { RecordPermissionStorage } from "@/core/domain/recordPermission/ports/recordPermissionStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
 export class InMemoryRecordPermissionConfigurator
+  extends TestDouble
   implements RecordPermissionConfigurator
 {
   private permissions: {
@@ -16,25 +20,10 @@ export class InMemoryRecordPermissionConfigurator
     rights: [],
     revision: "1",
   };
-  callLog: string[] = [];
   lastUpdateParams: {
     rights: readonly RecordRight[];
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getRecordPermissions(): Promise<{
     rights: readonly RecordRight[];
@@ -84,11 +73,5 @@ export function createTestRecordPermissionContainer(): TestRecordPermissionConta
 }
 
 export function setupTestRecordPermissionContainer(): () => TestRecordPermissionContainer {
-  let container: TestRecordPermissionContainer;
-
-  beforeEach(() => {
-    container = createTestRecordPermissionContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestRecordPermissionContainer);
 }

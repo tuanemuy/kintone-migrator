@@ -1,12 +1,16 @@
-import { beforeEach } from "vitest";
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { FieldRight } from "@/core/domain/fieldPermission/entity";
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
 import type { FieldPermissionStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
 export class InMemoryFieldPermissionConfigurator
+  extends TestDouble
   implements FieldPermissionConfigurator
 {
   private permissions: {
@@ -16,25 +20,10 @@ export class InMemoryFieldPermissionConfigurator
     rights: [],
     revision: "1",
   };
-  callLog: string[] = [];
   lastUpdateParams: {
     rights: readonly FieldRight[];
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getFieldPermissions(): Promise<{
     rights: readonly FieldRight[];
@@ -84,11 +73,5 @@ export function createTestFieldPermissionContainer(): TestFieldPermissionContain
 }
 
 export function setupTestFieldPermissionContainer(): () => TestFieldPermissionContainer {
-  let container: TestFieldPermissionContainer;
-
-  beforeEach(() => {
-    container = createTestFieldPermissionContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestFieldPermissionContainer);
 }

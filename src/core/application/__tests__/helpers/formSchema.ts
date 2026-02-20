@@ -1,6 +1,4 @@
-import { beforeEach } from "vitest";
 import type { Container } from "@/core/application/container";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
@@ -8,26 +6,19 @@ import type {
   FieldCode,
   FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
-export class InMemoryFormConfigurator implements FormConfigurator {
+export class InMemoryFormConfigurator
+  extends TestDouble
+  implements FormConfigurator
+{
   private fields: Map<FieldCode, FieldDefinition> = new Map();
   private layout: FormLayout = [];
-  callLog: string[] = [];
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
     this.callLog.push("getFields");
@@ -127,11 +118,5 @@ export function createTestContainer(): TestContainer {
 }
 
 export function setupTestContainer(): () => TestContainer {
-  let container: TestContainer;
-
-  beforeEach(() => {
-    container = createTestContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestContainer);
 }

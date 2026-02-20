@@ -1,12 +1,16 @@
-import { beforeEach } from "vitest";
 import type { AppPermissionContainer } from "@/core/application/container/appPermission";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AppRight } from "@/core/domain/appPermission/entity";
 import type { AppPermissionConfigurator } from "@/core/domain/appPermission/ports/appPermissionConfigurator";
 import type { AppPermissionStorage } from "@/core/domain/appPermission/ports/appPermissionStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
 export class InMemoryAppPermissionConfigurator
+  extends TestDouble
   implements AppPermissionConfigurator
 {
   private permissions: {
@@ -16,25 +20,10 @@ export class InMemoryAppPermissionConfigurator
     rights: [],
     revision: "1",
   };
-  callLog: string[] = [];
   lastUpdateParams: {
     rights: readonly AppRight[];
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getAppPermissions(): Promise<{
     rights: readonly AppRight[];
@@ -84,11 +73,5 @@ export function createTestAppPermissionContainer(): TestAppPermissionContainer {
 }
 
 export function setupTestAppPermissionContainer(): () => TestAppPermissionContainer {
-  let container: TestAppPermissionContainer;
-
-  beforeEach(() => {
-    container = createTestAppPermissionContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestAppPermissionContainer);
 }

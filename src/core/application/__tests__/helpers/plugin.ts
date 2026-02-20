@@ -1,31 +1,22 @@
-import { beforeEach } from "vitest";
 import type { PluginContainer } from "@/core/application/container/plugin";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { PluginConfig } from "@/core/domain/plugin/entity";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
-export class InMemoryPluginConfigurator implements PluginConfigurator {
+export class InMemoryPluginConfigurator
+  extends TestDouble
+  implements PluginConfigurator
+{
   private plugins: readonly PluginConfig[] = [];
   private revision = "1";
-  callLog: string[] = [];
   lastAddPluginsParams: { ids: readonly string[]; revision?: string } | null =
     null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getPlugins(): Promise<{
     plugins: readonly PluginConfig[];
@@ -73,11 +64,5 @@ export function createTestPluginContainer(): TestPluginContainer {
 }
 
 export function setupTestPluginContainer(): () => TestPluginContainer {
-  let container: TestPluginContainer;
-
-  beforeEach(() => {
-    container = createTestPluginContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestPluginContainer);
 }

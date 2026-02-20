@@ -1,12 +1,16 @@
-import { beforeEach } from "vitest";
 import type { ProcessManagementContainer } from "@/core/application/container/processManagement";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import type { ProcessManagementConfigurator } from "@/core/domain/processManagement/ports/processManagementConfigurator";
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
 export class InMemoryProcessManagementConfigurator
+  extends TestDouble
   implements ProcessManagementConfigurator
 {
   private config: ProcessManagementConfig = {
@@ -15,25 +19,10 @@ export class InMemoryProcessManagementConfigurator
     actions: [],
   };
   private revision = "1";
-  callLog: string[] = [];
   lastUpdateParams: {
     config: ProcessManagementConfig;
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getProcessManagement(): Promise<{
     config: ProcessManagementConfig;
@@ -81,11 +70,5 @@ export function createTestProcessManagementContainer(): TestProcessManagementCon
 }
 
 export function setupTestProcessManagementContainer(): () => TestProcessManagementContainer {
-  let container: TestProcessManagementContainer;
-
-  beforeEach(() => {
-    container = createTestProcessManagementContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestProcessManagementContainer);
 }

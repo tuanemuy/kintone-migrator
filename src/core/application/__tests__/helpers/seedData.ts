@@ -1,30 +1,13 @@
-import { beforeEach } from "vitest";
 import type { SeedContainer } from "@/core/application/container/seed";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
 import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
 import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
 import type { SeedRecord } from "@/core/domain/seedData/valueObject";
-import { InMemoryFileStorage } from "./shared";
+import { InMemoryFileStorage, setupContainer, TestDouble } from "./shared";
 
-export class InMemoryRecordManager implements RecordManager {
+export class InMemoryRecordManager extends TestDouble implements RecordManager {
   private records: SeedRecordWithId[] = [];
   private nextId = 1;
-  callLog: string[] = [];
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getAllRecords(
     _condition?: string,
@@ -89,11 +72,5 @@ export function createTestSeedContainer(): TestSeedContainer {
 }
 
 export function setupTestSeedContainer(): () => TestSeedContainer {
-  let container: TestSeedContainer;
-
-  beforeEach(() => {
-    container = createTestSeedContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestSeedContainer);
 }

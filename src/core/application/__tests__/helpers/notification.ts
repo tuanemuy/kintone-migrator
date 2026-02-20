@@ -1,6 +1,4 @@
-import { beforeEach } from "vitest";
 import type { NotificationContainer } from "@/core/application/container/notification";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type {
   GeneralNotification,
   PerRecordNotification,
@@ -8,9 +6,15 @@ import type {
 } from "@/core/domain/notification/entity";
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
 import type { NotificationStorage } from "@/core/domain/notification/ports/notificationStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
 export class InMemoryNotificationConfigurator
+  extends TestDouble
   implements NotificationConfigurator
 {
   private generalNotifications: {
@@ -38,7 +42,6 @@ export class InMemoryNotificationConfigurator
     notifications: [],
     revision: "1",
   };
-  callLog: string[] = [];
   lastUpdateGeneralParams: {
     notifyToCommenter: boolean;
     notifications: readonly GeneralNotification[];
@@ -53,20 +56,6 @@ export class InMemoryNotificationConfigurator
     notifications: readonly ReminderNotification[];
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getGeneralNotifications(): Promise<{
     notifyToCommenter: boolean;
@@ -180,11 +169,5 @@ export function createTestNotificationContainer(): TestNotificationContainer {
 }
 
 export function setupTestNotificationContainer(): () => TestNotificationContainer {
-  let container: TestNotificationContainer;
-
-  beforeEach(() => {
-    container = createTestNotificationContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestNotificationContainer);
 }

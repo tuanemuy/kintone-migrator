@@ -1,33 +1,24 @@
-import { beforeEach } from "vitest";
 import type { ReportContainer } from "@/core/application/container/report";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
 import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
-import { InMemoryAppDeployer, InMemoryFileStorage } from "./shared";
+import {
+  InMemoryAppDeployer,
+  InMemoryFileStorage,
+  setupContainer,
+  TestDouble,
+} from "./shared";
 
-export class InMemoryReportConfigurator implements ReportConfigurator {
+export class InMemoryReportConfigurator
+  extends TestDouble
+  implements ReportConfigurator
+{
   private reports: Record<string, ReportConfig> = {};
   private revision = "1";
-  callLog: string[] = [];
   lastUpdateParams: {
     reports: Readonly<Record<string, ReportConfig>>;
     revision?: string;
   } | null = null;
-  private failOn: Set<string> = new Set();
-
-  setFailOn(methodName: string): void {
-    this.failOn.add(methodName);
-  }
-
-  private checkFail(methodName: string): void {
-    if (this.failOn.has(methodName)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `${methodName} failed (test)`,
-      );
-    }
-  }
 
   async getReports(): Promise<{
     reports: Readonly<Record<string, ReportConfig>>;
@@ -75,11 +66,5 @@ export function createTestReportContainer(): TestReportContainer {
 }
 
 export function setupTestReportContainer(): () => TestReportContainer {
-  let container: TestReportContainer;
-
-  beforeEach(() => {
-    container = createTestReportContainer();
-  });
-
-  return () => container;
+  return setupContainer(createTestReportContainer);
 }
