@@ -13,7 +13,7 @@ importers:
         version: 1.0.1
       '@kintone/rest-api-client':
         specifier: ^6.1.1
-        version: 6.1.1
+        version: 6.1.2
       dotenv:
         specifier: ^17.3.1
         version: 17.3.1
@@ -416,8 +416,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kintone/rest-api-client@6.1.1':
-    resolution: {integrity: sha512-DJ61P1YcdukPGM0iZJ3myXxfdP8jafLPS8KltLvN3h1DrnEInOqE4gYi+G09UQM6lGpeK/5PDTv1xRX2vnqtmw==}
+  '@kintone/rest-api-client@6.1.2':
+    resolution: {integrity: sha512-/6RMKD/cNg8KOfQDXLOTzKkfG+EAKuU6czgVF5b5c4Na9uFB9BENmdg7e1eV3qNwszfIt7UpONfT3apCiw2R3Q==}
     engines: {node: '>=20'}
 
   '@mswjs/interceptors@0.41.3':
@@ -2079,8 +2079,8 @@ packages:
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
-  qs@6.14.2:
-    resolution: {integrity: sha512-V/yCWTTF7VJ9hIh18Ugr2zhJMP01MY7c5kh4J870L7imm6/DIzBsNLTXzMwUA3yZ5b/KBqLx8Kp3uRvd7xSe3Q==}
+  qs@6.15.0:
+    resolution: {integrity: sha512-mAZTtNCeetKMH+pSjrb76NAM8V9a05I9aBZOHztWy/UqcJdQYNsf59vrRKWnojAT9Y+GbIvoTBC++CPHqpDBhQ==}
     engines: {node: '>=0.6'}
 
   quansync@1.0.0:
@@ -2954,14 +2954,14 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kintone/rest-api-client@6.1.1':
+  '@kintone/rest-api-client@6.1.2':
     dependencies:
       axios: 1.13.5
       core-js: 3.48.0
       form-data: 4.0.5
       js-base64: 3.7.8
       mime: 3.0.0
-      qs: 6.14.2
+      qs: 6.15.0
     transitivePeerDependencies:
       - debug
 
@@ -4397,7 +4397,7 @@ snapshots:
 
   proxy-from-env@1.1.0: {}
 
-  qs@6.14.2:
+  qs@6.15.0:
     dependencies:
       side-channel: 1.1.0
 
