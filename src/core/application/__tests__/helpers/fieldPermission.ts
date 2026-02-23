@@ -3,14 +3,14 @@ import type { FieldRight } from "@/core/domain/fieldPermission/entity";
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
 import type { FieldPermissionStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryFieldPermissionConfigurator
-  extends TestDouble
+  extends FakeBase
   implements FieldPermissionConfigurator
 {
   private permissions: {
@@ -29,8 +29,7 @@ export class InMemoryFieldPermissionConfigurator
     rights: readonly FieldRight[];
     revision: string;
   }> {
-    this.callLog.push("getFieldPermissions");
-    this.checkFail("getFieldPermissions");
+    this.record("getFieldPermissions");
     return { ...this.permissions };
   }
 
@@ -38,8 +37,7 @@ export class InMemoryFieldPermissionConfigurator
     rights: readonly FieldRight[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateFieldPermissions");
-    this.checkFail("updateFieldPermissions");
+    this.record("updateFieldPermissions");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.permissions.revision) + 1);
     this.permissions.revision = newRevision;

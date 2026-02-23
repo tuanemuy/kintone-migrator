@@ -3,14 +3,14 @@ import type { GeneralSettingsConfig } from "@/core/domain/generalSettings/entity
 import type { GeneralSettingsConfigurator } from "@/core/domain/generalSettings/ports/generalSettingsConfigurator";
 import type { GeneralSettingsStorage } from "@/core/domain/generalSettings/ports/generalSettingsStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryGeneralSettingsConfigurator
-  extends TestDouble
+  extends FakeBase
   implements GeneralSettingsConfigurator
 {
   private config: GeneralSettingsConfig = {};
@@ -24,8 +24,7 @@ export class InMemoryGeneralSettingsConfigurator
     config: GeneralSettingsConfig;
     revision: string;
   }> {
-    this.callLog.push("getGeneralSettings");
-    this.checkFail("getGeneralSettings");
+    this.record("getGeneralSettings");
     return { config: { ...this.config }, revision: this.revision };
   }
 
@@ -33,8 +32,7 @@ export class InMemoryGeneralSettingsConfigurator
     config: GeneralSettingsConfig;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateGeneralSettings");
-    this.checkFail("updateGeneralSettings");
+    this.record("updateGeneralSettings");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

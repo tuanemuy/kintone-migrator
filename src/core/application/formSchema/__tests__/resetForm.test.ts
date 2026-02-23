@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setupTestContainer } from "@/core/application/__tests__/helpers";
+import { setupTestFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import { SystemError } from "@/core/application/error";
 import {
   FieldCode,
@@ -8,7 +8,7 @@ import {
 } from "@/core/domain/formSchema/valueObject";
 import { resetForm } from "../resetForm";
 
-const getContainer = setupTestContainer();
+const getContainer = setupTestFormSchemaContainer();
 
 function textField(
   code: string,

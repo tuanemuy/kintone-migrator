@@ -3,14 +3,14 @@ import type { PluginConfig } from "@/core/domain/plugin/entity";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryPluginConfigurator
-  extends TestDouble
+  extends FakeBase
   implements PluginConfigurator
 {
   private plugins: readonly PluginConfig[] = [];
@@ -22,8 +22,7 @@ export class InMemoryPluginConfigurator
     plugins: readonly PluginConfig[];
     revision: string;
   }> {
-    this.callLog.push("getPlugins");
-    this.checkFail("getPlugins");
+    this.record("getPlugins");
     return { plugins: [...this.plugins], revision: this.revision };
   }
 
@@ -31,8 +30,7 @@ export class InMemoryPluginConfigurator
     ids: readonly string[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("addPlugins");
-    this.checkFail("addPlugins");
+    this.record("addPlugins");
     this.lastAddPluginsParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

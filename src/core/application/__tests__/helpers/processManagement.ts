@@ -3,14 +3,14 @@ import type { ProcessManagementConfig } from "@/core/domain/processManagement/en
 import type { ProcessManagementConfigurator } from "@/core/domain/processManagement/ports/processManagementConfigurator";
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryProcessManagementConfigurator
-  extends TestDouble
+  extends FakeBase
   implements ProcessManagementConfigurator
 {
   private config: ProcessManagementConfig = {
@@ -28,8 +28,7 @@ export class InMemoryProcessManagementConfigurator
     config: ProcessManagementConfig;
     revision: string;
   }> {
-    this.callLog.push("getProcessManagement");
-    this.checkFail("getProcessManagement");
+    this.record("getProcessManagement");
     return { config: { ...this.config }, revision: this.revision };
   }
 
@@ -37,8 +36,7 @@ export class InMemoryProcessManagementConfigurator
     config: ProcessManagementConfig;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateProcessManagement");
-    this.checkFail("updateProcessManagement");
+    this.record("updateProcessManagement");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

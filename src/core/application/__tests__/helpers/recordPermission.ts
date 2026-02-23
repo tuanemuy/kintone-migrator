@@ -3,14 +3,14 @@ import type { RecordRight } from "@/core/domain/recordPermission/entity";
 import type { RecordPermissionConfigurator } from "@/core/domain/recordPermission/ports/recordPermissionConfigurator";
 import type { RecordPermissionStorage } from "@/core/domain/recordPermission/ports/recordPermissionStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryRecordPermissionConfigurator
-  extends TestDouble
+  extends FakeBase
   implements RecordPermissionConfigurator
 {
   private permissions: {
@@ -29,8 +29,7 @@ export class InMemoryRecordPermissionConfigurator
     rights: readonly RecordRight[];
     revision: string;
   }> {
-    this.callLog.push("getRecordPermissions");
-    this.checkFail("getRecordPermissions");
+    this.record("getRecordPermissions");
     return { ...this.permissions };
   }
 
@@ -38,8 +37,7 @@ export class InMemoryRecordPermissionConfigurator
     rights: readonly RecordRight[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateRecordPermissions");
-    this.checkFail("updateRecordPermissions");
+    this.record("updateRecordPermissions");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.permissions.revision) + 1);
     this.permissions.revision = newRevision;

@@ -3,14 +3,14 @@ import type { ActionConfig } from "@/core/domain/action/entity";
 import type { ActionConfigurator } from "@/core/domain/action/ports/actionConfigurator";
 import type { ActionStorage } from "@/core/domain/action/ports/actionStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryActionConfigurator
-  extends TestDouble
+  extends FakeBase
   implements ActionConfigurator
 {
   private actions: Record<string, ActionConfig> = {};
@@ -24,8 +24,7 @@ export class InMemoryActionConfigurator
     actions: Readonly<Record<string, ActionConfig>>;
     revision: string;
   }> {
-    this.callLog.push("getActions");
-    this.checkFail("getActions");
+    this.record("getActions");
     return { actions: { ...this.actions }, revision: this.revision };
   }
 
@@ -33,8 +32,7 @@ export class InMemoryActionConfigurator
     actions: Readonly<Record<string, ActionConfig>>;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateActions");
-    this.checkFail("updateActions");
+    this.record("updateActions");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

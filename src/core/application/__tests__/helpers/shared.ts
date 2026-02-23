@@ -3,7 +3,7 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
 
-export class TestDouble {
+export class FakeBase {
   callLog: string[] = [];
   private failOn: Set<string> = new Set();
   private readonly errorCode: SystemErrorCode;
@@ -16,24 +16,24 @@ export class TestDouble {
     this.failOn.add(methodName);
   }
 
-  protected checkFail(methodName: string): void {
+  protected record(methodName: string): void {
+    this.callLog.push(methodName);
     if (this.failOn.has(methodName)) {
       throw new SystemError(this.errorCode, `${methodName} failed (test)`);
     }
   }
 }
 
-export class InMemoryFileStorage extends TestDouble {
-  protected content = "";
-  protected hasContent = false;
+export class InMemoryFileStorage extends FakeBase {
+  private content = "";
+  private hasContent = false;
 
   constructor() {
     super(SystemErrorCode.StorageError);
   }
 
   async get(): Promise<StorageResult> {
-    this.callLog.push("get");
-    this.checkFail("get");
+    this.record("get");
     if (this.hasContent) {
       return { exists: true, content: this.content };
     }
@@ -41,8 +41,7 @@ export class InMemoryFileStorage extends TestDouble {
   }
 
   async update(content: string): Promise<void> {
-    this.callLog.push("update");
-    this.checkFail("update");
+    this.record("update");
     this.content = content;
     this.hasContent = true;
   }
@@ -53,17 +52,11 @@ export class InMemoryFileStorage extends TestDouble {
   }
 }
 
-export class InMemoryAppDeployer implements AppDeployer {
+export class InMemoryAppDeployer extends FakeBase implements AppDeployer {
   deployCount = 0;
-  shouldFail = false;
 
   async deploy(): Promise<void> {
-    if (this.shouldFail) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Deploy failed (test)",
-      );
-    }
+    this.record("deploy");
     this.deployCount++;
   }
 }

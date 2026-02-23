@@ -3,14 +3,14 @@ import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryViewConfigurator
-  extends TestDouble
+  extends FakeBase
   implements ViewConfigurator
 {
   private views: Record<string, ViewConfig> = {};
@@ -24,8 +24,7 @@ export class InMemoryViewConfigurator
     views: Readonly<Record<string, ViewConfig>>;
     revision: string;
   }> {
-    this.callLog.push("getViews");
-    this.checkFail("getViews");
+    this.record("getViews");
     return { views: { ...this.views }, revision: this.revision };
   }
 
@@ -33,8 +32,7 @@ export class InMemoryViewConfigurator
     views: Readonly<Record<string, ViewConfig>>;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateViews");
-    this.checkFail("updateViews");
+    this.record("updateViews");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

@@ -3,14 +3,14 @@ import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
 import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryReportConfigurator
-  extends TestDouble
+  extends FakeBase
   implements ReportConfigurator
 {
   private reports: Record<string, ReportConfig> = {};
@@ -24,8 +24,7 @@ export class InMemoryReportConfigurator
     reports: Readonly<Record<string, ReportConfig>>;
     revision: string;
   }> {
-    this.callLog.push("getReports");
-    this.checkFail("getReports");
+    this.record("getReports");
     return { reports: { ...this.reports }, revision: this.revision };
   }
 
@@ -33,8 +32,7 @@ export class InMemoryReportConfigurator
     reports: Readonly<Record<string, ReportConfig>>;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateReports");
-    this.checkFail("updateReports");
+    this.record("updateReports");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

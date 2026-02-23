@@ -7,28 +7,26 @@ import type {
   FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryFormConfigurator
-  extends TestDouble
+  extends FakeBase
   implements FormConfigurator
 {
   private fields: Map<FieldCode, FieldDefinition> = new Map();
   private layout: FormLayout = [];
 
   async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
-    this.callLog.push("getFields");
-    this.checkFail("getFields");
+    this.record("getFields");
     return new Map(this.fields);
   }
 
   async addFields(fields: readonly FieldDefinition[]): Promise<void> {
-    this.callLog.push("addFields");
-    this.checkFail("addFields");
+    this.record("addFields");
     for (const field of fields) {
       if (field.type === "SUBTABLE") {
         const existing = this.fields.get(field.code);
@@ -49,8 +47,7 @@ export class InMemoryFormConfigurator
   }
 
   async updateFields(fields: readonly FieldDefinition[]): Promise<void> {
-    this.callLog.push("updateFields");
-    this.checkFail("updateFields");
+    this.record("updateFields");
     for (const field of fields) {
       if (field.type === "SUBTABLE") {
         const existing = this.fields.get(field.code);
@@ -71,22 +68,19 @@ export class InMemoryFormConfigurator
   }
 
   async deleteFields(fieldCodes: readonly FieldCode[]): Promise<void> {
-    this.callLog.push("deleteFields");
-    this.checkFail("deleteFields");
+    this.record("deleteFields");
     for (const code of fieldCodes) {
       this.fields.delete(code);
     }
   }
 
   async getLayout(): Promise<FormLayout> {
-    this.callLog.push("getLayout");
-    this.checkFail("getLayout");
+    this.record("getLayout");
     return [...this.layout];
   }
 
   async updateLayout(layout: FormLayout): Promise<void> {
-    this.callLog.push("updateLayout");
-    this.checkFail("updateLayout");
+    this.record("updateLayout");
     this.layout = [...layout];
   }
 
@@ -103,13 +97,13 @@ export class InMemorySchemaStorage
   extends InMemoryFileStorage
   implements SchemaStorage {}
 
-export type TestContainer = Container & {
+export type TestFormSchemaContainer = Container & {
   formConfigurator: InMemoryFormConfigurator;
   schemaStorage: InMemorySchemaStorage;
   appDeployer: InMemoryAppDeployer;
 };
 
-export function createTestContainer(): TestContainer {
+export function createTestFormSchemaContainer(): TestFormSchemaContainer {
   return {
     formConfigurator: new InMemoryFormConfigurator(),
     schemaStorage: new InMemorySchemaStorage(),
@@ -117,6 +111,6 @@ export function createTestContainer(): TestContainer {
   };
 }
 
-export function setupTestContainer(): () => TestContainer {
-  return setupContainer(createTestContainer);
+export function setupTestFormSchemaContainer(): () => TestFormSchemaContainer {
+  return setupContainer(createTestFormSchemaContainer);
 }

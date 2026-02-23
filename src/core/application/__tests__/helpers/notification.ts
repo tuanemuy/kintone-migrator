@@ -7,14 +7,14 @@ import type {
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
 import type { NotificationStorage } from "@/core/domain/notification/ports/notificationStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryNotificationConfigurator
-  extends TestDouble
+  extends FakeBase
   implements NotificationConfigurator
 {
   private generalNotifications: {
@@ -62,8 +62,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly GeneralNotification[];
     revision: string;
   }> {
-    this.callLog.push("getGeneralNotifications");
-    this.checkFail("getGeneralNotifications");
+    this.record("getGeneralNotifications");
     return { ...this.generalNotifications };
   }
 
@@ -72,8 +71,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly GeneralNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateGeneralNotifications");
-    this.checkFail("updateGeneralNotifications");
+    this.record("updateGeneralNotifications");
     this.lastUpdateGeneralParams = params;
     const newRevision = String(Number(this.generalNotifications.revision) + 1);
     this.generalNotifications.revision = newRevision;
@@ -84,8 +82,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly PerRecordNotification[];
     revision: string;
   }> {
-    this.callLog.push("getPerRecordNotifications");
-    this.checkFail("getPerRecordNotifications");
+    this.record("getPerRecordNotifications");
     return { ...this.perRecordNotifications };
   }
 
@@ -93,8 +90,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly PerRecordNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updatePerRecordNotifications");
-    this.checkFail("updatePerRecordNotifications");
+    this.record("updatePerRecordNotifications");
     this.lastUpdatePerRecordParams = params;
     const newRevision = String(
       Number(this.perRecordNotifications.revision) + 1,
@@ -108,8 +104,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly ReminderNotification[];
     revision: string;
   }> {
-    this.callLog.push("getReminderNotifications");
-    this.checkFail("getReminderNotifications");
+    this.record("getReminderNotifications");
     return { ...this.reminderNotifications };
   }
 
@@ -118,8 +113,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateReminderNotifications");
-    this.checkFail("updateReminderNotifications");
+    this.record("updateReminderNotifications");
     this.lastUpdateReminderParams = params;
     const newRevision = String(Number(this.reminderNotifications.revision) + 1);
     this.reminderNotifications.revision = newRevision;

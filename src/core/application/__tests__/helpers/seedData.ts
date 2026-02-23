@@ -3,23 +3,21 @@ import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
 import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
 import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
 import type { SeedRecord } from "@/core/domain/seedData/valueObject";
-import { InMemoryFileStorage, setupContainer, TestDouble } from "./shared";
+import { FakeBase, InMemoryFileStorage, setupContainer } from "./shared";
 
-export class InMemoryRecordManager extends TestDouble implements RecordManager {
+export class InMemoryRecordManager extends FakeBase implements RecordManager {
   private records: SeedRecordWithId[] = [];
   private nextId = 1;
 
   async getAllRecords(
     _condition?: string,
   ): Promise<readonly SeedRecordWithId[]> {
-    this.callLog.push("getAllRecords");
-    this.checkFail("getAllRecords");
+    this.record("getAllRecords");
     return [...this.records];
   }
 
   async addRecords(records: readonly SeedRecord[]): Promise<void> {
-    this.callLog.push("addRecords");
-    this.checkFail("addRecords");
+    this.record("addRecords");
     for (const record of records) {
       const id = String(this.nextId++);
       this.records.push({ id, record });
@@ -32,8 +30,7 @@ export class InMemoryRecordManager extends TestDouble implements RecordManager {
       record: SeedRecord;
     }[],
   ): Promise<void> {
-    this.callLog.push("updateRecords");
-    this.checkFail("updateRecords");
+    this.record("updateRecords");
     for (const { id, record } of records) {
       const index = this.records.findIndex((r) => r.id === id);
       if (index !== -1) {
@@ -43,8 +40,7 @@ export class InMemoryRecordManager extends TestDouble implements RecordManager {
   }
 
   async deleteAllRecords(): Promise<{ deletedCount: number }> {
-    this.callLog.push("deleteAllRecords");
-    this.checkFail("deleteAllRecords");
+    this.record("deleteAllRecords");
     const deletedCount = this.records.length;
     this.records = [];
     return { deletedCount };

@@ -11,14 +11,14 @@ import type {
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryCustomizationConfigurator
-  extends TestDouble
+  extends FakeBase
   implements CustomizationConfigurator
 {
   private customization: {
@@ -51,8 +51,7 @@ export class InMemoryCustomizationConfigurator
     mobile: RemotePlatform;
     revision: string;
   }> {
-    this.callLog.push("getCustomization");
-    this.checkFail("getCustomization");
+    this.record("getCustomization");
     return structuredClone(this.customization);
   }
 
@@ -68,8 +67,7 @@ export class InMemoryCustomizationConfigurator
     };
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateCustomization");
-    this.checkFail("updateCustomization");
+    this.record("updateCustomization");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.customization.revision) + 1);
     this.customization.revision = newRevision;
@@ -86,13 +84,12 @@ export class InMemoryCustomizationConfigurator
   }
 }
 
-export class InMemoryFileUploader extends TestDouble implements FileUploader {
+export class InMemoryFileUploader extends FakeBase implements FileUploader {
   private fileKeyCounter = 0;
   uploadedFiles: Map<string, string> = new Map();
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
-    this.callLog.push("upload");
-    this.checkFail("upload");
+    this.record("upload");
     this.fileKeyCounter++;
     const fileKey = `fk-${this.fileKeyCounter}`;
     this.uploadedFiles.set(filePath, fileKey);
@@ -104,15 +101,11 @@ export class InMemoryCustomizationStorage
   extends InMemoryFileStorage
   implements CustomizationStorage {}
 
-export class InMemoryFileDownloader
-  extends TestDouble
-  implements FileDownloader
-{
+export class InMemoryFileDownloader extends FakeBase implements FileDownloader {
   private files: Map<string, ArrayBuffer> = new Map();
 
   async download(fileKey: string): Promise<ArrayBuffer> {
-    this.callLog.push("download");
-    this.checkFail("download");
+    this.record("download");
     const data = this.files.get(fileKey);
     if (data === undefined) {
       return new TextEncoder().encode(`content-of-${fileKey}`).buffer;
@@ -125,7 +118,7 @@ export class InMemoryFileDownloader
   }
 }
 
-export class InMemoryFileWriter extends TestDouble implements FileWriter {
+export class InMemoryFileWriter extends FakeBase implements FileWriter {
   writtenFiles: Map<string, ArrayBuffer> = new Map();
 
   constructor() {
@@ -133,8 +126,7 @@ export class InMemoryFileWriter extends TestDouble implements FileWriter {
   }
 
   async write(filePath: string, data: ArrayBuffer): Promise<void> {
-    this.callLog.push("write");
-    this.checkFail("write");
+    this.record("write");
     this.writtenFiles.set(filePath, data);
   }
 }

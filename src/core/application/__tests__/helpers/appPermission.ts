@@ -3,14 +3,14 @@ import type { AppRight } from "@/core/domain/appPermission/entity";
 import type { AppPermissionConfigurator } from "@/core/domain/appPermission/ports/appPermissionConfigurator";
 import type { AppPermissionStorage } from "@/core/domain/appPermission/ports/appPermissionStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryAppPermissionConfigurator
-  extends TestDouble
+  extends FakeBase
   implements AppPermissionConfigurator
 {
   private permissions: {
@@ -29,8 +29,7 @@ export class InMemoryAppPermissionConfigurator
     rights: readonly AppRight[];
     revision: string;
   }> {
-    this.callLog.push("getAppPermissions");
-    this.checkFail("getAppPermissions");
+    this.record("getAppPermissions");
     return { ...this.permissions };
   }
 
@@ -38,8 +37,7 @@ export class InMemoryAppPermissionConfigurator
     rights: readonly AppRight[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateAppPermissions");
-    this.checkFail("updateAppPermissions");
+    this.record("updateAppPermissions");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.permissions.revision) + 1);
     this.permissions.revision = newRevision;

@@ -3,14 +3,14 @@ import type { AdminNotesConfig } from "@/core/domain/adminNotes/entity";
 import type { AdminNotesConfigurator } from "@/core/domain/adminNotes/ports/adminNotesConfigurator";
 import type { AdminNotesStorage } from "@/core/domain/adminNotes/ports/adminNotesStorage";
 import {
+  FakeBase,
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
-  TestDouble,
 } from "./shared";
 
 export class InMemoryAdminNotesConfigurator
-  extends TestDouble
+  extends FakeBase
   implements AdminNotesConfigurator
 {
   private config: AdminNotesConfig = {
@@ -27,8 +27,7 @@ export class InMemoryAdminNotesConfigurator
     config: AdminNotesConfig;
     revision: string;
   }> {
-    this.callLog.push("getAdminNotes");
-    this.checkFail("getAdminNotes");
+    this.record("getAdminNotes");
     return { config: { ...this.config }, revision: this.revision };
   }
 
@@ -36,8 +35,7 @@ export class InMemoryAdminNotesConfigurator
     config: AdminNotesConfig;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.callLog.push("updateAdminNotes");
-    this.checkFail("updateAdminNotes");
+    this.record("updateAdminNotes");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

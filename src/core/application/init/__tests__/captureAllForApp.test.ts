@@ -3,9 +3,9 @@ import {
   createTestActionContainer,
   createTestAdminNotesContainer,
   createTestAppPermissionContainer,
-  createTestContainer,
   createTestCustomizationContainer,
   createTestFieldPermissionContainer,
+  createTestFormSchemaContainer,
   createTestGeneralSettingsContainer,
   createTestNotificationContainer,
   createTestPluginContainer,
@@ -34,7 +34,7 @@ import {
 
 function createMockContainers(): CaptureAllContainers {
   return {
-    schema: createTestContainer(),
+    schema: createTestFormSchemaContainer(),
     seed: createTestSeedContainer(),
     customization: createTestCustomizationContainer(),
     view: createTestViewContainer(),
