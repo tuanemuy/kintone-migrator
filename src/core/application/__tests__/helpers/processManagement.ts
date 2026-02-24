@@ -28,7 +28,7 @@ export class InMemoryProcessManagementConfigurator
     config: ProcessManagementConfig;
     revision: string;
   }> {
-    this.record("getProcessManagement");
+    this.trackCall("getProcessManagement");
     return { config: { ...this.config }, revision: this.revision };
   }
 
@@ -36,7 +36,7 @@ export class InMemoryProcessManagementConfigurator
     config: ProcessManagementConfig;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateProcessManagement");
+    this.trackCall("updateProcessManagement");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

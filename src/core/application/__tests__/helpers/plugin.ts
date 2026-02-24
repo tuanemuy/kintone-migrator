@@ -22,7 +22,7 @@ export class InMemoryPluginConfigurator
     plugins: readonly PluginConfig[];
     revision: string;
   }> {
-    this.record("getPlugins");
+    this.trackCall("getPlugins");
     return { plugins: [...this.plugins], revision: this.revision };
   }
 
@@ -30,7 +30,7 @@ export class InMemoryPluginConfigurator
     ids: readonly string[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("addPlugins");
+    this.trackCall("addPlugins");
     this.lastAddPluginsParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

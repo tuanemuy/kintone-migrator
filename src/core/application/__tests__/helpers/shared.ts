@@ -4,7 +4,7 @@ import type { AppDeployer } from "@/core/domain/ports/appDeployer";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
 
 export class FakeBase {
-  callLog: string[] = [];
+  private _callLog: string[] = [];
   private failOn: Set<string> = new Set();
   private readonly errorCode: SystemErrorCode;
 
@@ -12,12 +12,20 @@ export class FakeBase {
     this.errorCode = errorCode;
   }
 
+  get callLog(): readonly string[] {
+    return this._callLog;
+  }
+
+  resetCallLog(): void {
+    this._callLog = [];
+  }
+
   setFailOn(methodName: string): void {
     this.failOn.add(methodName);
   }
 
-  protected record(methodName: string): void {
-    this.callLog.push(methodName);
+  protected trackCall(methodName: string): void {
+    this._callLog.push(methodName);
     if (this.failOn.has(methodName)) {
       throw new SystemError(this.errorCode, `${methodName} failed (test)`);
     }
@@ -33,7 +41,7 @@ export class InMemoryFileStorage extends FakeBase {
   }
 
   async get(): Promise<StorageResult> {
-    this.record("get");
+    this.trackCall("get");
     if (this.hasContent) {
       return { exists: true, content: this.content };
     }
@@ -41,7 +49,7 @@ export class InMemoryFileStorage extends FakeBase {
   }
 
   async update(content: string): Promise<void> {
-    this.record("update");
+    this.trackCall("update");
     this.content = content;
     this.hasContent = true;
   }
@@ -56,7 +64,7 @@ export class InMemoryAppDeployer extends FakeBase implements AppDeployer {
   deployCount = 0;
 
   async deploy(): Promise<void> {
-    this.record("deploy");
+    this.trackCall("deploy");
     this.deployCount++;
   }
 }

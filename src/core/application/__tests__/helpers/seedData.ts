@@ -12,12 +12,12 @@ export class InMemoryRecordManager extends FakeBase implements RecordManager {
   async getAllRecords(
     _condition?: string,
   ): Promise<readonly SeedRecordWithId[]> {
-    this.record("getAllRecords");
+    this.trackCall("getAllRecords");
     return [...this.records];
   }
 
   async addRecords(records: readonly SeedRecord[]): Promise<void> {
-    this.record("addRecords");
+    this.trackCall("addRecords");
     for (const record of records) {
       const id = String(this.nextId++);
       this.records.push({ id, record });
@@ -30,7 +30,7 @@ export class InMemoryRecordManager extends FakeBase implements RecordManager {
       record: SeedRecord;
     }[],
   ): Promise<void> {
-    this.record("updateRecords");
+    this.trackCall("updateRecords");
     for (const { id, record } of records) {
       const index = this.records.findIndex((r) => r.id === id);
       if (index !== -1) {
@@ -40,7 +40,7 @@ export class InMemoryRecordManager extends FakeBase implements RecordManager {
   }
 
   async deleteAllRecords(): Promise<{ deletedCount: number }> {
-    this.record("deleteAllRecords");
+    this.trackCall("deleteAllRecords");
     const deletedCount = this.records.length;
     this.records = [];
     return { deletedCount };

@@ -27,7 +27,7 @@ export class InMemoryAdminNotesConfigurator
     config: AdminNotesConfig;
     revision: string;
   }> {
-    this.record("getAdminNotes");
+    this.trackCall("getAdminNotes");
     return { config: { ...this.config }, revision: this.revision };
   }
 
@@ -35,7 +35,7 @@ export class InMemoryAdminNotesConfigurator
     config: AdminNotesConfig;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateAdminNotes");
+    this.trackCall("updateAdminNotes");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

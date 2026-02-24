@@ -62,7 +62,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly GeneralNotification[];
     revision: string;
   }> {
-    this.record("getGeneralNotifications");
+    this.trackCall("getGeneralNotifications");
     return { ...this.generalNotifications };
   }
 
@@ -71,7 +71,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly GeneralNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateGeneralNotifications");
+    this.trackCall("updateGeneralNotifications");
     this.lastUpdateGeneralParams = params;
     const newRevision = String(Number(this.generalNotifications.revision) + 1);
     this.generalNotifications.revision = newRevision;
@@ -82,7 +82,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly PerRecordNotification[];
     revision: string;
   }> {
-    this.record("getPerRecordNotifications");
+    this.trackCall("getPerRecordNotifications");
     return { ...this.perRecordNotifications };
   }
 
@@ -90,7 +90,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly PerRecordNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updatePerRecordNotifications");
+    this.trackCall("updatePerRecordNotifications");
     this.lastUpdatePerRecordParams = params;
     const newRevision = String(
       Number(this.perRecordNotifications.revision) + 1,
@@ -104,7 +104,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly ReminderNotification[];
     revision: string;
   }> {
-    this.record("getReminderNotifications");
+    this.trackCall("getReminderNotifications");
     return { ...this.reminderNotifications };
   }
 
@@ -113,7 +113,7 @@ export class InMemoryNotificationConfigurator
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateReminderNotifications");
+    this.trackCall("updateReminderNotifications");
     this.lastUpdateReminderParams = params;
     const newRevision = String(Number(this.reminderNotifications.revision) + 1);
     this.reminderNotifications.revision = newRevision;

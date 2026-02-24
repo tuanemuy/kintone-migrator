@@ -106,7 +106,7 @@ describe("forceOverrideForm", () => {
     container.formConfigurator.setLayout([
       { type: "ROW", fields: [{ kind: "field", field: sameField }] },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await forceOverrideForm({ container });
 
@@ -132,7 +132,7 @@ describe("forceOverrideForm", () => {
     container.schemaStorage.setContent(singleFieldSchema);
     container.formConfigurator.setFields(new Map());
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await forceOverrideForm({ container });
 
@@ -334,7 +334,7 @@ layout:
       ]),
     );
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await forceOverrideForm({ container });
 
@@ -361,7 +361,7 @@ layout:
       new Map([[FieldCode.create("extra"), extra]]),
     );
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await forceOverrideForm({ container });
 
@@ -432,7 +432,7 @@ layout:
     container.formConfigurator.setFields(new Map());
     container.formConfigurator.setLayout([]);
     container.formConfigurator.setFailOn("addFields");
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await expect(forceOverrideForm({ container })).rejects.toThrow(SystemError);
 
@@ -454,7 +454,7 @@ layout:
     );
     container.formConfigurator.setLayout([]);
     container.formConfigurator.setFailOn("updateFields");
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await expect(forceOverrideForm({ container })).rejects.toThrow(SystemError);
 
@@ -576,7 +576,7 @@ layout:
       ]),
     );
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await forceOverrideForm({ container });
 

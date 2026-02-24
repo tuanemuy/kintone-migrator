@@ -60,7 +60,7 @@ describe("resetForm", () => {
       ]),
     );
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await resetForm({ container });
 
@@ -80,7 +80,7 @@ describe("resetForm", () => {
     container.formConfigurator.setLayout([
       { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await resetForm({ container });
 
@@ -99,7 +99,7 @@ describe("resetForm", () => {
     const container = getContainer();
     container.formConfigurator.setFields(new Map());
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await resetForm({ container });
 

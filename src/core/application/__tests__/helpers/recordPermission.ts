@@ -29,7 +29,7 @@ export class InMemoryRecordPermissionConfigurator
     rights: readonly RecordRight[];
     revision: string;
   }> {
-    this.record("getRecordPermissions");
+    this.trackCall("getRecordPermissions");
     return { ...this.permissions };
   }
 
@@ -37,7 +37,7 @@ export class InMemoryRecordPermissionConfigurator
     rights: readonly RecordRight[];
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateRecordPermissions");
+    this.trackCall("updateRecordPermissions");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.permissions.revision) + 1);
     this.permissions.revision = newRevision;

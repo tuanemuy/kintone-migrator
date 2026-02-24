@@ -21,12 +21,12 @@ export class InMemoryFormConfigurator
   private layout: FormLayout = [];
 
   async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
-    this.record("getFields");
+    this.trackCall("getFields");
     return new Map(this.fields);
   }
 
   async addFields(fields: readonly FieldDefinition[]): Promise<void> {
-    this.record("addFields");
+    this.trackCall("addFields");
     for (const field of fields) {
       if (field.type === "SUBTABLE") {
         const existing = this.fields.get(field.code);
@@ -47,7 +47,7 @@ export class InMemoryFormConfigurator
   }
 
   async updateFields(fields: readonly FieldDefinition[]): Promise<void> {
-    this.record("updateFields");
+    this.trackCall("updateFields");
     for (const field of fields) {
       if (field.type === "SUBTABLE") {
         const existing = this.fields.get(field.code);
@@ -68,19 +68,19 @@ export class InMemoryFormConfigurator
   }
 
   async deleteFields(fieldCodes: readonly FieldCode[]): Promise<void> {
-    this.record("deleteFields");
+    this.trackCall("deleteFields");
     for (const code of fieldCodes) {
       this.fields.delete(code);
     }
   }
 
   async getLayout(): Promise<FormLayout> {
-    this.record("getLayout");
+    this.trackCall("getLayout");
     return [...this.layout];
   }
 
   async updateLayout(layout: FormLayout): Promise<void> {
-    this.record("updateLayout");
+    this.trackCall("updateLayout");
     this.layout = [...layout];
   }
 

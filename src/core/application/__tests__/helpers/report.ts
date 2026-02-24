@@ -24,7 +24,7 @@ export class InMemoryReportConfigurator
     reports: Readonly<Record<string, ReportConfig>>;
     revision: string;
   }> {
-    this.record("getReports");
+    this.trackCall("getReports");
     return { reports: { ...this.reports }, revision: this.revision };
   }
 
@@ -32,7 +32,7 @@ export class InMemoryReportConfigurator
     reports: Readonly<Record<string, ReportConfig>>;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateReports");
+    this.trackCall("updateReports");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

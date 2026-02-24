@@ -24,7 +24,7 @@ export class InMemoryViewConfigurator
     views: Readonly<Record<string, ViewConfig>>;
     revision: string;
   }> {
-    this.record("getViews");
+    this.trackCall("getViews");
     return { views: { ...this.views }, revision: this.revision };
   }
 
@@ -32,7 +32,7 @@ export class InMemoryViewConfigurator
     views: Readonly<Record<string, ViewConfig>>;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateViews");
+    this.trackCall("updateViews");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

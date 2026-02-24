@@ -24,7 +24,7 @@ export class InMemoryGeneralSettingsConfigurator
     config: GeneralSettingsConfig;
     revision: string;
   }> {
-    this.record("getGeneralSettings");
+    this.trackCall("getGeneralSettings");
     return { config: { ...this.config }, revision: this.revision };
   }
 
@@ -32,7 +32,7 @@ export class InMemoryGeneralSettingsConfigurator
     config: GeneralSettingsConfig;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateGeneralSettings");
+    this.trackCall("updateGeneralSettings");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

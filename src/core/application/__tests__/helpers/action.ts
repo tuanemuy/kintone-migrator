@@ -24,7 +24,7 @@ export class InMemoryActionConfigurator
     actions: Readonly<Record<string, ActionConfig>>;
     revision: string;
   }> {
-    this.record("getActions");
+    this.trackCall("getActions");
     return { actions: { ...this.actions }, revision: this.revision };
   }
 
@@ -32,7 +32,7 @@ export class InMemoryActionConfigurator
     actions: Readonly<Record<string, ActionConfig>>;
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateActions");
+    this.trackCall("updateActions");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.revision) + 1);
     this.revision = newRevision;

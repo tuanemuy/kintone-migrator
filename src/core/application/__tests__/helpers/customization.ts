@@ -51,7 +51,7 @@ export class InMemoryCustomizationConfigurator
     mobile: RemotePlatform;
     revision: string;
   }> {
-    this.record("getCustomization");
+    this.trackCall("getCustomization");
     return structuredClone(this.customization);
   }
 
@@ -67,7 +67,7 @@ export class InMemoryCustomizationConfigurator
     };
     revision?: string;
   }): Promise<{ revision: string }> {
-    this.record("updateCustomization");
+    this.trackCall("updateCustomization");
     this.lastUpdateParams = params;
     const newRevision = String(Number(this.customization.revision) + 1);
     this.customization.revision = newRevision;
@@ -89,7 +89,7 @@ export class InMemoryFileUploader extends FakeBase implements FileUploader {
   uploadedFiles: Map<string, string> = new Map();
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
-    this.record("upload");
+    this.trackCall("upload");
     this.fileKeyCounter++;
     const fileKey = `fk-${this.fileKeyCounter}`;
     this.uploadedFiles.set(filePath, fileKey);
@@ -105,7 +105,7 @@ export class InMemoryFileDownloader extends FakeBase implements FileDownloader {
   private files: Map<string, ArrayBuffer> = new Map();
 
   async download(fileKey: string): Promise<ArrayBuffer> {
-    this.record("download");
+    this.trackCall("download");
     const data = this.files.get(fileKey);
     if (data === undefined) {
       return new TextEncoder().encode(`content-of-${fileKey}`).buffer;
@@ -126,7 +126,7 @@ export class InMemoryFileWriter extends FakeBase implements FileWriter {
   }
 
   async write(filePath: string, data: ArrayBuffer): Promise<void> {
-    this.record("write");
+    this.trackCall("write");
     this.writtenFiles.set(filePath, data);
   }
 }
