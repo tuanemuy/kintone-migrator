@@ -68,27 +68,6 @@ records:
     expect(items[0].price).toBe("1000");
   });
 
-  it("サブテーブル行内の配列フィールドをパースする", () => {
-    const yaml = `
-key: code
-records:
-  - code: "001"
-    items:
-      - product: "商品A"
-        options:
-          - "オプション1"
-          - "オプション2"
-`;
-    const result = SeedParser.parse(yaml);
-    const items = result.records[0].items as readonly Record<
-      string,
-      string | readonly string[]
-    >[];
-    expect(items).toHaveLength(1);
-    expect(items[0].product).toBe("商品A");
-    expect(items[0].options).toEqual(["オプション1", "オプション2"]);
-  });
-
   it("数値を文字列に変換する", () => {
     const yaml = `
 key: code

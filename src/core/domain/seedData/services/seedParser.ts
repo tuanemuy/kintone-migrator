@@ -40,16 +40,12 @@ function normalizeValue(value: unknown): RecordFieldValue {
     }
     // Subtable rows
     return value.filter(isRecord).map((row) => {
-      const normalized: Record<string, string | readonly string[]> = {};
+      const normalized: Record<string, string> = {};
       for (const [k, v] of Object.entries(row)) {
-        if (Array.isArray(v)) {
-          normalized[k] = v.map(String) as readonly string[];
-        } else {
-          normalized[k] = v === null || v === undefined ? "" : String(v);
-        }
+        normalized[k] = v === null || v === undefined ? "" : String(v);
       }
       return normalized;
-    }) as readonly Record<string, string | readonly string[]>[];
+    }) as readonly Record<string, string>[];
   }
   return String(value);
 }
