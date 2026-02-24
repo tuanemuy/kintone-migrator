@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { ValidationError } from "@/core/application/error";
-import { setupTestContainer } from "../../__tests__/helpers";
+import { setupTestFormSchemaContainer } from "../../__tests__/helpers";
 import { validateSchema } from "../validateSchema";
 
-const getContainer = setupTestContainer();
+const getContainer = setupTestFormSchemaContainer();
 
 describe("validateSchema", () => {
   it("正常なスキーマファイルの場合、validationResult を返す", async () => {

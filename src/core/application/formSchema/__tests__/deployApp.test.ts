@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { setupTestContainer } from "@/core/application/__tests__/helpers";
+import { setupTestFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import { SystemError } from "@/core/application/error";
 import { deployApp } from "../deployApp";
 
-const getContainer = setupTestContainer();
+const getContainer = setupTestFormSchemaContainer();
 
 describe("deployApp", () => {
   it("アプリのデプロイを実行する", async () => {
@@ -25,7 +25,7 @@ describe("deployApp", () => {
 
   it("デプロイ失敗時にSystemErrorを伝播する", async () => {
     const container = getContainer();
-    container.appDeployer.shouldFail = true;
+    container.appDeployer.setFailOn("deploy");
 
     await expect(deployApp({ container })).rejects.toThrow(SystemError);
   });

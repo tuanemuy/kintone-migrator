@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { setupTestContainer } from "@/core/application/__tests__/helpers";
+import { setupTestFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import { SystemError, ValidationError } from "@/core/application/error";
 import {
   FieldCode,
@@ -8,7 +8,7 @@ import {
 } from "@/core/domain/formSchema/valueObject";
 import { executeMigration } from "../executeMigration";
 
-const getContainer = setupTestContainer();
+const getContainer = setupTestFormSchemaContainer();
 
 function textField(
   code: string,
@@ -60,7 +60,7 @@ describe("executeMigration", () => {
     container.formConfigurator.setLayout([
       { type: "ROW", fields: [{ kind: "field", field }] },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -156,7 +156,7 @@ describe("executeMigration", () => {
       new Map([[FieldCode.create("name"), field]]),
     );
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -328,7 +328,7 @@ layout:
       { type: "ROW", fields: [{ kind: "field", field }] },
       { type: "ROW", fields: [] },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -406,7 +406,7 @@ layout:
         fields: [{ kind: "field", field: existingInner }],
       },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -672,7 +672,7 @@ layout:
     container.schemaStorage.setContent(singleFieldSchema);
     container.formConfigurator.setFields(new Map());
     container.formConfigurator.setLayout([]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -694,7 +694,7 @@ layout:
     container.formConfigurator.setLayout([
       { type: "ROW", fields: [{ kind: "field", field: oldField }] },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -719,7 +719,7 @@ layout:
       new Map([[FieldCode.create("extra"), extra]]),
     );
     container.formConfigurator.setLayout([{ type: "ROW", fields: [] }]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -763,7 +763,7 @@ layout:
         ],
       },
     ]);
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
 
@@ -914,7 +914,7 @@ layout:
     );
     container.formConfigurator.setLayout([]);
     container.formConfigurator.setFailOn("addFields");
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await expect(executeMigration({ container })).rejects.toThrow(SystemError);
 
@@ -943,7 +943,7 @@ layout:
     );
     container.formConfigurator.setLayout([]);
     container.formConfigurator.setFailOn("updateFields");
-    container.formConfigurator.callLog = [];
+    container.formConfigurator.resetCallLog();
 
     await expect(executeMigration({ container })).rejects.toThrow(SystemError);
 
