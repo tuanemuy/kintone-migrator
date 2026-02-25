@@ -333,10 +333,10 @@ export async function createPost({
 // DI Container for specific environment
 // ex: app/di.ts
 
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
 
-export function createContainer(): Container {
+export function createContainer(): FormSchemaContainer {
   const databaseUrl = process.env.SQLITE_URL;
   if (!databaseUrl) {
     throw new Error("SQLITE_URL is not set");
