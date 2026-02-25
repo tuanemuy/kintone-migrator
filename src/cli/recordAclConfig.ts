@@ -1,11 +1,6 @@
-import type { RecordPermissionCliContainerConfig } from "@/core/application/container/recordPermissionCli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
-import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
-import { resolveFilePath } from "./resolveFilePath";
+import { kintoneArgs, multiAppArgs } from "./config";
+import { createDomainConfigResolver } from "./createDomainConfigResolver";
+import type { MultiAppCliValues } from "./projectConfig";
 
 export const recordAclArgs = {
   ...kintoneArgs,
@@ -20,44 +15,25 @@ export type RecordAclCliValues = MultiAppCliValues & {
   "record-acl-file"?: string;
 };
 
-export function resolveRecordAclFilePath(
-  cliValues: RecordAclCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["record-acl-file"],
-    envVar: process.env.RECORD_ACL_FILE_PATH,
-    appFileField: (a) => a.recordAclFile,
-    app,
-    defaultDir: "record-acl",
-    defaultFileName: "record-acl.yaml",
-  });
-}
+const {
+  resolveFilePath: resolveRecordAclFilePath,
+  resolveContainerConfig: resolveRecordAclContainerConfig,
+  resolveAppContainerConfig: resolveRecordAclAppContainerConfig,
+} = createDomainConfigResolver<
+  "record-acl-file",
+  "recordAclFilePath",
+  RecordAclCliValues
+>({
+  fileArgKey: "record-acl-file",
+  envVar: () => process.env.RECORD_ACL_FILE_PATH,
+  appFileField: (a) => a.recordAclFile,
+  defaultDir: "record-acl",
+  defaultFileName: "record-acl.yaml",
+  filePathKey: "recordAclFilePath",
+});
 
-export function resolveRecordAclContainerConfig(
-  cliValues: RecordAclCliValues,
-): RecordPermissionCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    recordAclFilePath: resolveRecordAclFilePath(cliValues),
-  };
-}
-
-export function resolveRecordAclAppContainerConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: RecordAclCliValues,
-): RecordPermissionCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    recordAclFilePath: resolveRecordAclFilePath(cliValues, app),
-  };
-}
+export {
+  resolveRecordAclFilePath,
+  resolveRecordAclContainerConfig,
+  resolveRecordAclAppContainerConfig,
+};

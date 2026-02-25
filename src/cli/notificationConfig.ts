@@ -1,11 +1,6 @@
-import type { NotificationCliContainerConfig } from "@/core/application/container/notificationCli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
-import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
-import { resolveFilePath } from "./resolveFilePath";
+import { kintoneArgs, multiAppArgs } from "./config";
+import { createDomainConfigResolver } from "./createDomainConfigResolver";
+import type { MultiAppCliValues } from "./projectConfig";
 
 export const notificationArgs = {
   ...kintoneArgs,
@@ -20,44 +15,25 @@ export type NotificationCliValues = MultiAppCliValues & {
   "notification-file"?: string;
 };
 
-export function resolveNotificationFilePath(
-  cliValues: NotificationCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["notification-file"],
-    envVar: process.env.NOTIFICATION_FILE_PATH,
-    appFileField: (a) => a.notificationFile,
-    app,
-    defaultDir: "notification",
-    defaultFileName: "notification.yaml",
-  });
-}
+const {
+  resolveFilePath: resolveNotificationFilePath,
+  resolveContainerConfig: resolveNotificationContainerConfig,
+  resolveAppContainerConfig: resolveNotificationAppContainerConfig,
+} = createDomainConfigResolver<
+  "notification-file",
+  "notificationFilePath",
+  NotificationCliValues
+>({
+  fileArgKey: "notification-file",
+  envVar: () => process.env.NOTIFICATION_FILE_PATH,
+  appFileField: (a) => a.notificationFile,
+  defaultDir: "notification",
+  defaultFileName: "notification.yaml",
+  filePathKey: "notificationFilePath",
+});
 
-export function resolveNotificationContainerConfig(
-  cliValues: NotificationCliValues,
-): NotificationCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    notificationFilePath: resolveNotificationFilePath(cliValues),
-  };
-}
-
-export function resolveNotificationAppContainerConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: NotificationCliValues,
-): NotificationCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    notificationFilePath: resolveNotificationFilePath(cliValues, app),
-  };
-}
+export {
+  resolveNotificationFilePath,
+  resolveNotificationContainerConfig,
+  resolveNotificationAppContainerConfig,
+};
