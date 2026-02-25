@@ -1,8 +1,8 @@
-import type { Container } from "../container";
+import type { FormSchemaContainer } from "../container";
 import type { ServiceArgs } from "../types";
 
 export async function deployApp({
   container,
-}: ServiceArgs<Container>): Promise<void> {
+}: ServiceArgs<FormSchemaContainer>): Promise<void> {
   await container.appDeployer.deploy();
 }

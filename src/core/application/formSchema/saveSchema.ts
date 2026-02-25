@@ -1,4 +1,4 @@
-import type { Container } from "../container";
+import type { FormSchemaContainer } from "../container";
 import type { ServiceArgs } from "../types";
 
 export type SaveSchemaInput = {
@@ -8,6 +8,6 @@ export type SaveSchemaInput = {
 export async function saveSchema({
   container,
   input,
-}: ServiceArgs<Container, SaveSchemaInput>): Promise<void> {
+}: ServiceArgs<FormSchemaContainer, SaveSchemaInput>): Promise<void> {
   await container.schemaStorage.update(input.schemaText);
 }

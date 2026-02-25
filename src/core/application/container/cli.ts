@@ -9,7 +9,7 @@ import { LocalFileCustomizationStorage } from "@/core/adapters/local/customizati
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
 import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { LocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import type { SeedContainer } from "@/core/application/container/seed";
 
@@ -47,7 +47,9 @@ export type SeedCliContainerConfig = {
   seedFilePath: string;
 };
 
-export function createCliContainer(config: CliContainerConfig): Container {
+export function createCliContainer(
+  config: CliContainerConfig,
+): FormSchemaContainer {
   const client = new KintoneRestAPIClient({
     baseUrl: config.baseUrl,
     auth: buildKintoneAuth(config.auth),

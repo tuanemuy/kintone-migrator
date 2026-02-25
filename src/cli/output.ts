@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
@@ -154,7 +154,7 @@ export async function confirmAndDeploy(
 }
 
 export async function promptDeploy(
-  container: Container,
+  container: FormSchemaContainer,
   skipConfirm: boolean,
 ): Promise<void> {
   if (!skipConfirm) {

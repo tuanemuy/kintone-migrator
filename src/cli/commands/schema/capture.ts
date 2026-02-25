@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
 import { captureSchema } from "@/core/application/formSchema/captureSchema";
 import { saveSchema } from "@/core/application/formSchema/saveSchema";
@@ -15,7 +15,7 @@ import {
 } from "../../projectConfig";
 
 async function runCapture(
-  container: Container,
+  container: FormSchemaContainer,
   schemaFilePath: string,
 ): Promise<void> {
   const s = p.spinner();

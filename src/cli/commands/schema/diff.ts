@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
@@ -12,7 +12,7 @@ import {
   runMultiAppWithFailCheck,
 } from "../../projectConfig";
 
-async function runDiff(container: Container): Promise<void> {
+async function runDiff(container: FormSchemaContainer): Promise<void> {
   const s = p.spinner();
   s.start("Fetching form schema...");
   const result = await detectDiff({ container });

@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { deployApp } from "@/core/application/formSchema/deployApp";
@@ -22,7 +22,7 @@ import {
 } from "../../projectConfig";
 
 async function runSingleOverride(
-  container: Container,
+  container: FormSchemaContainer,
   skipConfirm: boolean,
 ): Promise<void> {
   p.log.warn(
@@ -52,7 +52,7 @@ async function runSingleOverride(
 }
 
 async function runSingleReset(
-  container: Container,
+  container: FormSchemaContainer,
   skipConfirm: boolean,
 ): Promise<void> {
   p.log.warn(

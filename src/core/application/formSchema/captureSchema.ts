@@ -1,12 +1,12 @@
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import { SchemaSerializer } from "@/core/domain/formSchema/services/schemaSerializer";
-import type { Container } from "../container";
+import type { FormSchemaContainer } from "../container";
 import type { ServiceArgs } from "../types";
 import type { CaptureSchemaOutput } from "./dto";
 
 export async function captureSchema({
   container,
-}: ServiceArgs<Container>): Promise<CaptureSchemaOutput> {
+}: ServiceArgs<FormSchemaContainer>): Promise<CaptureSchemaOutput> {
   const [currentFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(),
     container.formConfigurator.getLayout(),

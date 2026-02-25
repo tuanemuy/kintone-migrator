@@ -1,4 +1,4 @@
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
@@ -97,7 +97,7 @@ export class InMemorySchemaStorage
   extends InMemoryFileStorage
   implements SchemaStorage {}
 
-export type TestFormSchemaContainer = Container & {
+export type TestFormSchemaContainer = FormSchemaContainer & {
   formConfigurator: InMemoryFormConfigurator;
   schemaStorage: InMemorySchemaStorage;
   appDeployer: InMemoryAppDeployer;

@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
-import type { Container } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
@@ -21,7 +21,7 @@ import {
 } from "../../projectConfig";
 
 async function runSingleMigrate(
-  container: Container,
+  container: FormSchemaContainer,
   skipConfirm: boolean,
 ): Promise<void> {
   const s = p.spinner();
@@ -80,7 +80,7 @@ export default define({
           // multi-app mode: show summary of all changes first
           const appContainers: Array<{
             app: AppEntry;
-            container: Container;
+            container: FormSchemaContainer;
             hasChanges: boolean;
           }> = [];
 
