@@ -263,20 +263,6 @@ export const posts = sqliteTable(
 );
 ```
 
-## Application Service DTO example
-
-```typescript
-// app/core/application/post/dto.ts
-
-export type PostDetail = {
-  id: string;
-  title: string;
-  content: string;
-  authorName: string;
-  createdAt: Date;
-};
-```
-
 ## Application Service example
 
 ```typescript
