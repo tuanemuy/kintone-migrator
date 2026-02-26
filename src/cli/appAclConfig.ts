@@ -20,17 +20,16 @@ const {
   resolveFilePath: resolveAppAclFilePath,
   resolveContainerConfig: resolveAppAclContainerConfig,
   resolveAppContainerConfig: resolveAppAclAppContainerConfig,
-} = createDomainConfigResolver<
-  AppPermissionCliContainerConfig,
-  "app-acl-file",
-  AppAclCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "app-acl-file",
   envVar: () => process.env.APP_ACL_FILE_PATH,
   appFileField: (a) => a.appAclFile,
   defaultDir: "app-acl",
   defaultFileName: "app-acl.yaml",
-  buildConfig: (base, filePath) => ({ ...base, appAclFilePath: filePath }),
+  buildConfig: (base, filePath): AppPermissionCliContainerConfig => ({
+    ...base,
+    appAclFilePath: filePath,
+  }),
 });
 
 export {

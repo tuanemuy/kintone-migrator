@@ -13,17 +13,16 @@ const {
   resolveFilePath: resolveSeedFilePath,
   resolveContainerConfig: resolveSeedConfig,
   resolveAppContainerConfig: resolveSeedAppConfig,
-} = createDomainConfigResolver<
-  SeedCliContainerConfig,
-  "seed-file",
-  SeedCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "seed-file",
   envVar: () => process.env.SEED_FILE_PATH,
   appFileField: (a) => a.seedFile,
   defaultDir: "seeds",
   defaultFileName: "seed.yaml",
-  buildConfig: (base, filePath) => ({ ...base, seedFilePath: filePath }),
+  buildConfig: (base, filePath): SeedCliContainerConfig => ({
+    ...base,
+    seedFilePath: filePath,
+  }),
 });
 
 export { resolveSeedFilePath, resolveSeedConfig, resolveSeedAppConfig };

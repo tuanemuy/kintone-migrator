@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveNotificationFilePath,
   resolveContainerConfig: resolveNotificationContainerConfig,
   resolveAppContainerConfig: resolveNotificationAppContainerConfig,
-} = createDomainConfigResolver<
-  NotificationCliContainerConfig,
-  "notification-file",
-  NotificationCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "notification-file",
   envVar: () => process.env.NOTIFICATION_FILE_PATH,
   appFileField: (a) => a.notificationFile,
   defaultDir: "notification",
   defaultFileName: "notification.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): NotificationCliContainerConfig => ({
     ...base,
     notificationFilePath: filePath,
   }),

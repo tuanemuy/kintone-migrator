@@ -20,17 +20,16 @@ const {
   resolveFilePath: resolveViewFilePath,
   resolveContainerConfig: resolveViewContainerConfig,
   resolveAppContainerConfig: resolveViewAppContainerConfig,
-} = createDomainConfigResolver<
-  ViewCliContainerConfig,
-  "view-file",
-  ViewCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "view-file",
   envVar: () => process.env.VIEW_FILE_PATH,
   appFileField: (a) => a.viewFile,
   defaultDir: "view",
   defaultFileName: "views.yaml",
-  buildConfig: (base, filePath) => ({ ...base, viewFilePath: filePath }),
+  buildConfig: (base, filePath): ViewCliContainerConfig => ({
+    ...base,
+    viewFilePath: filePath,
+  }),
 });
 
 export {

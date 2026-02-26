@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveRecordAclFilePath,
   resolveContainerConfig: resolveRecordAclContainerConfig,
   resolveAppContainerConfig: resolveRecordAclAppContainerConfig,
-} = createDomainConfigResolver<
-  RecordPermissionCliContainerConfig,
-  "record-acl-file",
-  RecordAclCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "record-acl-file",
   envVar: () => process.env.RECORD_ACL_FILE_PATH,
   appFileField: (a) => a.recordAclFile,
   defaultDir: "record-acl",
   defaultFileName: "record-acl.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): RecordPermissionCliContainerConfig => ({
     ...base,
     recordAclFilePath: filePath,
   }),

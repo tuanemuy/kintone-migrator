@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveFieldAclFilePath,
   resolveContainerConfig: resolveFieldAclContainerConfig,
   resolveAppContainerConfig: resolveFieldAclAppContainerConfig,
-} = createDomainConfigResolver<
-  FieldPermissionCliContainerConfig,
-  "field-acl-file",
-  FieldAclCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "field-acl-file",
   envVar: () => process.env.FIELD_ACL_FILE_PATH,
   appFileField: (a) => a.fieldAclFile,
   defaultDir: "field-acl",
   defaultFileName: "field-acl.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): FieldPermissionCliContainerConfig => ({
     ...base,
     fieldAclFilePath: filePath,
   }),

@@ -20,17 +20,16 @@ const {
   resolveFilePath: resolveActionFilePath,
   resolveContainerConfig: resolveActionContainerConfig,
   resolveAppContainerConfig: resolveActionAppContainerConfig,
-} = createDomainConfigResolver<
-  ActionCliContainerConfig,
-  "action-file",
-  ActionCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "action-file",
   envVar: () => process.env.ACTION_FILE_PATH,
   appFileField: (a) => a.actionFile,
   defaultDir: "action",
   defaultFileName: "actions.yaml",
-  buildConfig: (base, filePath) => ({ ...base, actionFilePath: filePath }),
+  buildConfig: (base, filePath): ActionCliContainerConfig => ({
+    ...base,
+    actionFilePath: filePath,
+  }),
 });
 
 export {

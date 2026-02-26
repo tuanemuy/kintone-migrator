@@ -20,17 +20,16 @@ const {
   resolveFilePath: resolvePluginFilePath,
   resolveContainerConfig: resolvePluginContainerConfig,
   resolveAppContainerConfig: resolvePluginAppContainerConfig,
-} = createDomainConfigResolver<
-  PluginCliContainerConfig,
-  "plugin-file",
-  PluginCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "plugin-file",
   envVar: () => process.env.PLUGIN_FILE_PATH,
   appFileField: (a) => a.pluginFile,
   defaultDir: "plugin",
   defaultFileName: "plugins.yaml",
-  buildConfig: (base, filePath) => ({ ...base, pluginFilePath: filePath }),
+  buildConfig: (base, filePath): PluginCliContainerConfig => ({
+    ...base,
+    pluginFilePath: filePath,
+  }),
 });
 
 export {

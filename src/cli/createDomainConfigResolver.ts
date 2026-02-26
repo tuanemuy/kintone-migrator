@@ -14,20 +14,31 @@ export type BaseContainerConfig = {
   guestSpaceId?: string;
 };
 
+/**
+ * Factory that eliminates per-domain boilerplate for CLI config resolution.
+ *
+ * Returns three functions — `resolveFilePath`, `resolveContainerConfig`, and
+ * `resolveAppContainerConfig` — whose behavior is driven by the supplied
+ * domain-specific options.
+ *
+ * `envVar` is a thunk (not a plain value) so that `process.env` look-ups
+ * happen at call time rather than at module-load time, which keeps tests
+ * deterministic and respects runtime env overrides.
+ */
 export function createDomainConfigResolver<
   TConfig extends BaseContainerConfig,
   TFileArgKey extends string,
-  TValues extends MultiAppCliValues & { [K in TFileArgKey]?: string },
 >(options: {
   fileArgKey: TFileArgKey;
-  /** Thunk to defer env var evaluation from module load time to call time */
   envVar: () => string | undefined;
   appFileField: (app: AppEntry) => string | undefined;
   defaultDir: string;
   defaultFileName: string;
   buildConfig: (base: BaseContainerConfig, filePath: string) => TConfig;
 }) {
-  function resolveFilePath_(cliValues: TValues, app?: AppEntry): string {
+  type Values = MultiAppCliValues & Partial<Record<TFileArgKey, string>>;
+
+  function resolveDomainFilePath(cliValues: Values, app?: AppEntry): string {
     return resolveFilePath({
       cliValue: cliValues[options.fileArgKey],
       envVar: options.envVar(),
@@ -38,8 +49,9 @@ export function createDomainConfigResolver<
     });
   }
 
-  function resolveContainerConfig(cliValues: TValues): TConfig {
+  function resolveContainerConfig(cliValues: Values): TConfig {
     const config = resolveConfig(cliValues);
+    // Intentionally picks only base fields; excludes schemaFilePath from CliConfig
     return options.buildConfig(
       {
         baseUrl: config.baseUrl,
@@ -47,16 +59,17 @@ export function createDomainConfigResolver<
         appId: config.appId,
         guestSpaceId: config.guestSpaceId,
       },
-      resolveFilePath_(cliValues),
+      resolveDomainFilePath(cliValues),
     );
   }
 
   function resolveAppContainerConfig(
     app: AppEntry,
     projectConfig: ProjectConfig,
-    cliValues: TValues,
+    cliValues: Values,
   ): TConfig {
     const config = resolveAppCliConfig(app, projectConfig, cliValues);
+    // Intentionally picks only base fields; excludes schemaFilePath from CliConfig
     return options.buildConfig(
       {
         baseUrl: config.baseUrl,
@@ -64,12 +77,12 @@ export function createDomainConfigResolver<
         appId: config.appId,
         guestSpaceId: config.guestSpaceId,
       },
-      resolveFilePath_(cliValues, app),
+      resolveDomainFilePath(cliValues, app),
     );
   }
 
   return {
-    resolveFilePath: resolveFilePath_,
+    resolveFilePath: resolveDomainFilePath,
     resolveContainerConfig,
     resolveAppContainerConfig,
   };

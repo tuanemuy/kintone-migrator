@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveAdminNotesFilePath,
   resolveContainerConfig: resolveAdminNotesContainerConfig,
   resolveAppContainerConfig: resolveAdminNotesAppContainerConfig,
-} = createDomainConfigResolver<
-  AdminNotesCliContainerConfig,
-  "admin-notes-file",
-  AdminNotesCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "admin-notes-file",
   envVar: () => process.env.ADMIN_NOTES_FILE_PATH,
   appFileField: (a) => a.adminNotesFile,
   defaultDir: "admin-notes",
   defaultFileName: "admin-notes.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): AdminNotesCliContainerConfig => ({
     ...base,
     adminNotesFilePath: filePath,
   }),

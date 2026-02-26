@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveSettingsFilePath,
   resolveContainerConfig: resolveSettingsContainerConfig,
   resolveAppContainerConfig: resolveSettingsAppContainerConfig,
-} = createDomainConfigResolver<
-  GeneralSettingsCliContainerConfig,
-  "settings-file",
-  SettingsCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "settings-file",
   envVar: () => process.env.SETTINGS_FILE_PATH,
   appFileField: (a) => a.settingsFile,
   defaultDir: "settings",
   defaultFileName: "settings.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): GeneralSettingsCliContainerConfig => ({
     ...base,
     settingsFilePath: filePath,
   }),

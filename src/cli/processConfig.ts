@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveProcessFilePath,
   resolveContainerConfig: resolveProcessContainerConfig,
   resolveAppContainerConfig: resolveProcessAppContainerConfig,
-} = createDomainConfigResolver<
-  ProcessManagementCliContainerConfig,
-  "process-file",
-  ProcessCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "process-file",
   envVar: () => process.env.PROCESS_FILE_PATH,
   appFileField: (a) => a.processFile,
   defaultDir: "process",
   defaultFileName: "process.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): ProcessManagementCliContainerConfig => ({
     ...base,
     processFilePath: filePath,
   }),

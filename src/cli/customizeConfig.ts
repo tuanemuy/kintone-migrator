@@ -20,17 +20,13 @@ const {
   resolveFilePath: resolveCustomizeFilePath,
   resolveContainerConfig: resolveCustomizeConfig,
   resolveAppContainerConfig: resolveCustomizeAppConfig,
-} = createDomainConfigResolver<
-  CustomizationCliContainerConfig,
-  "customize-file",
-  CustomizeCliValues
->({
+} = createDomainConfigResolver({
   fileArgKey: "customize-file",
   envVar: () => process.env.CUSTOMIZE_FILE_PATH,
   appFileField: (a) => a.customizeFile,
   defaultDir: "customize",
   defaultFileName: "customize.yaml",
-  buildConfig: (base, filePath) => ({
+  buildConfig: (base, filePath): CustomizationCliContainerConfig => ({
     ...base,
     customizeFilePath: filePath,
   }),

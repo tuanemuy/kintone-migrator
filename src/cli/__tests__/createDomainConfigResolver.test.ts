@@ -38,11 +38,7 @@ describe("createDomainConfigResolver", () => {
   });
 
   it("resolveFilePathがデフォルトのファイル名を返す", () => {
-    const { resolveFilePath } = createDomainConfigResolver<
-      TestContainerConfig,
-      "test-file",
-      TestCliValues
-    >({
+    const { resolveFilePath } = createDomainConfigResolver({
       fileArgKey: "test-file",
       envVar: () => undefined,
       appFileField: () => undefined,
@@ -55,11 +51,7 @@ describe("createDomainConfigResolver", () => {
   });
 
   it("resolveFilePathがCLI引数を優先する", () => {
-    const { resolveFilePath } = createDomainConfigResolver<
-      TestContainerConfig,
-      "test-file",
-      TestCliValues
-    >({
+    const { resolveFilePath } = createDomainConfigResolver({
       fileArgKey: "test-file",
       envVar: () => "env-path.yaml",
       appFileField: () => undefined,
@@ -74,11 +66,7 @@ describe("createDomainConfigResolver", () => {
   });
 
   it("resolveFilePathが環境変数をフォールバックとして使う", () => {
-    const { resolveFilePath } = createDomainConfigResolver<
-      TestContainerConfig,
-      "test-file",
-      TestCliValues
-    >({
+    const { resolveFilePath } = createDomainConfigResolver({
       fileArgKey: "test-file",
       envVar: () => "env-path.yaml",
       appFileField: () => undefined,
@@ -93,11 +81,7 @@ describe("createDomainConfigResolver", () => {
   it("resolveContainerConfigが正しいconfigオブジェクトを返す", () => {
     setupEnv();
 
-    const { resolveContainerConfig } = createDomainConfigResolver<
-      TestContainerConfig,
-      "test-file",
-      TestCliValues
-    >({
+    const { resolveContainerConfig } = createDomainConfigResolver({
       fileArgKey: "test-file",
       envVar: () => undefined,
       appFileField: () => undefined,
@@ -129,11 +113,7 @@ describe("createDomainConfigResolver", () => {
       apps: new Map([[appName, app]]),
     };
 
-    const { resolveAppContainerConfig } = createDomainConfigResolver<
-      TestContainerConfig,
-      "test-file",
-      TestCliValues
-    >({
+    const { resolveAppContainerConfig } = createDomainConfigResolver({
       fileArgKey: "test-file",
       envVar: () => undefined,
       appFileField: (a) =>
@@ -144,17 +124,16 @@ describe("createDomainConfigResolver", () => {
     });
 
     const config = resolveAppContainerConfig(app, projectConfig, baseValues);
-    expect(config.baseUrl).toBe("https://project.cybozu.com");
-    expect(config.appId).toBe("100");
-    expect(config.testFilePath).toBe("custom-test.yaml");
+    expect(config).toEqual({
+      baseUrl: "https://project.cybozu.com",
+      auth: { type: "apiToken", apiToken: "project-token" },
+      appId: "100",
+      testFilePath: "custom-test.yaml",
+    });
   });
 
   it("envVarがモジュールロード時ではなく呼び出し時に評価される", () => {
-    const { resolveFilePath } = createDomainConfigResolver<
-      TestContainerConfig,
-      "test-file",
-      TestCliValues
-    >({
+    const { resolveFilePath } = createDomainConfigResolver({
       fileArgKey: "test-file",
       envVar: () => process.env.TEST_FILE_PATH,
       appFileField: () => undefined,
