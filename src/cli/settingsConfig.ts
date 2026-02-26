@@ -1,3 +1,4 @@
+import type { GeneralSettingsCliContainerConfig } from "@/core/application/container/generalSettingsCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveSettingsContainerConfig,
   resolveAppContainerConfig: resolveSettingsAppContainerConfig,
 } = createDomainConfigResolver<
+  GeneralSettingsCliContainerConfig,
   "settings-file",
-  "settingsFilePath",
   SettingsCliValues
 >({
   fileArgKey: "settings-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.settingsFile,
   defaultDir: "settings",
   defaultFileName: "settings.yaml",
-  filePathKey: "settingsFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    settingsFilePath: filePath,
+  }),
 });
 
 export {

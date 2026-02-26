@@ -1,3 +1,4 @@
+import type { ReportCliContainerConfig } from "@/core/application/container/reportCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveReportContainerConfig,
   resolveAppContainerConfig: resolveReportAppContainerConfig,
 } = createDomainConfigResolver<
+  ReportCliContainerConfig,
   "report-file",
-  "reportFilePath",
   ReportCliValues
 >({
   fileArgKey: "report-file",
@@ -29,7 +30,7 @@ const {
   appFileField: (a) => a.reportFile,
   defaultDir: "report",
   defaultFileName: "reports.yaml",
-  filePathKey: "reportFilePath",
+  buildConfig: (base, filePath) => ({ ...base, reportFilePath: filePath }),
 });
 
 export {

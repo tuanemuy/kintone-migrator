@@ -1,3 +1,4 @@
+import type { RecordPermissionCliContainerConfig } from "@/core/application/container/recordPermissionCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveRecordAclContainerConfig,
   resolveAppContainerConfig: resolveRecordAclAppContainerConfig,
 } = createDomainConfigResolver<
+  RecordPermissionCliContainerConfig,
   "record-acl-file",
-  "recordAclFilePath",
   RecordAclCliValues
 >({
   fileArgKey: "record-acl-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.recordAclFile,
   defaultDir: "record-acl",
   defaultFileName: "record-acl.yaml",
-  filePathKey: "recordAclFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    recordAclFilePath: filePath,
+  }),
 });
 
 export {

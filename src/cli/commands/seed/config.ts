@@ -1,3 +1,4 @@
+import type { SeedCliContainerConfig } from "@/core/application/container/cli";
 import { createDomainConfigResolver } from "../../createDomainConfigResolver";
 import type { MultiAppCliValues } from "../../projectConfig";
 
@@ -12,13 +13,17 @@ const {
   resolveFilePath: resolveSeedFilePath,
   resolveContainerConfig: resolveSeedConfig,
   resolveAppContainerConfig: resolveSeedAppConfig,
-} = createDomainConfigResolver<"seed-file", "seedFilePath", SeedCliValues>({
+} = createDomainConfigResolver<
+  SeedCliContainerConfig,
+  "seed-file",
+  SeedCliValues
+>({
   fileArgKey: "seed-file",
   envVar: () => process.env.SEED_FILE_PATH,
   appFileField: (a) => a.seedFile,
   defaultDir: "seeds",
   defaultFileName: "seed.yaml",
-  filePathKey: "seedFilePath",
+  buildConfig: (base, filePath) => ({ ...base, seedFilePath: filePath }),
 });
 
 export { resolveSeedFilePath, resolveSeedConfig, resolveSeedAppConfig };

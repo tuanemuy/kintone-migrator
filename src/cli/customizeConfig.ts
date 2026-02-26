@@ -1,3 +1,4 @@
+import type { CustomizationCliContainerConfig } from "@/core/application/container/cli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveCustomizeConfig,
   resolveAppContainerConfig: resolveCustomizeAppConfig,
 } = createDomainConfigResolver<
+  CustomizationCliContainerConfig,
   "customize-file",
-  "customizeFilePath",
   CustomizeCliValues
 >({
   fileArgKey: "customize-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.customizeFile,
   defaultDir: "customize",
   defaultFileName: "customize.yaml",
-  filePathKey: "customizeFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    customizeFilePath: filePath,
+  }),
 });
 
 export {

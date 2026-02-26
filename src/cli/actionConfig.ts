@@ -1,3 +1,4 @@
+import type { ActionCliContainerConfig } from "@/core/application/container/actionCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveActionContainerConfig,
   resolveAppContainerConfig: resolveActionAppContainerConfig,
 } = createDomainConfigResolver<
+  ActionCliContainerConfig,
   "action-file",
-  "actionFilePath",
   ActionCliValues
 >({
   fileArgKey: "action-file",
@@ -29,7 +30,7 @@ const {
   appFileField: (a) => a.actionFile,
   defaultDir: "action",
   defaultFileName: "actions.yaml",
-  filePathKey: "actionFilePath",
+  buildConfig: (base, filePath) => ({ ...base, actionFilePath: filePath }),
 });
 
 export {

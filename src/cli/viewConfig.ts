@@ -1,3 +1,4 @@
+import type { ViewCliContainerConfig } from "@/core/application/container/viewCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -19,13 +20,17 @@ const {
   resolveFilePath: resolveViewFilePath,
   resolveContainerConfig: resolveViewContainerConfig,
   resolveAppContainerConfig: resolveViewAppContainerConfig,
-} = createDomainConfigResolver<"view-file", "viewFilePath", ViewCliValues>({
+} = createDomainConfigResolver<
+  ViewCliContainerConfig,
+  "view-file",
+  ViewCliValues
+>({
   fileArgKey: "view-file",
   envVar: () => process.env.VIEW_FILE_PATH,
   appFileField: (a) => a.viewFile,
   defaultDir: "view",
   defaultFileName: "views.yaml",
-  filePathKey: "viewFilePath",
+  buildConfig: (base, filePath) => ({ ...base, viewFilePath: filePath }),
 });
 
 export {

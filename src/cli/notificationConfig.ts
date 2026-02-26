@@ -1,3 +1,4 @@
+import type { NotificationCliContainerConfig } from "@/core/application/container/notificationCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveNotificationContainerConfig,
   resolveAppContainerConfig: resolveNotificationAppContainerConfig,
 } = createDomainConfigResolver<
+  NotificationCliContainerConfig,
   "notification-file",
-  "notificationFilePath",
   NotificationCliValues
 >({
   fileArgKey: "notification-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.notificationFile,
   defaultDir: "notification",
   defaultFileName: "notification.yaml",
-  filePathKey: "notificationFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    notificationFilePath: filePath,
+  }),
 });
 
 export {

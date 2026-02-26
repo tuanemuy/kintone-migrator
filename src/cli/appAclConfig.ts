@@ -1,3 +1,4 @@
+import type { AppPermissionCliContainerConfig } from "@/core/application/container/appPermissionCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveAppAclContainerConfig,
   resolveAppContainerConfig: resolveAppAclAppContainerConfig,
 } = createDomainConfigResolver<
+  AppPermissionCliContainerConfig,
   "app-acl-file",
-  "appAclFilePath",
   AppAclCliValues
 >({
   fileArgKey: "app-acl-file",
@@ -29,7 +30,7 @@ const {
   appFileField: (a) => a.appAclFile,
   defaultDir: "app-acl",
   defaultFileName: "app-acl.yaml",
-  filePathKey: "appAclFilePath",
+  buildConfig: (base, filePath) => ({ ...base, appAclFilePath: filePath }),
 });
 
 export {

@@ -1,3 +1,4 @@
+import type { ProcessManagementCliContainerConfig } from "@/core/application/container/processManagementCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveProcessContainerConfig,
   resolveAppContainerConfig: resolveProcessAppContainerConfig,
 } = createDomainConfigResolver<
+  ProcessManagementCliContainerConfig,
   "process-file",
-  "processFilePath",
   ProcessCliValues
 >({
   fileArgKey: "process-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.processFile,
   defaultDir: "process",
   defaultFileName: "process.yaml",
-  filePathKey: "processFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    processFilePath: filePath,
+  }),
 });
 
 export {

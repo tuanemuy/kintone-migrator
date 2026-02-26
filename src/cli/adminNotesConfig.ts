@@ -1,3 +1,4 @@
+import type { AdminNotesCliContainerConfig } from "@/core/application/container/adminNotesCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveAdminNotesContainerConfig,
   resolveAppContainerConfig: resolveAdminNotesAppContainerConfig,
 } = createDomainConfigResolver<
+  AdminNotesCliContainerConfig,
   "admin-notes-file",
-  "adminNotesFilePath",
   AdminNotesCliValues
 >({
   fileArgKey: "admin-notes-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.adminNotesFile,
   defaultDir: "admin-notes",
   defaultFileName: "admin-notes.yaml",
-  filePathKey: "adminNotesFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    adminNotesFilePath: filePath,
+  }),
 });
 
 export {

@@ -1,3 +1,4 @@
+import type { FieldPermissionCliContainerConfig } from "@/core/application/container/fieldPermissionCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolveFieldAclContainerConfig,
   resolveAppContainerConfig: resolveFieldAclAppContainerConfig,
 } = createDomainConfigResolver<
+  FieldPermissionCliContainerConfig,
   "field-acl-file",
-  "fieldAclFilePath",
   FieldAclCliValues
 >({
   fileArgKey: "field-acl-file",
@@ -29,7 +30,10 @@ const {
   appFileField: (a) => a.fieldAclFile,
   defaultDir: "field-acl",
   defaultFileName: "field-acl.yaml",
-  filePathKey: "fieldAclFilePath",
+  buildConfig: (base, filePath) => ({
+    ...base,
+    fieldAclFilePath: filePath,
+  }),
 });
 
 export {

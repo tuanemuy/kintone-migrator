@@ -7,7 +7,7 @@ import { resolveConfig } from "./config";
 import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
 import { resolveFilePath } from "./resolveFilePath";
 
-type BaseContainerConfig = {
+export type BaseContainerConfig = {
   baseUrl: string;
   auth: KintoneAuth;
   appId: string;
@@ -15,19 +15,18 @@ type BaseContainerConfig = {
 };
 
 export function createDomainConfigResolver<
+  TConfig extends BaseContainerConfig,
   TFileArgKey extends string,
-  TFilePathKey extends string,
   TValues extends MultiAppCliValues & { [K in TFileArgKey]?: string },
 >(options: {
   fileArgKey: TFileArgKey;
+  /** Thunk to defer env var evaluation from module load time to call time */
   envVar: () => string | undefined;
   appFileField: (app: AppEntry) => string | undefined;
   defaultDir: string;
   defaultFileName: string;
-  filePathKey: TFilePathKey;
+  buildConfig: (base: BaseContainerConfig, filePath: string) => TConfig;
 }) {
-  type TConfig = BaseContainerConfig & Record<TFilePathKey, string>;
-
   function resolveFilePath_(cliValues: TValues, app?: AppEntry): string {
     return resolveFilePath({
       cliValue: cliValues[options.fileArgKey],
@@ -41,13 +40,15 @@ export function createDomainConfigResolver<
 
   function resolveContainerConfig(cliValues: TValues): TConfig {
     const config = resolveConfig(cliValues);
-    return {
-      baseUrl: config.baseUrl,
-      auth: config.auth,
-      appId: config.appId,
-      guestSpaceId: config.guestSpaceId,
-      [options.filePathKey]: resolveFilePath_(cliValues),
-    } as TConfig;
+    return options.buildConfig(
+      {
+        baseUrl: config.baseUrl,
+        auth: config.auth,
+        appId: config.appId,
+        guestSpaceId: config.guestSpaceId,
+      },
+      resolveFilePath_(cliValues),
+    );
   }
 
   function resolveAppContainerConfig(
@@ -56,13 +57,15 @@ export function createDomainConfigResolver<
     cliValues: TValues,
   ): TConfig {
     const config = resolveAppCliConfig(app, projectConfig, cliValues);
-    return {
-      baseUrl: config.baseUrl,
-      auth: config.auth,
-      appId: config.appId,
-      guestSpaceId: config.guestSpaceId,
-      [options.filePathKey]: resolveFilePath_(cliValues, app),
-    } as TConfig;
+    return options.buildConfig(
+      {
+        baseUrl: config.baseUrl,
+        auth: config.auth,
+        appId: config.appId,
+        guestSpaceId: config.guestSpaceId,
+      },
+      resolveFilePath_(cliValues, app),
+    );
   }
 
   return {

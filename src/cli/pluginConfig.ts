@@ -1,3 +1,4 @@
+import type { PluginCliContainerConfig } from "@/core/application/container/pluginCli";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
@@ -20,8 +21,8 @@ const {
   resolveContainerConfig: resolvePluginContainerConfig,
   resolveAppContainerConfig: resolvePluginAppContainerConfig,
 } = createDomainConfigResolver<
+  PluginCliContainerConfig,
   "plugin-file",
-  "pluginFilePath",
   PluginCliValues
 >({
   fileArgKey: "plugin-file",
@@ -29,7 +30,7 @@ const {
   appFileField: (a) => a.pluginFile,
   defaultDir: "plugin",
   defaultFileName: "plugins.yaml",
-  filePathKey: "pluginFilePath",
+  buildConfig: (base, filePath) => ({ ...base, pluginFilePath: filePath }),
 });
 
 export {
