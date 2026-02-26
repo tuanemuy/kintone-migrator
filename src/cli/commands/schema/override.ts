@@ -1,8 +1,8 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import type { Container } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import { forceOverrideForm } from "@/core/application/formSchema/forceOverrideForm";
@@ -22,7 +22,7 @@ import {
 } from "../../projectConfig";
 
 async function runSingleOverride(
-  container: Container,
+  container: FormSchemaContainer,
   skipConfirm: boolean,
 ): Promise<void> {
   p.log.warn(
@@ -52,7 +52,7 @@ async function runSingleOverride(
 }
 
 async function runSingleReset(
-  container: Container,
+  container: FormSchemaContainer,
   skipConfirm: boolean,
 ): Promise<void> {
   p.log.warn(

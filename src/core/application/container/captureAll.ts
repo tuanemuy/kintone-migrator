@@ -3,8 +3,8 @@ import type { AdminNotesContainer } from "./adminNotes";
 import type { AppPermissionContainer } from "./appPermission";
 import type { CustomizationCaptureContainer } from "./customization";
 import type { FieldPermissionContainer } from "./fieldPermission";
+import type { FormSchemaContainer } from "./formSchema";
 import type { GeneralSettingsContainer } from "./generalSettings";
-import type { Container } from "./index";
 import type { NotificationContainer } from "./notification";
 import type { PluginContainer } from "./plugin";
 import type { ProcessManagementContainer } from "./processManagement";
@@ -14,7 +14,7 @@ import type { SeedContainer } from "./seed";
 import type { ViewContainer } from "./view";
 
 export type CaptureAllContainers = {
-  readonly schema: Container;
+  readonly schema: FormSchemaContainer;
   readonly seed: SeedContainer;
   readonly customization: CustomizationCaptureContainer;
   readonly view: ViewContainer;
