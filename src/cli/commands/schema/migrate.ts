@@ -1,7 +1,7 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
-import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { executeMigration } from "@/core/application/formSchema/executeMigration";

@@ -2,8 +2,7 @@ import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
-import type { FormSchemaContainer } from "../container";
-import type { ServiceArgs } from "../types";
+import type { FormSchemaServiceArgs } from "../container/formSchema";
 import type { DetectDiffOutput, DiffEntryDto, SchemaFieldDto } from "./dto";
 import { parseSchemaText } from "./parseSchema";
 
@@ -18,7 +17,7 @@ function toFieldDto(field: FieldDefinition): DiffEntryDto["before"] {
 
 export async function detectDiff({
   container,
-}: ServiceArgs<FormSchemaContainer>): Promise<DetectDiffOutput> {
+}: FormSchemaServiceArgs): Promise<DetectDiffOutput> {
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(

@@ -1,6 +1,6 @@
 import * as p from "@clack/prompts";
 import pc from "picocolors";
-import type { FormSchemaContainer } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";

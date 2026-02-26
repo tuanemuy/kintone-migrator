@@ -1,8 +1,8 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import { forceOverrideForm } from "@/core/application/formSchema/forceOverrideForm";

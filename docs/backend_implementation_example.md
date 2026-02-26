@@ -280,17 +280,30 @@ export type PostDetail = {
 ## Application Service example
 
 ```typescript
+// app/core/application/container/post.ts
+
+import type { PostRepository } from "@/core/domain/post/ports/postRepository";
+import type { AuthProvider } from "@/core/domain/post/ports/authProvider";
+import type { ServiceArgs } from "../types";
+
+export type PostContainer = {
+  postRepository: PostRepository;
+  authProvider: AuthProvider;
+};
+
+export type PostServiceArgs<T = undefined> = ServiceArgs<PostContainer, T>;
+```
+
+```typescript
 // app/core/application/post/createPost.ts
 
 import { Post } from "@/core/domain/post/entity";
 import type { DraftPost } from "@/core/domain/post/entity";
-import type { Container } from "../di/server";
-import type { ServiceArgs } from "../types";
+import type { PostServiceArgs } from "../container/post";
 import {
   UnauthenticatedError,
   UnauthenticatedErrorCode,
 } from "../error";
-import { PostDetail } from "./dto";
 
 export type CreatePostInput = {
   // Primitive types for input DTOs
@@ -300,9 +313,9 @@ export type CreatePostInput = {
 // Pass arguments as an object
 export async function createPost({
   container,
-  input
-}: ServiceArgs<CreatePostInput>): Promise<DraftPost> {
-  const userId = container.authProvider.getUserId(); // or get current user
+  input,
+}: PostServiceArgs<CreatePostInput>): Promise<DraftPost> {
+  const userId = container.authProvider.getUserId();
 
   if (!userId) {
     throw new UnauthenticatedError(UnauthenticatedErrorCode.AuthenticationRequired, "Authentication required");
@@ -315,15 +328,7 @@ export async function createPost({
 
   await container.postRepository.save(post);
 
-  return {
-    post: {
-      id: post.id,
-      title: post.title,
-      content: post.content,
-      authorName: currentUser.name,
-      createdAt: post.createdAt,
-    },
-  };
+  return post;
 }
 ```
 
@@ -331,12 +336,12 @@ export async function createPost({
 
 ```typescript
 // DI Container for specific environment
-// ex: app/di.ts
+// ex: app/core/application/container/cli.ts
 
-import type { FormSchemaContainer } from "@/core/application/container";
+import type { PostContainer } from "@/core/application/container/post";
 import { getDatabase } from "@/core/adapters/drizzleSqlite/client";
 
-export function createContainer(): FormSchemaContainer {
+export function createPostCliContainer(): PostContainer {
   const databaseUrl = process.env.SQLITE_URL;
   if (!databaseUrl) {
     throw new Error("SQLITE_URL is not set");
@@ -344,14 +349,10 @@ export function createContainer(): FormSchemaContainer {
 
   const db = getDatabase(databaseUrl);
 
-  export const container = {
+  return {
     postRepository: new DrizzleSqlitePostRepository(db),
     authProvider: new BetterAuthAuthProvider(/* Config */),
-    storageManager: new S3StorageManager(/* S3 client */),
-    // Other adapters...
   };
 }
-
-export const container = createContainer();
 ```
 

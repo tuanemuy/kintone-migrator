@@ -9,8 +9,8 @@ import { LocalFileCustomizationStorage } from "@/core/adapters/local/customizati
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
 import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { LocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
-import type { FormSchemaContainer } from "@/core/application/container";
 import type { CustomizationContainer } from "@/core/application/container/customization";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { SeedContainer } from "@/core/application/container/seed";
 
 export type KintoneAuth =

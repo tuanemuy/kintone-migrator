@@ -4,14 +4,13 @@ import type {
   FieldCode,
   FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
-import type { FormSchemaContainer } from "../container";
-import type { ServiceArgs } from "../types";
+import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
 
 export async function forceOverrideForm({
   container,
-}: ServiceArgs<FormSchemaContainer>): Promise<void> {
+}: FormSchemaServiceArgs): Promise<void> {
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(

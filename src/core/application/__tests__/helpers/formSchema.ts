@@ -1,4 +1,4 @@
-import type { FormSchemaContainer } from "@/core/application/container";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";

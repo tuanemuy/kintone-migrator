@@ -1,8 +1,8 @@
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
-import type { FormSchemaContainer } from "@/core/application/container";
 import { createCliContainer } from "@/core/application/container/cli";
+import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { captureSchema } from "@/core/application/formSchema/captureSchema";
 import { saveSchema } from "@/core/application/formSchema/saveSchema";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
