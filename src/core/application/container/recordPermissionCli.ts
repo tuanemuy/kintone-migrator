@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneRecordPermissionConfigurator } from "@/core/adapters/kintone/recordPermissionConfigurator";
-import { LocalFileRecordPermissionStorage } from "@/core/adapters/local/recordPermissionStorage";
+import { createLocalFileRecordPermissionStorage } from "@/core/adapters/local/recordPermissionStorage";
 import type { RecordPermissionContainer } from "@/core/application/container/recordPermission";
 import { buildKintoneAuth, type KintoneAuth } from "./cli";
 
@@ -27,7 +27,7 @@ export function createRecordPermissionCliContainer(
       client,
       config.appId,
     ),
-    recordPermissionStorage: new LocalFileRecordPermissionStorage(
+    recordPermissionStorage: createLocalFileRecordPermissionStorage(
       config.recordAclFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),

@@ -1,7 +1,5 @@
-import { EmptyAppDeployer } from "@/core/adapters/empty/appDeployer";
-import { EmptyFormConfigurator } from "@/core/adapters/empty/formConfigurator";
-import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
-import type { FormSchemaContainer } from "@/core/application/container/formSchema";
+import { createLocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
+import type { ValidateContainer } from "@/core/application/container/validate";
 
 export type ValidateCliContainerConfig = {
   schemaFilePath: string;
@@ -9,10 +7,8 @@ export type ValidateCliContainerConfig = {
 
 export function createValidateCliContainer(
   config: ValidateCliContainerConfig,
-): FormSchemaContainer {
+): ValidateContainer {
   return {
-    formConfigurator: new EmptyFormConfigurator(),
-    schemaStorage: new LocalFileSchemaStorage(config.schemaFilePath),
-    appDeployer: new EmptyAppDeployer(),
+    schemaStorage: createLocalFileSchemaStorage(config.schemaFilePath),
   };
 }

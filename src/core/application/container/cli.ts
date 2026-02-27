@@ -5,10 +5,10 @@ import { KintoneFileDownloader } from "@/core/adapters/kintone/fileDownloader";
 import { KintoneFileUploader } from "@/core/adapters/kintone/fileUploader";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
-import { LocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
+import { createLocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
-import { LocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
-import { LocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
+import { createLocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
+import { createLocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { SeedContainer } from "@/core/application/container/seed";
@@ -58,7 +58,7 @@ export function createCliContainer(
 
   return {
     formConfigurator: new KintoneFormConfigurator(client, config.appId),
-    schemaStorage: new LocalFileSchemaStorage(config.schemaFilePath),
+    schemaStorage: createLocalFileSchemaStorage(config.schemaFilePath),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }
@@ -74,7 +74,7 @@ export function createSeedCliContainer(
 
   return {
     recordManager: new KintoneRecordManager(client, config.appId),
-    seedStorage: new LocalFileSeedStorage(config.seedFilePath),
+    seedStorage: createLocalFileSeedStorage(config.seedFilePath),
   };
 }
 
@@ -100,7 +100,7 @@ export function createCustomizationCliContainer(
       client,
       config.appId,
     ),
-    customizationStorage: new LocalFileCustomizationStorage(
+    customizationStorage: createLocalFileCustomizationStorage(
       config.customizeFilePath,
     ),
     fileUploader: new KintoneFileUploader(client),

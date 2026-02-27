@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFilePluginStorage } from "../pluginStorage";
+import { createLocalFilePluginStorage } from "../pluginStorage";
 
-describe("LocalFilePluginStorage", () => {
+describe("createLocalFilePluginStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFilePluginStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFilePluginStorage(
+      const storage = createLocalFilePluginStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFilePluginStorage", () => {
       const content = "plugins:\n  - id: test-plugin\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFilePluginStorage(filePath);
+      const storage = createLocalFilePluginStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFilePluginStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFilePluginStorage(filePath);
+      const storage = createLocalFilePluginStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFilePluginStorage(join(tempDir, "dir"));
+      const storage = createLocalFilePluginStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +56,7 @@ describe("LocalFilePluginStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "plugin.yaml");
       const content = "plugins:\n  - id: test-plugin\n";
-      const storage = new LocalFilePluginStorage(filePath);
+      const storage = createLocalFilePluginStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +66,7 @@ describe("LocalFilePluginStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFilePluginStorage(join(tempDir, "blocked"));
+      const storage = createLocalFilePluginStorage(join(tempDir, "blocked"));
 
       await expect(storage.update("content")).rejects.toThrow(SystemError);
     });
@@ -75,7 +75,7 @@ describe("LocalFilePluginStorage", () => {
       const filePath = join(tempDir, "plugin.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFilePluginStorage(filePath);
+      const storage = createLocalFilePluginStorage(filePath);
       const newContent = "plugins:\n  - id: updated\n";
       await storage.update(newContent);
 

@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileCustomizationStorage } from "../customizationStorage";
+import { createLocalFileCustomizationStorage } from "../customizationStorage";
 
-describe("LocalFileCustomizationStorage", () => {
+describe("createLocalFileCustomizationStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileCustomizationStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileCustomizationStorage(
+      const storage = createLocalFileCustomizationStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileCustomizationStorage", () => {
       const content = "desktop:\n  js:\n    - file.js\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileCustomizationStorage(filePath);
+      const storage = createLocalFileCustomizationStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileCustomizationStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileCustomizationStorage(filePath);
+      const storage = createLocalFileCustomizationStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileCustomizationStorage(join(tempDir, "dir"));
+      const storage = createLocalFileCustomizationStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });

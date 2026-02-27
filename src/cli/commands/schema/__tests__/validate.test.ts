@@ -31,16 +31,8 @@ vi.mock("@/cli/projectConfig", () => ({
   runMultiAppWithFailCheck: vi.fn(),
 }));
 
-vi.mock("@/core/adapters/empty/appDeployer", () => ({
-  EmptyAppDeployer: vi.fn(),
-}));
-
-vi.mock("@/core/adapters/empty/formConfigurator", () => ({
-  EmptyFormConfigurator: vi.fn(),
-}));
-
 vi.mock("@/core/adapters/local/schemaStorage", () => ({
-  LocalFileSchemaStorage: vi.fn(),
+  createLocalFileSchemaStorage: vi.fn(),
 }));
 
 vi.mock("@/core/application/formSchema/validateSchema");

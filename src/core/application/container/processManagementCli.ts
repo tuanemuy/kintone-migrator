@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneProcessManagementConfigurator } from "@/core/adapters/kintone/processManagementConfigurator";
-import { LocalFileProcessManagementStorage } from "@/core/adapters/local/processManagementStorage";
+import { createLocalFileProcessManagementStorage } from "@/core/adapters/local/processManagementStorage";
 import { buildKintoneAuth, type KintoneAuth } from "./cli";
 import type { ProcessManagementContainer } from "./processManagement";
 
@@ -27,7 +27,7 @@ export function createProcessManagementCliContainer(
       client,
       config.appId,
     ),
-    processManagementStorage: new LocalFileProcessManagementStorage(
+    processManagementStorage: createLocalFileProcessManagementStorage(
       config.processFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),
