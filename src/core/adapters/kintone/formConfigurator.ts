@@ -504,13 +504,11 @@ function toKintoneLayoutItem(item: LayoutItem): Record<string, unknown> {
         fields: subtable.fields.map(toKintoneLayoutElement),
       };
     }
-    case "REFERENCE_TABLE": {
-      const refTable = item as ReferenceTableLayoutItem;
+    case "REFERENCE_TABLE":
       return {
         type: "REFERENCE_TABLE",
-        code: refTable.code as string,
+        code: String(item.code),
       };
-    }
     default:
       throw new SystemError(
         SystemErrorCode.ExternalApiError,
