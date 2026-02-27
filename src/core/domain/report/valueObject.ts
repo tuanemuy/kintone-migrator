@@ -68,3 +68,24 @@ export type PeriodicReport = Readonly<{
   active: boolean;
   period: PeriodicReportPeriod;
 }>;
+
+// Diff types
+
+export type ReportDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  reportName: string;
+  details: string;
+}>;
+
+export type ReportDiffSummary = Readonly<{
+  added: number;
+  modified: number;
+  deleted: number;
+  total: number;
+}>;
+
+export type ReportDiff = Readonly<{
+  entries: readonly ReportDiffEntry[];
+  summary: ReportDiffSummary;
+  isEmpty: boolean;
+}>;

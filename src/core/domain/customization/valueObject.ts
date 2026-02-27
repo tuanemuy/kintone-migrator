@@ -46,3 +46,26 @@ export type RemotePlatform = Readonly<{
   js: readonly RemoteResource[];
   css: readonly RemoteResource[];
 }>;
+
+// Diff types
+
+export type CustomizationDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  platform: "desktop" | "mobile" | "config";
+  resourceType: "js" | "css" | "scope";
+  name: string;
+  details: string;
+}>;
+
+export type CustomizationDiffSummary = Readonly<{
+  added: number;
+  modified: number;
+  deleted: number;
+  total: number;
+}>;
+
+export type CustomizationDiff = Readonly<{
+  entries: readonly CustomizationDiffEntry[];
+  summary: CustomizationDiffSummary;
+  isEmpty: boolean;
+}>;
