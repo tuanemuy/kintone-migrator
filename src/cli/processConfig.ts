@@ -1,11 +1,7 @@
 import type { ProcessManagementCliContainerConfig } from "@/core/application/container/processManagementCli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
-import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
-import { resolveFilePath } from "./resolveFilePath";
+import { kintoneArgs, multiAppArgs } from "./config";
+import { createDomainConfigResolver } from "./createDomainConfigResolver";
+import type { MultiAppCliValues } from "./projectConfig";
 
 export const processArgs = {
   ...kintoneArgs,
@@ -20,44 +16,24 @@ export type ProcessCliValues = MultiAppCliValues & {
   "process-file"?: string;
 };
 
-export function resolveProcessFilePath(
-  cliValues: ProcessCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["process-file"],
-    envVar: process.env.PROCESS_FILE_PATH,
-    appFileField: (a) => a.processFile,
-    app,
-    defaultDir: "process",
-    defaultFileName: "process.yaml",
-  });
-}
+const {
+  resolveFilePath: resolveProcessFilePath,
+  resolveContainerConfig: resolveProcessContainerConfig,
+  resolveAppContainerConfig: resolveProcessAppContainerConfig,
+} = createDomainConfigResolver({
+  fileArgKey: "process-file",
+  envVar: () => process.env.PROCESS_FILE_PATH,
+  appFileField: (a) => a.processFile,
+  defaultDir: "process",
+  defaultFileName: "process.yaml",
+  buildConfig: (base, filePath): ProcessManagementCliContainerConfig => ({
+    ...base,
+    processFilePath: filePath,
+  }),
+});
 
-export function resolveProcessContainerConfig(
-  cliValues: ProcessCliValues,
-): ProcessManagementCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    processFilePath: resolveProcessFilePath(cliValues),
-  };
-}
-
-export function resolveProcessAppContainerConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: ProcessCliValues,
-): ProcessManagementCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    processFilePath: resolveProcessFilePath(cliValues, app),
-  };
-}
+export {
+  resolveProcessFilePath,
+  resolveProcessContainerConfig,
+  resolveProcessAppContainerConfig,
+};

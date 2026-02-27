@@ -1,11 +1,7 @@
 import type { GeneralSettingsCliContainerConfig } from "@/core/application/container/generalSettingsCli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
-import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
-import { resolveFilePath } from "./resolveFilePath";
+import { kintoneArgs, multiAppArgs } from "./config";
+import { createDomainConfigResolver } from "./createDomainConfigResolver";
+import type { MultiAppCliValues } from "./projectConfig";
 
 export const settingsArgs = {
   ...kintoneArgs,
@@ -20,44 +16,24 @@ export type SettingsCliValues = MultiAppCliValues & {
   "settings-file"?: string;
 };
 
-export function resolveSettingsFilePath(
-  cliValues: SettingsCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["settings-file"],
-    envVar: process.env.SETTINGS_FILE_PATH,
-    appFileField: (a) => a.settingsFile,
-    app,
-    defaultDir: "settings",
-    defaultFileName: "settings.yaml",
-  });
-}
+const {
+  resolveFilePath: resolveSettingsFilePath,
+  resolveContainerConfig: resolveSettingsContainerConfig,
+  resolveAppContainerConfig: resolveSettingsAppContainerConfig,
+} = createDomainConfigResolver({
+  fileArgKey: "settings-file",
+  envVar: () => process.env.SETTINGS_FILE_PATH,
+  appFileField: (a) => a.settingsFile,
+  defaultDir: "settings",
+  defaultFileName: "settings.yaml",
+  buildConfig: (base, filePath): GeneralSettingsCliContainerConfig => ({
+    ...base,
+    settingsFilePath: filePath,
+  }),
+});
 
-export function resolveSettingsContainerConfig(
-  cliValues: SettingsCliValues,
-): GeneralSettingsCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    settingsFilePath: resolveSettingsFilePath(cliValues),
-  };
-}
-
-export function resolveSettingsAppContainerConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: SettingsCliValues,
-): GeneralSettingsCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    settingsFilePath: resolveSettingsFilePath(cliValues, app),
-  };
-}
+export {
+  resolveSettingsFilePath,
+  resolveSettingsContainerConfig,
+  resolveSettingsAppContainerConfig,
+};

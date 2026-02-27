@@ -1,11 +1,7 @@
 import type { ViewCliContainerConfig } from "@/core/application/container/viewCli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
-import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
-import { resolveFilePath } from "./resolveFilePath";
+import { kintoneArgs, multiAppArgs } from "./config";
+import { createDomainConfigResolver } from "./createDomainConfigResolver";
+import type { MultiAppCliValues } from "./projectConfig";
 
 export const viewArgs = {
   ...kintoneArgs,
@@ -20,44 +16,24 @@ export type ViewCliValues = MultiAppCliValues & {
   "view-file"?: string;
 };
 
-export function resolveViewFilePath(
-  cliValues: ViewCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["view-file"],
-    envVar: process.env.VIEW_FILE_PATH,
-    appFileField: (a) => a.viewFile,
-    app,
-    defaultDir: "view",
-    defaultFileName: "views.yaml",
-  });
-}
+const {
+  resolveFilePath: resolveViewFilePath,
+  resolveContainerConfig: resolveViewContainerConfig,
+  resolveAppContainerConfig: resolveViewAppContainerConfig,
+} = createDomainConfigResolver({
+  fileArgKey: "view-file",
+  envVar: () => process.env.VIEW_FILE_PATH,
+  appFileField: (a) => a.viewFile,
+  defaultDir: "view",
+  defaultFileName: "views.yaml",
+  buildConfig: (base, filePath): ViewCliContainerConfig => ({
+    ...base,
+    viewFilePath: filePath,
+  }),
+});
 
-export function resolveViewContainerConfig(
-  cliValues: ViewCliValues,
-): ViewCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    viewFilePath: resolveViewFilePath(cliValues),
-  };
-}
-
-export function resolveViewAppContainerConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: ViewCliValues,
-): ViewCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    viewFilePath: resolveViewFilePath(cliValues, app),
-  };
-}
+export {
+  resolveViewFilePath,
+  resolveViewContainerConfig,
+  resolveViewAppContainerConfig,
+};
