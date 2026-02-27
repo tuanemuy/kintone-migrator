@@ -12,3 +12,24 @@ export type FieldRightEntity = Readonly<{
   entity: FieldPermissionEntity;
   includeSubs?: boolean;
 }>;
+
+// Diff types
+
+export type FieldPermissionDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  fieldCode: string;
+  details: string;
+}>;
+
+export type FieldPermissionDiffSummary = Readonly<{
+  added: number;
+  modified: number;
+  deleted: number;
+  total: number;
+}>;
+
+export type FieldPermissionDiff = Readonly<{
+  entries: readonly FieldPermissionDiffEntry[];
+  summary: FieldPermissionDiffSummary;
+  isEmpty: boolean;
+}>;

@@ -23,3 +23,24 @@ export type ActionEntity = Readonly<{
   type: ActionEntityType;
   code: string;
 }>;
+
+// Diff types
+
+export type ActionDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  actionName: string;
+  details: string;
+}>;
+
+export type ActionDiffSummary = Readonly<{
+  added: number;
+  modified: number;
+  deleted: number;
+  total: number;
+}>;
+
+export type ActionDiff = Readonly<{
+  entries: readonly ActionDiffEntry[];
+  summary: ActionDiffSummary;
+  isEmpty: boolean;
+}>;

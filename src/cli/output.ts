@@ -5,7 +5,17 @@ import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
 import type { DetectViewDiffOutput } from "@/core/application/view/dto";
+import type { ActionDiff } from "@/core/domain/action/valueObject";
+import type { AdminNotesDiff } from "@/core/domain/adminNotes/valueObject";
+import type { AppPermissionDiff } from "@/core/domain/appPermission/valueObject";
+import type { CustomizationDiff } from "@/core/domain/customization/valueObject";
+import type { FieldPermissionDiff } from "@/core/domain/fieldPermission/valueObject";
+import type { GeneralSettingsDiff } from "@/core/domain/generalSettings/valueObject";
+import type { NotificationDiff } from "@/core/domain/notification/valueObject";
+import type { PluginDiff } from "@/core/domain/plugin/valueObject";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
+import type { RecordPermissionDiff } from "@/core/domain/recordPermission/valueObject";
+import type { ReportDiff } from "@/core/domain/report/valueObject";
 import { logError } from "./handleError";
 
 type DiffSummary = {
@@ -88,6 +98,186 @@ export function printProcessDiffResult(
   p.note(lines.join("\n"), "Process Management Diff Details", {
     format: (v) => v,
   });
+}
+
+export function printAdminNotesDiffResult(result: AdminNotesDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Admin Notes Diff Details", { format: (v) => v });
+}
+
+export function printGeneralSettingsDiffResult(
+  result: GeneralSettingsDiff,
+): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "General Settings Diff Details", {
+    format: (v) => v,
+  });
+}
+
+export function printAppPermissionDiffResult(result: AppPermissionDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${colorize(entry.entityKey)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "App Permission Diff Details", {
+    format: (v) => v,
+  });
+}
+
+export function printFieldPermissionDiffResult(
+  result: FieldPermissionDiff,
+): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Field Permission Diff Details", {
+    format: (v) => v,
+  });
+}
+
+export function printCustomizationDiffResult(result: CustomizationDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    const location =
+      entry.platform === "config"
+        ? entry.resourceType
+        : `${entry.platform}.${entry.resourceType}`;
+    return `${colorize(prefix)} ${pc.dim("[")}${colorize(location)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Customization Diff Details", {
+    format: (v) => v,
+  });
+}
+
+export function printNotificationDiffResult(result: NotificationDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.section)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Notification Diff Details", { format: (v) => v });
+}
+
+export function printActionDiffResult(result: ActionDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${colorize(entry.actionName)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Action Diff Details", { format: (v) => v });
+}
+
+export function printPluginDiffResult(result: PluginDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${colorize(entry.pluginId)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Plugin Diff Details", { format: (v) => v });
+}
+
+export function printRecordPermissionDiffResult(
+  result: RecordPermissionDiff,
+): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${pc.dim("[rule")} ${colorize(entry.index)}${pc.dim("]:")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Record Permission Diff Details", {
+    format: (v) => v,
+  });
+}
+
+export function printReportDiffResult(result: ReportDiff): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return `${colorize(prefix)} ${colorize(entry.reportName)}${pc.dim(":")} ${entry.details}`;
+  });
+
+  p.note(lines.join("\n"), "Report Diff Details", { format: (v) => v });
 }
 
 export function printAppHeader(appName: string, appId: string): void {
