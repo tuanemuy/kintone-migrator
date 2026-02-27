@@ -220,6 +220,33 @@ describe("NotificationDiffDetector", () => {
     });
   });
 
+  describe("duplicate filterCond in perRecord", () => {
+    it("should handle multiple notifications with the same filterCond", () => {
+      const config: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "", title: "First" }),
+          makePerRecord({ filterCond: "", title: "Second" }),
+        ],
+      };
+      const result = NotificationDiffDetector.detect(config, config);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect added notification among duplicates", () => {
+      const local: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "", title: "First" }),
+          makePerRecord({ filterCond: "", title: "Second" }),
+        ],
+      };
+      const remote: NotificationConfig = {
+        perRecord: [makePerRecord({ filterCond: "", title: "First" })],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.summary.added).toBe(1);
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect changes across all sections", () => {
       const local: NotificationConfig = {

@@ -12,15 +12,16 @@ import { routeMultiApp, runMultiAppWithFailCheck } from "../projectConfig";
 
 type DiffCommandConfig<
   TContainerConfig,
+  TContainer,
   TCliValues extends MultiAppCliValues,
   TEntry extends { type: string },
 > = {
   readonly description: string;
   readonly args: Record<string, unknown>;
   readonly spinnerMessage: string;
-  readonly createContainer: (config: TContainerConfig) => unknown;
+  readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly detectDiff: (args: {
-    container: never;
+    container: TContainer;
   }) => Promise<DiffResult<TEntry>>;
   readonly printResult: (result: DiffResult<TEntry>) => void;
   readonly resolveContainerConfig: (values: TCliValues) => TContainerConfig;
@@ -33,16 +34,17 @@ type DiffCommandConfig<
 
 export function createDiffCommand<
   TContainerConfig,
+  TContainer,
   TCliValues extends MultiAppCliValues,
   TEntry extends { type: string },
->(config: DiffCommandConfig<TContainerConfig, TCliValues, TEntry>) {
+>(config: DiffCommandConfig<TContainerConfig, TContainer, TCliValues, TEntry>) {
   async function runDiff(containerConfig: TContainerConfig): Promise<void> {
     const container = config.createContainer(containerConfig);
 
     const s = p.spinner();
     s.start(config.spinnerMessage);
     const result = await config.detectDiff({
-      container: container as never,
+      container,
     });
     s.stop("Comparison complete.");
 

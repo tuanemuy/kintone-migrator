@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type ThemeType =
   | "WHITE"
   | "RED"
@@ -33,8 +35,6 @@ export type NumberPrecisionConfig = Readonly<{
 }>;
 
 // Diff types
-
-import type { DiffResult } from "../diff";
 
 export type GeneralSettingsDiffEntry = Readonly<{
   type: "modified";

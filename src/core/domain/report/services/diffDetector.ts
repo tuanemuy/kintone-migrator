@@ -1,4 +1,4 @@
-import { buildDiffResult } from "../../diff";
+import { buildDiffResult, deepEqual } from "../../diff";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import type { ReportDiffEntry } from "../valueObject";
 
@@ -19,21 +19,16 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
   if (local.filterCond !== remote.filterCond) {
     diffs.push("filterCond changed");
   }
-  if (JSON.stringify(local.groups) !== JSON.stringify(remote.groups)) {
+  if (!deepEqual(local.groups, remote.groups)) {
     diffs.push("groups changed");
   }
-  if (
-    JSON.stringify(local.aggregations) !== JSON.stringify(remote.aggregations)
-  ) {
+  if (!deepEqual(local.aggregations, remote.aggregations)) {
     diffs.push("aggregations changed");
   }
-  if (JSON.stringify(local.sorts) !== JSON.stringify(remote.sorts)) {
+  if (!deepEqual(local.sorts, remote.sorts)) {
     diffs.push("sorts changed");
   }
-  if (
-    JSON.stringify(local.periodicReport ?? null) !==
-    JSON.stringify(remote.periodicReport ?? null)
-  ) {
+  if (!deepEqual(local.periodicReport ?? null, remote.periodicReport ?? null)) {
     diffs.push("periodicReport changed");
   }
 

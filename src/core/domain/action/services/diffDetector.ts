@@ -1,4 +1,4 @@
-import { buildDiffResult } from "../../diff";
+import { buildDiffResult, deepEqual } from "../../diff";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import type { ActionDiffEntry } from "../valueObject";
 
@@ -11,20 +11,18 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
   if (local.name !== remote.name) {
     diffs.push(`name: "${remote.name}" -> "${local.name}"`);
   }
-  // JSON.stringify key order depends on insertion order; objects are constructed
-  // consistently from the same parser, so this comparison is reliable here.
-  if (JSON.stringify(local.destApp) !== JSON.stringify(remote.destApp)) {
+  if (!deepEqual(local.destApp, remote.destApp)) {
     diffs.push("destApp changed");
   }
   if (local.filterCond !== remote.filterCond) {
     diffs.push("filterCond changed");
   }
-  if (JSON.stringify(local.mappings) !== JSON.stringify(remote.mappings)) {
+  if (!deepEqual(local.mappings, remote.mappings)) {
     diffs.push(
       `mappings changed (${local.mappings.length} local, ${remote.mappings.length} remote)`,
     );
   }
-  if (JSON.stringify(local.entities) !== JSON.stringify(remote.entities)) {
+  if (!deepEqual(local.entities, remote.entities)) {
     diffs.push("entities changed");
   }
 

@@ -1,41 +1,7 @@
-import { isRecord } from "@/core/domain/typeGuards";
+import { deepEqual } from "@/core/domain/diff";
 import type { DiffEntry, FormDiff, FormLayout, Schema } from "../entity";
 import { FormDiff as FormDiffFactory } from "../entity";
 import type { FieldCode, FieldDefinition } from "../valueObject";
-
-function isArrayEqual(a: unknown, b: unknown): boolean {
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (!isValueEqual(a[i], b[i])) return false;
-  }
-  return true;
-}
-
-function isRecordEqual(
-  a: Record<string, unknown>,
-  b: Record<string, unknown>,
-): boolean {
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  for (const key of keysA) {
-    if (!Object.hasOwn(b, key)) return false;
-    if (!isValueEqual(a[key], b[key])) return false;
-  }
-  return true;
-}
-
-function isValueEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a === null || b === null) return a === b;
-  if (typeof a !== typeof b) return false;
-  if (Array.isArray(a)) return isArrayEqual(a, b);
-  if (isRecord(a) && isRecord(b)) {
-    return isRecordEqual(a, b);
-  }
-  return false;
-}
 
 function isMapEqual(
   a: ReadonlyMap<FieldCode, FieldDefinition>,
@@ -58,13 +24,13 @@ function isPropertiesEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   if (a.type === "REFERENCE_TABLE" && b.type === "REFERENCE_TABLE") {
     const refA = a.properties.referenceTable;
     const refB = b.properties.referenceTable;
-    return isValueEqual(
+    return deepEqual(
       { ...refA, displayFields: [...refA.displayFields] },
       { ...refB, displayFields: [...refB.displayFields] },
     );
   }
 
-  return isValueEqual(a.properties, b.properties);
+  return deepEqual(a.properties, b.properties);
 }
 
 function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
@@ -86,13 +52,13 @@ function hasPropertiesChanged(
   if (before.type === "REFERENCE_TABLE" && after.type === "REFERENCE_TABLE") {
     const refB = before.properties.referenceTable;
     const refA = after.properties.referenceTable;
-    return !isValueEqual(
+    return !deepEqual(
       { ...refB, displayFields: [...refB.displayFields] },
       { ...refA, displayFields: [...refA.displayFields] },
     );
   }
 
-  return !isValueEqual(before.properties, after.properties);
+  return !deepEqual(before.properties, after.properties);
 }
 
 function describeChanges(
@@ -123,7 +89,7 @@ function describeChanges(
 }
 
 function isLayoutEqual(a: FormLayout, b: FormLayout): boolean {
-  return isValueEqual(a, b);
+  return deepEqual(a, b);
 }
 
 export const DiffDetector = {

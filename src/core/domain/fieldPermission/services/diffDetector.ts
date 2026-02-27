@@ -1,10 +1,16 @@
-import { buildDiffResult } from "../../diff";
+import { buildDiffResult, deepEqual } from "../../diff";
 import type { FieldPermissionConfig, FieldRight } from "../entity";
 import type { FieldPermissionDiffEntry } from "../valueObject";
 
-function serializeRight(right: FieldRight): string {
-  return JSON.stringify(
-    right.entities.map((e) => ({
+function areEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
+  return deepEqual(
+    a.entities.map((e) => ({
+      accessibility: e.accessibility,
+      type: e.entity.type,
+      code: e.entity.code,
+      includeSubs: e.includeSubs,
+    })),
+    b.entities.map((e) => ({
       accessibility: e.accessibility,
       type: e.entity.type,
       code: e.entity.code,
@@ -28,7 +34,7 @@ export const FieldPermissionDiffDetector = {
           fieldCode: code,
           details: `${localRight.entities.length} entities`,
         });
-      } else if (serializeRight(localRight) !== serializeRight(remoteRight)) {
+      } else if (!areEntitiesEqual(localRight, remoteRight)) {
         entries.push({
           type: "modified",
           fieldCode: code,

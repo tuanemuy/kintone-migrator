@@ -1,4 +1,4 @@
-import { buildDiffResult } from "../../diff";
+import { buildDiffResult, deepEqual } from "../../diff";
 import type {
   GeneralNotification,
   GeneralNotificationConfig,
@@ -108,46 +108,81 @@ function compareGeneralSection(
   return entries;
 }
 
-// perRecord notifications are keyed by filterCond. Duplicate filterCond values
-// within the same config will cause only the last entry to be compared.
+function buildPerRecordMultiMap(
+  notifications: readonly PerRecordNotification[],
+): Map<string, PerRecordNotification[]> {
+  const map = new Map<string, PerRecordNotification[]>();
+  for (const n of notifications) {
+    const existing = map.get(n.filterCond);
+    if (existing) {
+      existing.push(n);
+    } else {
+      map.set(n.filterCond, [n]);
+    }
+  }
+  return map;
+}
+
+function perRecordLabel(notif: PerRecordNotification): string {
+  return notif.title ?? (notif.filterCond || "(empty filter)");
+}
+
 function comparePerRecordSection(
   local: readonly PerRecordNotification[],
   remote: readonly PerRecordNotification[],
 ): NotificationDiffEntry[] {
   const entries: NotificationDiffEntry[] = [];
 
-  const localMap = new Map(local.map((n) => [n.filterCond, n]));
-  const remoteMap = new Map(remote.map((n) => [n.filterCond, n]));
+  const localMulti = buildPerRecordMultiMap(local);
+  const remoteMulti = buildPerRecordMultiMap(remote);
 
-  for (const [key, localNotif] of localMap) {
-    const remoteNotif = remoteMap.get(key);
-    const label = localNotif.title || key || "(empty filter)";
-    if (!remoteNotif) {
-      entries.push({
-        type: "added",
-        section: "perRecord",
-        name: label,
-        details: "new notification",
-      });
-    } else if (JSON.stringify(localNotif) !== JSON.stringify(remoteNotif)) {
-      entries.push({
-        type: "modified",
-        section: "perRecord",
-        name: label,
-        details: "changed",
-      });
+  for (const [key, localNotifs] of localMulti) {
+    const remoteNotifs = remoteMulti.get(key) ?? [];
+    const maxLen = Math.max(localNotifs.length, remoteNotifs.length);
+
+    for (let i = 0; i < maxLen; i++) {
+      const localNotif = localNotifs[i];
+      const remoteNotif = remoteNotifs[i];
+
+      if (localNotif && !remoteNotif) {
+        entries.push({
+          type: "added",
+          section: "perRecord",
+          name: perRecordLabel(localNotif),
+          details: "new notification",
+        });
+      } else if (!localNotif && remoteNotif) {
+        entries.push({
+          type: "deleted",
+          section: "perRecord",
+          name: perRecordLabel(remoteNotif),
+          details: "removed",
+        });
+      } else if (
+        localNotif &&
+        remoteNotif &&
+        !deepEqual(localNotif, remoteNotif)
+      ) {
+        entries.push({
+          type: "modified",
+          section: "perRecord",
+          name: perRecordLabel(localNotif),
+          details: "changed",
+        });
+      }
     }
   }
 
-  for (const [key, remoteNotif] of remoteMap) {
-    if (!localMap.has(key)) {
-      const label = remoteNotif.title || key || "(empty filter)";
-      entries.push({
-        type: "deleted",
-        section: "perRecord",
-        name: label,
-        details: "removed",
-      });
+  for (const [key, remoteNotifs] of remoteMulti) {
+    if (!localMulti.has(key)) {
+      for (const remoteNotif of remoteNotifs) {
+        entries.push({
+          type: "deleted",
+          section: "perRecord",
+          name: perRecordLabel(remoteNotif),
+          details: "removed",
+        });
+      }
     }
   }
 
@@ -172,7 +207,7 @@ function compareReminderSection(
         name: code,
         details: `"${localNotif.title}"`,
       });
-    } else if (JSON.stringify(localNotif) !== JSON.stringify(remoteNotif)) {
+    } else if (!deepEqual(localNotif, remoteNotif)) {
       entries.push({
         type: "modified",
         section: "reminder",

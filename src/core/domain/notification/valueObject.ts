@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type NotificationEntityType =
   | "USER"
   | "GROUP"
@@ -10,8 +12,6 @@ export type NotificationEntity = Readonly<{
 }>;
 
 // Diff types
-
-import type { DiffResult } from "../diff";
 
 export type NotificationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";

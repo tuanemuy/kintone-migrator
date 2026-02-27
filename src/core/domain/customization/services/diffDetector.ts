@@ -26,11 +26,13 @@ function compareResourceLists(
 ): CustomizationDiffEntry[] {
   const entries: CustomizationDiffEntry[] = [];
 
-  const localNames = new Set(localResources.map(resourceName));
-  const remoteNames = new Set(remoteResources.map(remoteResourceName));
+  const localNames = localResources.map(resourceName);
+  const remoteNames = remoteResources.map(remoteResourceName);
+  const localNameSet = new Set(localNames);
+  const remoteNameSet = new Set(remoteNames);
 
-  for (const name of localNames) {
-    if (!remoteNames.has(name)) {
+  for (const name of localNameSet) {
+    if (!remoteNameSet.has(name)) {
       entries.push({
         type: "added",
         platform,
@@ -41,8 +43,8 @@ function compareResourceLists(
     }
   }
 
-  for (const name of remoteNames) {
-    if (!localNames.has(name)) {
+  for (const name of remoteNameSet) {
+    if (!localNameSet.has(name)) {
       entries.push({
         type: "deleted",
         platform,
@@ -51,6 +53,23 @@ function compareResourceLists(
         details: "removed",
       });
     }
+  }
+
+  // Detect order changes among shared resources
+  const localShared = localNames.filter((n) => remoteNameSet.has(n));
+  const remoteShared = remoteNames.filter((n) => localNameSet.has(n));
+  if (
+    localShared.length > 1 &&
+    localShared.length === remoteShared.length &&
+    localShared.some((n, i) => n !== remoteShared[i])
+  ) {
+    entries.push({
+      type: "modified",
+      platform,
+      resourceType,
+      name: "(order)",
+      details: "resource load order changed",
+    });
   }
 
   return entries;

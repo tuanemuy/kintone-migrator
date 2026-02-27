@@ -1,7 +1,12 @@
-import { buildDiffResult } from "../../diff";
+import { buildDiffResult, deepEqual } from "../../diff";
 import type { GeneralSettingsConfig } from "../entity";
 import type { GeneralSettingsDiffEntry } from "../valueObject";
 
+// Default values match the kintone API defaults:
+// - string fields: "" (empty string)
+// - boolean fields: false
+// - firstMonthOfFiscalYear: 1 (January)
+// - object fields (icon, titleField, numberPrecision): null
 function compareConfigs(
   local: GeneralSettingsConfig,
   remote: GeneralSettingsConfig,
@@ -24,9 +29,7 @@ function compareConfigs(
     });
   }
 
-  const localIcon = JSON.stringify(local.icon ?? null);
-  const remoteIcon = JSON.stringify(remote.icon ?? null);
-  if (localIcon !== remoteIcon) {
+  if (!deepEqual(local.icon ?? null, remote.icon ?? null)) {
     entries.push({
       type: "modified",
       field: "icon",
@@ -42,9 +45,7 @@ function compareConfigs(
     });
   }
 
-  const localTitleField = JSON.stringify(local.titleField ?? null);
-  const remoteTitleField = JSON.stringify(remote.titleField ?? null);
-  if (localTitleField !== remoteTitleField) {
+  if (!deepEqual(local.titleField ?? null, remote.titleField ?? null)) {
     entries.push({
       type: "modified",
       field: "titleField",
@@ -102,9 +103,9 @@ function compareConfigs(
     });
   }
 
-  const localPrecision = JSON.stringify(local.numberPrecision ?? null);
-  const remotePrecision = JSON.stringify(remote.numberPrecision ?? null);
-  if (localPrecision !== remotePrecision) {
+  if (
+    !deepEqual(local.numberPrecision ?? null, remote.numberPrecision ?? null)
+  ) {
     entries.push({
       type: "modified",
       field: "numberPrecision",

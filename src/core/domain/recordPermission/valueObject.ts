@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type RecordPermissionEntityType =
   | "USER"
   | "GROUP"
@@ -18,8 +20,6 @@ export type RecordPermissionRightEntity = Readonly<{
 }>;
 
 // Diff types
-
-import type { DiffResult } from "../diff";
 
 export type RecordPermissionDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";

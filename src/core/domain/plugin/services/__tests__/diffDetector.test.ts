@@ -62,11 +62,13 @@ describe("PluginDiffDetector", () => {
       expect(result.entries[0].details).toContain("enabled");
     });
 
-    it("should not detect name change (not compared)", () => {
+    it("should detect name change", () => {
       const local = makeConfig([makePlugin({ name: "New Name" })]);
       const remote = makeConfig([makePlugin({ name: "Old Name" })]);
       const result = PluginDiffDetector.detect(local, remote);
-      expect(result.isEmpty).toBe(true);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("name");
     });
   });
 

@@ -121,6 +121,55 @@ describe("CustomizationDiffDetector", () => {
     });
   });
 
+  describe("resource order changes", () => {
+    it("should detect order change in desktop JS resources", () => {
+      const local = makeLocalConfig({
+        desktop: {
+          js: [
+            { type: "URL", url: "https://example.com/b.js" },
+            { type: "URL", url: "https://example.com/a.js" },
+          ],
+          css: [],
+        },
+      });
+      const remoteDesktop = makeRemotePlatform({
+        js: [
+          { type: "URL", url: "https://example.com/a.js" },
+          { type: "URL", url: "https://example.com/b.js" },
+        ],
+      });
+      const result = CustomizationDiffDetector.detect(
+        local,
+        "ALL",
+        remoteDesktop,
+        makeRemotePlatform(),
+      );
+      expect(result.entries.some((e) => e.type === "modified")).toBe(true);
+      expect(result.entries.some((e) => e.details.includes("order"))).toBe(
+        true,
+      );
+    });
+
+    it("should not report order change with single resource", () => {
+      const local = makeLocalConfig({
+        desktop: {
+          js: [{ type: "URL", url: "https://example.com/a.js" }],
+          css: [],
+        },
+      });
+      const remoteDesktop = makeRemotePlatform({
+        js: [{ type: "URL", url: "https://example.com/a.js" }],
+      });
+      const result = CustomizationDiffDetector.detect(
+        local,
+        "ALL",
+        remoteDesktop,
+        makeRemotePlatform(),
+      );
+      expect(result.isEmpty).toBe(true);
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect changes across platforms", () => {
       const local = makeLocalConfig({

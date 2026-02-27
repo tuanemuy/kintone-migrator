@@ -153,6 +153,95 @@ describe("RecordPermissionDiffDetector", () => {
     });
   });
 
+  describe("duplicate filterCond handling", () => {
+    it("should handle multiple rules with the same filterCond", () => {
+      const local = makeConfig([
+        makeRight({
+          filterCond: "",
+          entities: [
+            {
+              entity: { type: "USER", code: "user1" },
+              viewable: true,
+              editable: false,
+              deletable: false,
+              includeSubs: false,
+            },
+          ],
+        }),
+        makeRight({
+          filterCond: "",
+          entities: [
+            {
+              entity: { type: "GROUP", code: "group1" },
+              viewable: true,
+              editable: true,
+              deletable: false,
+              includeSubs: false,
+            },
+          ],
+        }),
+      ]);
+      const remote = makeConfig([
+        makeRight({
+          filterCond: "",
+          entities: [
+            {
+              entity: { type: "USER", code: "user1" },
+              viewable: true,
+              editable: false,
+              deletable: false,
+              includeSubs: false,
+            },
+          ],
+        }),
+        makeRight({
+          filterCond: "",
+          entities: [
+            {
+              entity: { type: "GROUP", code: "group1" },
+              viewable: true,
+              editable: true,
+              deletable: false,
+              includeSubs: false,
+            },
+          ],
+        }),
+      ]);
+      const result = RecordPermissionDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect added rule among duplicate filterConds", () => {
+      const local = makeConfig([
+        makeRight({ filterCond: "" }),
+        makeRight({ filterCond: "" }),
+      ]);
+      const remote = makeConfig([makeRight({ filterCond: "" })]);
+      const result = RecordPermissionDiffDetector.detect(local, remote);
+      expect(result.summary.added).toBe(1);
+    });
+
+    it("should detect deleted rule among duplicate filterConds", () => {
+      const local = makeConfig([makeRight({ filterCond: "" })]);
+      const remote = makeConfig([
+        makeRight({ filterCond: "" }),
+        makeRight({ filterCond: "" }),
+      ]);
+      const result = RecordPermissionDiffDetector.detect(local, remote);
+      expect(result.summary.deleted).toBe(1);
+    });
+  });
+
+  describe("empty filterCond", () => {
+    it("should handle empty string filterCond", () => {
+      const local = makeConfig([makeRight({ filterCond: "" })]);
+      const result = RecordPermissionDiffDetector.detect(local, makeConfig());
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("added");
+      expect(result.entries[0].filterCond).toBe("");
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect added, modified, and deleted simultaneously", () => {
       const local = makeConfig([

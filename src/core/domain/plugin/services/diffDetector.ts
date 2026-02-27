@@ -17,12 +17,23 @@ export const PluginDiffDetector = {
           pluginId: id,
           details: `"${localPlugin.name}"`,
         });
-      } else if (localPlugin.enabled !== remotePlugin.enabled) {
-        entries.push({
-          type: "modified",
-          pluginId: id,
-          details: `enabled: ${String(remotePlugin.enabled)} -> ${String(localPlugin.enabled)}`,
-        });
+      } else {
+        const diffs: string[] = [];
+        if (localPlugin.name !== remotePlugin.name) {
+          diffs.push(`name: "${remotePlugin.name}" -> "${localPlugin.name}"`);
+        }
+        if (localPlugin.enabled !== remotePlugin.enabled) {
+          diffs.push(
+            `enabled: ${String(remotePlugin.enabled)} -> ${String(localPlugin.enabled)}`,
+          );
+        }
+        if (diffs.length > 0) {
+          entries.push({
+            type: "modified",
+            pluginId: id,
+            details: diffs.join(", "),
+          });
+        }
       }
     }
 

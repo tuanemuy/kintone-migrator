@@ -1,60 +1,110 @@
-import { buildDiffResult } from "../../diff";
+import { buildDiffResult, deepEqual } from "../../diff";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
 import type { RecordPermissionDiffEntry } from "../valueObject";
 
-function serializeRight(right: RecordRight): string {
-  return JSON.stringify({
-    filterCond: right.filterCond,
-    entities: right.entities.map((e) => ({
-      type: e.entity.type,
-      code: e.entity.code,
-      viewable: e.viewable,
-      editable: e.editable,
-      deletable: e.deletable,
-      includeSubs: e.includeSubs,
-    })),
-  });
+function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
+  return deepEqual(
+    {
+      filterCond: a.filterCond,
+      entities: a.entities.map((e) => ({
+        type: e.entity.type,
+        code: e.entity.code,
+        viewable: e.viewable,
+        editable: e.editable,
+        deletable: e.deletable,
+        includeSubs: e.includeSubs,
+      })),
+    },
+    {
+      filterCond: b.filterCond,
+      entities: b.entities.map((e) => ({
+        type: e.entity.type,
+        code: e.entity.code,
+        viewable: e.viewable,
+        editable: e.editable,
+        deletable: e.deletable,
+        includeSubs: e.includeSubs,
+      })),
+    },
+  );
+}
+
+function buildMultiMap(
+  rights: readonly RecordRight[],
+): Map<string, RecordRight[]> {
+  const map = new Map<string, RecordRight[]>();
+  for (const right of rights) {
+    const existing = map.get(right.filterCond);
+    if (existing) {
+      existing.push(right);
+    } else {
+      map.set(right.filterCond, [right]);
+    }
+  }
+  return map;
+}
+
+function describeRight(right: RecordRight): string {
+  return `entities: ${right.entities.length}`;
 }
 
 export const RecordPermissionDiffDetector = {
   detect: (local: RecordPermissionConfig, remote: RecordPermissionConfig) => {
     const entries: RecordPermissionDiffEntry[] = [];
 
-    const localMap = new Map(local.rights.map((r) => [r.filterCond, r]));
-    const remoteMap = new Map(remote.rights.map((r) => [r.filterCond, r]));
+    const localMulti = buildMultiMap(local.rights);
+    const remoteMulti = buildMultiMap(remote.rights);
 
-    for (const [filterCond, localRight] of localMap) {
-      const remoteRight = remoteMap.get(filterCond);
-      if (!remoteRight) {
-        entries.push({
-          type: "added",
-          filterCond,
-          details: `entities: ${localRight.entities.length}`,
-        });
-      } else if (serializeRight(localRight) !== serializeRight(remoteRight)) {
-        const diffs: string[] = [];
-        if (localRight.entities.length !== remoteRight.entities.length) {
-          diffs.push(
-            `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`,
-          );
-        } else {
-          diffs.push("entities changed");
+    for (const [filterCond, localRights] of localMulti) {
+      const remoteRights = remoteMulti.get(filterCond) ?? [];
+      const maxLen = Math.max(localRights.length, remoteRights.length);
+
+      for (let i = 0; i < maxLen; i++) {
+        const localRight = localRights[i];
+        const remoteRight = remoteRights[i];
+
+        if (localRight && !remoteRight) {
+          entries.push({
+            type: "added",
+            filterCond,
+            details: describeRight(localRight),
+          });
+        } else if (!localRight && remoteRight) {
+          entries.push({
+            type: "deleted",
+            filterCond,
+            details: describeRight(remoteRight),
+          });
+        } else if (localRight && remoteRight) {
+          if (!areRightsEqual(localRight, remoteRight)) {
+            const diffs: string[] = [];
+            if (localRight.entities.length !== remoteRight.entities.length) {
+              diffs.push(
+                `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`,
+              );
+            } else {
+              diffs.push("entities changed");
+            }
+            entries.push({
+              type: "modified",
+              filterCond,
+              details: diffs.join(", "),
+            });
+          }
         }
-        entries.push({
-          type: "modified",
-          filterCond,
-          details: diffs.join(", "),
-        });
       }
     }
 
-    for (const [filterCond, remoteRight] of remoteMap) {
-      if (!localMap.has(filterCond)) {
-        entries.push({
-          type: "deleted",
-          filterCond,
-          details: `entities: ${remoteRight.entities.length}`,
-        });
+    // Check for filterConds that only exist in remote
+    for (const [filterCond, remoteRights] of remoteMulti) {
+      if (!localMulti.has(filterCond)) {
+        for (const remoteRight of remoteRights) {
+          entries.push({
+            type: "deleted",
+            filterCond,
+            details: describeRight(remoteRight),
+          });
+        }
       }
     }
 

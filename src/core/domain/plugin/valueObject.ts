@@ -1,5 +1,3 @@
-// Diff types
-
 import type { DiffResult } from "../diff";
 
 export type PluginDiffEntry = Readonly<{

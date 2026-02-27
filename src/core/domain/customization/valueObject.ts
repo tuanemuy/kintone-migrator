@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type CustomizationScope = "ALL" | "ADMIN" | "NONE";
 
 export type LocalFileResource = Readonly<{
@@ -48,8 +50,6 @@ export type RemotePlatform = Readonly<{
 }>;
 
 // Diff types
-
-import type { DiffResult } from "../diff";
 
 export type CustomizationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
