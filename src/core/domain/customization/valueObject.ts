@@ -49,6 +49,8 @@ export type RemotePlatform = Readonly<{
 
 // Diff types
 
+import type { DiffResult } from "../diff";
+
 export type CustomizationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   platform: "desktop" | "mobile" | "config";
@@ -57,15 +59,4 @@ export type CustomizationDiffEntry = Readonly<{
   details: string;
 }>;
 
-export type CustomizationDiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
-}>;
-
-export type CustomizationDiff = Readonly<{
-  entries: readonly CustomizationDiffEntry[];
-  summary: CustomizationDiffSummary;
-  isEmpty: boolean;
-}>;
+export type CustomizationDiff = DiffResult<CustomizationDiffEntry>;

@@ -11,6 +11,8 @@ export type NotificationEntity = Readonly<{
 
 // Diff types
 
+import type { DiffResult } from "../diff";
+
 export type NotificationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   section: "general" | "perRecord" | "reminder";
@@ -18,15 +20,4 @@ export type NotificationDiffEntry = Readonly<{
   details: string;
 }>;
 
-export type NotificationDiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
-}>;
-
-export type NotificationDiff = Readonly<{
-  entries: readonly NotificationDiffEntry[];
-  summary: NotificationDiffSummary;
-  isEmpty: boolean;
-}>;
+export type NotificationDiff = DiffResult<NotificationDiffEntry>;

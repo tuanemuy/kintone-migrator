@@ -1,8 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { GeneralSettingsConfig } from "../entity";
-import type {
-  GeneralSettingsDiff,
-  GeneralSettingsDiffEntry,
-} from "../valueObject";
+import type { GeneralSettingsDiffEntry } from "../valueObject";
 
 function compareConfigs(
   local: GeneralSettingsConfig,
@@ -54,7 +52,9 @@ function compareConfigs(
     });
   }
 
-  if (local.enableThumbnails !== remote.enableThumbnails) {
+  if (
+    (local.enableThumbnails ?? false) !== (remote.enableThumbnails ?? false)
+  ) {
     entries.push({
       type: "modified",
       field: "enableThumbnails",
@@ -62,7 +62,9 @@ function compareConfigs(
     });
   }
 
-  if (local.enableBulkDeletion !== remote.enableBulkDeletion) {
+  if (
+    (local.enableBulkDeletion ?? false) !== (remote.enableBulkDeletion ?? false)
+  ) {
     entries.push({
       type: "modified",
       field: "enableBulkDeletion",
@@ -70,7 +72,7 @@ function compareConfigs(
     });
   }
 
-  if (local.enableComments !== remote.enableComments) {
+  if ((local.enableComments ?? false) !== (remote.enableComments ?? false)) {
     entries.push({
       type: "modified",
       field: "enableComments",
@@ -78,7 +80,10 @@ function compareConfigs(
     });
   }
 
-  if (local.enableDuplicateRecord !== remote.enableDuplicateRecord) {
+  if (
+    (local.enableDuplicateRecord ?? false) !==
+    (remote.enableDuplicateRecord ?? false)
+  ) {
     entries.push({
       type: "modified",
       field: "enableDuplicateRecord",
@@ -86,7 +91,10 @@ function compareConfigs(
     });
   }
 
-  if (local.enableInlineRecordEditing !== remote.enableInlineRecordEditing) {
+  if (
+    (local.enableInlineRecordEditing ?? false) !==
+    (remote.enableInlineRecordEditing ?? false)
+  ) {
     entries.push({
       type: "modified",
       field: "enableInlineRecordEditing",
@@ -118,17 +126,8 @@ function compareConfigs(
 }
 
 export const GeneralSettingsDiffDetector = {
-  detect: (
-    local: GeneralSettingsConfig,
-    remote: GeneralSettingsConfig,
-  ): GeneralSettingsDiff => {
+  detect: (local: GeneralSettingsConfig, remote: GeneralSettingsConfig) => {
     const entries = compareConfigs(local, remote);
-    const modified = entries.length;
-
-    return {
-      entries,
-      summary: { added: 0, modified, deleted: 0, total: modified },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

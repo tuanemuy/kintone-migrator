@@ -1,5 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { AppPermissionConfig, AppRight } from "../entity";
-import type { AppPermissionDiff, AppPermissionDiffEntry } from "../valueObject";
+import type { AppPermissionDiffEntry } from "../valueObject";
 
 function entityKey(right: AppRight): string {
   return `${right.entity.type}:${right.entity.code}`;
@@ -65,10 +66,7 @@ function compareRights(local: AppRight, remote: AppRight): string[] {
 }
 
 export const AppPermissionDiffDetector = {
-  detect: (
-    local: AppPermissionConfig,
-    remote: AppPermissionConfig,
-  ): AppPermissionDiff => {
+  detect: (local: AppPermissionConfig, remote: AppPermissionConfig) => {
     const entries: AppPermissionDiffEntry[] = [];
 
     const localMap = new Map(local.rights.map((r) => [entityKey(r), r]));
@@ -104,14 +102,6 @@ export const AppPermissionDiffDetector = {
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
-
-    return {
-      entries,
-      summary: { added, modified, deleted, total: added + modified + deleted },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

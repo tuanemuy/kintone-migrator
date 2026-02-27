@@ -1,5 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { ActionConfig, ActionsConfig } from "../entity";
-import type { ActionDiff, ActionDiffEntry } from "../valueObject";
+import type { ActionDiffEntry } from "../valueObject";
 
 function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
   const diffs: string[] = [];
@@ -10,6 +11,8 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
   if (local.name !== remote.name) {
     diffs.push(`name: "${remote.name}" -> "${local.name}"`);
   }
+  // JSON.stringify key order depends on insertion order; objects are constructed
+  // consistently from the same parser, so this comparison is reliable here.
   if (JSON.stringify(local.destApp) !== JSON.stringify(remote.destApp)) {
     diffs.push("destApp changed");
   }
@@ -29,7 +32,7 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
 }
 
 export const ActionDiffDetector = {
-  detect: (local: ActionsConfig, remote: ActionsConfig): ActionDiff => {
+  detect: (local: ActionsConfig, remote: ActionsConfig) => {
     const entries: ActionDiffEntry[] = [];
 
     for (const [name, localAction] of Object.entries(local.actions)) {
@@ -62,14 +65,6 @@ export const ActionDiffDetector = {
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
-
-    return {
-      entries,
-      summary: { added, modified, deleted, total: added + modified + deleted },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

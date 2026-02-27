@@ -1,5 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { AdminNotesConfig } from "../entity";
-import type { AdminNotesDiff, AdminNotesDiffEntry } from "../valueObject";
+import type { AdminNotesDiffEntry } from "../valueObject";
 
 function compareConfigs(
   local: AdminNotesConfig,
@@ -29,18 +30,10 @@ function compareConfigs(
   return entries;
 }
 
+// AdminNotes only supports "modified" entries (singleton config, no add/delete)
 export const AdminNotesDiffDetector = {
-  detect: (
-    local: AdminNotesConfig,
-    remote: AdminNotesConfig,
-  ): AdminNotesDiff => {
+  detect: (local: AdminNotesConfig, remote: AdminNotesConfig) => {
     const entries = compareConfigs(local, remote);
-    const modified = entries.length;
-
-    return {
-      entries,
-      summary: { added: 0, modified, deleted: 0, total: modified },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

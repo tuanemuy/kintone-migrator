@@ -34,21 +34,12 @@ export type NumberPrecisionConfig = Readonly<{
 
 // Diff types
 
+import type { DiffResult } from "../diff";
+
 export type GeneralSettingsDiffEntry = Readonly<{
   type: "modified";
   field: string;
   details: string;
 }>;
 
-export type GeneralSettingsDiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
-}>;
-
-export type GeneralSettingsDiff = Readonly<{
-  entries: readonly GeneralSettingsDiffEntry[];
-  summary: GeneralSettingsDiffSummary;
-  isEmpty: boolean;
-}>;
+export type GeneralSettingsDiff = DiffResult<GeneralSettingsDiffEntry>;

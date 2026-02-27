@@ -1,5 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { ReportConfig, ReportsConfig } from "../entity";
-import type { ReportDiff, ReportDiffEntry } from "../valueObject";
+import type { ReportDiffEntry } from "../valueObject";
 
 function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
   const diffs: string[] = [];
@@ -40,7 +41,7 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
 }
 
 export const ReportDiffDetector = {
-  detect: (local: ReportsConfig, remote: ReportsConfig): ReportDiff => {
+  detect: (local: ReportsConfig, remote: ReportsConfig) => {
     const entries: ReportDiffEntry[] = [];
 
     for (const [name, localReport] of Object.entries(local.reports)) {
@@ -73,14 +74,6 @@ export const ReportDiffDetector = {
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
-
-    return {
-      entries,
-      summary: { added, modified, deleted, total: added + modified + deleted },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

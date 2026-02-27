@@ -1,8 +1,9 @@
+import { buildDiffResult } from "../../diff";
 import type { PluginsConfig } from "../entity";
-import type { PluginDiff, PluginDiffEntry } from "../valueObject";
+import type { PluginDiffEntry } from "../valueObject";
 
 export const PluginDiffDetector = {
-  detect: (local: PluginsConfig, remote: PluginsConfig): PluginDiff => {
+  detect: (local: PluginsConfig, remote: PluginsConfig) => {
     const entries: PluginDiffEntry[] = [];
 
     const localMap = new Map(local.plugins.map((p) => [p.id, p]));
@@ -35,14 +36,6 @@ export const PluginDiffDetector = {
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
-
-    return {
-      entries,
-      summary: { added, modified, deleted, total: added + modified + deleted },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

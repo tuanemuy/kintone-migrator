@@ -5,24 +5,19 @@ import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
 import type { DetectViewDiffOutput } from "@/core/application/view/dto";
-import type { ActionDiff } from "@/core/domain/action/valueObject";
-import type { AdminNotesDiff } from "@/core/domain/adminNotes/valueObject";
-import type { AppPermissionDiff } from "@/core/domain/appPermission/valueObject";
-import type { CustomizationDiff } from "@/core/domain/customization/valueObject";
-import type { FieldPermissionDiff } from "@/core/domain/fieldPermission/valueObject";
-import type { GeneralSettingsDiff } from "@/core/domain/generalSettings/valueObject";
-import type { NotificationDiff } from "@/core/domain/notification/valueObject";
-import type { PluginDiff } from "@/core/domain/plugin/valueObject";
+import type { ActionDiffEntry } from "@/core/domain/action/valueObject";
+import type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
+import type { AppPermissionDiffEntry } from "@/core/domain/appPermission/valueObject";
+import type { CustomizationDiffEntry } from "@/core/domain/customization/valueObject";
+import type { DiffResult, DiffSummary } from "@/core/domain/diff";
+import type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/valueObject";
+import type { GeneralSettingsDiffEntry } from "@/core/domain/generalSettings/valueObject";
+import type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
+import type { PluginDiffEntry } from "@/core/domain/plugin/valueObject";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
-import type { RecordPermissionDiff } from "@/core/domain/recordPermission/valueObject";
-import type { ReportDiff } from "@/core/domain/report/valueObject";
+import type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
+import type { ReportDiffEntry } from "@/core/domain/report/valueObject";
 import { logError } from "./handleError";
-
-type DiffSummary = {
-  readonly added: number;
-  readonly modified: number;
-  readonly deleted: number;
-};
 
 function formatDiffSummary(summary: DiffSummary): string {
   return [
@@ -42,6 +37,32 @@ function colorizeDiffEntry(type: "added" | "modified" | "deleted"): {
     type === "added" ? pc.green : type === "deleted" ? pc.red : pc.yellow;
   const prefix = type === "added" ? "+" : type === "deleted" ? "-" : "~";
   return { colorize, prefix };
+}
+
+function printGenericDiffResult<
+  E extends { type: "added" | "modified" | "deleted" },
+>(
+  result: DiffResult<E>,
+  title: string,
+  formatEntry: (
+    entry: E,
+    colorize: (s: string | number) => string,
+    prefix: string,
+  ) => string,
+): void {
+  if (result.isEmpty) {
+    p.log.info("No changes detected.");
+    return;
+  }
+
+  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
+
+  const lines = result.entries.map((entry) => {
+    const { colorize, prefix } = colorizeDiffEntry(entry.type);
+    return formatEntry(entry, colorize, prefix);
+  });
+
+  p.note(lines.join("\n"), title, { format: (v) => v });
 }
 
 export function printDiffResult(result: DetectDiffOutput): void {
@@ -100,184 +121,119 @@ export function printProcessDiffResult(
   });
 }
 
-export function printAdminNotesDiffResult(result: AdminNotesDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Admin Notes Diff Details", { format: (v) => v });
+export function printAdminNotesDiffResult(
+  result: DiffResult<AdminNotesDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Admin Notes Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
 export function printGeneralSettingsDiffResult(
-  result: GeneralSettingsDiff,
+  result: DiffResult<GeneralSettingsDiffEntry>,
 ): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "General Settings Diff Details", {
-    format: (v) => v,
-  });
+  printGenericDiffResult(
+    result,
+    "General Settings Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
-export function printAppPermissionDiffResult(result: AppPermissionDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.entityKey)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "App Permission Diff Details", {
-    format: (v) => v,
-  });
+export function printAppPermissionDiffResult(
+  result: DiffResult<AppPermissionDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "App Permission Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.entityKey)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
 export function printFieldPermissionDiffResult(
-  result: FieldPermissionDiff,
+  result: DiffResult<FieldPermissionDiffEntry>,
 ): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Field Permission Diff Details", {
-    format: (v) => v,
-  });
+  printGenericDiffResult(
+    result,
+    "Field Permission Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
-export function printCustomizationDiffResult(result: CustomizationDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    const location =
-      entry.platform === "config"
-        ? entry.resourceType
-        : `${entry.platform}.${entry.resourceType}`;
-    return `${colorize(prefix)} ${pc.dim("[")}${colorize(location)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Customization Diff Details", {
-    format: (v) => v,
-  });
+export function printCustomizationDiffResult(
+  result: DiffResult<CustomizationDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Customization Diff Details",
+    (entry, colorize, prefix) => {
+      const location =
+        entry.platform === "config"
+          ? entry.resourceType
+          : `${entry.platform}.${entry.resourceType}`;
+      return `${colorize(prefix)} ${pc.dim("[")}${colorize(location)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
+    },
+  );
 }
 
-export function printNotificationDiffResult(result: NotificationDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.section)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Notification Diff Details", { format: (v) => v });
+export function printNotificationDiffResult(
+  result: DiffResult<NotificationDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Notification Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.section)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
-export function printActionDiffResult(result: ActionDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.actionName)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Action Diff Details", { format: (v) => v });
+export function printActionDiffResult(
+  result: DiffResult<ActionDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Action Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.actionName)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
-export function printPluginDiffResult(result: PluginDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.pluginId)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Plugin Diff Details", { format: (v) => v });
+export function printPluginDiffResult(
+  result: DiffResult<PluginDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Plugin Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.pluginId)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
 export function printRecordPermissionDiffResult(
-  result: RecordPermissionDiff,
+  result: DiffResult<RecordPermissionDiffEntry>,
 ): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${pc.dim("[rule")} ${colorize(entry.index)}${pc.dim("]:")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Record Permission Diff Details", {
-    format: (v) => v,
-  });
+  printGenericDiffResult(
+    result,
+    "Record Permission Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond || "(all records)")}${pc.dim("]:")} ${entry.details}`,
+  );
 }
 
-export function printReportDiffResult(result: ReportDiff): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.reportName)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Report Diff Details", { format: (v) => v });
+export function printReportDiffResult(
+  result: DiffResult<ReportDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Report Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.reportName)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
 export function printAppHeader(appName: string, appId: string): void {

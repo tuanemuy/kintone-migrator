@@ -1,8 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
-import type {
-  RecordPermissionDiff,
-  RecordPermissionDiffEntry,
-} from "../valueObject";
+import type { RecordPermissionDiffEntry } from "../valueObject";
 
 function serializeRight(right: RecordRight): string {
   return JSON.stringify({
@@ -19,39 +17,22 @@ function serializeRight(right: RecordRight): string {
 }
 
 export const RecordPermissionDiffDetector = {
-  detect: (
-    local: RecordPermissionConfig,
-    remote: RecordPermissionConfig,
-  ): RecordPermissionDiff => {
+  detect: (local: RecordPermissionConfig, remote: RecordPermissionConfig) => {
     const entries: RecordPermissionDiffEntry[] = [];
 
-    const maxLen = Math.max(local.rights.length, remote.rights.length);
+    const localMap = new Map(local.rights.map((r) => [r.filterCond, r]));
+    const remoteMap = new Map(remote.rights.map((r) => [r.filterCond, r]));
 
-    for (let i = 0; i < maxLen; i++) {
-      const localRight = local.rights[i];
-      const remoteRight = remote.rights[i];
-
-      if (localRight && !remoteRight) {
+    for (const [filterCond, localRight] of localMap) {
+      const remoteRight = remoteMap.get(filterCond);
+      if (!remoteRight) {
         entries.push({
           type: "added",
-          index: i,
-          details: `filterCond: "${localRight.filterCond}", entities: ${localRight.entities.length}`,
+          filterCond,
+          details: `entities: ${localRight.entities.length}`,
         });
-      } else if (!localRight && remoteRight) {
-        entries.push({
-          type: "deleted",
-          index: i,
-          details: `filterCond: "${remoteRight.filterCond}", entities: ${remoteRight.entities.length}`,
-        });
-      } else if (
-        localRight &&
-        remoteRight &&
-        serializeRight(localRight) !== serializeRight(remoteRight)
-      ) {
+      } else if (serializeRight(localRight) !== serializeRight(remoteRight)) {
         const diffs: string[] = [];
-        if (localRight.filterCond !== remoteRight.filterCond) {
-          diffs.push("filterCond changed");
-        }
         if (localRight.entities.length !== remoteRight.entities.length) {
           diffs.push(
             `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`,
@@ -61,20 +42,22 @@ export const RecordPermissionDiffDetector = {
         }
         entries.push({
           type: "modified",
-          index: i,
+          filterCond,
           details: diffs.join(", "),
         });
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
+    for (const [filterCond, remoteRight] of remoteMap) {
+      if (!localMap.has(filterCond)) {
+        entries.push({
+          type: "deleted",
+          filterCond,
+          details: `entities: ${remoteRight.entities.length}`,
+        });
+      }
+    }
 
-    return {
-      entries,
-      summary: { added, modified, deleted, total: added + modified + deleted },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

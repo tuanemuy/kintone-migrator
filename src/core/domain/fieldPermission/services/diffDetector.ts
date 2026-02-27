@@ -1,8 +1,6 @@
+import { buildDiffResult } from "../../diff";
 import type { FieldPermissionConfig, FieldRight } from "../entity";
-import type {
-  FieldPermissionDiff,
-  FieldPermissionDiffEntry,
-} from "../valueObject";
+import type { FieldPermissionDiffEntry } from "../valueObject";
 
 function serializeRight(right: FieldRight): string {
   return JSON.stringify(
@@ -16,10 +14,7 @@ function serializeRight(right: FieldRight): string {
 }
 
 export const FieldPermissionDiffDetector = {
-  detect: (
-    local: FieldPermissionConfig,
-    remote: FieldPermissionConfig,
-  ): FieldPermissionDiff => {
+  detect: (local: FieldPermissionConfig, remote: FieldPermissionConfig) => {
     const entries: FieldPermissionDiffEntry[] = [];
 
     const localMap = new Map(local.rights.map((r) => [r.code, r]));
@@ -52,14 +47,6 @@ export const FieldPermissionDiffDetector = {
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
-
-    return {
-      entries,
-      summary: { added, modified, deleted, total: added + modified + deleted },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

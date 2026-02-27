@@ -26,21 +26,12 @@ export type ActionEntity = Readonly<{
 
 // Diff types
 
+import type { DiffResult } from "../diff";
+
 export type ActionDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   actionName: string;
   details: string;
 }>;
 
-export type ActionDiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
-}>;
-
-export type ActionDiff = Readonly<{
-  entries: readonly ActionDiffEntry[];
-  summary: ActionDiffSummary;
-  isEmpty: boolean;
-}>;
+export type ActionDiff = DiffResult<ActionDiffEntry>;
