@@ -1,11 +1,7 @@
 import type { PluginCliContainerConfig } from "@/core/application/container/pluginCli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { kintoneArgs, multiAppArgs, resolveConfig } from "./config";
-import { type MultiAppCliValues, resolveAppCliConfig } from "./projectConfig";
-import { resolveFilePath } from "./resolveFilePath";
+import { kintoneArgs, multiAppArgs } from "./config";
+import { createDomainConfigResolver } from "./createDomainConfigResolver";
+import type { MultiAppCliValues } from "./projectConfig";
 
 export const pluginArgs = {
   ...kintoneArgs,
@@ -20,44 +16,24 @@ export type PluginCliValues = MultiAppCliValues & {
   "plugin-file"?: string;
 };
 
-export function resolvePluginFilePath(
-  cliValues: PluginCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["plugin-file"],
-    envVar: process.env.PLUGIN_FILE_PATH,
-    appFileField: (a) => a.pluginFile,
-    app,
-    defaultDir: "plugin",
-    defaultFileName: "plugins.yaml",
-  });
-}
+const {
+  resolveFilePath: resolvePluginFilePath,
+  resolveContainerConfig: resolvePluginContainerConfig,
+  resolveAppContainerConfig: resolvePluginAppContainerConfig,
+} = createDomainConfigResolver({
+  fileArgKey: "plugin-file",
+  envVar: () => process.env.PLUGIN_FILE_PATH,
+  appFileField: (a) => a.pluginFile,
+  defaultDir: "plugin",
+  defaultFileName: "plugins.yaml",
+  buildConfig: (base, filePath): PluginCliContainerConfig => ({
+    ...base,
+    pluginFilePath: filePath,
+  }),
+});
 
-export function resolvePluginContainerConfig(
-  cliValues: PluginCliValues,
-): PluginCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    pluginFilePath: resolvePluginFilePath(cliValues),
-  };
-}
-
-export function resolvePluginAppContainerConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: PluginCliValues,
-): PluginCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    pluginFilePath: resolvePluginFilePath(cliValues, app),
-  };
-}
+export {
+  resolvePluginFilePath,
+  resolvePluginContainerConfig,
+  resolvePluginAppContainerConfig,
+};

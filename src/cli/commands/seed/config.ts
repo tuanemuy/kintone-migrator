@@ -1,14 +1,6 @@
 import type { SeedCliContainerConfig } from "@/core/application/container/cli";
-import type {
-  AppEntry,
-  ProjectConfig,
-} from "@/core/domain/projectConfig/entity";
-import { resolveConfig } from "../../config";
-import {
-  type MultiAppCliValues,
-  resolveAppCliConfig,
-} from "../../projectConfig";
-import { resolveFilePath } from "../../resolveFilePath";
+import { createDomainConfigResolver } from "../../createDomainConfigResolver";
+import type { MultiAppCliValues } from "../../projectConfig";
 
 export type SeedCliValues = MultiAppCliValues & {
   clean?: boolean;
@@ -17,44 +9,20 @@ export type SeedCliValues = MultiAppCliValues & {
   "seed-file"?: string;
 };
 
-export function resolveSeedFilePath(
-  cliValues: SeedCliValues,
-  app?: AppEntry,
-): string {
-  return resolveFilePath({
-    cliValue: cliValues["seed-file"],
-    envVar: process.env.SEED_FILE_PATH,
-    appFileField: (a) => a.seedFile,
-    app,
-    defaultDir: "seeds",
-    defaultFileName: "seed.yaml",
-  });
-}
+const {
+  resolveFilePath: resolveSeedFilePath,
+  resolveContainerConfig: resolveSeedConfig,
+  resolveAppContainerConfig: resolveSeedAppConfig,
+} = createDomainConfigResolver({
+  fileArgKey: "seed-file",
+  envVar: () => process.env.SEED_FILE_PATH,
+  appFileField: (a) => a.seedFile,
+  defaultDir: "seeds",
+  defaultFileName: "seed.yaml",
+  buildConfig: (base, filePath): SeedCliContainerConfig => ({
+    ...base,
+    seedFilePath: filePath,
+  }),
+});
 
-export function resolveSeedConfig(
-  cliValues: SeedCliValues,
-): SeedCliContainerConfig {
-  const config = resolveConfig(cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    seedFilePath: resolveSeedFilePath(cliValues),
-  };
-}
-
-export function resolveSeedAppConfig(
-  app: AppEntry,
-  projectConfig: ProjectConfig,
-  cliValues: SeedCliValues,
-): SeedCliContainerConfig {
-  const config = resolveAppCliConfig(app, projectConfig, cliValues);
-  return {
-    baseUrl: config.baseUrl,
-    auth: config.auth,
-    appId: config.appId,
-    guestSpaceId: config.guestSpaceId,
-    seedFilePath: resolveSeedFilePath(cliValues, app),
-  };
-}
+export { resolveSeedFilePath, resolveSeedConfig, resolveSeedAppConfig };
