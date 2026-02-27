@@ -63,6 +63,16 @@ function enrichLayoutItem(
         fields: item.fields.map((e) => enrichLayoutElement(e, subFieldsMap)),
       };
     }
+    case "REFERENCE_TABLE": {
+      const refDef = fields.get(item.code);
+      return {
+        ...item,
+        ...(refDef !== undefined ? { label: refDef.label } : {}),
+        ...(refDef !== undefined && refDef.noLabel !== undefined
+          ? { noLabel: refDef.noLabel }
+          : {}),
+      };
+    }
   }
 }
 

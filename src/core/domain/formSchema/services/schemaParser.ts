@@ -1,7 +1,12 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/core/domain/typeGuards";
-import type { LayoutItem, LayoutRow, Schema } from "../entity";
+import type {
+  LayoutItem,
+  LayoutRow,
+  ReferenceTableLayoutItem,
+  Schema,
+} from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
   DecorationElement,
@@ -616,6 +621,27 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
         },
         fields: allFields,
       };
+    }
+    case "REFERENCE_TABLE": {
+      const code = FieldCode.create(String(raw.code));
+      const label = String(raw.label ?? "");
+      const noLabel =
+        typeof raw.noLabel === "boolean" ? raw.noLabel : undefined;
+
+      const fieldDef = parseFieldDefinitionFromFlat(raw);
+
+      const allFields = new Map<FieldCode, FieldDefinition>();
+      checkDuplicateFieldCode(allFields, code);
+      allFields.set(code, fieldDef);
+
+      const item: ReferenceTableLayoutItem = {
+        type: "REFERENCE_TABLE",
+        code,
+        label,
+        ...(noLabel !== undefined ? { noLabel } : {}),
+      };
+
+      return { item, fields: allFields };
     }
     default:
       throw new BusinessRuleError(

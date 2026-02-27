@@ -30,7 +30,18 @@ export type SubtableLayoutItem = Readonly<{
   fields: readonly LayoutElement[];
 }>;
 
-export type LayoutItem = LayoutRow | GroupLayoutItem | SubtableLayoutItem;
+export type ReferenceTableLayoutItem = Readonly<{
+  type: "REFERENCE_TABLE";
+  code: FieldCode;
+  label: string;
+  noLabel?: boolean;
+}>;
+
+export type LayoutItem =
+  | LayoutRow
+  | GroupLayoutItem
+  | SubtableLayoutItem
+  | ReferenceTableLayoutItem;
 
 export type FormLayout = readonly LayoutItem[];
 

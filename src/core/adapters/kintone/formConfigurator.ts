@@ -12,6 +12,7 @@ import type {
   GroupLayoutItem,
   LayoutItem,
   LayoutRow,
+  ReferenceTableLayoutItem,
   SubtableLayoutItem,
 } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
@@ -423,6 +424,12 @@ function fromKintoneLayoutItem(raw: KintoneLayoutItem): LayoutItem {
         label: String(raw.label ?? ""),
         fields: (raw.fields ?? []).map(fromKintoneLayoutElement),
       } as SubtableLayoutItem;
+    case "REFERENCE_TABLE":
+      return {
+        type: "REFERENCE_TABLE",
+        code: FieldCodeVO.create(String(raw.code ?? "")),
+        label: String(raw.label ?? ""),
+      } as ReferenceTableLayoutItem;
     default:
       throw new SystemError(
         SystemErrorCode.ExternalApiError,
@@ -495,6 +502,13 @@ function toKintoneLayoutItem(item: LayoutItem): Record<string, unknown> {
         type: "SUBTABLE",
         code: subtable.code as string,
         fields: subtable.fields.map(toKintoneLayoutElement),
+      };
+    }
+    case "REFERENCE_TABLE": {
+      const refTable = item as ReferenceTableLayoutItem;
+      return {
+        type: "REFERENCE_TABLE",
+        code: refTable.code as string,
       };
     }
     default:

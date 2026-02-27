@@ -313,6 +313,70 @@ layout:
       }
     });
 
+    it("REFERENCE_TABLE をトップレベルレイアウトアイテムとしてパースできる", () => {
+      const yaml = `
+layout:
+  - type: REFERENCE_TABLE
+    code: ref
+    label: 参照テーブル
+    referenceTable:
+      relatedApp:
+        app: "123"
+      condition:
+        field: key
+        relatedField: relKey
+      displayFields:
+        - col1
+        - col2
+      filterCond: status = "open"
+      sort: col1 asc
+`;
+      const schema = SchemaParser.parse(yaml);
+
+      expect(schema.layout).toHaveLength(1);
+      expect(schema.layout[0].type).toBe("REFERENCE_TABLE");
+      if (schema.layout[0].type === "REFERENCE_TABLE") {
+        expect(String(schema.layout[0].code)).toBe("ref");
+        expect(schema.layout[0].label).toBe("参照テーブル");
+      }
+
+      const field = schema.fields.get("ref" as FieldCode);
+      expect(field?.type).toBe("REFERENCE_TABLE");
+      if (field?.type === "REFERENCE_TABLE") {
+        const ref = field.properties.referenceTable;
+        expect(ref.relatedApp.app).toBe("123");
+        expect(String(ref.condition.field)).toBe("key");
+        expect(String(ref.condition.relatedField)).toBe("relKey");
+        expect(ref.displayFields).toHaveLength(2);
+        expect(ref.filterCond).toBe('status = "open"');
+        expect(ref.sort).toBe("col1 asc");
+      }
+    });
+
+    it("REFERENCE_TABLE トップレベルレイアウトアイテムで noLabel が保持される", () => {
+      const yaml = `
+layout:
+  - type: REFERENCE_TABLE
+    code: ref
+    label: 参照テーブル
+    noLabel: true
+    referenceTable:
+      relatedApp:
+        app: "5"
+      condition:
+        field: key
+        relatedField: relKey
+      displayFields:
+        - col1
+`;
+      const schema = SchemaParser.parse(yaml);
+
+      expect(schema.layout[0].type).toBe("REFERENCE_TABLE");
+      if (schema.layout[0].type === "REFERENCE_TABLE") {
+        expect(schema.layout[0].noLabel).toBe(true);
+      }
+    });
+
     it("noLabel: true が指定されたフィールドは noLabel プロパティを持つ", () => {
       const yaml = `
 layout:

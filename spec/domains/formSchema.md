@@ -525,7 +525,14 @@ type SubtableLayoutItem = Readonly<{
   fields: readonly LayoutElement[];
 }>;
 
-type LayoutItem = LayoutRow | GroupLayoutItem | SubtableLayoutItem;
+type ReferenceTableLayoutItem = Readonly<{
+  type: "REFERENCE_TABLE";
+  code: FieldCode;
+  label: string;
+  noLabel?: boolean;
+}>;
+
+type LayoutItem = LayoutRow | GroupLayoutItem | SubtableLayoutItem | ReferenceTableLayoutItem;
 
 type FormLayout = readonly LayoutItem[];
 ```

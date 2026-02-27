@@ -76,6 +76,58 @@ describe("SchemaSerializer", () => {
       expect(yaml).toContain("code: col1");
     });
 
+    it("REFERENCE_TABLE レイアウトアイテムを fields 付きでシリアライズできる", () => {
+      const refField: FieldDefinition = {
+        code: "ref" as FieldCode,
+        type: "REFERENCE_TABLE",
+        label: "参照",
+        properties: {
+          referenceTable: {
+            relatedApp: { app: "5" },
+            condition: {
+              field: "key" as FieldCode,
+              relatedField: "rKey" as FieldCode,
+            },
+            displayFields: ["c1" as FieldCode, "c2" as FieldCode],
+            filterCond: 'x = "1"',
+            sort: "c1 asc",
+          },
+        },
+      };
+      const fields = new Map<FieldCode, FieldDefinition>([
+        ["ref" as FieldCode, refField],
+      ]);
+      const layout: FormLayout = [
+        {
+          type: "REFERENCE_TABLE",
+          code: "ref" as FieldCode,
+          label: "参照",
+        },
+      ];
+      const yaml = SchemaSerializer.serialize(layout, fields);
+      expect(yaml).toContain("type: REFERENCE_TABLE");
+      expect(yaml).toContain("code: ref");
+      expect(yaml).toContain('app: "5"');
+      expect(yaml).toContain("field: key");
+      expect(yaml).toContain("relatedField: rKey");
+    });
+
+    it("REFERENCE_TABLE レイアウトアイテムを fields なしでシリアライズすると基本プロパティのみ出力される", () => {
+      const layout: FormLayout = [
+        {
+          type: "REFERENCE_TABLE",
+          code: "ref" as FieldCode,
+          label: "参照",
+          noLabel: true,
+        },
+      ];
+      const yaml = SchemaSerializer.serialize(layout);
+      expect(yaml).toContain("type: REFERENCE_TABLE");
+      expect(yaml).toContain("code: ref");
+      expect(yaml).toContain("label: 参照");
+      expect(yaml).toContain("noLabel: true");
+    });
+
     it("デコレーション要素をシリアライズできる", () => {
       const elements: LayoutElement[] = [
         {
@@ -427,6 +479,52 @@ layout:
       }
     });
 
+    it("REFERENCE_TABLE レイアウトアイテムのラウンドトリップ", () => {
+      const yaml = `
+layout:
+  - type: REFERENCE_TABLE
+    code: ref
+    label: 参照
+    referenceTable:
+      relatedApp:
+        app: "10"
+      condition:
+        field: key
+        relatedField: rKey
+      displayFields:
+        - col1
+      sort: col1 asc
+`;
+      const schema1 = SchemaParser.parse(yaml);
+      const serialized = SchemaSerializer.serialize(
+        schema1.layout,
+        schema1.fields,
+      );
+      const schema2 = SchemaParser.parse(serialized);
+
+      expect(schema2.layout.length).toBe(schema1.layout.length);
+      expect(schema2.layout[0].type).toBe("REFERENCE_TABLE");
+
+      const ref1 = schema1.fields.get("ref" as FieldCode);
+      const ref2 = schema2.fields.get("ref" as FieldCode);
+      expect(ref1?.type).toBe("REFERENCE_TABLE");
+      expect(ref2?.type).toBe("REFERENCE_TABLE");
+      if (
+        ref1?.type === "REFERENCE_TABLE" &&
+        ref2?.type === "REFERENCE_TABLE"
+      ) {
+        expect(ref2.properties.referenceTable.relatedApp.app).toBe(
+          ref1.properties.referenceTable.relatedApp.app,
+        );
+        expect(
+          ref2.properties.referenceTable.displayFields.map(String),
+        ).toEqual(ref1.properties.referenceTable.displayFields.map(String));
+        expect(ref2.properties.referenceTable.sort).toBe(
+          ref1.properties.referenceTable.sort,
+        );
+      }
+    });
+
     it("全フィールドタイプの複合ラウンドトリップ", () => {
       const yaml = `
 layout:
@@ -472,9 +570,24 @@ layout:
       - code: col2
         type: NUMBER
         label: 列2
+  - type: REFERENCE_TABLE
+    code: ref
+    label: 参照テーブル
+    referenceTable:
+      relatedApp:
+        app: "42"
+      condition:
+        field: customer_id
+        relatedField: id
+      displayFields:
+        - name
+        - email
 `;
       const schema1 = SchemaParser.parse(yaml);
-      const serialized = SchemaSerializer.serialize(schema1.layout);
+      const serialized = SchemaSerializer.serialize(
+        schema1.layout,
+        schema1.fields,
+      );
       const schema2 = SchemaParser.parse(serialized);
 
       expect(schema2.fields.size).toBe(schema1.fields.size);
