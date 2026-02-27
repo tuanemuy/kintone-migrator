@@ -1,6 +1,8 @@
 import type { FieldPermissionStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileFieldPermissionStorage
-  extends LocalFileStorage
-  implements FieldPermissionStorage {}
+export function createLocalFileFieldPermissionStorage(
+  filePath: string,
+): FieldPermissionStorage {
+  return createLocalFileStorage(filePath, "field permission file");
+}

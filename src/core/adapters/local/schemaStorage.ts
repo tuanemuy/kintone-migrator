@@ -1,6 +1,6 @@
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileSchemaStorage
-  extends LocalFileStorage
-  implements SchemaStorage {}
+export function createLocalFileSchemaStorage(filePath: string): SchemaStorage {
+  return createLocalFileStorage(filePath, "schema file");
+}

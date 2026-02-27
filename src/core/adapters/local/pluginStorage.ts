@@ -1,6 +1,6 @@
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFilePluginStorage
-  extends LocalFileStorage
-  implements PluginStorage {}
+export function createLocalFilePluginStorage(filePath: string): PluginStorage {
+  return createLocalFileStorage(filePath, "plugin file");
+}

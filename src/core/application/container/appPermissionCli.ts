@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneAppPermissionConfigurator } from "@/core/adapters/kintone/appPermissionConfigurator";
-import { LocalFileAppPermissionStorage } from "@/core/adapters/local/appPermissionStorage";
+import { createLocalFileAppPermissionStorage } from "@/core/adapters/local/appPermissionStorage";
 import type { AppPermissionContainer } from "@/core/application/container/appPermission";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import { buildKintoneAuth } from "@/core/application/container/cli";
@@ -28,7 +28,7 @@ export function createAppPermissionCliContainer(
       client,
       config.appId,
     ),
-    appPermissionStorage: new LocalFileAppPermissionStorage(
+    appPermissionStorage: createLocalFileAppPermissionStorage(
       config.appAclFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),

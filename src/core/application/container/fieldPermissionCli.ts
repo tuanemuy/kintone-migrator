@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneFieldPermissionConfigurator } from "@/core/adapters/kintone/fieldPermissionConfigurator";
-import { LocalFileFieldPermissionStorage } from "@/core/adapters/local/fieldPermissionStorage";
+import { createLocalFileFieldPermissionStorage } from "@/core/adapters/local/fieldPermissionStorage";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import { buildKintoneAuth } from "@/core/application/container/cli";
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
@@ -28,7 +28,7 @@ export function createFieldPermissionCliContainer(
       client,
       config.appId,
     ),
-    fieldPermissionStorage: new LocalFileFieldPermissionStorage(
+    fieldPermissionStorage: createLocalFileFieldPermissionStorage(
       config.fieldAclFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),

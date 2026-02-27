@@ -1,6 +1,6 @@
 import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileViewStorage
-  extends LocalFileStorage
-  implements ViewStorage {}
+export function createLocalFileViewStorage(filePath: string): ViewStorage {
+  return createLocalFileStorage(filePath, "view file");
+}

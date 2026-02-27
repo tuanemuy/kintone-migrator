@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileGeneralSettingsStorage } from "../generalSettingsStorage";
+import { createLocalFileGeneralSettingsStorage } from "../generalSettingsStorage";
 
-describe("LocalFileGeneralSettingsStorage", () => {
+describe("createLocalFileGeneralSettingsStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileGeneralSettingsStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileGeneralSettingsStorage(
+      const storage = createLocalFileGeneralSettingsStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileGeneralSettingsStorage", () => {
       const content = "name: test-app\nicon: APP39\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileGeneralSettingsStorage(filePath);
+      const storage = createLocalFileGeneralSettingsStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,16 @@ describe("LocalFileGeneralSettingsStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileGeneralSettingsStorage(filePath);
+      const storage = createLocalFileGeneralSettingsStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileGeneralSettingsStorage(join(tempDir, "dir"));
+      const storage = createLocalFileGeneralSettingsStorage(
+        join(tempDir, "dir"),
+      );
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +58,7 @@ describe("LocalFileGeneralSettingsStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "settings.yaml");
       const content = "name: test-app\nicon: APP39\n";
-      const storage = new LocalFileGeneralSettingsStorage(filePath);
+      const storage = createLocalFileGeneralSettingsStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +68,7 @@ describe("LocalFileGeneralSettingsStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileGeneralSettingsStorage(
+      const storage = createLocalFileGeneralSettingsStorage(
         join(tempDir, "blocked"),
       );
 
@@ -77,7 +79,7 @@ describe("LocalFileGeneralSettingsStorage", () => {
       const filePath = join(tempDir, "settings.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileGeneralSettingsStorage(filePath);
+      const storage = createLocalFileGeneralSettingsStorage(filePath);
       const newContent = "name: updated-app\nicon: APP40\n";
       await storage.update(newContent);
 

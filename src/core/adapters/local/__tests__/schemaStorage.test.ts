@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileSchemaStorage } from "../schemaStorage";
+import { createLocalFileSchemaStorage } from "../schemaStorage";
 
-describe("LocalFileSchemaStorage", () => {
+describe("createLocalFileSchemaStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileSchemaStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileSchemaStorage(
+      const storage = createLocalFileSchemaStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileSchemaStorage", () => {
       const content = "layout:\n  - type: ROW\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileSchemaStorage(filePath);
+      const storage = createLocalFileSchemaStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,7 +39,7 @@ describe("LocalFileSchemaStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileSchemaStorage(filePath);
+      const storage = createLocalFileSchemaStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
@@ -47,7 +47,7 @@ describe("LocalFileSchemaStorage", () => {
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       // Use a directory path as file path to trigger EISDIR
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileSchemaStorage(join(tempDir, "dir"));
+      const storage = createLocalFileSchemaStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -57,7 +57,7 @@ describe("LocalFileSchemaStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "schema.yaml");
       const content = "layout:\n  - type: ROW\n";
-      const storage = new LocalFileSchemaStorage(filePath);
+      const storage = createLocalFileSchemaStorage(filePath);
 
       await storage.update(content);
 
@@ -68,7 +68,7 @@ describe("LocalFileSchemaStorage", () => {
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       // ディレクトリと同名のパスに書き込もうとしてエラー
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileSchemaStorage(join(tempDir, "blocked"));
+      const storage = createLocalFileSchemaStorage(join(tempDir, "blocked"));
 
       await expect(storage.update("content")).rejects.toThrow(SystemError);
     });
@@ -77,7 +77,7 @@ describe("LocalFileSchemaStorage", () => {
       const filePath = join(tempDir, "schema.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileSchemaStorage(filePath);
+      const storage = createLocalFileSchemaStorage(filePath);
       const newContent = "layout:\n  - type: GROUP\n";
       await storage.update(newContent);
 

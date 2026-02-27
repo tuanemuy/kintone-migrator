@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileViewStorage } from "../viewStorage";
+import { createLocalFileViewStorage } from "../viewStorage";
 
-describe("LocalFileViewStorage", () => {
+describe("createLocalFileViewStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileViewStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileViewStorage(
+      const storage = createLocalFileViewStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileViewStorage", () => {
       const content = "views:\n  - name: test-view\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileViewStorage(filePath);
+      const storage = createLocalFileViewStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileViewStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileViewStorage(filePath);
+      const storage = createLocalFileViewStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileViewStorage(join(tempDir, "dir"));
+      const storage = createLocalFileViewStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +56,7 @@ describe("LocalFileViewStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "view.yaml");
       const content = "views:\n  - name: test-view\n";
-      const storage = new LocalFileViewStorage(filePath);
+      const storage = createLocalFileViewStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +66,7 @@ describe("LocalFileViewStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileViewStorage(join(tempDir, "blocked"));
+      const storage = createLocalFileViewStorage(join(tempDir, "blocked"));
 
       await expect(storage.update("content")).rejects.toThrow(SystemError);
     });
@@ -75,7 +75,7 @@ describe("LocalFileViewStorage", () => {
       const filePath = join(tempDir, "view.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileViewStorage(filePath);
+      const storage = createLocalFileViewStorage(filePath);
       const newContent = "views:\n  - name: updated\n";
       await storage.update(newContent);
 

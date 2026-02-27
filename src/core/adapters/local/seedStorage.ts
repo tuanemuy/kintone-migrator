@@ -1,6 +1,6 @@
 import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileSeedStorage
-  extends LocalFileStorage
-  implements SeedStorage {}
+export function createLocalFileSeedStorage(filePath: string): SeedStorage {
+  return createLocalFileStorage(filePath, "seed file");
+}

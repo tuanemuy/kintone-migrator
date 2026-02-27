@@ -1,6 +1,8 @@
 import type { NotificationStorage } from "@/core/domain/notification/ports/notificationStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileNotificationStorage
-  extends LocalFileStorage
-  implements NotificationStorage {}
+export function createLocalFileNotificationStorage(
+  filePath: string,
+): NotificationStorage {
+  return createLocalFileStorage(filePath, "notification file");
+}

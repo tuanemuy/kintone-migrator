@@ -1,6 +1,8 @@
 import type { AppPermissionStorage } from "@/core/domain/appPermission/ports/appPermissionStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileAppPermissionStorage
-  extends LocalFileStorage
-  implements AppPermissionStorage {}
+export function createLocalFileAppPermissionStorage(
+  filePath: string,
+): AppPermissionStorage {
+  return createLocalFileStorage(filePath, "app permission file");
+}

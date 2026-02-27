@@ -1,6 +1,8 @@
 import type { GeneralSettingsStorage } from "@/core/domain/generalSettings/ports/generalSettingsStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileGeneralSettingsStorage
-  extends LocalFileStorage
-  implements GeneralSettingsStorage {}
+export function createLocalFileGeneralSettingsStorage(
+  filePath: string,
+): GeneralSettingsStorage {
+  return createLocalFileStorage(filePath, "general settings file");
+}

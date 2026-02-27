@@ -1,6 +1,8 @@
 import type { ProjectConfigStorage } from "@/core/domain/projectConfig/ports/projectConfigStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileProjectConfigStorage
-  extends LocalFileStorage
-  implements ProjectConfigStorage {}
+export function createLocalFileProjectConfigStorage(
+  filePath: string,
+): ProjectConfigStorage {
+  return createLocalFileStorage(filePath, "project config file");
+}

@@ -1,6 +1,6 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneSpaceReader } from "@/core/adapters/kintone/spaceReader";
-import { LocalFileProjectConfigStorage } from "@/core/adapters/local/projectConfigStorage";
+import { createLocalFileProjectConfigStorage } from "@/core/adapters/local/projectConfigStorage";
 import { buildKintoneAuth, type KintoneAuth } from "./cli";
 import type { InitContainer } from "./init";
 
@@ -22,7 +22,7 @@ export function createInitCliContainer(
 
   return {
     spaceReader: new KintoneSpaceReader(client),
-    projectConfigStorage: new LocalFileProjectConfigStorage(
+    projectConfigStorage: createLocalFileProjectConfigStorage(
       config.configFilePath,
     ),
   };

@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileAdminNotesStorage } from "../adminNotesStorage";
+import { createLocalFileAdminNotesStorage } from "../adminNotesStorage";
 
-describe("LocalFileAdminNotesStorage", () => {
+describe("createLocalFileAdminNotesStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileAdminNotesStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileAdminNotesStorage(
+      const storage = createLocalFileAdminNotesStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileAdminNotesStorage", () => {
       const content = "notes:\n  content: test\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileAdminNotesStorage(filePath);
+      const storage = createLocalFileAdminNotesStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileAdminNotesStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileAdminNotesStorage(filePath);
+      const storage = createLocalFileAdminNotesStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileAdminNotesStorage(join(tempDir, "dir"));
+      const storage = createLocalFileAdminNotesStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +56,7 @@ describe("LocalFileAdminNotesStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "admin-notes.yaml");
       const content = "notes:\n  content: test\n";
-      const storage = new LocalFileAdminNotesStorage(filePath);
+      const storage = createLocalFileAdminNotesStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +66,9 @@ describe("LocalFileAdminNotesStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileAdminNotesStorage(join(tempDir, "blocked"));
+      const storage = createLocalFileAdminNotesStorage(
+        join(tempDir, "blocked"),
+      );
 
       await expect(storage.update("content")).rejects.toThrow(SystemError);
     });
@@ -75,7 +77,7 @@ describe("LocalFileAdminNotesStorage", () => {
       const filePath = join(tempDir, "admin-notes.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileAdminNotesStorage(filePath);
+      const storage = createLocalFileAdminNotesStorage(filePath);
       const newContent = "notes:\n  content: updated\n";
       await storage.update(newContent);
 

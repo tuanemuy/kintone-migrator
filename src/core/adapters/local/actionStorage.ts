@@ -1,6 +1,6 @@
 import type { ActionStorage } from "@/core/domain/action/ports/actionStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileActionStorage
-  extends LocalFileStorage
-  implements ActionStorage {}
+export function createLocalFileActionStorage(filePath: string): ActionStorage {
+  return createLocalFileStorage(filePath, "action file");
+}

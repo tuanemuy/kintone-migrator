@@ -1,6 +1,8 @@
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileCustomizationStorage
-  extends LocalFileStorage
-  implements CustomizationStorage {}
+export function createLocalFileCustomizationStorage(
+  filePath: string,
+): CustomizationStorage {
+  return createLocalFileStorage(filePath, "customization config file");
+}

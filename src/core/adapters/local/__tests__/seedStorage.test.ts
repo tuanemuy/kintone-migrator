@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileSeedStorage } from "../seedStorage";
+import { createLocalFileSeedStorage } from "../seedStorage";
 
-describe("LocalFileSeedStorage", () => {
+describe("createLocalFileSeedStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileSeedStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileSeedStorage(
+      const storage = createLocalFileSeedStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileSeedStorage", () => {
       const content = "records:\n  - name: test\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileSeedStorage(filePath);
+      const storage = createLocalFileSeedStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileSeedStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileSeedStorage(filePath);
+      const storage = createLocalFileSeedStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileSeedStorage(join(tempDir, "dir"));
+      const storage = createLocalFileSeedStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +56,7 @@ describe("LocalFileSeedStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "seed.yaml");
       const content = "records:\n  - name: test\n";
-      const storage = new LocalFileSeedStorage(filePath);
+      const storage = createLocalFileSeedStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +66,7 @@ describe("LocalFileSeedStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileSeedStorage(join(tempDir, "blocked"));
+      const storage = createLocalFileSeedStorage(join(tempDir, "blocked"));
 
       await expect(storage.update("content")).rejects.toThrow(SystemError);
     });
@@ -75,7 +75,7 @@ describe("LocalFileSeedStorage", () => {
       const filePath = join(tempDir, "seed.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileSeedStorage(filePath);
+      const storage = createLocalFileSeedStorage(filePath);
       const newContent = "records:\n  - name: updated\n";
       await storage.update(newContent);
 

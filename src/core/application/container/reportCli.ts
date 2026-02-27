@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneReportConfigurator } from "@/core/adapters/kintone/reportConfigurator";
-import { LocalFileReportStorage } from "@/core/adapters/local/reportStorage";
+import { createLocalFileReportStorage } from "@/core/adapters/local/reportStorage";
 import { buildKintoneAuth, type KintoneAuth } from "./cli";
 import type { ReportContainer } from "./report";
 
@@ -24,7 +24,7 @@ export function createReportCliContainer(
 
   return {
     reportConfigurator: new KintoneReportConfigurator(client, config.appId),
-    reportStorage: new LocalFileReportStorage(config.reportFilePath),
+    reportStorage: createLocalFileReportStorage(config.reportFilePath),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

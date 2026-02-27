@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileNotificationStorage } from "../notificationStorage";
+import { createLocalFileNotificationStorage } from "../notificationStorage";
 
-describe("LocalFileNotificationStorage", () => {
+describe("createLocalFileNotificationStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileNotificationStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileNotificationStorage(
+      const storage = createLocalFileNotificationStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileNotificationStorage", () => {
       const content = "notifications:\n  - type: email\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileNotificationStorage(filePath);
+      const storage = createLocalFileNotificationStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileNotificationStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileNotificationStorage(filePath);
+      const storage = createLocalFileNotificationStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileNotificationStorage(join(tempDir, "dir"));
+      const storage = createLocalFileNotificationStorage(join(tempDir, "dir"));
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +56,7 @@ describe("LocalFileNotificationStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "notification.yaml");
       const content = "notifications:\n  - type: email\n";
-      const storage = new LocalFileNotificationStorage(filePath);
+      const storage = createLocalFileNotificationStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +66,7 @@ describe("LocalFileNotificationStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileNotificationStorage(
+      const storage = createLocalFileNotificationStorage(
         join(tempDir, "blocked"),
       );
 
@@ -77,7 +77,7 @@ describe("LocalFileNotificationStorage", () => {
       const filePath = join(tempDir, "notification.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileNotificationStorage(filePath);
+      const storage = createLocalFileNotificationStorage(filePath);
       const newContent = "notifications:\n  - type: updated\n";
       await storage.update(newContent);
 

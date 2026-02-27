@@ -40,7 +40,7 @@ vi.mock("@/core/adapters/empty/formConfigurator", () => ({
 }));
 
 vi.mock("@/core/adapters/local/schemaStorage", () => ({
-  LocalFileSchemaStorage: vi.fn(),
+  createLocalFileSchemaStorage: vi.fn(),
 }));
 
 vi.mock("@/core/application/formSchema/validateSchema");

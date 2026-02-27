@@ -1,6 +1,8 @@
 import type { RecordPermissionStorage } from "@/core/domain/recordPermission/ports/recordPermissionStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileRecordPermissionStorage
-  extends LocalFileStorage
-  implements RecordPermissionStorage {}
+export function createLocalFileRecordPermissionStorage(
+  filePath: string,
+): RecordPermissionStorage {
+  return createLocalFileStorage(filePath, "record permission file");
+}

@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneGeneralSettingsConfigurator } from "@/core/adapters/kintone/generalSettingsConfigurator";
-import { LocalFileGeneralSettingsStorage } from "@/core/adapters/local/generalSettingsStorage";
+import { createLocalFileGeneralSettingsStorage } from "@/core/adapters/local/generalSettingsStorage";
 import { buildKintoneAuth, type KintoneAuth } from "./cli";
 import type { GeneralSettingsContainer } from "./generalSettings";
 
@@ -27,7 +27,7 @@ export function createGeneralSettingsCliContainer(
       client,
       config.appId,
     ),
-    generalSettingsStorage: new LocalFileGeneralSettingsStorage(
+    generalSettingsStorage: createLocalFileGeneralSettingsStorage(
       config.settingsFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),

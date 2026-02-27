@@ -1,6 +1,8 @@
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
-import { LocalFileStorage } from "./storage";
+import { createLocalFileStorage } from "./storage";
 
-export class LocalFileProcessManagementStorage
-  extends LocalFileStorage
-  implements ProcessManagementStorage {}
+export function createLocalFileProcessManagementStorage(
+  filePath: string,
+): ProcessManagementStorage {
+  return createLocalFileStorage(filePath, "process management file");
+}

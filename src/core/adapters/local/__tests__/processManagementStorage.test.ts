@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileProcessManagementStorage } from "../processManagementStorage";
+import { createLocalFileProcessManagementStorage } from "../processManagementStorage";
 
-describe("LocalFileProcessManagementStorage", () => {
+describe("createLocalFileProcessManagementStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileProcessManagementStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileProcessManagementStorage(
+      const storage = createLocalFileProcessManagementStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileProcessManagementStorage", () => {
       const content = "enable: true\nstates:\n  - name: start\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileProcessManagementStorage(filePath);
+      const storage = createLocalFileProcessManagementStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileProcessManagementStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileProcessManagementStorage(filePath);
+      const storage = createLocalFileProcessManagementStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileProcessManagementStorage(
+      const storage = createLocalFileProcessManagementStorage(
         join(tempDir, "dir"),
       );
 
@@ -58,7 +58,7 @@ describe("LocalFileProcessManagementStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "process.yaml");
       const content = "enable: true\nstates:\n  - name: start\n";
-      const storage = new LocalFileProcessManagementStorage(filePath);
+      const storage = createLocalFileProcessManagementStorage(filePath);
 
       await storage.update(content);
 
@@ -68,7 +68,7 @@ describe("LocalFileProcessManagementStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileProcessManagementStorage(
+      const storage = createLocalFileProcessManagementStorage(
         join(tempDir, "blocked"),
       );
 
@@ -79,7 +79,7 @@ describe("LocalFileProcessManagementStorage", () => {
       const filePath = join(tempDir, "process.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileProcessManagementStorage(filePath);
+      const storage = createLocalFileProcessManagementStorage(filePath);
       const newContent = "enable: true\nstates:\n  - name: updated\n";
       await storage.update(newContent);
 

@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAdminNotesConfigurator } from "@/core/adapters/kintone/adminNotesConfigurator";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
-import { LocalFileAdminNotesStorage } from "@/core/adapters/local/adminNotesStorage";
+import { createLocalFileAdminNotesStorage } from "@/core/adapters/local/adminNotesStorage";
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
 import {
   buildKintoneAuth,
@@ -30,7 +30,7 @@ export function createAdminNotesCliContainer(
       client,
       config.appId,
     ),
-    adminNotesStorage: new LocalFileAdminNotesStorage(
+    adminNotesStorage: createLocalFileAdminNotesStorage(
       config.adminNotesFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),

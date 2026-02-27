@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileRecordPermissionStorage } from "../recordPermissionStorage";
+import { createLocalFileRecordPermissionStorage } from "../recordPermissionStorage";
 
-describe("LocalFileRecordPermissionStorage", () => {
+describe("createLocalFileRecordPermissionStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileRecordPermissionStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileRecordPermissionStorage(
+      const storage = createLocalFileRecordPermissionStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileRecordPermissionStorage", () => {
       const content = "rights:\n  - entity: USER\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileRecordPermissionStorage(filePath);
+      const storage = createLocalFileRecordPermissionStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,14 @@ describe("LocalFileRecordPermissionStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileRecordPermissionStorage(filePath);
+      const storage = createLocalFileRecordPermissionStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileRecordPermissionStorage(
+      const storage = createLocalFileRecordPermissionStorage(
         join(tempDir, "dir"),
       );
 
@@ -58,7 +58,7 @@ describe("LocalFileRecordPermissionStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "record-acl.yaml");
       const content = "rights:\n  - entity: USER\n";
-      const storage = new LocalFileRecordPermissionStorage(filePath);
+      const storage = createLocalFileRecordPermissionStorage(filePath);
 
       await storage.update(content);
 
@@ -68,7 +68,7 @@ describe("LocalFileRecordPermissionStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileRecordPermissionStorage(
+      const storage = createLocalFileRecordPermissionStorage(
         join(tempDir, "blocked"),
       );
 
@@ -79,7 +79,7 @@ describe("LocalFileRecordPermissionStorage", () => {
       const filePath = join(tempDir, "record-acl.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileRecordPermissionStorage(filePath);
+      const storage = createLocalFileRecordPermissionStorage(filePath);
       const newContent = "rights:\n  - entity: updated\n";
       await storage.update(newContent);
 

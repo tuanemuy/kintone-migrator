@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { SystemError } from "@/core/application/error";
-import { LocalFileFieldPermissionStorage } from "../fieldPermissionStorage";
+import { createLocalFileFieldPermissionStorage } from "../fieldPermissionStorage";
 
-describe("LocalFileFieldPermissionStorage", () => {
+describe("createLocalFileFieldPermissionStorage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
@@ -18,7 +18,7 @@ describe("LocalFileFieldPermissionStorage", () => {
 
   describe("get", () => {
     it("ファイルが存在しない場合、exists: false を返す", async () => {
-      const storage = new LocalFileFieldPermissionStorage(
+      const storage = createLocalFileFieldPermissionStorage(
         join(tempDir, "nonexistent.yaml"),
       );
       const result = await storage.get();
@@ -30,7 +30,7 @@ describe("LocalFileFieldPermissionStorage", () => {
       const content = "rights:\n  - code: name\n";
       await writeFile(filePath, content, "utf-8");
 
-      const storage = new LocalFileFieldPermissionStorage(filePath);
+      const storage = createLocalFileFieldPermissionStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content, exists: true });
     });
@@ -39,14 +39,16 @@ describe("LocalFileFieldPermissionStorage", () => {
       const filePath = join(tempDir, "empty.yaml");
       await writeFile(filePath, "", "utf-8");
 
-      const storage = new LocalFileFieldPermissionStorage(filePath);
+      const storage = createLocalFileFieldPermissionStorage(filePath);
       const result = await storage.get();
       expect(result).toEqual({ content: "", exists: true });
     });
 
     it("ENOENT以外のエラーの場合、SystemErrorをスローする", async () => {
       await mkdir(join(tempDir, "dir"));
-      const storage = new LocalFileFieldPermissionStorage(join(tempDir, "dir"));
+      const storage = createLocalFileFieldPermissionStorage(
+        join(tempDir, "dir"),
+      );
 
       await expect(storage.get()).rejects.toThrow(SystemError);
     });
@@ -56,7 +58,7 @@ describe("LocalFileFieldPermissionStorage", () => {
     it("親ディレクトリが存在しなくてもファイルを作成する", async () => {
       const filePath = join(tempDir, "nested", "deep", "field-acl.yaml");
       const content = "rights:\n  - code: name\n";
-      const storage = new LocalFileFieldPermissionStorage(filePath);
+      const storage = createLocalFileFieldPermissionStorage(filePath);
 
       await storage.update(content);
 
@@ -66,7 +68,7 @@ describe("LocalFileFieldPermissionStorage", () => {
 
     it("書き込み先がディレクトリの場合、SystemError をスローする", async () => {
       await mkdir(join(tempDir, "blocked"));
-      const storage = new LocalFileFieldPermissionStorage(
+      const storage = createLocalFileFieldPermissionStorage(
         join(tempDir, "blocked"),
       );
 
@@ -77,7 +79,7 @@ describe("LocalFileFieldPermissionStorage", () => {
       const filePath = join(tempDir, "field-acl.yaml");
       await writeFile(filePath, "old content", "utf-8");
 
-      const storage = new LocalFileFieldPermissionStorage(filePath);
+      const storage = createLocalFileFieldPermissionStorage(filePath);
       const newContent = "rights:\n  - code: updated\n";
       await storage.update(newContent);
 

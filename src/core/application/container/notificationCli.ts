@@ -1,7 +1,7 @@
 import { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneNotificationConfigurator } from "@/core/adapters/kintone/notificationConfigurator";
-import { LocalFileNotificationStorage } from "@/core/adapters/local/notificationStorage";
+import { createLocalFileNotificationStorage } from "@/core/adapters/local/notificationStorage";
 import {
   buildKintoneAuth,
   type KintoneAuth,
@@ -30,7 +30,7 @@ export function createNotificationCliContainer(
       client,
       config.appId,
     ),
-    notificationStorage: new LocalFileNotificationStorage(
+    notificationStorage: createLocalFileNotificationStorage(
       config.notificationFilePath,
     ),
     appDeployer: new KintoneAppDeployer(client, config.appId),
