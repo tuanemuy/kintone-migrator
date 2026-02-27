@@ -1,7 +1,12 @@
 import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/core/domain/typeGuards";
-import type { LayoutItem, LayoutRow, Schema } from "../entity";
+import type {
+  LayoutItem,
+  LayoutRow,
+  ReferenceTableLayoutItem,
+  Schema,
+} from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
   DecorationElement,
@@ -386,17 +391,30 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
     const displayFields = (refTable.displayFields as string[]).map((f) =>
       FieldCode.create(f),
     );
+    const relatedApp = refTable.relatedApp as Record<string, unknown>;
+    const conditionField = String(condition.field ?? "");
+    const conditionRelatedField = String(condition.relatedField ?? "");
+    if (conditionField.length === 0) {
+      throw new BusinessRuleError(
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
+        `Field "${code}" of type REFERENCE_TABLE must have a non-empty "referenceTable.condition.field"`,
+      );
+    }
+    if (conditionRelatedField.length === 0) {
+      throw new BusinessRuleError(
+        FormSchemaErrorCode.FsInvalidSchemaStructure,
+        `Field "${code}" of type REFERENCE_TABLE must have a non-empty "referenceTable.condition.relatedField"`,
+      );
+    }
     const def: ReferenceTableFieldDefinition = {
       ...base,
       type: "REFERENCE_TABLE",
       properties: {
         referenceTable: {
-          relatedApp: refTable.relatedApp as { app: string },
+          relatedApp: { app: String(relatedApp.app ?? "") },
           condition: {
-            field: FieldCode.create(String(condition.field ?? "")),
-            relatedField: FieldCode.create(
-              String(condition.relatedField ?? ""),
-            ),
+            field: FieldCode.create(conditionField),
+            relatedField: FieldCode.create(conditionRelatedField),
           },
           ...(refTable.filterCond !== undefined
             ? { filterCond: String(refTable.filterCond) }
@@ -616,6 +634,26 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
         },
         fields: allFields,
       };
+    }
+    case "REFERENCE_TABLE": {
+      const code = FieldCode.create(String(raw.code));
+      const label = String(raw.label ?? "");
+      const noLabel =
+        typeof raw.noLabel === "boolean" ? raw.noLabel : undefined;
+
+      const fieldDef = parseFieldDefinitionFromFlat(raw);
+
+      const allFields = new Map<FieldCode, FieldDefinition>();
+      allFields.set(code, fieldDef);
+
+      const item: ReferenceTableLayoutItem = {
+        type: "REFERENCE_TABLE",
+        code,
+        label,
+        ...(noLabel !== undefined ? { noLabel } : {}),
+      };
+
+      return { item, fields: allFields };
     }
     default:
       throw new BusinessRuleError(

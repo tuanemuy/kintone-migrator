@@ -894,6 +894,31 @@ describe("KintoneFormConfigurator", () => {
       }
     });
 
+    it("REFERENCE_TABLE レイアウトを取得すると code が保持される", async () => {
+      const client = createMockClient({
+        getFormLayout: () =>
+          Promise.resolve({
+            layout: [
+              {
+                type: "REFERENCE_TABLE",
+                code: "ref_tbl",
+                label: "関連レコード",
+              },
+            ],
+            revision: "1",
+          }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+      const layout = await adapter.getLayout();
+
+      expect(layout).toHaveLength(1);
+      expect(layout[0].type).toBe("REFERENCE_TABLE");
+      if (layout[0].type === "REFERENCE_TABLE") {
+        expect(String(layout[0].code)).toBe("ref_tbl");
+        expect(layout[0].label).toBe("関連レコード");
+      }
+    });
+
     it("プレビュー状態のレイアウトを取得するため preview: true でAPIが呼ばれる", async () => {
       const client = createMockClient();
       const adapter = new KintoneFormConfigurator(client, APP_ID);
@@ -996,6 +1021,26 @@ describe("KintoneFormConfigurator", () => {
       const subtable = calledWith.layout[0] as Record<string, unknown>;
       expect(subtable.type).toBe("SUBTABLE");
       expect(subtable.code).toBe("tbl");
+    });
+
+    it("REFERENCE_TABLE レイアウトが type, code を持つ kintone 形式に変換される", async () => {
+      const client = createMockClient();
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.updateLayout([
+        {
+          type: "REFERENCE_TABLE",
+          code: "ref_tbl" as FieldCode,
+          label: "関連レコード",
+        },
+      ]);
+
+      const calledWith = (
+        client.app.updateFormLayout as ReturnType<typeof vi.fn>
+      ).mock.calls[0][0] as { layout: unknown[] };
+      const refTable = calledWith.layout[0] as Record<string, unknown>;
+      expect(refTable.type).toBe("REFERENCE_TABLE");
+      expect(refTable.code).toBe("ref_tbl");
     });
 
     it("LABEL, SPACER, HR がそのまま kintone API 形式で送信される", async () => {

@@ -434,6 +434,60 @@ describe("enrichLayoutWithFields", () => {
     }
   });
 
+  it("REFERENCE_TABLEのlabel/noLabelがfieldsから補完される", () => {
+    const refDef: FieldDefinition = {
+      code: FieldCode.create("ref"),
+      type: "REFERENCE_TABLE",
+      label: "関連レコード一覧",
+      noLabel: true,
+      properties: {
+        referenceTable: {
+          relatedApp: { app: "5" },
+          condition: {
+            field: FieldCode.create("key"),
+            relatedField: FieldCode.create("rKey"),
+          },
+          displayFields: [FieldCode.create("col1")],
+        },
+      },
+    } as FieldDefinition;
+    const fields = new Map<FieldCode, FieldDefinition>([
+      [FieldCode.create("ref"), refDef],
+    ]);
+    const layout: FormLayout = [
+      {
+        type: "REFERENCE_TABLE",
+        code: FieldCode.create("ref"),
+        label: "旧ラベル",
+      },
+    ];
+
+    const enriched = enrichLayoutWithFields(layout, fields);
+    const item = enriched[0];
+    expect(item.type).toBe("REFERENCE_TABLE");
+    if (item.type === "REFERENCE_TABLE") {
+      expect(item.label).toBe("関連レコード一覧");
+      expect(item.noLabel).toBe(true);
+    }
+  });
+
+  it("fieldsにREFERENCE_TABLEの定義が見つからない場合、レイアウトの情報がそのまま使われる", () => {
+    const fields = new Map<FieldCode, FieldDefinition>();
+    const layout: FormLayout = [
+      {
+        type: "REFERENCE_TABLE",
+        code: FieldCode.create("orphan_ref"),
+        label: "孤児参照",
+      },
+    ];
+
+    const enriched = enrichLayoutWithFields(layout, fields);
+    const item = enriched[0];
+    if (item.type === "REFERENCE_TABLE") {
+      expect(item.label).toBe("孤児参照");
+    }
+  });
+
   it("sizeなしのフィールド要素はsize属性を持たない", () => {
     const fullField = textField("name", "名前");
     const fields = new Map<FieldCode, FieldDefinition>([

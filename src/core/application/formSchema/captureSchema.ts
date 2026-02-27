@@ -11,7 +11,7 @@ export async function captureSchema({
     container.formConfigurator.getLayout(),
   ]);
   const enrichedLayout = enrichLayoutWithFields(currentLayout, currentFields);
-  const schemaText = SchemaSerializer.serialize(enrichedLayout);
+  const schemaText = SchemaSerializer.serialize(enrichedLayout, currentFields);
   const existingResult = await container.schemaStorage.get();
 
   return {

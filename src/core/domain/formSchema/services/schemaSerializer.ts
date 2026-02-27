@@ -2,6 +2,7 @@ import { stringify as stringifyYaml } from "yaml";
 import type { FormLayout, LayoutItem, LayoutRow } from "../entity";
 import type {
   ElementSize,
+  FieldCode,
   FieldDefinition,
   LayoutElement,
 } from "../valueObject";
@@ -95,7 +96,10 @@ function serializeLayoutRow(row: LayoutRow): Record<string, unknown> {
   };
 }
 
-function serializeLayoutItem(item: LayoutItem): Record<string, unknown> {
+function serializeLayoutItem(
+  item: LayoutItem,
+  fields?: ReadonlyMap<FieldCode, FieldDefinition>,
+): Record<string, unknown> {
   switch (item.type) {
     case "ROW":
       return serializeLayoutRow(item);
@@ -116,13 +120,28 @@ function serializeLayoutItem(item: LayoutItem): Record<string, unknown> {
         ...(item.noLabel !== undefined ? { noLabel: item.noLabel } : {}),
         fields: item.fields.map(serializeLayoutElement),
       };
+    case "REFERENCE_TABLE": {
+      const field = fields?.get(item.code);
+      if (field) {
+        return serializeFlatField(field);
+      }
+      return {
+        type: "REFERENCE_TABLE",
+        code: item.code as string,
+        label: item.label,
+        ...(item.noLabel !== undefined ? { noLabel: item.noLabel } : {}),
+      };
+    }
   }
 }
 
 export const SchemaSerializer = {
-  serialize: (layout: FormLayout): string => {
+  serialize: (
+    layout: FormLayout,
+    fields?: ReadonlyMap<FieldCode, FieldDefinition>,
+  ): string => {
     const serialized = {
-      layout: layout.map(serializeLayoutItem),
+      layout: layout.map((item) => serializeLayoutItem(item, fields)),
     };
 
     return stringifyYaml(serialized, {
