@@ -19,6 +19,7 @@ type DiffCommandConfig<
   readonly description: string;
   readonly args: Args;
   readonly spinnerMessage: string;
+  readonly multiAppSuccessMessage?: string;
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly detectDiff: (args: {
     container: TContainer;
@@ -77,15 +78,19 @@ export function createDiffCommand<
             await runDiff(containerConfig);
           },
           multiApp: async (plan, projectConfig) => {
-            await runMultiAppWithFailCheck(plan, async (app) => {
-              const containerConfig = config.resolveAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              await runDiff(containerConfig);
-            });
+            await runMultiAppWithFailCheck(
+              plan,
+              async (app) => {
+                const containerConfig = config.resolveAppContainerConfig(
+                  app,
+                  projectConfig,
+                  values,
+                );
+                printAppHeader(app.name, app.appId);
+                await runDiff(containerConfig);
+              },
+              config.multiAppSuccessMessage,
+            );
           },
         });
       } catch (error) {

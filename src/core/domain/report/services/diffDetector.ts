@@ -1,7 +1,7 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
 import type { ReportConfig, ReportsConfig } from "../entity";
-import type { ReportDiffEntry } from "../valueObject";
+import type { ReportDiff, ReportDiffEntry } from "../valueObject";
 
 function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
   const diffs: string[] = [];
@@ -40,7 +40,7 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
 }
 
 export const ReportDiffDetector = {
-  detect: (local: ReportsConfig, remote: ReportsConfig) => {
+  detect: (local: ReportsConfig, remote: ReportsConfig): ReportDiff => {
     const entries: ReportDiffEntry[] = [];
 
     for (const [name, localReport] of Object.entries(local.reports)) {

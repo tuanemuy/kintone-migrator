@@ -1,9 +1,9 @@
 import { buildDiffResult } from "../../diff";
 import type { PluginsConfig } from "../entity";
-import type { PluginDiffEntry } from "../valueObject";
+import type { PluginDiff, PluginDiffEntry } from "../valueObject";
 
 export const PluginDiffDetector = {
-  detect: (local: PluginsConfig, remote: PluginsConfig) => {
+  detect: (local: PluginsConfig, remote: PluginsConfig): PluginDiff => {
     const entries: PluginDiffEntry[] = [];
 
     const localMap = new Map(local.plugins.map((p) => [p.id, p]));

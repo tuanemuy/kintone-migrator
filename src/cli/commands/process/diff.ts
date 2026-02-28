@@ -13,6 +13,8 @@ export default createDiffCommand({
     "Compare local process management settings with remote kintone app",
   args: processArgs,
   spinnerMessage: "Comparing process management settings...",
+  multiAppSuccessMessage:
+    "All process management diffs completed successfully.",
   createContainer: createProcessManagementCliContainer,
   detectDiff: detectProcessManagementDiff,
   printResult: printProcessDiffResult,

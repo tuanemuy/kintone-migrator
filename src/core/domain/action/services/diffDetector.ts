@@ -1,7 +1,7 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
 import type { ActionConfig, ActionsConfig } from "../entity";
-import type { ActionDiffEntry } from "../valueObject";
+import type { ActionDiff, ActionDiffEntry } from "../valueObject";
 
 function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
   const diffs: string[] = [];
@@ -31,7 +31,7 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
 }
 
 export const ActionDiffDetector = {
-  detect: (local: ActionsConfig, remote: ActionsConfig) => {
+  detect: (local: ActionsConfig, remote: ActionsConfig): ActionDiff => {
     const entries: ActionDiffEntry[] = [];
 
     for (const [name, localAction] of Object.entries(local.actions)) {

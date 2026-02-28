@@ -1,6 +1,7 @@
 import { buildDiffResult } from "../../diff";
 import type { CustomizationConfig } from "../entity";
 import {
+  type CustomizationDiff,
   type CustomizationDiffEntry,
   type CustomizationResource,
   DEFAULT_CUSTOMIZATION_SCOPE,
@@ -107,7 +108,10 @@ function comparePlatform(
 }
 
 export const CustomizationDiffDetector = {
-  detect: (local: CustomizationConfig, remote: RemoteCustomization) => {
+  detect: (
+    local: CustomizationConfig,
+    remote: RemoteCustomization,
+  ): CustomizationDiff => {
     const entries: CustomizationDiffEntry[] = [];
 
     const localScope = local.scope ?? DEFAULT_CUSTOMIZATION_SCOPE;

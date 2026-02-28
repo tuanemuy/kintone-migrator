@@ -1,7 +1,12 @@
 import { deepEqual } from "@/lib/deepEqual";
-import type { DiffEntry, FormDiff, FormLayout, Schema } from "../entity";
-import { FormDiff as FormDiffFactory } from "../entity";
-import type { FieldCode, FieldDefinition } from "../valueObject";
+import { buildDiffResult } from "../../diff";
+import type { FormLayout, Schema } from "../entity";
+import type {
+  FieldCode,
+  FieldDefinition,
+  FormSchemaDiff,
+  FormSchemaDiffEntry,
+} from "../valueObject";
 
 function isMapEqual(
   a: ReadonlyMap<FieldCode, FieldDefinition>,
@@ -41,26 +46,6 @@ function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   return isPropertiesEqual(a, b);
 }
 
-function hasPropertiesChanged(
-  before: FieldDefinition,
-  after: FieldDefinition,
-): boolean {
-  if (before.type === "SUBTABLE" && after.type === "SUBTABLE") {
-    return !isMapEqual(before.properties.fields, after.properties.fields);
-  }
-
-  if (before.type === "REFERENCE_TABLE" && after.type === "REFERENCE_TABLE") {
-    const refB = before.properties.referenceTable;
-    const refA = after.properties.referenceTable;
-    return !deepEqual(
-      { ...refB, displayFields: [...refB.displayFields] },
-      { ...refA, displayFields: [...refA.displayFields] },
-    );
-  }
-
-  return !deepEqual(before.properties, after.properties);
-}
-
 function describeChanges(
   before: FieldDefinition,
   after: FieldDefinition,
@@ -81,7 +66,7 @@ function describeChanges(
     );
   }
 
-  if (hasPropertiesChanged(before, after)) {
+  if (!isPropertiesEqual(before, after)) {
     changes.push("properties changed");
   }
 
@@ -103,8 +88,8 @@ export const DiffDetector = {
   detect: (
     schema: Schema,
     current: ReadonlyMap<FieldCode, FieldDefinition>,
-  ): FormDiff => {
-    const entries: DiffEntry[] = [];
+  ): FormSchemaDiff => {
+    const entries: FormSchemaDiffEntry[] = [];
 
     for (const [fieldCode, schemaDef] of schema.fields) {
       const currentDef = current.get(fieldCode);
@@ -141,6 +126,6 @@ export const DiffDetector = {
       }
     }
 
-    return FormDiffFactory.create(entries);
+    return buildDiffResult(entries);
   },
 };

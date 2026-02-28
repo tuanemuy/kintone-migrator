@@ -1,6 +1,6 @@
 import { buildDiffResult } from "../../diff";
 import type { AppPermissionConfig, AppRight } from "../entity";
-import type { AppPermissionDiffEntry } from "../valueObject";
+import type { AppPermissionDiff, AppPermissionDiffEntry } from "../valueObject";
 
 const BOOLEAN_FLAGS = [
   "includeSubs",
@@ -33,7 +33,10 @@ function compareRights(local: AppRight, remote: AppRight): string[] {
 }
 
 export const AppPermissionDiffDetector = {
-  detect: (local: AppPermissionConfig, remote: AppPermissionConfig) => {
+  detect: (
+    local: AppPermissionConfig,
+    remote: AppPermissionConfig,
+  ): AppPermissionDiff => {
     const entries: AppPermissionDiffEntry[] = [];
 
     // kintone API guarantees entity keys are unique per app, so Map is safe here

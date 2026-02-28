@@ -1,7 +1,10 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
 import type { FieldPermissionConfig, FieldRight } from "../entity";
-import type { FieldPermissionDiffEntry } from "../valueObject";
+import type {
+  FieldPermissionDiff,
+  FieldPermissionDiffEntry,
+} from "../valueObject";
 
 function areEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
   return deepEqual(
@@ -21,7 +24,10 @@ function areEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
 }
 
 export const FieldPermissionDiffDetector = {
-  detect: (local: FieldPermissionConfig, remote: FieldPermissionConfig) => {
+  detect: (
+    local: FieldPermissionConfig,
+    remote: FieldPermissionConfig,
+  ): FieldPermissionDiff => {
     const entries: FieldPermissionDiffEntry[] = [];
 
     const localMap = new Map(local.rights.map((r) => [r.code, r]));

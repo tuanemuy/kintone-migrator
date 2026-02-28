@@ -83,15 +83,77 @@ describe("deepEqual", () => {
     expect(deepEqual(d1, d3)).toBe(false);
   });
 
+  it("should return false for Date vs non-Date", () => {
+    expect(deepEqual(new Date("2024-01-01"), {})).toBe(false);
+    expect(deepEqual({}, new Date("2024-01-01"))).toBe(false);
+    expect(deepEqual(new Date("2024-01-01"), "2024-01-01")).toBe(false);
+  });
+
   it("should compare RegExp objects by value", () => {
     expect(deepEqual(/abc/g, /abc/g)).toBe(true);
     expect(deepEqual(/abc/g, /abc/i)).toBe(false);
     expect(deepEqual(/abc/, /def/)).toBe(false);
   });
 
-  it("should return false for Map and Set", () => {
-    expect(deepEqual(new Map(), new Map())).toBe(false);
-    expect(deepEqual(new Set(), new Set())).toBe(false);
+  it("should return false for RegExp vs non-RegExp", () => {
+    expect(deepEqual(/abc/, {})).toBe(false);
+    expect(deepEqual({}, /abc/)).toBe(false);
+    expect(deepEqual(/abc/, "abc")).toBe(false);
+  });
+
+  it("should compare Map objects", () => {
+    const m1 = new Map([
+      ["a", 1],
+      ["b", 2],
+    ]);
+    const m2 = new Map([
+      ["a", 1],
+      ["b", 2],
+    ]);
+    const m3 = new Map([
+      ["a", 1],
+      ["b", 3],
+    ]);
+    const m4 = new Map([["a", 1]]);
+    expect(deepEqual(m1, m2)).toBe(true);
+    expect(deepEqual(m1, m3)).toBe(false);
+    expect(deepEqual(m1, m4)).toBe(false);
+  });
+
+  it("should compare nested Maps", () => {
+    const m1 = new Map([["a", { x: 1 }]]);
+    const m2 = new Map([["a", { x: 1 }]]);
+    const m3 = new Map([["a", { x: 2 }]]);
+    expect(deepEqual(m1, m2)).toBe(true);
+    expect(deepEqual(m1, m3)).toBe(false);
+  });
+
+  it("should return false for Map vs non-Map", () => {
+    expect(deepEqual(new Map(), {})).toBe(false);
+    expect(deepEqual({}, new Map())).toBe(false);
+  });
+
+  it("should compare Set objects", () => {
+    const s1 = new Set([1, 2, 3]);
+    const s2 = new Set([1, 2, 3]);
+    const s3 = new Set([1, 2, 4]);
+    const s4 = new Set([1, 2]);
+    expect(deepEqual(s1, s2)).toBe(true);
+    expect(deepEqual(s1, s3)).toBe(false);
+    expect(deepEqual(s1, s4)).toBe(false);
+  });
+
+  it("should return false for Set vs non-Set", () => {
+    expect(deepEqual(new Set(), {})).toBe(false);
+    expect(deepEqual({}, new Set())).toBe(false);
+  });
+
+  it("should handle circular references without infinite recursion", () => {
+    const a: Record<string, unknown> = { x: 1 };
+    a.self = a;
+    const b: Record<string, unknown> = { x: 1 };
+    b.self = b;
+    expect(deepEqual(a, b)).toBe(false);
   });
 
   it("should handle undefined vs empty object", () => {

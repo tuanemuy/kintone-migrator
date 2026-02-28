@@ -54,7 +54,20 @@ export type FieldType =
   | "SUBTABLE"
   | "REFERENCE_TABLE";
 
-export type { DiffSummary } from "../diff";
+import type { DiffResult } from "../diff";
+
+export type { DiffResult };
+
+export type FormSchemaDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  fieldCode: FieldCode;
+  fieldLabel: string;
+  details: string;
+  before?: FieldDefinition;
+  after?: FieldDefinition;
+}>;
+
+export type FormSchemaDiff = DiffResult<FormSchemaDiffEntry>;
 
 // SelectionOption
 export type SelectionOption = Readonly<{

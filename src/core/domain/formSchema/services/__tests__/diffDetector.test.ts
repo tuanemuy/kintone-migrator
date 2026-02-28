@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { DiffEntry, FormLayout, Schema } from "../../entity";
+import type { FormLayout, Schema } from "../../entity";
 import type {
   FieldCode,
   FieldDefinition,
+  FormSchemaDiffEntry,
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../../valueObject";
@@ -298,7 +299,7 @@ describe("DiffDetector", () => {
       const current = makeFieldMap([deleted, modBefore]);
 
       const diff = DiffDetector.detect(schema, current);
-      const types = diff.entries.map((e: DiffEntry) => e.type);
+      const types = diff.entries.map((e: FormSchemaDiffEntry) => e.type);
       expect(types).toEqual(["added", "modified", "deleted"]);
     });
 

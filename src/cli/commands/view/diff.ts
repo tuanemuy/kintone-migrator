@@ -9,10 +9,9 @@ import {
 import { createDiffCommand } from "../diffCommandFactory";
 
 export default createDiffCommand({
-  description:
-    "Detect differences between view config file and current kintone views",
+  description: "Compare local view config with remote kintone app",
   args: viewArgs,
-  spinnerMessage: "Fetching views...",
+  spinnerMessage: "Comparing view settings...",
   createContainer: createViewCliContainer,
   detectDiff: detectViewDiff,
   printResult: printViewDiffResult,

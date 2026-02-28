@@ -140,5 +140,15 @@ general:
         isSystemError,
       );
     });
+
+    it("should throw SystemError when getReminderNotifications fails", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent(VALID_CONFIG);
+      container.notificationConfigurator.setFailOn("getReminderNotifications");
+
+      await expect(detectNotificationDiff({ container })).rejects.toSatisfy(
+        isSystemError,
+      );
+    });
   });
 });

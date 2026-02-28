@@ -1,7 +1,10 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
-import type { RecordPermissionDiffEntry } from "../valueObject";
+import type {
+  RecordPermissionDiff,
+  RecordPermissionDiffEntry,
+} from "../valueObject";
 
 function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
   return deepEqual(
@@ -54,7 +57,10 @@ function describeRight(right: RecordRight): string {
 }
 
 export const RecordPermissionDiffDetector = {
-  detect: (local: RecordPermissionConfig, remote: RecordPermissionConfig) => {
+  detect: (
+    local: RecordPermissionConfig,
+    remote: RecordPermissionConfig,
+  ): RecordPermissionDiff => {
     const entries: RecordPermissionDiffEntry[] = [];
 
     const localMulti = buildMultiMap(local.rights);

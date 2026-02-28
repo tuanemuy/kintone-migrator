@@ -7,7 +7,7 @@ import type {
   PerRecordNotification,
   ReminderNotification,
 } from "../entity";
-import type { NotificationDiffEntry } from "../valueObject";
+import type { NotificationDiff, NotificationDiffEntry } from "../valueObject";
 
 function serializeEntity(entity: { type: string; code: string }): string {
   return `${entity.type}:${entity.code}`;
@@ -229,7 +229,10 @@ function compareReminderSection(
 }
 
 export const NotificationDiffDetector = {
-  detect: (local: NotificationConfig, remote: NotificationConfig) => {
+  detect: (
+    local: NotificationConfig,
+    remote: NotificationConfig,
+  ): NotificationDiff => {
     const entries: NotificationDiffEntry[] = [];
 
     // Section-level additions/deletions use the same "added"/"deleted" type as

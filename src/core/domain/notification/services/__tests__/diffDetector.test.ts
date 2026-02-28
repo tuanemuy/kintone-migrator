@@ -356,6 +356,58 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].details).toContain("removed reminder");
     });
+
+    it("should detect modified reminder notification", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({
+              code: "reminder1",
+              title: "Updated Reminder",
+              daysLater: 3,
+            }),
+          ],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({
+              code: "reminder1",
+              title: "Reminder",
+              daysLater: 1,
+            }),
+          ],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].section).toBe("reminder");
+      expect(result.entries[0].name).toBe("reminder1");
+      expect(result.entries[0].details).toBe("changed");
+    });
+
+    it("should detect deleted reminder notification", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({ code: "reminder1", title: "Old Reminder" }),
+          ],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("deleted");
+      expect(result.entries[0].section).toBe("reminder");
+      expect(result.entries[0].name).toBe("reminder1");
+      expect(result.entries[0].details).toBe("removed");
+    });
   });
 
   describe("duplicate filterCond in perRecord", () => {

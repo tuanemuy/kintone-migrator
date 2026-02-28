@@ -38,6 +38,23 @@ describe("CustomizationDiffDetector", () => {
   });
 
   describe("scope changes", () => {
+    it("should treat undefined scope as ALL (no diff with remote ALL)", () => {
+      const result = CustomizationDiffDetector.detect(
+        makeLocalConfig({ scope: undefined }),
+        {
+          scope: "ALL",
+          desktop: makeRemotePlatform(),
+          mobile: makeRemotePlatform(),
+        },
+      );
+      expect(result.isEmpty).toBe(true);
+      expect(
+        result.entries.some(
+          (e) => e.platform === "config" && e.resourceType === "scope",
+        ),
+      ).toBe(false);
+    });
+
     it("should detect scope change", () => {
       const result = CustomizationDiffDetector.detect(
         makeLocalConfig({ scope: "ADMIN" }),

@@ -119,6 +119,42 @@ describe("FieldPermissionDiffDetector", () => {
       expect(result.entries[0].details).toContain("entities changed");
     });
 
+    it("should detect entity order change", () => {
+      const local = makeConfig([
+        makeRight("field1", {
+          entities: [
+            {
+              accessibility: "READ",
+              entity: { type: "USER", code: "user1" },
+            },
+            {
+              accessibility: "WRITE",
+              entity: { type: "GROUP", code: "group1" },
+            },
+          ],
+        }),
+      ]);
+      const remote = makeConfig([
+        makeRight("field1", {
+          entities: [
+            {
+              accessibility: "WRITE",
+              entity: { type: "GROUP", code: "group1" },
+            },
+            {
+              accessibility: "READ",
+              entity: { type: "USER", code: "user1" },
+            },
+          ],
+        }),
+      ]);
+      const result = FieldPermissionDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].fieldCode).toBe("field1");
+      expect(result.entries[0].details).toContain("entities changed");
+    });
+
     it("should not report diff between includeSubs undefined and false", () => {
       const local = makeConfig([
         makeRight("field1", {

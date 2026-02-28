@@ -1,7 +1,10 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
 import type { GeneralSettingsConfig } from "../entity";
-import type { GeneralSettingsDiffEntry } from "../valueObject";
+import type {
+  GeneralSettingsDiff,
+  GeneralSettingsDiffEntry,
+} from "../valueObject";
 
 // Default values match the kintone API defaults:
 // - string fields: "" (empty string)
@@ -129,7 +132,10 @@ function compareConfigs(
 }
 
 export const GeneralSettingsDiffDetector = {
-  detect: (local: GeneralSettingsConfig, remote: GeneralSettingsConfig) => {
+  detect: (
+    local: GeneralSettingsConfig,
+    remote: GeneralSettingsConfig,
+  ): GeneralSettingsDiff => {
     const entries = compareConfigs(local, remote);
     return buildDiffResult(entries);
   },
