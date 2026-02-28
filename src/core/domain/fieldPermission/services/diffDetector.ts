@@ -9,13 +9,13 @@ function areEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
       accessibility: e.accessibility,
       type: e.entity.type,
       code: e.entity.code,
-      includeSubs: e.includeSubs,
+      includeSubs: e.includeSubs ?? false,
     })),
     b.entities.map((e) => ({
       accessibility: e.accessibility,
       type: e.entity.type,
       code: e.entity.code,
-      includeSubs: e.includeSubs,
+      includeSubs: e.includeSubs ?? false,
     })),
   );
 }

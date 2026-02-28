@@ -231,6 +231,12 @@ export const NotificationDiffDetector = {
   detect: (local: NotificationConfig, remote: NotificationConfig) => {
     const entries: NotificationDiffEntry[] = [];
 
+    // Section-level additions/deletions use the same "added"/"deleted" type as
+    // individual entry changes. This means the summary counts mix section-level
+    // and entry-level granularities (e.g. adding a general section + one perRecord
+    // entry = +2 added). This is intentional: sections are atomic units that map
+    // to kintone API config blocks, and treating them as regular diff entries
+    // keeps the output model simple without requiring a separate hierarchy.
     if (local.general && remote.general) {
       entries.push(...compareGeneralSection(local.general, remote.general));
     } else if (local.general && !remote.general) {

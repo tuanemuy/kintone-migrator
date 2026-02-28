@@ -21,18 +21,38 @@ vi.mock("../handleError", () => ({
 }));
 
 import * as p from "@clack/prompts";
+import type { ActionDiffEntry } from "@/core/domain/action/valueObject";
+import type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
+import type { AppPermissionDiffEntry } from "@/core/domain/appPermission/valueObject";
+import type { CustomizationDiffEntry } from "@/core/domain/customization/valueObject";
 import type { DiffResult } from "@/core/domain/diff";
+import type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/valueObject";
+import type { GeneralSettingsDiffEntry } from "@/core/domain/generalSettings/valueObject";
+import type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
+import type { PluginDiffEntry } from "@/core/domain/plugin/valueObject";
 import type { ProcessManagementDiffEntry } from "@/core/domain/processManagement/valueObject";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
+import type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
+import type { ReportDiffEntry } from "@/core/domain/report/valueObject";
 import type { ViewDiffEntry } from "@/core/domain/view/valueObject";
 import { logError } from "../handleError";
 import {
   confirmAndDeploy,
+  printActionDiffResult,
+  printAdminNotesDiffResult,
   printAppHeader,
+  printAppPermissionDiffResult,
+  printCustomizationDiffResult,
   printDiffResult,
+  printFieldPermissionDiffResult,
+  printGeneralSettingsDiffResult,
   printMultiAppResult,
+  printNotificationDiffResult,
+  printPluginDiffResult,
   printProcessDiffResult,
+  printRecordPermissionDiffResult,
+  printReportDiffResult,
   printViewDiffResult,
   promptDeploy,
 } from "../output";
@@ -641,5 +661,260 @@ describe("confirmAndDeploy", () => {
     await confirmAndDeploy([], true);
 
     expect(p.log.success).toHaveBeenCalledWith("Deployed to production.");
+  });
+});
+
+describe("printAdminNotesDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<AdminNotesDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printAdminNotesDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("変更エントリがある場合、field 名と details が出力される", () => {
+    const result: DiffResult<AdminNotesDiffEntry> = {
+      entries: [
+        { type: "modified", field: "content", details: "content changed" },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printAdminNotesDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("~1 modified"),
+    );
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("content"),
+      "Admin Notes Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printGeneralSettingsDiffResult", () => {
+  it("変更エントリがある場合、field 名と details が出力される", () => {
+    const result: DiffResult<GeneralSettingsDiffEntry> = {
+      entries: [{ type: "modified", field: "name", details: '"old" -> "new"' }],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printGeneralSettingsDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("~1 modified"),
+    );
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("name"),
+      "General Settings Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printAppPermissionDiffResult", () => {
+  it("追加・削除が混在する場合、entityKey が出力される", () => {
+    const result: DiffResult<AppPermissionDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          entityKey: "USER:admin",
+          details: "recordViewable",
+        },
+        {
+          type: "deleted",
+          entityKey: "GROUP:dev",
+          details: "no permissions",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 1, total: 2 },
+      isEmpty: false,
+    };
+    printAppPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("USER:admin");
+    expect(noteContent).toContain("GROUP:dev");
+  });
+});
+
+describe("printFieldPermissionDiffResult", () => {
+  it("変更エントリがある場合、fieldCode が出力される", () => {
+    const result: DiffResult<FieldPermissionDiffEntry> = {
+      entries: [
+        { type: "modified", fieldCode: "email", details: "entities changed" },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printFieldPermissionDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("email"),
+      "Field Permission Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printCustomizationDiffResult", () => {
+  it("platform が 'config' の場合、resourceType のみが location として表示される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          platform: "config",
+          resourceType: "scope",
+          name: "scope",
+          details: "ALL -> ADMIN",
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printCustomizationDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("scope");
+    expect(noteContent).not.toContain("config.scope");
+  });
+
+  it("platform が 'desktop' の場合、platform.resourceType が location として表示される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          platform: "desktop",
+          resourceType: "js",
+          name: "app.js",
+          details: "new resource",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printCustomizationDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("desktop.js");
+    expect(noteContent).toContain("app.js");
+  });
+});
+
+describe("printNotificationDiffResult", () => {
+  it("セクション名と通知名が出力される", () => {
+    const result: DiffResult<NotificationDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          section: "general",
+          name: "USER:user1",
+          details: "new notification",
+        },
+        {
+          type: "deleted",
+          section: "perRecord",
+          name: "Test",
+          details: "removed",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 1, total: 2 },
+      isEmpty: false,
+    };
+    printNotificationDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("general");
+    expect(noteContent).toContain("perRecord");
+  });
+});
+
+describe("printActionDiffResult", () => {
+  it("アクション名と details が出力される", () => {
+    const result: DiffResult<ActionDiffEntry> = {
+      entries: [
+        { type: "added", actionName: "copyAction", details: "dest: 42" },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printActionDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("copyAction"),
+      "Action Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printPluginDiffResult", () => {
+  it("pluginId と details が出力される", () => {
+    const result: DiffResult<PluginDiffEntry> = {
+      entries: [
+        {
+          type: "deleted",
+          pluginId: "com.example.plugin",
+          details: '"My Plugin"',
+        },
+      ],
+      summary: { added: 0, modified: 0, deleted: 1, total: 1 },
+      isEmpty: false,
+    };
+    printPluginDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("com.example.plugin"),
+      "Plugin Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printRecordPermissionDiffResult", () => {
+  it("filterCond が空の場合、'(all records)' が表示される", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [{ type: "added", filterCond: "", details: "entities: 2" }],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printRecordPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("(all records)");
+  });
+
+  it("filterCond がある場合、そのまま表示される", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          filterCond: 'status = "active"',
+          details: "entities changed",
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printRecordPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain('status = "active"');
+  });
+});
+
+describe("printReportDiffResult", () => {
+  it("レポート名と details が出力される", () => {
+    const result: DiffResult<ReportDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          reportName: "Sales Report",
+          details: "chartType: TABLE",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+    };
+    printReportDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("Sales Report"),
+      "Report Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
   });
 });

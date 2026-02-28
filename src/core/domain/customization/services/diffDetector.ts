@@ -28,12 +28,25 @@ function compareResourceLists(
 
   const localNames = localResources.map(resourceName);
   const remoteNames = remoteResources.map(remoteResourceName);
-  // WARNING: Set deduplicates names, so multiple FILE resources with the same
+  // Set deduplicates names, so multiple FILE resources with the same
   // basename (e.g. "src/app.js" and "lib/app.js") collapse into one entry.
-  // If a user has such collisions, added/deleted counts will be inaccurate.
   // This is an accepted limitation since FILE resources are compared by basename only.
   const localNameSet = new Set(localNames);
   const remoteNameSet = new Set(remoteNames);
+
+  if (
+    localNames.length !== localNameSet.size ||
+    remoteNames.length !== remoteNameSet.size
+  ) {
+    entries.push({
+      type: "modified",
+      platform,
+      resourceType,
+      name: "(warning)",
+      details:
+        "duplicate basenames detected; diff results may be inaccurate for FILE resources",
+    });
+  }
 
   for (const name of localNameSet) {
     if (!remoteNameSet.has(name)) {

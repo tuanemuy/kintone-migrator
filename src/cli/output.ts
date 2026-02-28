@@ -65,6 +65,9 @@ function printGenericDiffResult<
   p.note(lines.join("\n"), title, { format: (v) => v });
 }
 
+// printDiffResult does not use printGenericDiffResult because DetectDiffOutput
+// requires special handling for hasLayoutChanges (shown between summary and note)
+// that doesn't fit the generic pattern.
 export function printDiffResult(result: DetectDiffOutput): void {
   if (result.isEmpty) {
     p.log.info("No changes detected.");

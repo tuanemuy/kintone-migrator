@@ -166,6 +166,49 @@ describe("CustomizationDiffDetector", () => {
     });
   });
 
+  describe("basename collision warning", () => {
+    it("should emit warning entry when local FILE resources have duplicate basenames", () => {
+      const local = makeLocalConfig({
+        desktop: {
+          js: [
+            { type: "FILE", path: "src/app.js" },
+            { type: "FILE", path: "lib/app.js" },
+          ],
+          css: [],
+        },
+      });
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: makeRemotePlatform(),
+        mobile: makeRemotePlatform(),
+      });
+      expect(
+        result.entries.some(
+          (e) =>
+            e.name === "(warning)" && e.details.includes("duplicate basenames"),
+        ),
+      ).toBe(true);
+    });
+
+    it("should not emit warning when basenames are unique", () => {
+      const local = makeLocalConfig({
+        desktop: {
+          js: [
+            { type: "FILE", path: "src/app.js" },
+            { type: "FILE", path: "src/util.js" },
+          ],
+          css: [],
+        },
+      });
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: makeRemotePlatform(),
+        mobile: makeRemotePlatform(),
+      });
+      expect(result.entries.some((e) => e.name === "(warning)")).toBe(false);
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect changes across platforms", () => {
       const local = makeLocalConfig({

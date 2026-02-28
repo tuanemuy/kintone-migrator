@@ -24,16 +24,12 @@ export function buildDiffResult<
   const sorted = [...entries].sort(
     (a, b) => typeOrder[a.type] - typeOrder[b.type],
   );
-  const summary = sorted.reduce(
-    (acc, e) => {
-      acc[e.type]++;
-      return acc;
-    },
-    { added: 0, modified: 0, deleted: 0 },
-  );
+  const added = sorted.filter((e) => e.type === "added").length;
+  const modified = sorted.filter((e) => e.type === "modified").length;
+  const deleted = sorted.filter((e) => e.type === "deleted").length;
   return {
     entries: sorted,
-    summary: { ...summary, total: sorted.length },
+    summary: { added, modified, deleted, total: sorted.length },
     isEmpty: sorted.length === 0,
   };
 }
