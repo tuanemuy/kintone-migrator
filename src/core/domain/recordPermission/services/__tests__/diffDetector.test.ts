@@ -232,6 +232,40 @@ describe("RecordPermissionDiffDetector", () => {
     });
   });
 
+  describe("reordering within same filterCond group", () => {
+    it("should report modified when rules with same filterCond are reordered", () => {
+      const ruleA = makeRight({
+        filterCond: "",
+        entities: [
+          {
+            entity: { type: "USER", code: "user1" },
+            viewable: true,
+            editable: false,
+            deletable: false,
+            includeSubs: false,
+          },
+        ],
+      });
+      const ruleB = makeRight({
+        filterCond: "",
+        entities: [
+          {
+            entity: { type: "GROUP", code: "group1" },
+            viewable: true,
+            editable: true,
+            deletable: false,
+            includeSubs: false,
+          },
+        ],
+      });
+      const local = makeConfig([ruleB, ruleA]);
+      const remote = makeConfig([ruleA, ruleB]);
+      const result = RecordPermissionDiffDetector.detect(local, remote);
+      // Position-based matching within the same filterCond group: reordering is detected as modifications
+      expect(result.summary.modified).toBe(2);
+    });
+  });
+
   describe("empty filterCond", () => {
     it("should handle empty string filterCond", () => {
       const local = makeConfig([makeRight({ filterCond: "" })]);

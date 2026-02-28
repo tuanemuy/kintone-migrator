@@ -16,16 +16,7 @@ export async function detectCustomizationDiff({
   }
   const localConfig = parseConfigText(result.content);
 
-  const {
-    scope: remoteScope,
-    desktop: remoteDesktop,
-    mobile: remoteMobile,
-  } = await container.customizationConfigurator.getCustomization();
+  const remote = await container.customizationConfigurator.getCustomization();
 
-  return CustomizationDiffDetector.detect(
-    localConfig,
-    remoteScope,
-    remoteDesktop,
-    remoteMobile,
-  );
+  return CustomizationDiffDetector.detect(localConfig, remote);
 }

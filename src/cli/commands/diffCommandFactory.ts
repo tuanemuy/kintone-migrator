@@ -43,9 +43,13 @@ export function createDiffCommand<
 
     const s = p.spinner();
     s.start(config.spinnerMessage);
-    const result = await config.detectDiff({
-      container,
-    });
+    let result: DiffResult<TEntry>;
+    try {
+      result = await config.detectDiff({ container });
+    } catch (error) {
+      s.stop("Comparison failed.");
+      throw error;
+    }
     s.stop("Comparison complete.");
 
     config.printResult(result);

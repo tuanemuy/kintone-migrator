@@ -57,6 +57,20 @@ describe("ReportDiffDetector", () => {
   });
 
   describe("modified reports", () => {
+    it("should detect name change", () => {
+      const local = makeConfig({
+        r1: makeReport({ name: "New Name" }),
+      });
+      const remote = makeConfig({
+        r1: makeReport({ name: "Test Report" }),
+      });
+      const result = ReportDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("name");
+      expect(result.entries[0].details).toContain("New Name");
+    });
+
     it("should detect chartType change", () => {
       const local = makeConfig({ r1: makeReport({ chartType: "PIE" }) });
       const remote = makeConfig({ r1: makeReport({ chartType: "BAR" }) });

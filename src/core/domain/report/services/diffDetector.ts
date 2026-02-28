@@ -6,6 +6,9 @@ import type { ReportDiffEntry } from "../valueObject";
 function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
   const diffs: string[] = [];
 
+  if (local.name !== remote.name) {
+    diffs.push(`name: "${remote.name}" -> "${local.name}"`);
+  }
   if (local.chartType !== remote.chartType) {
     diffs.push(`chartType: ${remote.chartType} -> ${local.chartType}`);
   }

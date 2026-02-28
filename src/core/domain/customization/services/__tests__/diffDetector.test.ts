@@ -27,12 +27,11 @@ function makeRemotePlatform(
 describe("CustomizationDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when configs are identical", () => {
-      const result = CustomizationDiffDetector.detect(
-        makeLocalConfig(),
-        "ALL",
-        makeRemotePlatform(),
-        makeRemotePlatform(),
-      );
+      const result = CustomizationDiffDetector.detect(makeLocalConfig(), {
+        scope: "ALL",
+        desktop: makeRemotePlatform(),
+        mobile: makeRemotePlatform(),
+      });
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
     });
@@ -42,9 +41,11 @@ describe("CustomizationDiffDetector", () => {
     it("should detect scope change", () => {
       const result = CustomizationDiffDetector.detect(
         makeLocalConfig({ scope: "ADMIN" }),
-        "ALL",
-        makeRemotePlatform(),
-        makeRemotePlatform(),
+        {
+          scope: "ALL",
+          desktop: makeRemotePlatform(),
+          mobile: makeRemotePlatform(),
+        },
       );
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
@@ -63,12 +64,11 @@ describe("CustomizationDiffDetector", () => {
           css: [],
         },
       });
-      const result = CustomizationDiffDetector.detect(
-        local,
-        "ALL",
-        makeRemotePlatform(),
-        makeRemotePlatform(),
-      );
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: makeRemotePlatform(),
+        mobile: makeRemotePlatform(),
+      });
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].platform).toBe("desktop");
@@ -79,12 +79,11 @@ describe("CustomizationDiffDetector", () => {
       const remoteMobile = makeRemotePlatform({
         css: [{ type: "URL", url: "https://example.com/style.css" }],
       });
-      const result = CustomizationDiffDetector.detect(
-        makeLocalConfig(),
-        "ALL",
-        makeRemotePlatform(),
-        remoteMobile,
-      );
+      const result = CustomizationDiffDetector.detect(makeLocalConfig(), {
+        scope: "ALL",
+        desktop: makeRemotePlatform(),
+        mobile: remoteMobile,
+      });
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].platform).toBe("mobile");
@@ -111,12 +110,11 @@ describe("CustomizationDiffDetector", () => {
           },
         ],
       });
-      const result = CustomizationDiffDetector.detect(
-        local,
-        "ALL",
-        remoteDesktop,
-        makeRemotePlatform(),
-      );
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: remoteDesktop,
+        mobile: makeRemotePlatform(),
+      });
       expect(result.isEmpty).toBe(true);
     });
   });
@@ -138,12 +136,11 @@ describe("CustomizationDiffDetector", () => {
           { type: "URL", url: "https://example.com/b.js" },
         ],
       });
-      const result = CustomizationDiffDetector.detect(
-        local,
-        "ALL",
-        remoteDesktop,
-        makeRemotePlatform(),
-      );
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: remoteDesktop,
+        mobile: makeRemotePlatform(),
+      });
       expect(result.entries.some((e) => e.type === "modified")).toBe(true);
       expect(result.entries.some((e) => e.details.includes("order"))).toBe(
         true,
@@ -160,12 +157,11 @@ describe("CustomizationDiffDetector", () => {
       const remoteDesktop = makeRemotePlatform({
         js: [{ type: "URL", url: "https://example.com/a.js" }],
       });
-      const result = CustomizationDiffDetector.detect(
-        local,
-        "ALL",
-        remoteDesktop,
-        makeRemotePlatform(),
-      );
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: remoteDesktop,
+        mobile: makeRemotePlatform(),
+      });
       expect(result.isEmpty).toBe(true);
     });
   });
@@ -182,12 +178,11 @@ describe("CustomizationDiffDetector", () => {
       const remoteDesktop = makeRemotePlatform({
         js: [{ type: "URL", url: "https://example.com/old.js" }],
       });
-      const result = CustomizationDiffDetector.detect(
-        local,
-        "ALL",
-        remoteDesktop,
-        makeRemotePlatform(),
-      );
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: remoteDesktop,
+        mobile: makeRemotePlatform(),
+      });
       expect(result.summary.total).toBeGreaterThanOrEqual(2);
       expect(result.isEmpty).toBe(false);
     });

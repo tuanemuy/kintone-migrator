@@ -316,8 +316,13 @@ export async function promptDeploy(
 
   const ds = p.spinner();
   ds.start("Deploying to production...");
-  await deployApp({ container });
-  ds.stop("Deployment complete.");
+  try {
+    await deployApp({ container });
+    ds.stop("Deployment complete.");
+  } catch (error) {
+    ds.stop("Deployment failed.");
+    throw error;
+  }
 
   p.log.success("Deployed to production.");
 }

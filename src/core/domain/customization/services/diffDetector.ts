@@ -28,6 +28,9 @@ function compareResourceLists(
 
   const localNames = localResources.map(resourceName);
   const remoteNames = remoteResources.map(remoteResourceName);
+  // Note: Set deduplicates names, so multiple FILE resources with the same
+  // basename (e.g. "src/app.js" and "lib/app.js") will be collapsed into one.
+  // This is an accepted limitation since FILE resources are compared by basename only.
   const localNameSet = new Set(localNames);
   const remoteNameSet = new Set(remoteNames);
 
@@ -87,22 +90,23 @@ function comparePlatform(
   ];
 }
 
+export type RemoteCustomization = Readonly<{
+  scope: string;
+  desktop: RemotePlatform;
+  mobile: RemotePlatform;
+}>;
+
 export const CustomizationDiffDetector = {
-  detect: (
-    local: CustomizationConfig,
-    remoteScope: string,
-    remoteDesktop: RemotePlatform,
-    remoteMobile: RemotePlatform,
-  ) => {
+  detect: (local: CustomizationConfig, remote: RemoteCustomization) => {
     const entries: CustomizationDiffEntry[] = [];
 
-    if ((local.scope ?? "ALL") !== remoteScope) {
+    if ((local.scope ?? "ALL") !== remote.scope) {
       entries.push({
         type: "modified",
         platform: "config",
         resourceType: "scope",
         name: "scope",
-        details: `${remoteScope} -> ${local.scope ?? "ALL"}`,
+        details: `${remote.scope} -> ${local.scope ?? "ALL"}`,
       });
     }
 
@@ -110,7 +114,7 @@ export const CustomizationDiffDetector = {
       ...comparePlatform(
         local.desktop.js,
         local.desktop.css,
-        remoteDesktop,
+        remote.desktop,
         "desktop",
       ),
     );
@@ -119,7 +123,7 @@ export const CustomizationDiffDetector = {
       ...comparePlatform(
         local.mobile.js,
         local.mobile.css,
-        remoteMobile,
+        remote.mobile,
         "mobile",
       ),
     );

@@ -89,6 +89,35 @@ describe("FieldPermissionDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("entities changed");
     });
+
+    it("should detect includeSubs change", () => {
+      const local = makeConfig([
+        makeRight("field1", {
+          entities: [
+            {
+              accessibility: "READ",
+              entity: { type: "USER", code: "user1" },
+              includeSubs: true,
+            },
+          ],
+        }),
+      ]);
+      const remote = makeConfig([
+        makeRight("field1", {
+          entities: [
+            {
+              accessibility: "READ",
+              entity: { type: "USER", code: "user1" },
+              includeSubs: false,
+            },
+          ],
+        }),
+      ]);
+      const result = FieldPermissionDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("entities changed");
+    });
   });
 
   describe("multiple changes", () => {

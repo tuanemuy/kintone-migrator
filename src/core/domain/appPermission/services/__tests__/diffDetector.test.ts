@@ -77,6 +77,20 @@ describe("AppPermissionDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("includeSubs");
     });
+
+    it("should detect multiple permission flags changed simultaneously", () => {
+      const local = makeConfig([
+        makeRight({ recordAddable: true, recordEditable: true }),
+      ]);
+      const remote = makeConfig([
+        makeRight({ recordAddable: false, recordEditable: false }),
+      ]);
+      const result = AppPermissionDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("recordAddable");
+      expect(result.entries[0].details).toContain("recordEditable");
+    });
   });
 
   describe("multiple changes", () => {

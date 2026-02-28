@@ -18,9 +18,9 @@ function compareGeneralNotification(
   remote: GeneralNotification,
 ): string[] {
   const diffs: string[] = [];
-  if (local.includeSubs !== remote.includeSubs) {
+  if ((local.includeSubs ?? false) !== (remote.includeSubs ?? false)) {
     diffs.push(
-      `includeSubs: ${String(remote.includeSubs)} -> ${String(local.includeSubs)}`,
+      `includeSubs: ${String(remote.includeSubs ?? false)} -> ${String(local.includeSubs ?? false)}`,
     );
   }
   if (local.recordAdded !== remote.recordAdded) {
@@ -125,7 +125,7 @@ function buildPerRecordMultiMap(
 }
 
 function perRecordLabel(notif: PerRecordNotification): string {
-  return notif.title ?? (notif.filterCond || "(empty filter)");
+  return notif.title || notif.filterCond || "(empty filter)";
 }
 
 function comparePerRecordSection(

@@ -108,6 +108,140 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries[0].section).toBe("general");
     });
 
+    it("should detect deleted general notification entity", () => {
+      const local: NotificationConfig = {
+        general: makeGeneralConfig(),
+      };
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [
+            {
+              entity: { type: "USER", code: "user1" },
+              recordAdded: true,
+              recordEdited: false,
+              commentAdded: false,
+              statusChanged: false,
+              fileImported: false,
+            },
+          ],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("deleted");
+      expect(result.entries[0].section).toBe("general");
+    });
+
+    it("should detect recordAdded property change", () => {
+      const base = {
+        entity: { type: "USER" as const, code: "user1" },
+        recordEdited: false,
+        commentAdded: false,
+        statusChanged: false,
+        fileImported: false,
+      };
+      const local: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [{ ...base, recordAdded: true }],
+        }),
+      };
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [{ ...base, recordAdded: false }],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("recordAdded");
+    });
+
+    it("should detect includeSubs property change", () => {
+      const base = {
+        entity: { type: "USER" as const, code: "user1" },
+        recordAdded: true,
+        recordEdited: false,
+        commentAdded: false,
+        statusChanged: false,
+        fileImported: false,
+      };
+      const local: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [{ ...base, includeSubs: true }],
+        }),
+      };
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [{ ...base, includeSubs: false }],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toContain("includeSubs");
+    });
+
+    it("should not report includeSubs diff between undefined and false", () => {
+      const base = {
+        entity: { type: "USER" as const, code: "user1" },
+        recordAdded: true,
+        recordEdited: false,
+        commentAdded: false,
+        statusChanged: false,
+        fileImported: false,
+      };
+      const local: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [{ ...base }],
+        }),
+      };
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [{ ...base, includeSubs: false }],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect multiple property changes simultaneously", () => {
+      const base = {
+        entity: { type: "USER" as const, code: "user1" },
+      };
+      const local: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [
+            {
+              ...base,
+              recordAdded: true,
+              recordEdited: true,
+              commentAdded: false,
+              statusChanged: false,
+              fileImported: false,
+            },
+          ],
+        }),
+      };
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig({
+          notifications: [
+            {
+              ...base,
+              recordAdded: false,
+              recordEdited: false,
+              commentAdded: false,
+              statusChanged: false,
+              fileImported: false,
+            },
+          ],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("recordAdded");
+      expect(result.entries[0].details).toContain("recordEdited");
+    });
+
     it("should detect general section added", () => {
       const local: NotificationConfig = {
         general: makeGeneralConfig(),
