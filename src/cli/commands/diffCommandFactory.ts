@@ -1,5 +1,5 @@
 import * as p from "@clack/prompts";
-import { define } from "gunshi";
+import { type Args, define } from "gunshi";
 import type { DiffResult } from "@/core/domain/diff";
 import type {
   AppEntry,
@@ -17,7 +17,7 @@ type DiffCommandConfig<
   TEntry extends { type: string },
 > = {
   readonly description: string;
-  readonly args: Record<string, unknown>;
+  readonly args: Args;
   readonly spinnerMessage: string;
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly detectDiff: (args: {
