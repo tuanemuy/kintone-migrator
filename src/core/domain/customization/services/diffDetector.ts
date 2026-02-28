@@ -28,8 +28,9 @@ function compareResourceLists(
 
   const localNames = localResources.map(resourceName);
   const remoteNames = remoteResources.map(remoteResourceName);
-  // Note: Set deduplicates names, so multiple FILE resources with the same
-  // basename (e.g. "src/app.js" and "lib/app.js") will be collapsed into one.
+  // WARNING: Set deduplicates names, so multiple FILE resources with the same
+  // basename (e.g. "src/app.js" and "lib/app.js") collapse into one entry.
+  // If a user has such collisions, added/deleted counts will be inaccurate.
   // This is an accepted limitation since FILE resources are compared by basename only.
   const localNameSet = new Set(localNames);
   const remoteNameSet = new Set(remoteNames);

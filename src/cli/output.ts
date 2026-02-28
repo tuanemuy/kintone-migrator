@@ -3,8 +3,6 @@ import pc from "picocolors";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
-import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
-import type { DetectViewDiffOutput } from "@/core/application/view/dto";
 import type { ActionDiffEntry } from "@/core/domain/action/valueObject";
 import type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
 import type { AppPermissionDiffEntry } from "@/core/domain/appPermission/valueObject";
@@ -14,9 +12,11 @@ import type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/val
 import type { GeneralSettingsDiffEntry } from "@/core/domain/generalSettings/valueObject";
 import type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
 import type { PluginDiffEntry } from "@/core/domain/plugin/valueObject";
+import type { ProcessManagementDiffEntry } from "@/core/domain/processManagement/valueObject";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
 import type { ReportDiffEntry } from "@/core/domain/report/valueObject";
+import type { ViewDiffEntry } from "@/core/domain/view/valueObject";
 import { logError } from "./handleError";
 
 function formatDiffSummary(summary: DiffSummary): string {
@@ -85,40 +85,24 @@ export function printDiffResult(result: DetectDiffOutput): void {
   p.note(lines.join("\n"), "Diff Details", { format: (v) => v });
 }
 
-export function printViewDiffResult(result: DetectViewDiffOutput): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${colorize(entry.viewName)}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "View Diff Details", { format: (v) => v });
+export function printViewDiffResult(result: DiffResult<ViewDiffEntry>): void {
+  printGenericDiffResult(
+    result,
+    "View Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.viewName)}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
 export function printProcessDiffResult(
-  result: DetectProcessManagementDiffOutput,
+  result: DiffResult<ProcessManagementDiffEntry>,
 ): void {
-  if (result.isEmpty) {
-    p.log.info("No changes detected.");
-    return;
-  }
-
-  p.log.info(`Changes: ${formatDiffSummary(result.summary)}`);
-
-  const lines = result.entries.map((entry) => {
-    const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.category)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
-  });
-
-  p.note(lines.join("\n"), "Process Management Diff Details", {
-    format: (v) => v,
-  });
+  printGenericDiffResult(
+    result,
+    "Process Management Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.category)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`,
+  );
 }
 
 export function printAdminNotesDiffResult(
@@ -221,7 +205,7 @@ export function printRecordPermissionDiffResult(
     result,
     "Record Permission Diff Details",
     (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond || "(all records)")}${pc.dim("]:")} ${entry.details}`,
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond === "" ? "(all records)" : entry.filterCond)}${pc.dim("]:")} ${entry.details}`,
   );
 }
 

@@ -63,6 +63,51 @@ describe("detectAppPermissionDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.entries[0].type).toBe("added");
     });
+
+    it("should detect deletion when remote has rights but local is empty", async () => {
+      const container = getContainer();
+      container.appPermissionStorage.setContent(`
+rights: []
+`);
+      container.appPermissionConfigurator.setPermissions({
+        rights: [
+          {
+            entity: { type: "GROUP", code: "Administrators" },
+            includeSubs: false,
+            appEditable: true,
+            recordViewable: true,
+            recordAddable: true,
+            recordEditable: true,
+            recordDeletable: true,
+            recordImportable: true,
+            recordExportable: true,
+          },
+        ],
+        revision: "1",
+      });
+
+      const result = await detectAppPermissionDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
+
+    it("should detect no changes when both have empty rights", async () => {
+      const container = getContainer();
+      container.appPermissionStorage.setContent(`
+rights: []
+`);
+      container.appPermissionConfigurator.setPermissions({
+        rights: [],
+        revision: "1",
+      });
+
+      const result = await detectAppPermissionDiff({ container });
+
+      expect(result.isEmpty).toBe(true);
+      expect(result.summary.total).toBe(0);
+    });
   });
 
   describe("error cases", () => {

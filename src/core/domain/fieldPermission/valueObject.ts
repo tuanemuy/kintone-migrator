@@ -15,8 +15,6 @@ export type FieldRightEntity = Readonly<{
   includeSubs?: boolean;
 }>;
 
-// Diff types
-
 export type FieldPermissionDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   fieldCode: string;

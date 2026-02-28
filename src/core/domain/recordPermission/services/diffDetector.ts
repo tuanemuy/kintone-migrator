@@ -30,6 +30,10 @@ function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
   );
 }
 
+/**
+ * Groups rights by filterCond. Multiple rights can share the same filterCond,
+ * so rights within a group are compared by position (index-based matching).
+ */
 function buildMultiMap(
   rights: readonly RecordRight[],
 ): Map<string, RecordRight[]> {

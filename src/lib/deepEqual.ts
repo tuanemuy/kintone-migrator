@@ -1,4 +1,4 @@
-import { isRecord } from "@/core/domain/typeGuards";
+import { isRecord } from "./typeGuards";
 
 function isArrayEqual(a: unknown, b: unknown): boolean {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;

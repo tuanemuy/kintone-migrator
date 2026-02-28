@@ -21,10 +21,11 @@ vi.mock("../handleError", () => ({
 }));
 
 import * as p from "@clack/prompts";
-import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
-import type { DetectViewDiffOutput } from "@/core/application/view/dto";
+import type { DiffResult } from "@/core/domain/diff";
+import type { ProcessManagementDiffEntry } from "@/core/domain/processManagement/valueObject";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
+import type { ViewDiffEntry } from "@/core/domain/view/valueObject";
 import { logError } from "../handleError";
 import {
   confirmAndDeploy,
@@ -263,7 +264,7 @@ describe("printDiffResult", () => {
 
 describe("printViewDiffResult", () => {
   it("差分がない場合、'No changes detected.' とログ出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
@@ -274,7 +275,7 @@ describe("printViewDiffResult", () => {
   });
 
   it("追加エントリがある場合、'+N added' と 'View Diff Details' ノートが出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [
         { type: "added", viewName: "一覧", details: "LIST view を追加" },
       ],
@@ -293,7 +294,7 @@ describe("printViewDiffResult", () => {
   });
 
   it("変更エントリがある場合、'~N modified' がログ出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [{ type: "modified", viewName: "一覧", details: "ソート変更" }],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
@@ -305,7 +306,7 @@ describe("printViewDiffResult", () => {
   });
 
   it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [{ type: "deleted", viewName: "旧一覧", details: "削除" }],
       summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
@@ -317,7 +318,7 @@ describe("printViewDiffResult", () => {
   });
 
   it("追加・変更・削除が混在する場合、全種類のサマリーが出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [
         { type: "added", viewName: "新規", details: "追加" },
         { type: "modified", viewName: "変更", details: "変更" },
@@ -336,7 +337,7 @@ describe("printViewDiffResult", () => {
 
 describe("printProcessDiffResult", () => {
   it("差分がない場合、'No changes detected.' とログ出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
@@ -347,7 +348,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("追加エントリがある場合、'+N added' と 'Process Management Diff Details' ノートが出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [
         {
           type: "added",
@@ -371,7 +372,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("変更エントリがある場合、'~N modified' がログ出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [
         {
           type: "modified",
@@ -390,7 +391,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [
         {
           type: "deleted",

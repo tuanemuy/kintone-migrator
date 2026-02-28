@@ -11,8 +11,6 @@ export type AppPermissionEntity = Readonly<{
   code: string;
 }>;
 
-// Diff types
-
 export type AppPermissionDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   entityKey: string;

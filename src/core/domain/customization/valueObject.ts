@@ -49,8 +49,6 @@ export type RemotePlatform = Readonly<{
   css: readonly RemoteResource[];
 }>;
 
-// Diff types
-
 export type CustomizationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   platform: "desktop" | "mobile" | "config";

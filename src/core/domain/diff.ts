@@ -12,7 +12,7 @@ export type DiffResult<E extends { type: "added" | "modified" | "deleted" }> =
     isEmpty: boolean;
   }>;
 
-const typeOrder: Record<string, number> = {
+const typeOrder: Record<"added" | "modified" | "deleted", number> = {
   added: 0,
   modified: 1,
   deleted: 2,
@@ -22,14 +22,18 @@ export function buildDiffResult<
   E extends { type: "added" | "modified" | "deleted" },
 >(entries: E[]): DiffResult<E> {
   const sorted = [...entries].sort(
-    (a, b) => (typeOrder[a.type] ?? 3) - (typeOrder[b.type] ?? 3),
+    (a, b) => typeOrder[a.type] - typeOrder[b.type],
   );
-  const added = sorted.filter((e) => e.type === "added").length;
-  const modified = sorted.filter((e) => e.type === "modified").length;
-  const deleted = sorted.filter((e) => e.type === "deleted").length;
+  const summary = sorted.reduce(
+    (acc, e) => {
+      acc[e.type]++;
+      return acc;
+    },
+    { added: 0, modified: 0, deleted: 0 },
+  );
   return {
     entries: sorted,
-    summary: { added, modified, deleted, total: added + modified + deleted },
+    summary: { ...summary, total: sorted.length },
     isEmpty: sorted.length === 0,
   };
 }

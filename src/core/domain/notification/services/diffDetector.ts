@@ -13,40 +13,29 @@ function serializeEntity(entity: { type: string; code: string }): string {
   return `${entity.type}:${entity.code}`;
 }
 
+const GENERAL_BOOLEAN_FLAGS = [
+  "recordAdded",
+  "recordEdited",
+  "commentAdded",
+  "statusChanged",
+  "fileImported",
+] as const satisfies readonly (keyof GeneralNotification)[];
+
 function compareGeneralNotification(
   local: GeneralNotification,
   remote: GeneralNotification,
 ): string[] {
   const diffs: string[] = [];
+  // includeSubs needs special handling: undefined and false are equivalent
   if ((local.includeSubs ?? false) !== (remote.includeSubs ?? false)) {
     diffs.push(
       `includeSubs: ${String(remote.includeSubs ?? false)} -> ${String(local.includeSubs ?? false)}`,
     );
   }
-  if (local.recordAdded !== remote.recordAdded) {
-    diffs.push(
-      `recordAdded: ${String(remote.recordAdded)} -> ${String(local.recordAdded)}`,
-    );
-  }
-  if (local.recordEdited !== remote.recordEdited) {
-    diffs.push(
-      `recordEdited: ${String(remote.recordEdited)} -> ${String(local.recordEdited)}`,
-    );
-  }
-  if (local.commentAdded !== remote.commentAdded) {
-    diffs.push(
-      `commentAdded: ${String(remote.commentAdded)} -> ${String(local.commentAdded)}`,
-    );
-  }
-  if (local.statusChanged !== remote.statusChanged) {
-    diffs.push(
-      `statusChanged: ${String(remote.statusChanged)} -> ${String(local.statusChanged)}`,
-    );
-  }
-  if (local.fileImported !== remote.fileImported) {
-    diffs.push(
-      `fileImported: ${String(remote.fileImported)} -> ${String(local.fileImported)}`,
-    );
+  for (const flag of GENERAL_BOOLEAN_FLAGS) {
+    if (local[flag] !== remote[flag]) {
+      diffs.push(`${flag}: ${String(remote[flag])} -> ${String(local[flag])}`);
+    }
   }
   return diffs;
 }
@@ -110,6 +99,11 @@ function compareGeneralSection(
   return entries;
 }
 
+/**
+ * Groups per-record notifications by filterCond. Multiple notifications can share
+ * the same filterCond, so notifications within a group are compared by position
+ * (index-based matching).
+ */
 function buildPerRecordMultiMap(
   notifications: readonly PerRecordNotification[],
 ): Map<string, PerRecordNotification[]> {

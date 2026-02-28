@@ -43,6 +43,23 @@ describe("detectGeneralSettingsDiff", () => {
       expect(result.isEmpty).toBe(false);
       expect(result.summary.total).toBeGreaterThan(0);
     });
+
+    it("should detect no changes when both configs have default values", async () => {
+      const container = getContainer();
+      container.generalSettingsStorage.setContent(`
+name: ""
+theme: WHITE
+`);
+      container.generalSettingsConfigurator.setConfig({
+        name: "",
+        theme: "WHITE",
+      });
+
+      const result = await detectGeneralSettingsDiff({ container });
+
+      expect(result.isEmpty).toBe(true);
+      expect(result.summary.total).toBe(0);
+    });
   });
 
   describe("error cases", () => {

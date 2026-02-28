@@ -62,4 +62,16 @@ describe("deepEqual", () => {
     expect(deepEqual({}, {})).toBe(true);
     expect(deepEqual([], [])).toBe(true);
   });
+
+  it("should distinguish { a: undefined } from {}", () => {
+    expect(deepEqual({ a: undefined }, {})).toBe(false);
+    expect(deepEqual({}, { a: undefined })).toBe(false);
+  });
+
+  it("should handle nested undefined values", () => {
+    expect(deepEqual({ a: { b: undefined } }, { a: { b: undefined } })).toBe(
+      true,
+    );
+    expect(deepEqual({ a: { b: undefined } }, { a: {} })).toBe(false);
+  });
 });

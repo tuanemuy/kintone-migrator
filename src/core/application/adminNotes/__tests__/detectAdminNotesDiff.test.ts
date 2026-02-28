@@ -41,6 +41,23 @@ describe("detectAdminNotesDiff", () => {
       expect(result.isEmpty).toBe(false);
       expect(result.summary.total).toBeGreaterThan(0);
     });
+
+    it("should detect no changes when both configs are empty", async () => {
+      const container = getContainer();
+      container.adminNotesStorage.setContent(`
+content: ""
+includeInTemplateAndDuplicates: false
+`);
+      container.adminNotesConfigurator.setConfig({
+        content: "",
+        includeInTemplateAndDuplicates: false,
+      });
+
+      const result = await detectAdminNotesDiff({ container });
+
+      expect(result.isEmpty).toBe(true);
+      expect(result.summary.total).toBe(0);
+    });
   });
 
   describe("error cases", () => {

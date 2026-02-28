@@ -402,4 +402,77 @@ describe("NotificationDiffDetector", () => {
       expect(result.isEmpty).toBe(false);
     });
   });
+
+  describe("cross-section edge cases", () => {
+    it("should detect all sections added when remote is empty", () => {
+      const local: NotificationConfig = {
+        general: makeGeneralConfig(),
+        perRecord: [makePerRecord()],
+        reminder: makeReminderConfig({ notifications: [makeReminder()] }),
+      };
+      const remote: NotificationConfig = {};
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(false);
+      const sections = new Set(result.entries.map((e) => e.section));
+      expect(sections.has("general")).toBe(true);
+      expect(sections.has("perRecord")).toBe(true);
+      expect(sections.has("reminder")).toBe(true);
+    });
+
+    it("should detect all sections removed when local is empty", () => {
+      const local: NotificationConfig = {};
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig(),
+        perRecord: [makePerRecord()],
+        reminder: makeReminderConfig({ notifications: [makeReminder()] }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(false);
+      expect(
+        result.entries.some(
+          (e) => e.section === "general" && e.type === "deleted",
+        ),
+      ).toBe(true);
+      expect(
+        result.entries.some(
+          (e) => e.section === "perRecord" && e.type === "deleted",
+        ),
+      ).toBe(true);
+      expect(
+        result.entries.some(
+          (e) => e.section === "reminder" && e.type === "deleted",
+        ),
+      ).toBe(true);
+    });
+
+    it("should treat perRecord undefined the same as empty array", () => {
+      const local: NotificationConfig = { perRecord: undefined };
+      const remote: NotificationConfig = { perRecord: [] };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should handle multiple duplicate filterCond groups in perRecord", () => {
+      const local: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "a", title: "A1" }),
+          makePerRecord({ filterCond: "a", title: "A2" }),
+          makePerRecord({ filterCond: "b", title: "B1" }),
+        ],
+      };
+      const remote: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "a", title: "A1" }),
+          makePerRecord({ filterCond: "b", title: "B1" }),
+          makePerRecord({ filterCond: "b", title: "B2" }),
+        ],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(false);
+      // "a" group: local has 2, remote has 1 -> 1 added
+      // "b" group: local has 1, remote has 2 -> 1 deleted
+      expect(result.summary.added).toBeGreaterThanOrEqual(1);
+      expect(result.summary.deleted).toBeGreaterThanOrEqual(1);
+    });
+  });
 });

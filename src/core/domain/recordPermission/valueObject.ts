@@ -19,8 +19,6 @@ export type RecordPermissionRightEntity = Readonly<{
   includeSubs: boolean;
 }>;
 
-// Diff types
-
 export type RecordPermissionDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   filterCond: string;

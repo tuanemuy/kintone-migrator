@@ -11,8 +11,6 @@ export type NotificationEntity = Readonly<{
   code: string;
 }>;
 
-// Diff types
-
 export type NotificationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   section: "general" | "perRecord" | "reminder";

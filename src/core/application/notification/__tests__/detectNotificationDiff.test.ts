@@ -64,6 +64,34 @@ describe("detectNotificationDiff", () => {
       expect(result.isEmpty).toBe(false);
       expect(result.summary.total).toBeGreaterThan(0);
     });
+
+    it("should detect deletion when remote has notifications but local is empty", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent(`
+general:
+  notifyToCommenter: false
+  notifications: []
+`);
+      container.notificationConfigurator.setGeneralNotifications({
+        notifyToCommenter: false,
+        notifications: [
+          {
+            entity: { type: "USER", code: "admin" },
+            recordAdded: true,
+            recordEdited: false,
+            commentAdded: false,
+            statusChanged: false,
+            fileImported: false,
+          },
+        ],
+        revision: "1",
+      });
+
+      const result = await detectNotificationDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBeGreaterThanOrEqual(1);
+    });
   });
 
   describe("error cases", () => {

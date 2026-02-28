@@ -26,8 +26,6 @@ export type ActionEntity = Readonly<{
   code: string;
 }>;
 
-// Diff types
-
 export type ActionDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   actionName: string;

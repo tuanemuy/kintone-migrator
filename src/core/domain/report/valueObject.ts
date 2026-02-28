@@ -71,8 +71,6 @@ export type PeriodicReport = Readonly<{
   period: PeriodicReportPeriod;
 }>;
 
-// Diff types
-
 export type ReportDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   reportName: string;

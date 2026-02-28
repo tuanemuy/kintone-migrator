@@ -34,8 +34,7 @@ export type NumberPrecisionConfig = Readonly<{
   roundingMode: RoundingMode;
 }>;
 
-// Diff types
-
+/** Only "modified" is used because general settings is a singleton config with no add/delete semantics. */
 export type GeneralSettingsDiffEntry = Readonly<{
   type: "modified";
   field: string;
