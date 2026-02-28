@@ -1,4 +1,4 @@
-import { deepEqual } from "@/core/domain/diff";
+import { deepEqual } from "@/lib/deepEqual";
 import type { DiffEntry, FormDiff, FormLayout, Schema } from "../entity";
 import { FormDiff as FormDiffFactory } from "../entity";
 import type { FieldCode, FieldDefinition } from "../valueObject";

@@ -1,4 +1,5 @@
-import { buildDiffResult, deepEqual } from "../../diff";
+import { deepEqual } from "@/lib/deepEqual";
+import { buildDiffResult } from "../../diff";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import type { ReportDiffEntry } from "../valueObject";
 

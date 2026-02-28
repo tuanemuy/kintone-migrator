@@ -1,4 +1,5 @@
-import { buildDiffResult, deepEqual } from "../../diff";
+import { deepEqual } from "@/lib/deepEqual";
+import { buildDiffResult } from "../../diff";
 import type { GeneralSettingsConfig } from "../entity";
 import type { GeneralSettingsDiffEntry } from "../valueObject";
 
