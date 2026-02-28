@@ -66,6 +66,7 @@ function compareGeneralSection(
     });
   }
 
+  // kintone API guarantees entity keys are unique per notification config, so Map is safe here
   const localMap = new Map(
     local.notifications.map((n) => [serializeEntity(n.entity), n]),
   );
@@ -240,14 +241,14 @@ export const NotificationDiffDetector = {
       entries.push(...compareGeneralSection(local.general, remote.general));
     } else if (local.general && !remote.general) {
       entries.push({
-        type: "modified",
+        type: "added",
         section: "general",
         name: "general",
         details: "added general notifications section",
       });
     } else if (!local.general && remote.general) {
       entries.push({
-        type: "modified",
+        type: "deleted",
         section: "general",
         name: "general",
         details: "removed general notifications section",
@@ -275,14 +276,14 @@ export const NotificationDiffDetector = {
       }
     } else if (local.reminder && !remote.reminder) {
       entries.push({
-        type: "modified",
+        type: "added",
         section: "reminder",
         name: "reminder",
         details: "added reminder notifications section",
       });
     } else if (!local.reminder && remote.reminder) {
       entries.push({
-        type: "modified",
+        type: "deleted",
         section: "reminder",
         name: "reminder",
         details: "removed reminder notifications section",

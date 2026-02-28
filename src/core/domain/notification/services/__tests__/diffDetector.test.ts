@@ -249,6 +249,7 @@ describe("NotificationDiffDetector", () => {
       const remote: NotificationConfig = {};
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].details).toContain("added general");
     });
 
@@ -259,6 +260,7 @@ describe("NotificationDiffDetector", () => {
       };
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].details).toContain("removed general");
     });
   });
@@ -340,6 +342,7 @@ describe("NotificationDiffDetector", () => {
       const remote: NotificationConfig = {};
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].details).toContain("added reminder");
     });
 
@@ -350,6 +353,7 @@ describe("NotificationDiffDetector", () => {
       };
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].details).toContain("removed reminder");
     });
   });

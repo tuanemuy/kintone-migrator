@@ -5,11 +5,12 @@ export type DiffSummary = Readonly<{
   total: number;
 }>;
 
-export type DiffResult<E> = Readonly<{
-  entries: readonly E[];
-  summary: DiffSummary;
-  isEmpty: boolean;
-}>;
+export type DiffResult<E extends { type: "added" | "modified" | "deleted" }> =
+  Readonly<{
+    entries: readonly E[];
+    summary: DiffSummary;
+    isEmpty: boolean;
+  }>;
 
 const typeOrder: Record<string, number> = {
   added: 0,

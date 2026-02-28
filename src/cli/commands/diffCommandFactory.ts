@@ -14,7 +14,7 @@ type DiffCommandConfig<
   TContainerConfig,
   TContainer,
   TCliValues extends MultiAppCliValues,
-  TEntry extends { type: string },
+  TEntry extends { type: "added" | "modified" | "deleted" },
 > = {
   readonly description: string;
   readonly args: Args;
@@ -36,7 +36,7 @@ export function createDiffCommand<
   TContainerConfig,
   TContainer,
   TCliValues extends MultiAppCliValues,
-  TEntry extends { type: string },
+  TEntry extends { type: "added" | "modified" | "deleted" },
 >(config: DiffCommandConfig<TContainerConfig, TContainer, TCliValues, TEntry>) {
   async function runDiff(containerConfig: TContainerConfig): Promise<void> {
     const container = config.createContainer(containerConfig);

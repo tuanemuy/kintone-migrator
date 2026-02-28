@@ -69,6 +69,7 @@ export const AppPermissionDiffDetector = {
   detect: (local: AppPermissionConfig, remote: AppPermissionConfig) => {
     const entries: AppPermissionDiffEntry[] = [];
 
+    // kintone API guarantees entity keys are unique per app, so Map is safe here
     const localMap = new Map(local.rights.map((r) => [entityKey(r), r]));
     const remoteMap = new Map(remote.rights.map((r) => [entityKey(r), r]));
 
