@@ -90,5 +90,14 @@ describe("detectRecordPermissionDiff", () => {
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.recordPermissionStorage.setContent("{{invalid yaml");
+
+      await expect(detectRecordPermissionDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
   });
 });

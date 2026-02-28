@@ -22,11 +22,22 @@ export type CustomizationCaptureContainer = {
   fileWriter: FileWriter;
 };
 
+/** Ports needed by customize diff (subset of apply) */
+export type CustomizationDiffContainer = {
+  customizationConfigurator: CustomizationConfigurator;
+  customizationStorage: CustomizationStorage;
+};
+
 /** Full container satisfying both apply and capture */
 export type CustomizationContainer = CustomizationApplyContainer &
   CustomizationCaptureContainer;
 
 export type CustomizationApplyServiceArgs<T = undefined> = ServiceArgs<
   CustomizationApplyContainer,
+  T
+>;
+
+export type CustomizationDiffServiceArgs<T = undefined> = ServiceArgs<
+  CustomizationDiffContainer,
   T
 >;

@@ -697,6 +697,17 @@ describe("printAdminNotesDiffResult", () => {
 });
 
 describe("printGeneralSettingsDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<GeneralSettingsDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printGeneralSettingsDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("変更エントリがある場合、field 名と details が出力される", () => {
     const result: DiffResult<GeneralSettingsDiffEntry> = {
       entries: [{ type: "modified", field: "name", details: '"old" -> "new"' }],
@@ -716,6 +727,17 @@ describe("printGeneralSettingsDiffResult", () => {
 });
 
 describe("printAppPermissionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<AppPermissionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printAppPermissionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("追加・削除が混在する場合、entityKey が出力される", () => {
     const result: DiffResult<AppPermissionDiffEntry> = {
       entries: [
@@ -741,6 +763,17 @@ describe("printAppPermissionDiffResult", () => {
 });
 
 describe("printFieldPermissionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<FieldPermissionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printFieldPermissionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("変更エントリがある場合、fieldCode が出力される", () => {
     const result: DiffResult<FieldPermissionDiffEntry> = {
       entries: [
@@ -759,6 +792,17 @@ describe("printFieldPermissionDiffResult", () => {
 });
 
 describe("printCustomizationDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printCustomizationDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("platform が 'config' の場合、resourceType のみが location として表示される", () => {
     const result: DiffResult<CustomizationDiffEntry> = {
       entries: [
@@ -801,6 +845,17 @@ describe("printCustomizationDiffResult", () => {
 });
 
 describe("printNotificationDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<NotificationDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printNotificationDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("セクション名と通知名が出力される", () => {
     const result: DiffResult<NotificationDiffEntry> = {
       entries: [
@@ -828,6 +883,17 @@ describe("printNotificationDiffResult", () => {
 });
 
 describe("printActionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<ActionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printActionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("アクション名と details が出力される", () => {
     const result: DiffResult<ActionDiffEntry> = {
       entries: [
@@ -846,6 +912,17 @@ describe("printActionDiffResult", () => {
 });
 
 describe("printPluginDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<PluginDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printPluginDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("pluginId と details が出力される", () => {
     const result: DiffResult<PluginDiffEntry> = {
       entries: [
@@ -868,6 +945,17 @@ describe("printPluginDiffResult", () => {
 });
 
 describe("printRecordPermissionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printRecordPermissionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("filterCond が空の場合、'(all records)' が表示される", () => {
     const result: DiffResult<RecordPermissionDiffEntry> = {
       entries: [{ type: "added", filterCond: "", details: "entities: 2" }],
@@ -898,6 +986,17 @@ describe("printRecordPermissionDiffResult", () => {
 });
 
 describe("printReportDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<ReportDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+    };
+    printReportDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
   it("レポート名と details が出力される", () => {
     const result: DiffResult<ReportDiffEntry> = {
       entries: [

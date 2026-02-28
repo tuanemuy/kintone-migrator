@@ -121,5 +121,24 @@ general:
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent("{{invalid yaml");
+
+      await expect(detectNotificationDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
+
+    it("should throw SystemError when getPerRecordNotifications fails", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent(VALID_CONFIG);
+      container.notificationConfigurator.setFailOn("getPerRecordNotifications");
+
+      await expect(detectNotificationDiff({ container })).rejects.toSatisfy(
+        isSystemError,
+      );
+    });
   });
 });

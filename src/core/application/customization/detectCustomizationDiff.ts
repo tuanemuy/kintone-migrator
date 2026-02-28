@@ -1,12 +1,12 @@
 import { CustomizationDiffDetector } from "@/core/domain/customization/services/diffDetector";
 import type { CustomizationDiff } from "@/core/domain/customization/valueObject";
-import type { CustomizationApplyServiceArgs } from "../container/customization";
+import type { CustomizationDiffServiceArgs } from "../container/customization";
 import { ValidationError, ValidationErrorCode } from "../error";
 import { parseConfigText } from "./parseConfig";
 
 export async function detectCustomizationDiff({
   container,
-}: CustomizationApplyServiceArgs): Promise<CustomizationDiff> {
+}: CustomizationDiffServiceArgs): Promise<CustomizationDiff> {
   const result = await container.customizationStorage.get();
   if (!result.exists) {
     throw new ValidationError(

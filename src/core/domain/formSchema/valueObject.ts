@@ -54,16 +54,7 @@ export type FieldType =
   | "SUBTABLE"
   | "REFERENCE_TABLE";
 
-// DiffType
-export type DiffType = "added" | "modified" | "deleted";
-
-// DiffSummary
-export type DiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
-}>;
+export type { DiffSummary } from "../diff";
 
 // SelectionOption
 export type SelectionOption = Readonly<{

@@ -120,6 +120,7 @@ function buildPerRecordMultiMap(
 }
 
 function perRecordLabel(notif: PerRecordNotification): string {
+  // Empty strings are treated as "no value" for label purposes
   return notif.title || notif.filterCond || "(empty filter)";
 }
 

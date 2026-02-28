@@ -8,91 +8,122 @@ import type { GeneralSettingsDiffEntry } from "../valueObject";
 // - boolean fields: false
 // - firstMonthOfFiscalYear: 1 (January)
 // - object fields (icon, titleField, numberPrecision): null
-type FieldSpec =
-  | { kind: "string"; field: keyof GeneralSettingsConfig; defaultValue: string }
-  | {
-      kind: "boolean";
-      field: keyof GeneralSettingsConfig;
-      defaultValue: boolean;
-    }
-  | { kind: "number"; field: keyof GeneralSettingsConfig; defaultValue: number }
-  | { kind: "deepEqual"; field: keyof GeneralSettingsConfig };
-
-const FIELD_SPECS: readonly FieldSpec[] = [
-  { kind: "string", field: "name", defaultValue: "" },
-  { kind: "string", field: "description", defaultValue: "" },
-  { kind: "deepEqual", field: "icon" },
-  { kind: "string", field: "theme", defaultValue: "" },
-  { kind: "deepEqual", field: "titleField" },
-  { kind: "boolean", field: "enableThumbnails", defaultValue: false },
-  { kind: "boolean", field: "enableBulkDeletion", defaultValue: false },
-  { kind: "boolean", field: "enableComments", defaultValue: false },
-  { kind: "boolean", field: "enableDuplicateRecord", defaultValue: false },
-  { kind: "boolean", field: "enableInlineRecordEditing", defaultValue: false },
-  { kind: "deepEqual", field: "numberPrecision" },
-  { kind: "number", field: "firstMonthOfFiscalYear", defaultValue: 1 },
-];
-
 function compareConfigs(
   local: GeneralSettingsConfig,
   remote: GeneralSettingsConfig,
 ): GeneralSettingsDiffEntry[] {
   const entries: GeneralSettingsDiffEntry[] = [];
 
-  for (const spec of FIELD_SPECS) {
-    const { field } = spec;
-    switch (spec.kind) {
-      case "string": {
-        const l = (local[field] as string | undefined) ?? spec.defaultValue;
-        const r = (remote[field] as string | undefined) ?? spec.defaultValue;
-        if (l !== r) {
-          entries.push({
-            type: "modified",
-            field,
-            details:
-              field === "description"
-                ? "description changed"
-                : `"${r}" -> "${l}"`,
-          });
-        }
-        break;
-      }
-      case "boolean": {
-        const l = (local[field] as boolean | undefined) ?? spec.defaultValue;
-        const r = (remote[field] as boolean | undefined) ?? spec.defaultValue;
-        if (l !== r) {
-          entries.push({
-            type: "modified",
-            field,
-            details: `${String(r)} -> ${String(l)}`,
-          });
-        }
-        break;
-      }
-      case "number": {
-        const l = (local[field] as number | undefined) ?? spec.defaultValue;
-        const r = (remote[field] as number | undefined) ?? spec.defaultValue;
-        if (l !== r) {
-          entries.push({
-            type: "modified",
-            field,
-            details: `${r} -> ${l}`,
-          });
-        }
-        break;
-      }
-      case "deepEqual": {
-        if (!deepEqual(local[field] ?? null, remote[field] ?? null)) {
-          entries.push({
-            type: "modified",
-            field,
-            details: `${field} changed`,
-          });
-        }
-        break;
-      }
+  function compareString(
+    field: string,
+    l: string | undefined,
+    r: string | undefined,
+    defaultValue: string,
+  ): void {
+    const lv = l ?? defaultValue;
+    const rv = r ?? defaultValue;
+    if (lv !== rv) {
+      entries.push({
+        type: "modified",
+        field,
+        details:
+          field === "description"
+            ? "description changed"
+            : `"${rv}" -> "${lv}"`,
+      });
     }
   }
+
+  function compareBoolean(
+    field: string,
+    l: boolean | undefined,
+    r: boolean | undefined,
+    defaultValue: boolean,
+  ): void {
+    const lv = l ?? defaultValue;
+    const rv = r ?? defaultValue;
+    if (lv !== rv) {
+      entries.push({
+        type: "modified",
+        field,
+        details: `${String(rv)} -> ${String(lv)}`,
+      });
+    }
+  }
+
+  function compareNumber(
+    field: string,
+    l: number | undefined,
+    r: number | undefined,
+    defaultValue: number,
+  ): void {
+    const lv = l ?? defaultValue;
+    const rv = r ?? defaultValue;
+    if (lv !== rv) {
+      entries.push({
+        type: "modified",
+        field,
+        details: `${rv} -> ${lv}`,
+      });
+    }
+  }
+
+  function compareDeepEqual(field: string, l: unknown, r: unknown): void {
+    if (!deepEqual(l ?? null, r ?? null)) {
+      entries.push({
+        type: "modified",
+        field,
+        details: `${field} changed`,
+      });
+    }
+  }
+
+  compareString("name", local.name, remote.name, "");
+  compareString("description", local.description, remote.description, "");
+  compareDeepEqual("icon", local.icon, remote.icon);
+  compareString("theme", local.theme, remote.theme, "");
+  compareDeepEqual("titleField", local.titleField, remote.titleField);
+  compareBoolean(
+    "enableThumbnails",
+    local.enableThumbnails,
+    remote.enableThumbnails,
+    false,
+  );
+  compareBoolean(
+    "enableBulkDeletion",
+    local.enableBulkDeletion,
+    remote.enableBulkDeletion,
+    false,
+  );
+  compareBoolean(
+    "enableComments",
+    local.enableComments,
+    remote.enableComments,
+    false,
+  );
+  compareBoolean(
+    "enableDuplicateRecord",
+    local.enableDuplicateRecord,
+    remote.enableDuplicateRecord,
+    false,
+  );
+  compareBoolean(
+    "enableInlineRecordEditing",
+    local.enableInlineRecordEditing,
+    remote.enableInlineRecordEditing,
+    false,
+  );
+  compareDeepEqual(
+    "numberPrecision",
+    local.numberPrecision,
+    remote.numberPrecision,
+  );
+  compareNumber(
+    "firstMonthOfFiscalYear",
+    local.firstMonthOfFiscalYear,
+    remote.firstMonthOfFiscalYear,
+    1,
+  );
 
   return entries;
 }

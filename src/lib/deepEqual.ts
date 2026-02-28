@@ -23,11 +23,22 @@ function isRecordEqual(
   return true;
 }
 
+/**
+ * Deep equality comparison for plain JSON-like data (primitives, plain objects, arrays).
+ * Does NOT support Date, RegExp, Map, Set, or other special object types —
+ * they are compared by enumerable own properties, which may produce incorrect results.
+ */
 export function deepEqual(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a === null || b === null) return a === b;
   if (typeof a !== typeof b) return false;
   if (Array.isArray(a)) return isArrayEqual(a, b);
+  if (a instanceof Date || a instanceof RegExp) {
+    return String(a) === String(b);
+  }
+  if (a instanceof Map || a instanceof Set) {
+    return false;
+  }
   if (isRecord(a) && isRecord(b)) {
     return isRecordEqual(a, b);
   }

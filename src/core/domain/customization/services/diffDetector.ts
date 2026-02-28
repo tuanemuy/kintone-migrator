@@ -1,10 +1,12 @@
 import { buildDiffResult } from "../../diff";
 import type { CustomizationConfig } from "../entity";
-import type {
-  CustomizationDiffEntry,
-  CustomizationResource,
-  RemotePlatform,
-  RemoteResource,
+import {
+  type CustomizationDiffEntry,
+  type CustomizationResource,
+  DEFAULT_CUSTOMIZATION_SCOPE,
+  type RemoteCustomization,
+  type RemotePlatform,
+  type RemoteResource,
 } from "../valueObject";
 
 // FILE resources are compared by basename only; content-level diff is not supported.
@@ -104,23 +106,18 @@ function comparePlatform(
   ];
 }
 
-export type RemoteCustomization = Readonly<{
-  scope: string;
-  desktop: RemotePlatform;
-  mobile: RemotePlatform;
-}>;
-
 export const CustomizationDiffDetector = {
   detect: (local: CustomizationConfig, remote: RemoteCustomization) => {
     const entries: CustomizationDiffEntry[] = [];
 
-    if ((local.scope ?? "ALL") !== remote.scope) {
+    const localScope = local.scope ?? DEFAULT_CUSTOMIZATION_SCOPE;
+    if (localScope !== remote.scope) {
       entries.push({
         type: "modified",
         platform: "config",
         resourceType: "scope",
         name: "scope",
-        details: `${remote.scope} -> ${local.scope ?? "ALL"}`,
+        details: `${remote.scope} -> ${localScope}`,
       });
     }
 

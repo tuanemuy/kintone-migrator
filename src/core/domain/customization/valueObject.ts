@@ -58,3 +58,11 @@ export type CustomizationDiffEntry = Readonly<{
 }>;
 
 export type CustomizationDiff = DiffResult<CustomizationDiffEntry>;
+
+export const DEFAULT_CUSTOMIZATION_SCOPE: CustomizationScope = "ALL";
+
+export type RemoteCustomization = Readonly<{
+  scope: CustomizationScope;
+  desktop: RemotePlatform;
+  mobile: RemotePlatform;
+}>;

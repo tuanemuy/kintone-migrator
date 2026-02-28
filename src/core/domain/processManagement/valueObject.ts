@@ -21,6 +21,8 @@ export type ProcessAssignee = Readonly<{
 
 export type ProcessActionType = "PRIMARY" | "SECONDARY";
 
+import type { DiffResult } from "../diff";
+
 export type ProcessAction = Readonly<{
   name: string;
   from: string;
@@ -31,8 +33,6 @@ export type ProcessAction = Readonly<{
     entities: readonly ProcessEntity[];
   }>;
 }>;
-
-import type { DiffResult } from "../diff";
 
 export type ProcessManagementDiffCategory = "enable" | "state" | "action";
 

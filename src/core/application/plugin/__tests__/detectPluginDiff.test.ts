@@ -71,5 +71,14 @@ describe("detectPluginDiff", () => {
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent("{{invalid yaml");
+
+      await expect(detectPluginDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
   });
 });

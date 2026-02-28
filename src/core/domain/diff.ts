@@ -20,7 +20,7 @@ const typeOrder: Record<"added" | "modified" | "deleted", number> = {
 
 export function buildDiffResult<
   E extends { type: "added" | "modified" | "deleted" },
->(entries: E[]): DiffResult<E> {
+>(entries: readonly E[]): DiffResult<E> {
   const sorted = [...entries].sort(
     (a, b) => typeOrder[a.type] - typeOrder[b.type],
   );

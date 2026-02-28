@@ -84,5 +84,14 @@ describe("detectFieldPermissionDiff", () => {
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.fieldPermissionStorage.setContent("{{invalid yaml");
+
+      await expect(detectFieldPermissionDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
   });
 });

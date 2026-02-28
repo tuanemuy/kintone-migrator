@@ -22,4 +22,20 @@ describe("buildDiffResult", () => {
     expect(result.isEmpty).toBe(true);
     expect(result.summary.total).toBe(0);
   });
+
+  it("should sort entries in added -> modified -> deleted order", () => {
+    const entries = [
+      { type: "deleted" as const, name: "c" },
+      { type: "added" as const, name: "a" },
+      { type: "modified" as const, name: "b" },
+      { type: "added" as const, name: "d" },
+    ];
+    const result = buildDiffResult(entries);
+    expect(result.entries.map((e) => e.type)).toEqual([
+      "added",
+      "added",
+      "modified",
+      "deleted",
+    ]);
+  });
 });

@@ -87,5 +87,14 @@ includeInTemplateAndDuplicates: false
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.adminNotesStorage.setContent("{{invalid yaml");
+
+      await expect(detectAdminNotesDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
   });
 });

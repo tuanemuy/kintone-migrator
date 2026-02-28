@@ -74,4 +74,28 @@ describe("deepEqual", () => {
     );
     expect(deepEqual({ a: { b: undefined } }, { a: {} })).toBe(false);
   });
+
+  it("should compare Date objects by value", () => {
+    const d1 = new Date("2024-01-01");
+    const d2 = new Date("2024-01-01");
+    const d3 = new Date("2024-06-15");
+    expect(deepEqual(d1, d2)).toBe(true);
+    expect(deepEqual(d1, d3)).toBe(false);
+  });
+
+  it("should compare RegExp objects by value", () => {
+    expect(deepEqual(/abc/g, /abc/g)).toBe(true);
+    expect(deepEqual(/abc/g, /abc/i)).toBe(false);
+    expect(deepEqual(/abc/, /def/)).toBe(false);
+  });
+
+  it("should return false for Map and Set", () => {
+    expect(deepEqual(new Map(), new Map())).toBe(false);
+    expect(deepEqual(new Set(), new Set())).toBe(false);
+  });
+
+  it("should handle undefined vs empty object", () => {
+    expect(deepEqual(undefined, {})).toBe(false);
+    expect(deepEqual(undefined, [])).toBe(false);
+  });
 });

@@ -84,5 +84,14 @@ describe("detectReportDiff", () => {
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.reportStorage.setContent("{{invalid yaml");
+
+      await expect(detectReportDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
   });
 });

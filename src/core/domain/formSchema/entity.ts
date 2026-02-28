@@ -1,10 +1,5 @@
-import type {
-  DiffSummary,
-  DiffType,
-  FieldCode,
-  FieldDefinition,
-  LayoutElement,
-} from "./valueObject";
+import { buildDiffResult, type DiffSummary } from "../diff";
+import type { FieldCode, FieldDefinition, LayoutElement } from "./valueObject";
 
 // Layout types
 
@@ -63,7 +58,7 @@ export const Schema = {
 
 // DiffEntry
 export type DiffEntry = Readonly<{
-  type: DiffType;
+  type: "added" | "modified" | "deleted";
   fieldCode: FieldCode;
   fieldLabel: string;
   details: string;
@@ -79,28 +74,5 @@ export type FormDiff = Readonly<{
 }>;
 
 export const FormDiff = {
-  create: (entries: readonly DiffEntry[]): FormDiff => {
-    const summary: DiffSummary = {
-      added: entries.filter((e) => e.type === "added").length,
-      modified: entries.filter((e) => e.type === "modified").length,
-      deleted: entries.filter((e) => e.type === "deleted").length,
-      total: entries.length,
-    };
-
-    const sortOrder: Record<DiffType, number> = {
-      added: 0,
-      modified: 1,
-      deleted: 2,
-    };
-
-    const sorted = [...entries].sort(
-      (a, b) => sortOrder[a.type] - sortOrder[b.type],
-    );
-
-    return {
-      entries: sorted,
-      summary,
-      isEmpty: entries.length === 0,
-    };
-  },
+  create: (entries: readonly DiffEntry[]): FormDiff => buildDiffResult(entries),
 };

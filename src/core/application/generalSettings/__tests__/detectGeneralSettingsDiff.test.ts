@@ -89,5 +89,14 @@ theme: WHITE
         isSystemError,
       );
     });
+
+    it("should throw ValidationError when config has invalid YAML", async () => {
+      const container = getContainer();
+      container.generalSettingsStorage.setContent("{{invalid yaml");
+
+      await expect(detectGeneralSettingsDiff({ container })).rejects.toSatisfy(
+        isValidationError,
+      );
+    });
   });
 });

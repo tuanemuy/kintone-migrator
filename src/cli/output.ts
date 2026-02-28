@@ -148,7 +148,7 @@ export function printFieldPermissionDiffResult(
     result,
     "Field Permission Diff Details",
     (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")}${pc.dim(":")} ${entry.details}`,
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")} ${entry.details}`,
   );
 }
 
@@ -208,7 +208,7 @@ export function printRecordPermissionDiffResult(
     result,
     "Record Permission Diff Details",
     (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond === "" ? "(all records)" : entry.filterCond)}${pc.dim("]:")} ${entry.details}`,
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond === "" ? "(all records)" : entry.filterCond)}${pc.dim("]")} ${entry.details}`,
   );
 }
 
