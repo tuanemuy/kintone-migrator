@@ -62,6 +62,8 @@ export function createDiffCommand<
     args: config.args,
     run: async (ctx) => {
       try {
+        // gunshi's ctx.values is typed as Record<string, unknown>; cast is needed
+        // because the generic TCliValues carries domain-specific CLI value types.
         const values = ctx.values as TCliValues;
 
         await routeMultiApp(values, {

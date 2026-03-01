@@ -40,7 +40,7 @@ export const ActionDiffDetector = {
         entries.push({
           type: "added",
           actionName: name,
-          details: `dest: ${localAction.destApp.app ?? localAction.destApp.code ?? "unknown"}`,
+          details: `dest: ${localAction.destApp.app ?? localAction.destApp.code ?? "(unspecified)"}`,
         });
       } else {
         const diffs = compareActions(localAction, remoteAction);
@@ -59,7 +59,7 @@ export const ActionDiffDetector = {
         entries.push({
           type: "deleted",
           actionName: name,
-          details: `dest: ${remoteAction.destApp.app ?? remoteAction.destApp.code ?? "unknown"}`,
+          details: `dest: ${remoteAction.destApp.app ?? remoteAction.destApp.code ?? "(unspecified)"}`,
         });
       }
     }

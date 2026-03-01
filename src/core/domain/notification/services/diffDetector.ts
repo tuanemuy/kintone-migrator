@@ -1,4 +1,5 @@
 import { deepEqual } from "@/lib/deepEqual";
+import { groupByKey } from "@/lib/groupByKey";
 import { buildDiffResult } from "../../diff";
 import type {
   GeneralNotification,
@@ -107,20 +108,12 @@ function compareGeneralSection(
 function buildPerRecordMultiMap(
   notifications: readonly PerRecordNotification[],
 ): Map<string, PerRecordNotification[]> {
-  const map = new Map<string, PerRecordNotification[]>();
-  for (const n of notifications) {
-    const existing = map.get(n.filterCond);
-    if (existing) {
-      existing.push(n);
-    } else {
-      map.set(n.filterCond, [n]);
-    }
-  }
-  return map;
+  return groupByKey(notifications, (n) => n.filterCond);
 }
 
 function perRecordLabel(notif: PerRecordNotification): string {
-  // Empty strings are treated as "no value" for label purposes
+  // Uses || intentionally: empty strings should fall through to the next option
+  // since they carry no meaningful label information for display purposes.
   return notif.title || notif.filterCond || "(empty filter)";
 }
 

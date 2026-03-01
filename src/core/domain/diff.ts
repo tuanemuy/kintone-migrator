@@ -24,9 +24,14 @@ export function buildDiffResult<
   const sorted = [...entries].sort(
     (a, b) => typeOrder[a.type] - typeOrder[b.type],
   );
-  const added = sorted.filter((e) => e.type === "added").length;
-  const modified = sorted.filter((e) => e.type === "modified").length;
-  const deleted = sorted.filter((e) => e.type === "deleted").length;
+  let added = 0;
+  let modified = 0;
+  let deleted = 0;
+  for (const e of sorted) {
+    if (e.type === "added") added++;
+    else if (e.type === "modified") modified++;
+    else deleted++;
+  }
   return {
     entries: sorted,
     summary: { added, modified, deleted, total: sorted.length },

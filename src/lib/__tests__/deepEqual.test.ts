@@ -143,6 +143,14 @@ describe("deepEqual", () => {
     expect(deepEqual(s1, s4)).toBe(false);
   });
 
+  it("should deep-compare Set elements (not reference equality)", () => {
+    const s1 = new Set([{ a: 1 }, { b: 2 }]);
+    const s2 = new Set([{ a: 1 }, { b: 2 }]);
+    const s3 = new Set([{ a: 1 }, { b: 3 }]);
+    expect(deepEqual(s1, s2)).toBe(true);
+    expect(deepEqual(s1, s3)).toBe(false);
+  });
+
   it("should return false for Set vs non-Set", () => {
     expect(deepEqual(new Set(), {})).toBe(false);
     expect(deepEqual({}, new Set())).toBe(false);
@@ -151,6 +159,13 @@ describe("deepEqual", () => {
   it("should handle circular references without infinite recursion", () => {
     const a: Record<string, unknown> = { x: 1 };
     a.self = a;
+    const b: Record<string, unknown> = { x: 1 };
+    b.self = b;
+    expect(deepEqual(a, b)).toBe(false);
+  });
+
+  it("should handle circular references on the second argument only", () => {
+    const a = { x: 1, self: { y: 2 } };
     const b: Record<string, unknown> = { x: 1 };
     b.self = b;
     expect(deepEqual(a, b)).toBe(false);

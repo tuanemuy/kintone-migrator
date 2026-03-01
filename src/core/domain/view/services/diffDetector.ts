@@ -42,9 +42,9 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
     changes.push("html changed");
   }
 
-  if (local.pager !== remote.pager) {
+  if ((local.pager ?? false) !== (remote.pager ?? false)) {
     changes.push(
-      `pager: ${String(remote.pager ?? "undefined")} -> ${String(local.pager ?? "undefined")}`,
+      `pager: ${String(remote.pager ?? false)} -> ${String(local.pager ?? false)}`,
     );
   }
 

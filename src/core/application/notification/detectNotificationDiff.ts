@@ -23,6 +23,9 @@ export async function detectNotificationDiff({
     container.notificationConfigurator.getReminderNotifications(),
   ]);
 
+  // The kintone API always returns all three sections (general, perRecord, reminder)
+  // even when they are empty (empty arrays / default values). This matches the
+  // NotificationConfig shape and lets the detector compare sections consistently.
   const remoteConfig: NotificationConfig = {
     general: {
       notifyToCommenter: generalResult.notifyToCommenter,

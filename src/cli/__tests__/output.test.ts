@@ -842,6 +842,43 @@ describe("printCustomizationDiffResult", () => {
     expect(noteContent).toContain("desktop.js");
     expect(noteContent).toContain("app.js");
   });
+
+  it("warning entries は summary に含まれず p.log.warn で出力される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          platform: "desktop",
+          resourceType: "js",
+          name: "(warning)",
+          details:
+            "duplicate basenames detected; diff results may be inaccurate for FILE resources",
+        },
+        {
+          type: "added",
+          platform: "desktop",
+          resourceType: "js",
+          name: "app.js",
+          details: "new resource",
+        },
+      ],
+      summary: { added: 1, modified: 1, deleted: 0, total: 2 },
+      isEmpty: false,
+    };
+    printCustomizationDiffResult(result);
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("duplicate basenames"),
+    );
+    const infoCall = vi
+      .mocked(p.log.info)
+      .mock.calls.find(
+        (c) => typeof c[0] === "string" && c[0].includes("Changes:"),
+      );
+    expect(infoCall).toBeDefined();
+    expect(infoCall?.[0]).not.toContain("~1");
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).not.toContain("(warning)");
+  });
 });
 
 describe("printNotificationDiffResult", () => {

@@ -1,4 +1,5 @@
 import { deepEqual } from "@/lib/deepEqual";
+import { groupByKey } from "@/lib/groupByKey";
 import { buildDiffResult } from "../../diff";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
 import type {
@@ -33,25 +34,6 @@ function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
   );
 }
 
-/**
- * Groups rights by filterCond. Multiple rights can share the same filterCond,
- * so rights within a group are compared by position (index-based matching).
- */
-function buildMultiMap(
-  rights: readonly RecordRight[],
-): Map<string, RecordRight[]> {
-  const map = new Map<string, RecordRight[]>();
-  for (const right of rights) {
-    const existing = map.get(right.filterCond);
-    if (existing) {
-      existing.push(right);
-    } else {
-      map.set(right.filterCond, [right]);
-    }
-  }
-  return map;
-}
-
 function describeRight(right: RecordRight): string {
   return `entities: ${right.entities.length}`;
 }
@@ -63,8 +45,8 @@ export const RecordPermissionDiffDetector = {
   ): RecordPermissionDiff => {
     const entries: RecordPermissionDiffEntry[] = [];
 
-    const localMulti = buildMultiMap(local.rights);
-    const remoteMulti = buildMultiMap(remote.rights);
+    const localMulti = groupByKey(local.rights, (r) => r.filterCond);
+    const remoteMulti = groupByKey(remote.rights, (r) => r.filterCond);
 
     for (const [filterCond, localRights] of localMulti) {
       const remoteRights = remoteMulti.get(filterCond) ?? [];
