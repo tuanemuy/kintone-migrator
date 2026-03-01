@@ -15,21 +15,20 @@ export type GeneralNotificationConfig = Readonly<{
   notifications: readonly GeneralNotification[];
 }>;
 
-export type PerRecordNotificationTarget = Readonly<{
+export type NotificationTarget = Readonly<{
   entity: NotificationEntity;
   includeSubs?: boolean;
 }>;
+
+export type PerRecordNotificationTarget = NotificationTarget;
 
 export type PerRecordNotification = Readonly<{
   filterCond: string;
   title: string;
-  targets: readonly PerRecordNotificationTarget[];
+  targets: readonly NotificationTarget[];
 }>;
 
-export type ReminderNotificationTarget = Readonly<{
-  entity: NotificationEntity;
-  includeSubs?: boolean;
-}>;
+export type ReminderNotificationTarget = NotificationTarget;
 
 export type ReminderNotification = Readonly<{
   code: string;
@@ -38,7 +37,7 @@ export type ReminderNotification = Readonly<{
   time?: string;
   filterCond: string;
   title: string;
-  targets: readonly ReminderNotificationTarget[];
+  targets: readonly NotificationTarget[];
 }>;
 
 export type ReminderNotificationConfig = Readonly<{

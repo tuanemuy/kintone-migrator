@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ViewConfig } from "../entity";
 import type { ViewDiff, ViewDiffEntry } from "../valueObject";
 
@@ -65,38 +66,33 @@ export const ViewDiffDetector = {
     localViews: Readonly<Record<string, ViewConfig>>,
     remoteViews: Readonly<Record<string, ViewConfig>>,
   ): ViewDiff => {
-    const entries: ViewDiffEntry[] = [];
-
-    for (const [name, localView] of Object.entries(localViews)) {
-      const remoteView = remoteViews[name];
-
-      if (remoteView === undefined) {
-        entries.push({
+    const entries = detectRecordDiff<ViewConfig, ViewDiffEntry>(
+      localViews,
+      remoteViews,
+      {
+        onAdded: (name) => ({
           type: "added",
           viewName: name,
           details: "new view",
-        });
-      } else {
-        const changes = describeChanges(localView, remoteView);
-        if (changes.length > 0) {
-          entries.push({
-            type: "modified",
-            viewName: name,
-            details: changes.join(", "),
-          });
-        }
-      }
-    }
-
-    for (const name of Object.keys(remoteViews)) {
-      if (localViews[name] === undefined) {
-        entries.push({
+        }),
+        onModified: (name, localView, remoteView) => {
+          const changes = describeChanges(localView, remoteView);
+          if (changes.length > 0) {
+            return {
+              type: "modified",
+              viewName: name,
+              details: changes.join(", "),
+            };
+          }
+          return undefined;
+        },
+        onDeleted: (name) => ({
           type: "deleted",
           viewName: name,
           details: "removed",
-        });
-      }
-    }
+        }),
+      },
+    );
 
     return buildDiffResult(entries);
   },

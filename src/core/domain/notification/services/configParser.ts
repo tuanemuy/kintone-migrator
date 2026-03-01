@@ -1,28 +1,18 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type {
   GeneralNotification,
   GeneralNotificationConfig,
   NotificationConfig,
+  NotificationTarget,
   PerRecordNotification,
-  PerRecordNotificationTarget,
   ReminderNotification,
   ReminderNotificationConfig,
-  ReminderNotificationTarget,
 } from "../entity";
 import { NotificationErrorCode } from "../errorCode";
-import type {
-  NotificationEntity,
-  NotificationEntityType,
-} from "../valueObject";
-
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-]);
+import type { NotificationEntity } from "../valueObject";
+import { isNotificationEntityType } from "../valueObject";
 
 function parseEntity(raw: unknown, context: string): NotificationEntity {
   if (!isRecord(raw)) {
@@ -34,7 +24,7 @@ function parseEntity(raw: unknown, context: string): NotificationEntity {
 
   const obj = raw;
 
-  if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
+  if (typeof obj.type !== "string" || !isNotificationEntityType(obj.type)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidEntityType,
       `${context}: entity has invalid type: ${String(obj.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
@@ -48,7 +38,7 @@ function parseEntity(raw: unknown, context: string): NotificationEntity {
     );
   }
 
-  return { type: obj.type as NotificationEntityType, code: obj.code };
+  return { type: obj.type, code: obj.code };
 }
 
 function parseGeneralNotification(
@@ -111,21 +101,22 @@ function parseGeneralConfig(raw: unknown): GeneralNotificationConfig {
   };
 }
 
-function parsePerRecordTarget(
+function parseTarget(
   raw: unknown,
   index: number,
-): PerRecordNotificationTarget {
+  context: string,
+): NotificationTarget {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
-      `Per-record target at index ${index} must be an object`,
+      `${context} target at index ${index} must be an object`,
     );
   }
 
   const obj = raw;
-  const entity = parseEntity(obj.entity, `Per-record target at index ${index}`);
+  const entity = parseEntity(obj.entity, `${context} target at index ${index}`);
 
-  const result: PerRecordNotificationTarget = { entity };
+  const result: NotificationTarget = { entity };
 
   if (obj.includeSubs !== undefined && obj.includeSubs !== null) {
     return { ...result, includeSubs: Boolean(obj.includeSubs) };
@@ -155,7 +146,7 @@ function parsePerRecordNotification(
   }
 
   const targets = obj.targets.map((item: unknown, i: number) =>
-    parsePerRecordTarget(item, i),
+    parseTarget(item, i, "Per-record"),
   );
 
   if (typeof obj.filterCond !== "string") {
@@ -183,29 +174,6 @@ function parsePerRecordConfig(raw: unknown): readonly PerRecordNotification[] {
   return raw.map((item: unknown, i: number) =>
     parsePerRecordNotification(item, i),
   );
-}
-
-function parseReminderTarget(
-  raw: unknown,
-  index: number,
-): ReminderNotificationTarget {
-  if (!isRecord(raw)) {
-    throw new BusinessRuleError(
-      NotificationErrorCode.NtInvalidConfigStructure,
-      `Reminder target at index ${index} must be an object`,
-    );
-  }
-
-  const obj = raw;
-  const entity = parseEntity(obj.entity, `Reminder target at index ${index}`);
-
-  const result: ReminderNotificationTarget = { entity };
-
-  if (obj.includeSubs !== undefined && obj.includeSubs !== null) {
-    return { ...result, includeSubs: Boolean(obj.includeSubs) };
-  }
-
-  return result;
 }
 
 function parseReminderNotification(
@@ -236,7 +204,7 @@ function parseReminderNotification(
   }
 
   const targets = obj.targets.map((item: unknown, i: number) =>
-    parseReminderTarget(item, i),
+    parseTarget(item, i, "Reminder"),
   );
 
   if (typeof obj.daysLater !== "number") {
@@ -256,6 +224,14 @@ function parseReminderNotification(
     );
   }
 
+  // Issue 3.5: Validate that hoursLater is a number when present
+  if (hasHoursLater && typeof obj.hoursLater !== "number") {
+    throw new BusinessRuleError(
+      NotificationErrorCode.NtInvalidHoursLater,
+      `Reminder notification at index ${index} has non-numeric "hoursLater": ${String(obj.hoursLater)}`,
+    );
+  }
+
   const result: ReminderNotification = {
     code: obj.code,
     daysLater: obj.daysLater,
@@ -267,7 +243,7 @@ function parseReminderNotification(
   if (hasHoursLater) {
     return {
       ...result,
-      hoursLater: typeof obj.hoursLater === "number" ? obj.hoursLater : 0,
+      hoursLater: obj.hoursLater as number,
     };
   }
 
@@ -310,31 +286,15 @@ function parseReminderConfig(raw: unknown): ReminderNotificationConfig {
 
 export const NotificationConfigParser = {
   parse: (rawText: string): NotificationConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        NotificationErrorCode.NtEmptyConfigText,
-        "Notification config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        NotificationErrorCode.NtInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        NotificationErrorCode.NtInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const obj = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: NotificationErrorCode.NtEmptyConfigText,
+        invalidConfigYaml: NotificationErrorCode.NtInvalidConfigYaml,
+        invalidConfigStructure: NotificationErrorCode.NtInvalidConfigStructure,
+      },
+      "Notification",
+    );
 
     const config: {
       general?: GeneralNotificationConfig;

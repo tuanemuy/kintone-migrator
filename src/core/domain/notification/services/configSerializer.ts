@@ -1,11 +1,10 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type {
   GeneralNotification,
   NotificationConfig,
+  NotificationTarget,
   PerRecordNotification,
-  PerRecordNotificationTarget,
   ReminderNotification,
-  ReminderNotificationTarget,
 } from "../entity";
 import type { NotificationEntity } from "../valueObject";
 
@@ -35,9 +34,7 @@ function serializeGeneralNotification(
   return result;
 }
 
-function serializePerRecordTarget(
-  target: PerRecordNotificationTarget,
-): Record<string, unknown> {
+function serializeTarget(target: NotificationTarget): Record<string, unknown> {
   const result: Record<string, unknown> = {
     entity: serializeEntity(target.entity),
   };
@@ -55,22 +52,8 @@ function serializePerRecordNotification(
   return {
     filterCond: notification.filterCond,
     title: notification.title,
-    targets: notification.targets.map(serializePerRecordTarget),
+    targets: notification.targets.map(serializeTarget),
   };
-}
-
-function serializeReminderTarget(
-  target: ReminderNotificationTarget,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {
-    entity: serializeEntity(target.entity),
-  };
-
-  if (target.includeSubs !== undefined) {
-    result.includeSubs = target.includeSubs;
-  }
-
-  return result;
 }
 
 function serializeReminderNotification(
@@ -81,7 +64,7 @@ function serializeReminderNotification(
     daysLater: notification.daysLater,
     filterCond: notification.filterCond,
     title: notification.title,
-    targets: notification.targets.map(serializeReminderTarget),
+    targets: notification.targets.map(serializeTarget),
   };
 
   if (notification.hoursLater !== undefined) {
@@ -123,10 +106,6 @@ export const NotificationConfigSerializer = {
       };
     }
 
-    return stringifyYaml(serialized, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
+    return serializeToYaml(serialized);
   },
 };

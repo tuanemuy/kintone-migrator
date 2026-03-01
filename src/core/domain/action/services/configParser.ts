@@ -1,16 +1,14 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import { ActionErrorCode } from "../errorCode";
 import type {
   ActionDestApp,
   ActionEntity,
-  ActionEntityType,
   ActionMapping,
-  ActionMappingSrcType,
 } from "../valueObject";
-import { VALID_ENTITY_TYPES, VALID_SRC_TYPES } from "../valueObject";
+import { isActionEntityType, isActionMappingSrcType } from "../valueObject";
 
 function parseDestApp(raw: unknown, actionName: string): ActionDestApp {
   if (!isRecord(raw)) {
@@ -48,7 +46,7 @@ function parseMapping(
 
   const obj = raw;
 
-  if (typeof obj.srcType !== "string" || !VALID_SRC_TYPES.has(obj.srcType)) {
+  if (typeof obj.srcType !== "string" || !isActionMappingSrcType(obj.srcType)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidSrcType,
       `Action "${actionName}" mapping at index ${index} has invalid srcType: ${String(obj.srcType)}. Must be FIELD or RECORD_URL`,
@@ -63,7 +61,7 @@ function parseMapping(
   }
 
   const result: ActionMapping = {
-    srcType: obj.srcType as ActionMappingSrcType,
+    srcType: obj.srcType,
     destField: obj.destField,
     ...(obj.srcField !== undefined &&
     obj.srcField !== null &&
@@ -89,7 +87,7 @@ function parseEntity(
 
   const obj = raw;
 
-  if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
+  if (typeof obj.type !== "string" || !isActionEntityType(obj.type)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidEntityType,
       `Action "${actionName}" entity at index ${index} has invalid type: ${String(obj.type)}. Must be USER, GROUP, or ORGANIZATION`,
@@ -103,10 +101,18 @@ function parseEntity(
     );
   }
 
-  return { type: obj.type as ActionEntityType, code: obj.code };
+  return { type: obj.type, code: obj.code };
 }
 
 function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
+  // Issue 2.1: Check empty action name before isRecord check
+  if (actionName.length === 0) {
+    throw new BusinessRuleError(
+      ActionErrorCode.AcEmptyActionName,
+      "Action name (key) must not be empty",
+    );
+  }
+
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
@@ -115,13 +121,6 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
   }
 
   const obj = raw;
-
-  if (actionName.length === 0) {
-    throw new BusinessRuleError(
-      ActionErrorCode.AcEmptyActionName,
-      "Action name (key) must not be empty",
-    );
-  }
 
   if (typeof obj.index !== "number") {
     throw new BusinessRuleError(
@@ -175,31 +174,15 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
 
 export const ActionConfigParser = {
   parse: (rawText: string): ActionsConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        ActionErrorCode.AcEmptyConfigText,
-        "Action config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        ActionErrorCode.AcInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        ActionErrorCode.AcInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const obj = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: ActionErrorCode.AcEmptyConfigText,
+        invalidConfigYaml: ActionErrorCode.AcInvalidConfigYaml,
+        invalidConfigStructure: ActionErrorCode.AcInvalidConfigStructure,
+      },
+      "Action",
+    );
 
     if (!isRecord(obj.actions)) {
       throw new BusinessRuleError(

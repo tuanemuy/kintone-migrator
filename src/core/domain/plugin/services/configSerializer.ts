@@ -1,4 +1,4 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { PluginsConfig } from "../entity";
 
 export const PluginConfigSerializer = {
@@ -11,10 +11,6 @@ export const PluginConfigSerializer = {
       })),
     };
 
-    return stringifyYaml(serialized, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
+    return serializeToYaml(serialized);
   },
 };
