@@ -1,6 +1,28 @@
 import type { DiffResult } from "../diff";
 
-export type CustomizationScope = "ALL" | "ADMIN" | "NONE";
+export const SCOPES = ["ALL", "ADMIN", "NONE"] as const;
+
+export type CustomizationScope = (typeof SCOPES)[number];
+
+export const VALID_SCOPES: ReadonlySet<string> = new Set(SCOPES);
+
+export function isCustomizationScope(
+  value: string,
+): value is CustomizationScope {
+  return VALID_SCOPES.has(value);
+}
+
+export const RESOURCE_TYPES = ["FILE", "URL"] as const;
+
+export type ResourceType = (typeof RESOURCE_TYPES)[number];
+
+export const VALID_RESOURCE_TYPES: ReadonlySet<string> = new Set(
+  RESOURCE_TYPES,
+);
+
+export function isResourceType(value: string): value is ResourceType {
+  return VALID_RESOURCE_TYPES.has(value);
+}
 
 export type LocalFileResource = Readonly<{
   type: "FILE";

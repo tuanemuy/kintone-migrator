@@ -5,10 +5,17 @@ export type ActionDestApp = Readonly<{
   code?: string;
 }>;
 
-export type ActionMappingSrcType = "FIELD" | "RECORD_URL";
+export const SRC_TYPES = ["FIELD", "RECORD_URL"] as const;
 
-export const VALID_SRC_TYPES: ReadonlySet<string> =
-  new Set<ActionMappingSrcType>(["FIELD", "RECORD_URL"]);
+export type ActionMappingSrcType = (typeof SRC_TYPES)[number];
+
+export const VALID_SRC_TYPES: ReadonlySet<string> = new Set(SRC_TYPES);
+
+export function isActionMappingSrcType(
+  value: string,
+): value is ActionMappingSrcType {
+  return VALID_SRC_TYPES.has(value);
+}
 
 export type ActionMapping = Readonly<{
   srcType: ActionMappingSrcType;
@@ -16,10 +23,15 @@ export type ActionMapping = Readonly<{
   destField: string;
 }>;
 
-export type ActionEntityType = "USER" | "GROUP" | "ORGANIZATION";
+export const ENTITY_TYPES = ["USER", "GROUP", "ORGANIZATION"] as const;
 
-export const VALID_ENTITY_TYPES: ReadonlySet<string> =
-  new Set<ActionEntityType>(["USER", "GROUP", "ORGANIZATION"]);
+export type ActionEntityType = (typeof ENTITY_TYPES)[number];
+
+export const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set(ENTITY_TYPES);
+
+export function isActionEntityType(value: string): value is ActionEntityType {
+  return VALID_ENTITY_TYPES.has(value);
+}
 
 export type ActionEntity = Readonly<{
   type: ActionEntityType;

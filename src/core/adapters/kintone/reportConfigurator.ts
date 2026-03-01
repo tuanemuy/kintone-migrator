@@ -18,6 +18,7 @@ import type {
   SortBy,
   SortOrder,
 } from "@/core/domain/report/valueObject";
+import { isDayOfWeek } from "@/core/domain/report/valueObject";
 
 const VALID_CHART_TYPES: ReadonlySet<string> = new Set([
   "BAR",
@@ -223,7 +224,9 @@ function fromKintonePeriodicReportPeriod(
       : {}),
     ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
     ...(raw.time !== undefined ? { time: raw.time } : {}),
-    ...(raw.dayOfWeek !== undefined ? { dayOfWeek: raw.dayOfWeek } : {}),
+    ...(raw.dayOfWeek !== undefined && isDayOfWeek(raw.dayOfWeek)
+      ? { dayOfWeek: raw.dayOfWeek }
+      : {}),
     ...(raw.minute !== undefined ? { minute: raw.minute } : {}),
   };
 
