@@ -25,8 +25,9 @@ function makeConfig(rights: FieldRight[] = []): FieldPermissionConfig {
 describe("FieldPermissionDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when configs are identical", () => {
-      const config = makeConfig([makeRight("field1")]);
-      const result = FieldPermissionDiffDetector.detect(config, config);
+      const local = makeConfig([makeRight("field1")]);
+      const remote = makeConfig([makeRight("field1")]);
+      const result = FieldPermissionDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
     });

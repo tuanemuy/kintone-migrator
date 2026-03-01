@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local field permission config with remote kintone app",
   args: fieldAclArgs,
   spinnerMessage: "Comparing field permissions...",
+  multiAppSuccessMessage: "All field permission diffs completed successfully.",
   createContainer: createFieldPermissionCliContainer,
   detectDiff: detectFieldPermissionDiff,
   printResult: printFieldPermissionDiffResult,

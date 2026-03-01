@@ -66,6 +66,7 @@ describe("view diff command", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     vi.mocked(detectViewDiff).mockResolvedValue(mockResult);
 
@@ -80,6 +81,7 @@ describe("view diff command", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     vi.mocked(detectViewDiff).mockResolvedValue(mockResult);
 

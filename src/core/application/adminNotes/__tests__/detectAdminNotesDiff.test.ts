@@ -39,7 +39,8 @@ describe("detectAdminNotesDiff", () => {
       const result = await detectAdminNotesDiff({ container });
 
       expect(result.isEmpty).toBe(false);
-      expect(result.summary.total).toBeGreaterThan(0);
+      expect(result.summary.modified).toBe(2);
+      expect(result.summary.total).toBe(2);
     });
 
     it("should detect no changes when both configs are empty", async () => {

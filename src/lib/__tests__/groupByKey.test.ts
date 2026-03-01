@@ -27,4 +27,45 @@ describe("groupByKey", () => {
     expect(result.get("b")).toEqual(["b1", "b2"]);
     expect(result.get("a")).toEqual(["a1", "a2"]);
   });
+
+  it("should handle empty string key", () => {
+    const result = groupByKey([{ k: "", v: 1 }], (x) => x.k);
+    expect(result.get("")).toEqual([{ k: "", v: 1 }]);
+    expect(result.size).toBe(1);
+  });
+
+  it("should handle numeric-like keys", () => {
+    const items = [
+      { id: "0", val: "a" },
+      { id: "0", val: "b" },
+      { id: "1", val: "c" },
+    ];
+    const result = groupByKey(items, (x) => x.id);
+    expect(result.get("0")).toEqual([
+      { id: "0", val: "a" },
+      { id: "0", val: "b" },
+    ]);
+    expect(result.get("1")).toEqual([{ id: "1", val: "c" }]);
+  });
+
+  it("should group multiple items with different values under the same key", () => {
+    const items = [
+      { category: "fruit", name: "apple" },
+      { category: "fruit", name: "banana" },
+      { category: "fruit", name: "cherry" },
+    ];
+    const result = groupByKey(items, (x) => x.category);
+    expect(result.get("fruit")).toEqual([
+      { category: "fruit", name: "apple" },
+      { category: "fruit", name: "banana" },
+      { category: "fruit", name: "cherry" },
+    ]);
+    expect(result.size).toBe(1);
+  });
+
+  it("should handle single item input", () => {
+    const result = groupByKey([{ k: "only", v: 42 }], (x) => x.k);
+    expect(result.get("only")).toEqual([{ k: "only", v: 42 }]);
+    expect(result.size).toBe(1);
+  });
 });

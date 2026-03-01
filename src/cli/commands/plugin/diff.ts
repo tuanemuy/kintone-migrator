@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local plugin config with remote kintone app",
   args: pluginArgs,
   spinnerMessage: "Comparing plugin settings...",
+  multiAppSuccessMessage: "All plugin diffs completed successfully.",
   createContainer: createPluginCliContainer,
   detectDiff: detectPluginDiff,
   printResult: printPluginDiffResult,

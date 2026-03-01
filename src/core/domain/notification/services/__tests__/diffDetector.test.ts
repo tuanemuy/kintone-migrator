@@ -55,12 +55,17 @@ function makeReminderConfig(
 describe("NotificationDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when configs are identical", () => {
-      const config: NotificationConfig = {
+      const local: NotificationConfig = {
         general: makeGeneralConfig(),
         perRecord: [],
         reminder: makeReminderConfig(),
       };
-      const result = NotificationDiffDetector.detect(config, config);
+      const remote: NotificationConfig = {
+        general: makeGeneralConfig(),
+        perRecord: [],
+        reminder: makeReminderConfig(),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
     });
 
@@ -412,14 +417,40 @@ describe("NotificationDiffDetector", () => {
 
   describe("duplicate filterCond in perRecord", () => {
     it("should handle multiple notifications with the same filterCond", () => {
-      const config: NotificationConfig = {
+      const local: NotificationConfig = {
         perRecord: [
           makePerRecord({ filterCond: "", title: "First" }),
           makePerRecord({ filterCond: "", title: "Second" }),
         ],
       };
-      const result = NotificationDiffDetector.detect(config, config);
+      const remote: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "", title: "First" }),
+          makePerRecord({ filterCond: "", title: "Second" }),
+        ],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect modifications when perRecord notifications with same filterCond are reordered", () => {
+      // Two notifications with same filterCond but different titles
+      const local: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "", title: "Second" }),
+          makePerRecord({ filterCond: "", title: "First" }),
+        ],
+      };
+      const remote: NotificationConfig = {
+        perRecord: [
+          makePerRecord({ filterCond: "", title: "First" }),
+          makePerRecord({ filterCond: "", title: "Second" }),
+        ],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      // Position-based matching means both are detected as modified
+      expect(result.summary.modified).toBe(2);
+      expect(result.summary.total).toBe(2);
     });
 
     it("should detect added notification among duplicates", () => {

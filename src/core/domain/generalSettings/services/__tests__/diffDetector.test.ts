@@ -22,8 +22,9 @@ function makeConfig(
 describe("GeneralSettingsDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when configs are identical", () => {
-      const config = makeConfig();
-      const result = GeneralSettingsDiffDetector.detect(config, config);
+      const local = makeConfig();
+      const remote = makeConfig();
+      const result = GeneralSettingsDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
     });

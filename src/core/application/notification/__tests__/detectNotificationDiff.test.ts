@@ -62,7 +62,9 @@ describe("detectNotificationDiff", () => {
       const result = await detectNotificationDiff({ container });
 
       expect(result.isEmpty).toBe(false);
-      expect(result.summary.total).toBeGreaterThan(0);
+      expect(result.summary.modified).toBe(1);
+      expect(result.summary.added).toBe(1);
+      expect(result.summary.total).toBe(2);
     });
 
     it("should detect deletion when remote has notifications but local is empty", async () => {
@@ -90,7 +92,8 @@ general:
       const result = await detectNotificationDiff({ container });
 
       expect(result.isEmpty).toBe(false);
-      expect(result.summary.deleted).toBeGreaterThanOrEqual(1);
+      expect(result.summary.deleted).toBe(2);
+      expect(result.summary.total).toBe(2);
     });
   });
 

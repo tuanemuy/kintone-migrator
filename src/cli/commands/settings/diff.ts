@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local general settings config with remote kintone app",
   args: settingsArgs,
   spinnerMessage: "Comparing general settings...",
+  multiAppSuccessMessage: "All general settings diffs completed successfully.",
   createContainer: createGeneralSettingsCliContainer,
   detectDiff: detectGeneralSettingsDiff,
   printResult: printGeneralSettingsDiffResult,

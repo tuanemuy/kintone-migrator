@@ -156,7 +156,19 @@ describe("deepEqual", () => {
     expect(deepEqual({}, new Set())).toBe(false);
   });
 
-  it("should handle circular references without infinite recursion", () => {
+  it("should compare Sets with different element orders", () => {
+    const s1 = new Set([1, 2, 3]);
+    const s2 = new Set([3, 1, 2]);
+    expect(deepEqual(s1, s2)).toBe(true);
+  });
+
+  it("should deep-compare Set elements regardless of insertion order", () => {
+    const s1 = new Set([{ a: 1 }, { b: 2 }]);
+    const s2 = new Set([{ b: 2 }, { a: 1 }]);
+    expect(deepEqual(s1, s2)).toBe(true);
+  });
+
+  it("should return false for circular references (documented limitation: conservative false negative)", () => {
     const a: Record<string, unknown> = { x: 1 };
     a.self = a;
     const b: Record<string, unknown> = { x: 1 };
@@ -164,7 +176,7 @@ describe("deepEqual", () => {
     expect(deepEqual(a, b)).toBe(false);
   });
 
-  it("should handle circular references on the second argument only", () => {
+  it("should return false when only the second argument has a circular reference (documented limitation)", () => {
     const a = { x: 1, self: { y: 2 } };
     const b: Record<string, unknown> = { x: 1 };
     b.self = b;

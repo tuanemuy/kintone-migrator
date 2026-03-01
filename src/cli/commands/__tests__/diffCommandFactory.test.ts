@@ -72,6 +72,7 @@ function makeResult(entries: TestEntry[]): DiffResult<TestEntry> {
       total: entries.length,
     },
     isEmpty: entries.length === 0,
+    warnings: [],
   };
 }
 

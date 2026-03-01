@@ -38,4 +38,22 @@ describe("buildDiffResult", () => {
       "deleted",
     ]);
   });
+
+  it("should default warnings to empty array when not provided", () => {
+    const entries = [{ type: "added" as const, name: "a" }];
+    const result = buildDiffResult(entries);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("should include warnings when provided", () => {
+    const entries = [{ type: "added" as const, name: "a" }];
+    const result = buildDiffResult(entries, ["some warning"]);
+    expect(result.warnings).toEqual(["some warning"]);
+  });
+
+  it("should be isEmpty with warnings when entries are empty", () => {
+    const result = buildDiffResult([], ["w1", "w2"]);
+    expect(result.isEmpty).toBe(true);
+    expect(result.warnings).toEqual(["w1", "w2"]);
+  });
 });

@@ -22,8 +22,9 @@ function makeConfig(reports: Record<string, ReportConfig> = {}): ReportsConfig {
 describe("ReportDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when reports are identical", () => {
-      const config = makeConfig({ r1: makeReport() });
-      const result = ReportDiffDetector.detect(config, config);
+      const local = makeConfig({ r1: makeReport() });
+      const remote = makeConfig({ r1: makeReport() });
+      const result = ReportDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
     });

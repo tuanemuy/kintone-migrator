@@ -26,6 +26,7 @@ function compareResourceLists(
   remoteResources: readonly RemoteResource[],
   platform: "desktop" | "mobile",
   resourceType: "js" | "css",
+  warnings: string[],
 ): CustomizationDiffEntry[] {
   const entries: CustomizationDiffEntry[] = [];
 
@@ -41,14 +42,9 @@ function compareResourceLists(
     localNames.length !== localNameSet.size ||
     remoteNames.length !== remoteNameSet.size
   ) {
-    entries.push({
-      type: "modified",
-      platform,
-      resourceType,
-      name: "(warning)",
-      details:
-        "duplicate basenames detected; diff results may be inaccurate for FILE resources",
-    });
+    warnings.push(
+      `[${platform}.${resourceType}] duplicate basenames detected; diff results may be inaccurate for FILE resources`,
+    );
   }
 
   for (const name of localNameSet) {
@@ -100,10 +96,11 @@ function comparePlatform(
   localCss: readonly CustomizationResource[],
   remote: RemotePlatform,
   platform: "desktop" | "mobile",
+  warnings: string[],
 ): CustomizationDiffEntry[] {
   return [
-    ...compareResourceLists(localJs, remote.js, platform, "js"),
-    ...compareResourceLists(localCss, remote.css, platform, "css"),
+    ...compareResourceLists(localJs, remote.js, platform, "js", warnings),
+    ...compareResourceLists(localCss, remote.css, platform, "css", warnings),
   ];
 }
 
@@ -113,6 +110,7 @@ export const CustomizationDiffDetector = {
     remote: RemoteCustomization,
   ): CustomizationDiff => {
     const entries: CustomizationDiffEntry[] = [];
+    const warnings: string[] = [];
 
     const localScope = local.scope ?? DEFAULT_CUSTOMIZATION_SCOPE;
     if (localScope !== remote.scope) {
@@ -131,6 +129,7 @@ export const CustomizationDiffDetector = {
         local.desktop.css,
         remote.desktop,
         "desktop",
+        warnings,
       ),
     );
 
@@ -140,9 +139,10 @@ export const CustomizationDiffDetector = {
         local.mobile.css,
         remote.mobile,
         "mobile",
+        warnings,
       ),
     );
 
-    return buildDiffResult(entries);
+    return buildDiffResult(entries, warnings);
   },
 };

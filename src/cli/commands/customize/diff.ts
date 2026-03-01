@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local customization config with remote kintone app",
   args: customizeArgs,
   spinnerMessage: "Comparing customization settings...",
+  multiAppSuccessMessage: "All customization diffs completed successfully.",
   createContainer: createCustomizationCliContainer,
   detectDiff: detectCustomizationDiff,
   printResult: printCustomizationDiffResult,

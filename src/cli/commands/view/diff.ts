@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local view config with remote kintone app",
   args: viewArgs,
   spinnerMessage: "Comparing view settings...",
+  multiAppSuccessMessage: "All view diffs completed successfully.",
   createContainer: createViewCliContainer,
   detectDiff: detectViewDiff,
   printResult: printViewDiffResult,

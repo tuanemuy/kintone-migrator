@@ -10,7 +10,7 @@ import type {
 // - string fields: "" (empty string)
 // - boolean fields: false
 // - firstMonthOfFiscalYear: 1 (January)
-// - object fields (icon, titleField, numberPrecision): null
+// - object fields (icon, titleField, numberPrecision): compared via deepEqual (undefined == undefined)
 function compareConfigs(
   local: GeneralSettingsConfig,
   remote: GeneralSettingsConfig,
@@ -72,7 +72,8 @@ function compareConfigs(
   }
 
   function compareDeepEqual(field: string, l: unknown, r: unknown): void {
-    if (!deepEqual(l ?? null, r ?? null)) {
+    if (l === undefined && r === undefined) return;
+    if (!deepEqual(l, r)) {
       entries.push({
         type: "modified",
         field,

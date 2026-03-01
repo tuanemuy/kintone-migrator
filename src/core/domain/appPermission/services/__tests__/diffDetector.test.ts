@@ -24,8 +24,9 @@ function makeConfig(rights: AppRight[] = []): AppPermissionConfig {
 describe("AppPermissionDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when configs are identical", () => {
-      const config = makeConfig([makeRight()]);
-      const result = AppPermissionDiffDetector.detect(config, config);
+      const local = makeConfig([makeRight()]);
+      const remote = makeConfig([makeRight()]);
+      const result = AppPermissionDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
     });

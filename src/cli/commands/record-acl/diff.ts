@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local record permission config with remote kintone app",
   args: recordAclArgs,
   spinnerMessage: "Comparing record permissions...",
+  multiAppSuccessMessage: "All record permission diffs completed successfully.",
   createContainer: createRecordPermissionCliContainer,
   detectDiff: detectRecordPermissionDiff,
   printResult: printRecordPermissionDiffResult,

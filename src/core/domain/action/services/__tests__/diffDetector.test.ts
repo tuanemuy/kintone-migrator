@@ -21,8 +21,9 @@ function makeConfig(actions: Record<string, ActionConfig> = {}): ActionsConfig {
 describe("ActionDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when actions are identical", () => {
-      const config = makeConfig({ a: makeAction() });
-      const result = ActionDiffDetector.detect(config, config);
+      const local = makeConfig({ a: makeAction() });
+      const remote = makeConfig({ a: makeAction() });
+      const result = ActionDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
       expect(result.summary.total).toBe(0);

@@ -14,6 +14,7 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
     changes.push(`type: ${remote.type} -> ${local.type}`);
   }
 
+  // kintone API returns "" for non-builtin views, so undefined and "" are treated as equivalent
   if ((local.builtinType ?? "") !== (remote.builtinType ?? "")) {
     changes.push("builtinType changed");
   }

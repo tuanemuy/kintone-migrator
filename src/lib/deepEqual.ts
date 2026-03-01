@@ -45,14 +45,21 @@ function isMapEqual(
 function isSetEqual(
   a: ReadonlySet<unknown>,
   b: unknown,
-  seen: WeakSet<object>,
+  _seen: WeakSet<object>,
 ): boolean {
   if (!(b instanceof Set)) return false;
   if (a.size !== b.size) return false;
-  const arrA = [...a];
-  const arrB = [...b];
-  for (let i = 0; i < arrA.length; i++) {
-    if (!deepEqualInner(arrA[i], arrB[i], seen)) return false;
+  // Order-independent comparison: for each element in a, find a matching
+  // element in b using deep equality. O(n²) but sets are typically small.
+  // Each element comparison uses a fresh seen set to prevent failed match
+  // attempts from polluting the circular reference tracker.
+  const remaining = [...b];
+  for (const valA of a) {
+    const idx = remaining.findIndex((valB) =>
+      deepEqualInner(valA, valB, new WeakSet()),
+    );
+    if (idx === -1) return false;
+    remaining.splice(idx, 1);
   }
   return true;
 }
@@ -99,8 +106,13 @@ function deepEqualInner(
  * JSON.stringify behavior but is intentional — explicit undefined properties are
  * semantically distinct from absent properties.
  *
- * Set comparison is order-sensitive (compares elements by position after spreading),
- * with deep equality for each element.
+ * Set comparison is order-independent: each element in one set is matched to an
+ * element in the other using deep equality (O(n²)).
+ *
+ * Circular reference limitation: objects already visited by the traversal are
+ * treated as non-equal. This means structurally identical circular references
+ * (e.g. `a.self = a` vs `b.self = b`) return `false`. This is a conservative
+ * approach that prevents infinite recursion but may produce false negatives.
  */
 export function deepEqual(a: unknown, b: unknown): boolean {
   return deepEqualInner(a, b, new WeakSet());

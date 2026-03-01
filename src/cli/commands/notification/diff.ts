@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local notification config with remote kintone app",
   args: notificationArgs,
   spinnerMessage: "Comparing notification settings...",
+  multiAppSuccessMessage: "All notification diffs completed successfully.",
   createContainer: createNotificationCliContainer,
   detectDiff: detectNotificationDiff,
   printResult: printNotificationDiffResult,

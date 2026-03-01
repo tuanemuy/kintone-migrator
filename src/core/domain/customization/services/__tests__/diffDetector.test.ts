@@ -184,7 +184,7 @@ describe("CustomizationDiffDetector", () => {
   });
 
   describe("basename collision warning", () => {
-    it("should emit warning entry when local FILE resources have duplicate basenames", () => {
+    it("should emit warning when local FILE resources have duplicate basenames", () => {
       const local = makeLocalConfig({
         desktop: {
           js: [
@@ -200,11 +200,12 @@ describe("CustomizationDiffDetector", () => {
         mobile: makeRemotePlatform(),
       });
       expect(
-        result.entries.some(
-          (e) =>
-            e.name === "(warning)" && e.details.includes("duplicate basenames"),
-        ),
+        result.warnings.some((w) => w.includes("duplicate basenames")),
       ).toBe(true);
+      // Warning should NOT appear in entries
+      expect(result.entries.some((e) => e.name === "(warning)")).toBe(false);
+      // Warning should NOT be counted in summary.modified
+      expect(result.summary.modified).toBe(0);
     });
 
     it("should not emit warning when basenames are unique", () => {
@@ -222,7 +223,7 @@ describe("CustomizationDiffDetector", () => {
         desktop: makeRemotePlatform(),
         mobile: makeRemotePlatform(),
       });
-      expect(result.entries.some((e) => e.name === "(warning)")).toBe(false);
+      expect(result.warnings).toHaveLength(0);
     });
   });
 

@@ -41,7 +41,8 @@ describe("detectGeneralSettingsDiff", () => {
       const result = await detectGeneralSettingsDiff({ container });
 
       expect(result.isEmpty).toBe(false);
-      expect(result.summary.total).toBeGreaterThan(0);
+      expect(result.summary.modified).toBe(3);
+      expect(result.summary.total).toBe(3);
     });
 
     it("should detect no changes when both configs have default values", async () => {

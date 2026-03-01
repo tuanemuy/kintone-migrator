@@ -53,7 +53,8 @@ describe("detectFieldPermissionDiff", () => {
       const result = await detectFieldPermissionDiff({ container });
 
       expect(result.isEmpty).toBe(false);
-      expect(result.summary.total).toBeGreaterThan(0);
+      expect(result.summary.added).toBe(1);
+      expect(result.summary.total).toBe(1);
     });
   });
 

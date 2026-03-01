@@ -7,11 +7,7 @@ import type { ActionDiffEntry } from "@/core/domain/action/valueObject";
 import type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
 import type { AppPermissionDiffEntry } from "@/core/domain/appPermission/valueObject";
 import type { CustomizationDiffEntry } from "@/core/domain/customization/valueObject";
-import {
-  buildDiffResult,
-  type DiffResult,
-  type DiffSummary,
-} from "@/core/domain/diff";
+import type { DiffResult, DiffSummary } from "@/core/domain/diff";
 import type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/valueObject";
 import type { GeneralSettingsDiffEntry } from "@/core/domain/generalSettings/valueObject";
 import type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
@@ -159,18 +155,12 @@ export function printFieldPermissionDiffResult(
 export function printCustomizationDiffResult(
   result: DiffResult<CustomizationDiffEntry>,
 ): void {
-  // Separate warning entries (e.g. duplicate basenames) from actual diff entries
-  // so that warnings don't inflate the summary counts.
-  const warnings = result.entries.filter((e) => e.name === "(warning)");
-  const actualEntries = result.entries.filter((e) => e.name !== "(warning)");
-  const adjustedResult = buildDiffResult(actualEntries);
-
-  for (const w of warnings) {
-    p.log.warn(w.details);
+  for (const w of result.warnings) {
+    p.log.warn(w);
   }
 
   printGenericDiffResult(
-    adjustedResult,
+    result,
     "Customization Diff Details",
     (entry, colorize, prefix) => {
       const location =

@@ -288,6 +288,7 @@ describe("printViewDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -301,6 +302,7 @@ describe("printViewDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -318,6 +320,7 @@ describe("printViewDiffResult", () => {
       entries: [{ type: "modified", viewName: "一覧", details: "ソート変更" }],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -330,6 +333,7 @@ describe("printViewDiffResult", () => {
       entries: [{ type: "deleted", viewName: "旧一覧", details: "削除" }],
       summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -346,6 +350,7 @@ describe("printViewDiffResult", () => {
       ],
       summary: { added: 1, modified: 1, deleted: 1, total: 3 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     const changeLine = vi.mocked(p.log.info).mock.calls[0][0] as string;
@@ -361,6 +366,7 @@ describe("printProcessDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -379,6 +385,7 @@ describe("printProcessDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -403,6 +410,7 @@ describe("printProcessDiffResult", () => {
       ],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -422,6 +430,7 @@ describe("printProcessDiffResult", () => {
       ],
       summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -670,6 +679,7 @@ describe("printAdminNotesDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printAdminNotesDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -683,6 +693,7 @@ describe("printAdminNotesDiffResult", () => {
       ],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printAdminNotesDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -702,6 +713,7 @@ describe("printGeneralSettingsDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printGeneralSettingsDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -713,6 +725,7 @@ describe("printGeneralSettingsDiffResult", () => {
       entries: [{ type: "modified", field: "name", details: '"old" -> "new"' }],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printGeneralSettingsDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -732,6 +745,7 @@ describe("printAppPermissionDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printAppPermissionDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -754,6 +768,7 @@ describe("printAppPermissionDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 1, total: 2 },
       isEmpty: false,
+      warnings: [],
     };
     printAppPermissionDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
@@ -768,6 +783,7 @@ describe("printFieldPermissionDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printFieldPermissionDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -781,6 +797,7 @@ describe("printFieldPermissionDiffResult", () => {
       ],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printFieldPermissionDiffResult(result);
     expect(p.note).toHaveBeenCalledWith(
@@ -797,6 +814,7 @@ describe("printCustomizationDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printCustomizationDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -816,6 +834,7 @@ describe("printCustomizationDiffResult", () => {
       ],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printCustomizationDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
@@ -836,6 +855,7 @@ describe("printCustomizationDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printCustomizationDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
@@ -847,14 +867,6 @@ describe("printCustomizationDiffResult", () => {
     const result: DiffResult<CustomizationDiffEntry> = {
       entries: [
         {
-          type: "modified",
-          platform: "desktop",
-          resourceType: "js",
-          name: "(warning)",
-          details:
-            "duplicate basenames detected; diff results may be inaccurate for FILE resources",
-        },
-        {
           type: "added",
           platform: "desktop",
           resourceType: "js",
@@ -862,8 +874,11 @@ describe("printCustomizationDiffResult", () => {
           details: "new resource",
         },
       ],
-      summary: { added: 1, modified: 1, deleted: 0, total: 2 },
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [
+        "[desktop.js] duplicate basenames detected; diff results may be inaccurate for FILE resources",
+      ],
     };
     printCustomizationDiffResult(result);
     expect(p.log.warn).toHaveBeenCalledWith(
@@ -887,6 +902,7 @@ describe("printNotificationDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printNotificationDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -911,6 +927,7 @@ describe("printNotificationDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 1, total: 2 },
       isEmpty: false,
+      warnings: [],
     };
     printNotificationDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
@@ -925,6 +942,7 @@ describe("printActionDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printActionDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -938,6 +956,7 @@ describe("printActionDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printActionDiffResult(result);
     expect(p.note).toHaveBeenCalledWith(
@@ -954,6 +973,7 @@ describe("printPluginDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printPluginDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -971,6 +991,7 @@ describe("printPluginDiffResult", () => {
       ],
       summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printPluginDiffResult(result);
     expect(p.note).toHaveBeenCalledWith(
@@ -987,6 +1008,7 @@ describe("printRecordPermissionDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printRecordPermissionDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -998,6 +1020,7 @@ describe("printRecordPermissionDiffResult", () => {
       entries: [{ type: "added", filterCond: "", details: "entities: 2" }],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printRecordPermissionDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
@@ -1015,6 +1038,7 @@ describe("printRecordPermissionDiffResult", () => {
       ],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printRecordPermissionDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
@@ -1028,6 +1052,7 @@ describe("printReportDiffResult", () => {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printReportDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -1045,6 +1070,7 @@ describe("printReportDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printReportDiffResult(result);
     expect(p.note).toHaveBeenCalledWith(

@@ -15,8 +15,9 @@ function makeConfig(
 describe("AdminNotesDiffDetector", () => {
   describe("no changes", () => {
     it("should return empty diff when configs are identical", () => {
-      const config = makeConfig();
-      const result = AdminNotesDiffDetector.detect(config, config);
+      const local = makeConfig();
+      const remote = makeConfig();
+      const result = AdminNotesDiffDetector.detect(local, remote);
       expect(result.isEmpty).toBe(true);
       expect(result.entries).toHaveLength(0);
       expect(result.summary.total).toBe(0);

@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local admin notes config with remote kintone app",
   args: adminNotesArgs,
   spinnerMessage: "Comparing admin notes...",
+  multiAppSuccessMessage: "All admin notes diffs completed successfully.",
   createContainer: createAdminNotesCliContainer,
   detectDiff: detectAdminNotesDiff,
   printResult: printAdminNotesDiffResult,

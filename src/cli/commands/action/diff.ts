@@ -12,6 +12,7 @@ export default createDiffCommand({
   description: "Compare local action config with remote kintone app",
   args: actionArgs,
   spinnerMessage: "Comparing action settings...",
+  multiAppSuccessMessage: "All action diffs completed successfully.",
   createContainer: createActionCliContainer,
   detectDiff: detectActionDiff,
   printResult: printActionDiffResult,
