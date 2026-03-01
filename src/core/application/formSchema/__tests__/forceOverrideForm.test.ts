@@ -172,12 +172,16 @@ layout:
 
   it("現在のフォームのサブテーブル内部フィールドは直接削除しない", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
 
     const innerField = textField("item_name", "品名");
     const subField: SubtableFieldDefinition = {
@@ -190,6 +194,7 @@ layout:
     };
     container.formConfigurator.setFields(
       new Map([
+        [FieldCode.create("keep"), keep],
         [FieldCode.create("items"), subField],
         [FieldCode.create("item_name"), innerField],
       ]),
@@ -266,21 +271,19 @@ layout:
     expect(layout[0].type).toBe("ROW");
   });
 
-  it("スキーマのフィールドもフォームのフィールドも空の場合、レイアウトだけ上書きされる", async () => {
+  it("スキーマとフォームのフィールドが一致する場合、レイアウトも上書きされる", async () => {
     const container = getContainer();
-    const emptySchema = `
-layout:
-  - type: ROW
-    fields: []
-`;
-    container.schemaStorage.setContent(emptySchema);
-    container.formConfigurator.setFields(new Map());
+    const field = textField("name", "名前");
+    container.schemaStorage.setContent(singleFieldSchema);
+    container.formConfigurator.setFields(
+      new Map([[FieldCode.create("name"), field]]),
+    );
     container.formConfigurator.setLayout([]);
 
     await forceOverrideForm({ container });
 
     const fields = await container.formConfigurator.getFields();
-    expect(fields.size).toBe(0);
+    expect(fields.size).toBe(1);
     const layout = await container.formConfigurator.getLayout();
     expect(layout).toHaveLength(1);
   });
@@ -348,17 +351,24 @@ layout:
     ]);
   });
 
-  it("スキーマにフィールドが0件で現在のフォームにのみフィールドが存在する場合、削除後にupdateLayoutが実行される", async () => {
+  it("スキーマにないフィールドが現在のフォームに存在する場合、削除後にupdateLayoutが実行される", async () => {
     const container = getContainer();
-    const emptyFieldSchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptyFieldSchema);
+    container.schemaStorage.setContent(schemaWithKeep);
     const extra = textField("extra", "余分");
     container.formConfigurator.setFields(
-      new Map([[FieldCode.create("extra"), extra]]),
+      new Map([
+        [FieldCode.create("keep"), keep],
+        [FieldCode.create("extra"), extra],
+      ]),
     );
     container.formConfigurator.setLayout([]);
     container.formConfigurator.resetCallLog();
@@ -464,15 +474,22 @@ layout:
 
   it("deleteFieldsの通信に失敗した場合、SystemErrorがスローされる", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
     const extra = textField("extra", "余分");
     container.formConfigurator.setFields(
-      new Map([[FieldCode.create("extra"), extra]]),
+      new Map([
+        [FieldCode.create("keep"), keep],
+        [FieldCode.create("extra"), extra],
+      ]),
     );
     container.formConfigurator.setLayout([]);
     container.formConfigurator.setFailOn("deleteFields");

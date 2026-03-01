@@ -156,6 +156,9 @@ layout:
 layout:
   - type: ROW
     fields:
+      - code: name
+        type: SINGLE_LINE_TEXT
+        label: 名前
       - type: LABEL
         label: テスト
         elementId: ""
@@ -167,10 +170,10 @@ layout:
           width: "100"
 `;
       const schema = SchemaParser.parse(yaml);
-      expect(schema.fields.size).toBe(0);
+      expect(schema.fields.size).toBe(1);
       const row = schema.layout[0];
       if (row.type === "ROW") {
-        expect(row.fields).toHaveLength(2);
+        expect(row.fields).toHaveLength(3);
       }
     });
 
@@ -179,14 +182,17 @@ layout:
 layout:
   - type: ROW
     fields:
+      - code: name
+        type: SINGLE_LINE_TEXT
+        label: 名前
       - type: LABEL
         label: テスト
 `;
       const schema = SchemaParser.parse(yaml);
-      expect(schema.fields.size).toBe(0);
+      expect(schema.fields.size).toBe(1);
       const row = schema.layout[0];
       if (row.type === "ROW") {
-        expect(row.fields).toHaveLength(1);
+        expect(row.fields).toHaveLength(2);
       }
     });
 
@@ -195,6 +201,9 @@ layout:
 layout:
   - type: ROW
     fields:
+      - code: name
+        type: SINGLE_LINE_TEXT
+        label: 名前
       - type: LABEL
         label: セクション
         elementId: el1
@@ -210,11 +219,11 @@ layout:
           width: "400"
 `;
       const schema = SchemaParser.parse(yaml);
-      expect(schema.fields.size).toBe(0);
+      expect(schema.fields.size).toBe(1);
       expect(schema.layout).toHaveLength(1);
       const row = schema.layout[0];
       if (row.type === "ROW") {
-        expect(row.fields).toHaveLength(3);
+        expect(row.fields).toHaveLength(4);
       }
     });
 
@@ -223,13 +232,18 @@ layout:
 layout:
   - type: ROW
     fields:
+      - code: name
+        type: SINGLE_LINE_TEXT
+        label: 名前
       - code: RECORD_NUMBER
         type: RECORD_NUMBER
       - code: CREATOR
         type: CREATOR
 `;
       const schema = SchemaParser.parse(yaml);
-      expect(schema.fields.size).toBe(0);
+      expect(schema.fields.size).toBe(1);
+      expect(schema.fields.has("RECORD_NUMBER" as FieldCode)).toBe(false);
+      expect(schema.fields.has("CREATOR" as FieldCode)).toBe(false);
     });
 
     it("GROUP レイアウトはグループ自体と内部フィールドの両方がフィールドに登録される", () => {
@@ -1577,16 +1591,19 @@ layout:
 layout:
   - type: ROW
     fields:
+      - code: name
+        type: SINGLE_LINE_TEXT
+        label: 名前
       - code: RECORD_NUMBER
         type: RECORD_NUMBER
         size:
           width: "100"
 `;
       const schema = SchemaParser.parse(yaml);
-      expect(schema.fields.size).toBe(0);
+      expect(schema.fields.size).toBe(1);
       const row = schema.layout[0];
       if (row.type === "ROW") {
-        const el = row.fields[0];
+        const el = row.fields[1];
         expect(el.kind).toBe("systemField");
         if (el.kind === "systemField") {
           expect(el.type).toBe("RECORD_NUMBER");

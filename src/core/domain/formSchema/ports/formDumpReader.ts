@@ -6,7 +6,7 @@
  */
 export type RawFormDump = {
   readonly fields: Record<string, unknown>;
-  readonly layout: Record<string, unknown>;
+  readonly layout: unknown;
 };
 
 export interface FormDumpReader {

@@ -1,3 +1,5 @@
+import { BusinessRuleError } from "@/core/domain/error";
+import { FormSchemaErrorCode } from "./errorCode";
 import type { FieldCode, FieldDefinition, LayoutElement } from "./valueObject";
 
 // Layout types
@@ -49,8 +51,13 @@ export const Schema = {
   create: (
     fields: ReadonlyMap<FieldCode, FieldDefinition>,
     layout: FormLayout,
-  ): Schema => ({
-    fields,
-    layout,
-  }),
+  ): Schema => {
+    if (fields.size === 0) {
+      throw new BusinessRuleError(
+        FormSchemaErrorCode.FsEmptyFields,
+        "Schema must have at least one field",
+      );
+    }
+    return { fields, layout };
+  },
 };

@@ -51,7 +51,10 @@ function normalizeValue(value: unknown): RecordFieldValue {
       return normalized;
     }) as readonly Record<string, string | readonly string[]>[];
   }
-  return String(value);
+  throw new BusinessRuleError(
+    SeedDataErrorCode.SdInvalidSeedStructure,
+    `Unsupported value type: ${typeof value}`,
+  );
 }
 
 function parseRecord(raw: unknown, index: number): SeedRecord {
@@ -116,14 +119,15 @@ export const SeedParser = {
       const record = parseRecord(obj.records[i], i);
 
       if (key !== null) {
-        if (!((key as string) in record)) {
+        const keyField = key as string;
+        if (!(keyField in record)) {
           throw new BusinessRuleError(
             SeedDataErrorCode.SdMissingKeyField,
             `Record at index ${i} is missing key field "${key}"`,
           );
         }
 
-        const keyValue = record[key as string];
+        const keyValue = record[keyField];
         if (typeof keyValue !== "string") {
           throw new BusinessRuleError(
             SeedDataErrorCode.SdInvalidSeedStructure,

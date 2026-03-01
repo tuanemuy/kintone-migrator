@@ -24,12 +24,7 @@ export class InMemoryRecordManager extends FakeBase implements RecordManager {
     }
   }
 
-  async updateRecords(
-    records: readonly {
-      id: string;
-      record: SeedRecord;
-    }[],
-  ): Promise<void> {
+  async updateRecords(records: readonly SeedRecordWithId[]): Promise<void> {
     this.trackCall("updateRecords");
     for (const { id, record } of records) {
       const index = this.records.findIndex((r) => r.id === id);

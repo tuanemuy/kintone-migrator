@@ -163,4 +163,23 @@ records:
       }
     }
   });
+
+  it("未対応の値型（object等）でエラーをスローする", () => {
+    const yaml = `
+records:
+  - code: "001"
+    nested:
+      key: value
+`;
+    try {
+      SeedParser.parse(yaml);
+      expect.fail("Expected error");
+    } catch (error) {
+      expect(isBusinessRuleError(error)).toBe(true);
+      if (isBusinessRuleError(error)) {
+        expect(error.code).toBe(SeedDataErrorCode.SdInvalidSeedStructure);
+        expect(error.message).toContain("Unsupported value type");
+      }
+    }
+  });
 });

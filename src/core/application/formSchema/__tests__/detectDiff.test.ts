@@ -70,18 +70,31 @@ describe("detectDiff", () => {
 
   it("フォームにスキーマにないフィールドがある場合、deletedエントリを返す", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
     const extra = textField("extra", "余分");
     container.formConfigurator.setFields(
-      new Map([[FieldCode.create("extra"), extra]]),
+      new Map([
+        [FieldCode.create("keep"), keep],
+        [FieldCode.create("extra"), extra],
+      ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ kind: "field", field: extra }] },
+      {
+        type: "ROW",
+        fields: [
+          { kind: "field", field: keep },
+          { kind: "field", field: extra },
+        ],
+      },
     ]);
 
     const result = await detectDiff({ container });
@@ -242,18 +255,31 @@ layout:
 
   it("deletedエントリはbeforeを持ちafterを持たない", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
     const extra = textField("extra", "余分");
     container.formConfigurator.setFields(
-      new Map([[FieldCode.create("extra"), extra]]),
+      new Map([
+        [FieldCode.create("keep"), keep],
+        [FieldCode.create("extra"), extra],
+      ]),
     );
     container.formConfigurator.setLayout([
-      { type: "ROW", fields: [{ kind: "field", field: extra }] },
+      {
+        type: "ROW",
+        fields: [
+          { kind: "field", field: keep },
+          { kind: "field", field: extra },
+        ],
+      },
     ]);
 
     const result = await detectDiff({ container });

@@ -59,9 +59,8 @@ function resolveExecutionOrder(
   }
 
   if (orderedNames.length !== apps.size) {
-    const cycleNodes = [...apps.keys()].filter(
-      (name) => !orderedNames.includes(name),
-    );
+    const orderedSet = new Set(orderedNames);
+    const cycleNodes = [...apps.keys()].filter((name) => !orderedSet.has(name));
     throw new BusinessRuleError(
       ProjectConfigErrorCode.PcCircularDependency,
       `Circular dependency detected among: ${cycleNodes.join(", ")}`,

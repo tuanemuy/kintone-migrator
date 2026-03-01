@@ -1,4 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
+import { hasControlChars, sanitizeForDisplay } from "@/lib/charValidation";
 import type { DiffResult } from "../diff";
 import { FormSchemaErrorCode } from "./errorCode";
 
@@ -20,12 +21,27 @@ export type Lookup = Readonly<{
 // FieldCode
 export type FieldCode = string & { readonly brand: "FieldCode" };
 
+function hasInvalidFieldCodeChars(code: string): boolean {
+  if (hasControlChars(code)) return true;
+  for (let i = 0; i < code.length; i++) {
+    const c = code[i];
+    if (c === "/" || c === "\\") return true;
+  }
+  return false;
+}
+
 export const FieldCode = {
   create: (code: string): FieldCode => {
     if (code.length === 0) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.FsEmptyFieldCode,
         "Field code cannot be empty",
+      );
+    }
+    if (hasInvalidFieldCodeChars(code)) {
+      throw new BusinessRuleError(
+        FormSchemaErrorCode.FsInvalidFieldCode,
+        `Field code "${sanitizeForDisplay(code)}" contains invalid characters`,
       );
     }
     return code as FieldCode;

@@ -5,8 +5,8 @@ import type {
   LayoutItem,
   LayoutRow,
   ReferenceTableLayoutItem,
-  Schema,
 } from "../entity";
+import { Schema } from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
   DecorationElement,
@@ -50,7 +50,10 @@ function validateEnumProperty(
   value: unknown,
   validValues: ReadonlySet<string>,
 ): void {
-  if (value !== undefined && !validValues.has(value as string)) {
+  if (
+    value !== undefined &&
+    (typeof value !== "string" || !validValues.has(value))
+  ) {
     throw new BusinessRuleError(
       FormSchemaErrorCode.FsInvalidSchemaStructure,
       `Invalid ${propName} "${String(value)}" for field "${fieldCode}". Expected one of: ${[...validValues].join(", ")}`,
@@ -165,9 +168,22 @@ const SUBTABLE_ATTRIBUTES: ReadonlySet<string> = new Set(["fields"]);
 
 type RawField = Record<string, unknown>;
 
+/**
+ * Parses a raw size object into an ElementSize.
+ * Returns undefined when no size properties are present, treating an empty
+ * object the same as absent — layout elements without explicit sizing should
+ * not carry a redundant empty size object.
+ */
 function parseSize(raw: unknown): ElementSize | undefined {
   if (!isRecord(raw)) return undefined;
   const obj = raw;
+  if (
+    obj.width === undefined &&
+    obj.height === undefined &&
+    obj.innerHeight === undefined
+  ) {
+    return undefined;
+  }
   return {
     ...(obj.width !== undefined ? { width: String(obj.width) } : {}),
     ...(obj.height !== undefined ? { height: String(obj.height) } : {}),
@@ -177,8 +193,26 @@ function parseSize(raw: unknown): ElementSize | undefined {
   };
 }
 
-function normalizePropertyValue(value: unknown): unknown {
+const BOOLEAN_PROPERTIES: ReadonlySet<string> = new Set([
+  "required",
+  "unique",
+  "digit",
+  "hideExpression",
+  "defaultNowValue",
+  "openGroup",
+]);
+
+function normalizePropertyValue(key: string, value: unknown): unknown {
+  if (typeof value === "boolean") return value;
   if (typeof value === "number") return String(value);
+  if (BOOLEAN_PROPERTIES.has(key) && typeof value === "string") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.FsInvalidSchemaStructure,
+      `Invalid boolean string "${value}" for property "${key}". Expected "true" or "false"`,
+    );
+  }
   return value;
 }
 
@@ -190,7 +224,7 @@ function extractProperties(raw: RawField): Record<string, unknown> {
     if (DECORATION_ATTRIBUTES.has(key)) continue;
     if (GROUP_ATTRIBUTES.has(key)) continue;
     if (SUBTABLE_ATTRIBUTES.has(key)) continue;
-    properties[key] = normalizePropertyValue(value);
+    properties[key] = normalizePropertyValue(key, value);
   }
   return properties;
 }
@@ -247,7 +281,7 @@ function buildFieldDefinition(
         props.defaultValue !== undefined &&
         Array.isArray(props.defaultValue)
       ) {
-        const arr = props.defaultValue as string[];
+        const arr = props.defaultValue;
         props.defaultValue = arr.length > 0 ? String(arr[0]) : "";
       }
       return {
@@ -498,6 +532,13 @@ function parseLayoutRow(raw: Record<string, unknown>): LayoutRow {
     );
   }
 
+  if (raw.fields !== undefined && !Array.isArray(raw.fields)) {
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.FsInvalidLayoutStructure,
+      `ROW "fields" must be an array, got ${typeof raw.fields}`,
+    );
+  }
+
   const rawFields = Array.isArray(raw.fields) ? (raw.fields as RawField[]) : [];
   const fields = rawFields.map(parseLayoutElement);
 
@@ -705,16 +746,23 @@ export const SchemaParser = {
       );
     }
 
-    const rawLayout = (obj.layout as unknown[]).filter(isRecord);
+    const rawLayout = obj.layout as unknown[];
     let fieldMap = new Map<FieldCode, FieldDefinition>();
     const layout: LayoutItem[] = [];
 
-    for (const rawItem of rawLayout) {
+    for (let i = 0; i < rawLayout.length; i++) {
+      const rawItem = rawLayout[i];
+      if (!isRecord(rawItem)) {
+        throw new BusinessRuleError(
+          FormSchemaErrorCode.FsInvalidLayoutStructure,
+          `Layout item at index ${i} must be an object`,
+        );
+      }
       const result = parseLayoutItem(rawItem);
       layout.push(result.item);
       fieldMap = mergeFieldMaps(fieldMap, result.fields);
     }
 
-    return { fields: fieldMap, layout };
+    return Schema.create(fieldMap, layout);
   },
 };

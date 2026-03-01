@@ -68,12 +68,7 @@ export class KintoneRecordManager implements RecordManager {
     }
   }
 
-  async updateRecords(
-    records: readonly {
-      id: string;
-      record: SeedRecord;
-    }[],
-  ): Promise<void> {
+  async updateRecords(records: readonly SeedRecordWithId[]): Promise<void> {
     if (records.length === 0) return;
     try {
       await this.client.record.updateAllRecords({
