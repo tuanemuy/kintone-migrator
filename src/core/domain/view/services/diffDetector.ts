@@ -1,19 +1,22 @@
+import { deepEqual } from "@/lib/deepEqual";
+import { buildDiffResult } from "../../diff";
 import type { ViewConfig } from "../entity";
 import type { ViewDiff, ViewDiffEntry } from "../valueObject";
 
-function isArrayEqual(a: readonly string[], b: readonly string[]): boolean {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
-function describeChanges(local: ViewConfig, remote: ViewConfig): string {
+function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
   const changes: string[] = [];
+
+  if (local.name !== remote.name) {
+    changes.push(`name: "${remote.name}" -> "${local.name}"`);
+  }
 
   if (local.type !== remote.type) {
     changes.push(`type: ${remote.type} -> ${local.type}`);
+  }
+
+  // kintone API returns "" for non-builtin views, so undefined and "" are treated as equivalent
+  if ((local.builtinType ?? "") !== (remote.builtinType ?? "")) {
+    changes.push("builtinType changed");
   }
 
   if (local.index !== remote.index) {
@@ -40,9 +43,9 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string {
     changes.push("html changed");
   }
 
-  if (local.pager !== remote.pager) {
+  if ((local.pager ?? false) !== (remote.pager ?? false)) {
     changes.push(
-      `pager: ${String(remote.pager ?? "undefined")} -> ${String(local.pager ?? "undefined")}`,
+      `pager: ${String(remote.pager ?? false)} -> ${String(local.pager ?? false)}`,
     );
   }
 
@@ -50,31 +53,11 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string {
     changes.push("device changed");
   }
 
-  const localFields = local.fields ?? [];
-  const remoteFields = remote.fields ?? [];
-  if (!isArrayEqual(localFields, remoteFields)) {
+  if (!deepEqual(local.fields ?? [], remote.fields ?? [])) {
     changes.push("fields changed");
   }
 
-  return changes.length > 0 ? changes.join(", ") : "no visible changes";
-}
-
-function isViewEqual(local: ViewConfig, remote: ViewConfig): boolean {
-  if (local.type !== remote.type) return false;
-  if (local.index !== remote.index) return false;
-  if ((local.filterCond ?? "") !== (remote.filterCond ?? "")) return false;
-  if ((local.sort ?? "") !== (remote.sort ?? "")) return false;
-  if ((local.date ?? "") !== (remote.date ?? "")) return false;
-  if ((local.title ?? "") !== (remote.title ?? "")) return false;
-  if ((local.html ?? "") !== (remote.html ?? "")) return false;
-  if (local.pager !== remote.pager) return false;
-  if ((local.device ?? "") !== (remote.device ?? "")) return false;
-
-  const localFields = local.fields ?? [];
-  const remoteFields = remote.fields ?? [];
-  if (!isArrayEqual(localFields, remoteFields)) return false;
-
-  return true;
+  return changes;
 }
 
 export const ViewDiffDetector = {
@@ -93,12 +76,15 @@ export const ViewDiffDetector = {
           viewName: name,
           details: "new view",
         });
-      } else if (!isViewEqual(localView, remoteView)) {
-        entries.push({
-          type: "modified",
-          viewName: name,
-          details: describeChanges(localView, remoteView),
-        });
+      } else {
+        const changes = describeChanges(localView, remoteView);
+        if (changes.length > 0) {
+          entries.push({
+            type: "modified",
+            viewName: name,
+            details: changes.join(", "),
+          });
+        }
       }
     }
 
@@ -107,24 +93,11 @@ export const ViewDiffDetector = {
         entries.push({
           type: "deleted",
           viewName: name,
-          details: "deleted",
+          details: "removed",
         });
       }
     }
 
-    const added = entries.filter((e) => e.type === "added").length;
-    const modified = entries.filter((e) => e.type === "modified").length;
-    const deleted = entries.filter((e) => e.type === "deleted").length;
-
-    return {
-      entries,
-      summary: {
-        added,
-        modified,
-        deleted,
-        total: added + modified + deleted,
-      },
-      isEmpty: entries.length === 0,
-    };
+    return buildDiffResult(entries);
   },
 };

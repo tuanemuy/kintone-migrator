@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type NotificationEntityType =
   | "USER"
   | "GROUP"
@@ -8,3 +10,12 @@ export type NotificationEntity = Readonly<{
   type: NotificationEntityType;
   code: string;
 }>;
+
+export type NotificationDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  section: "general" | "perRecord" | "reminder";
+  name: string;
+  details: string;
+}>;
+
+export type NotificationDiff = DiffResult<NotificationDiffEntry>;

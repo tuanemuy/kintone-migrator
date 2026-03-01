@@ -21,17 +21,38 @@ vi.mock("../handleError", () => ({
 }));
 
 import * as p from "@clack/prompts";
-import type { DetectProcessManagementDiffOutput } from "@/core/application/processManagement/dto";
-import type { DetectViewDiffOutput } from "@/core/application/view/dto";
+import type { ActionDiffEntry } from "@/core/application/action/detectActionDiff";
+import type { AdminNotesDiffEntry } from "@/core/application/adminNotes/detectAdminNotesDiff";
+import type { AppPermissionDiffEntry } from "@/core/application/appPermission/detectAppPermissionDiff";
+import type { CustomizationDiffEntry } from "@/core/application/customization/detectCustomizationDiff";
+import type { FieldPermissionDiffEntry } from "@/core/application/fieldPermission/detectFieldPermissionDiff";
+import type { GeneralSettingsDiffEntry } from "@/core/application/generalSettings/detectGeneralSettingsDiff";
+import type { NotificationDiffEntry } from "@/core/application/notification/detectNotificationDiff";
+import type { PluginDiffEntry } from "@/core/application/plugin/detectPluginDiff";
+import type { ProcessManagementDiffEntry } from "@/core/application/processManagement/detectProcessManagementDiff";
+import type { RecordPermissionDiffEntry } from "@/core/application/recordPermission/detectRecordPermissionDiff";
+import type { ReportDiffEntry } from "@/core/application/report/detectReportDiff";
+import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
+import type { DiffResult } from "@/core/domain/diff";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { logError } from "../handleError";
 import {
   confirmAndDeploy,
+  printActionDiffResult,
+  printAdminNotesDiffResult,
   printAppHeader,
+  printAppPermissionDiffResult,
+  printCustomizationDiffResult,
   printDiffResult,
+  printFieldPermissionDiffResult,
+  printGeneralSettingsDiffResult,
   printMultiAppResult,
+  printNotificationDiffResult,
+  printPluginDiffResult,
   printProcessDiffResult,
+  printRecordPermissionDiffResult,
+  printReportDiffResult,
   printViewDiffResult,
   promptDeploy,
 } from "../output";
@@ -263,10 +284,11 @@ describe("printDiffResult", () => {
 
 describe("printViewDiffResult", () => {
   it("差分がない場合、'No changes detected.' とログ出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -274,12 +296,13 @@ describe("printViewDiffResult", () => {
   });
 
   it("追加エントリがある場合、'+N added' と 'View Diff Details' ノートが出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [
         { type: "added", viewName: "一覧", details: "LIST view を追加" },
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -293,10 +316,11 @@ describe("printViewDiffResult", () => {
   });
 
   it("変更エントリがある場合、'~N modified' がログ出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [{ type: "modified", viewName: "一覧", details: "ソート変更" }],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -305,10 +329,11 @@ describe("printViewDiffResult", () => {
   });
 
   it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [{ type: "deleted", viewName: "旧一覧", details: "削除" }],
       summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -317,7 +342,7 @@ describe("printViewDiffResult", () => {
   });
 
   it("追加・変更・削除が混在する場合、全種類のサマリーが出力される", () => {
-    const result: DetectViewDiffOutput = {
+    const result: DiffResult<ViewDiffEntry> = {
       entries: [
         { type: "added", viewName: "新規", details: "追加" },
         { type: "modified", viewName: "変更", details: "変更" },
@@ -325,6 +350,7 @@ describe("printViewDiffResult", () => {
       ],
       summary: { added: 1, modified: 1, deleted: 1, total: 3 },
       isEmpty: false,
+      warnings: [],
     };
     printViewDiffResult(result);
     const changeLine = vi.mocked(p.log.info).mock.calls[0][0] as string;
@@ -332,14 +358,28 @@ describe("printViewDiffResult", () => {
     expect(changeLine).toContain("~1 modified");
     expect(changeLine).toContain("-1 deleted");
   });
+
+  it("warnings がある場合、p.log.warn で出力される", () => {
+    const result: DiffResult<ViewDiffEntry> = {
+      entries: [
+        { type: "added", viewName: "一覧", details: "LIST view を追加" },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: ["test warning message"],
+    };
+    printViewDiffResult(result);
+    expect(p.log.warn).toHaveBeenCalledWith("test warning message");
+  });
 });
 
 describe("printProcessDiffResult", () => {
   it("差分がない場合、'No changes detected.' とログ出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
@@ -347,7 +387,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("追加エントリがある場合、'+N added' と 'Process Management Diff Details' ノートが出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [
         {
           type: "added",
@@ -358,6 +398,7 @@ describe("printProcessDiffResult", () => {
       ],
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -371,7 +412,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("変更エントリがある場合、'~N modified' がログ出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [
         {
           type: "modified",
@@ -382,6 +423,7 @@ describe("printProcessDiffResult", () => {
       ],
       summary: { added: 0, modified: 1, deleted: 0, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -390,7 +432,7 @@ describe("printProcessDiffResult", () => {
   });
 
   it("削除エントリがある場合、'-N deleted' がログ出力される", () => {
-    const result: DetectProcessManagementDiffOutput = {
+    const result: DiffResult<ProcessManagementDiffEntry> = {
       entries: [
         {
           type: "deleted",
@@ -401,6 +443,7 @@ describe("printProcessDiffResult", () => {
       ],
       summary: { added: 0, modified: 0, deleted: 1, total: 1 },
       isEmpty: false,
+      warnings: [],
     };
     printProcessDiffResult(result);
     expect(p.log.info).toHaveBeenCalledWith(
@@ -640,5 +683,413 @@ describe("confirmAndDeploy", () => {
     await confirmAndDeploy([], true);
 
     expect(p.log.success).toHaveBeenCalledWith("Deployed to production.");
+  });
+});
+
+describe("printAdminNotesDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<AdminNotesDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printAdminNotesDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("変更エントリがある場合、field 名と details が出力される", () => {
+    const result: DiffResult<AdminNotesDiffEntry> = {
+      entries: [
+        { type: "modified", field: "content", details: "content changed" },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printAdminNotesDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("~1 modified"),
+    );
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("content"),
+      "Admin Notes Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printGeneralSettingsDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<GeneralSettingsDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printGeneralSettingsDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("変更エントリがある場合、field 名と details が出力される", () => {
+    const result: DiffResult<GeneralSettingsDiffEntry> = {
+      entries: [{ type: "modified", field: "name", details: '"old" -> "new"' }],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printGeneralSettingsDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("~1 modified"),
+    );
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("name"),
+      "General Settings Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printAppPermissionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<AppPermissionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printAppPermissionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("追加・削除が混在する場合、entityKey が出力される", () => {
+    const result: DiffResult<AppPermissionDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          entityKey: "USER:admin",
+          details: "recordViewable",
+        },
+        {
+          type: "deleted",
+          entityKey: "GROUP:dev",
+          details: "no permissions",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 1, total: 2 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printAppPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("USER:admin");
+    expect(noteContent).toContain("GROUP:dev");
+  });
+});
+
+describe("printFieldPermissionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<FieldPermissionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printFieldPermissionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("変更エントリがある場合、fieldCode が出力される", () => {
+    const result: DiffResult<FieldPermissionDiffEntry> = {
+      entries: [
+        { type: "modified", fieldCode: "email", details: "entities changed" },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printFieldPermissionDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("email"),
+      "Field Permission Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printCustomizationDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printCustomizationDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("platform が 'config' の場合、category のみが location として表示される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          platform: "config",
+          category: "scope",
+          name: "scope",
+          details: "ALL -> ADMIN",
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printCustomizationDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("scope");
+    expect(noteContent).not.toContain("config.scope");
+  });
+
+  it("platform が 'desktop' の場合、platform.category が location として表示される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          platform: "desktop",
+          category: "js",
+          name: "app.js",
+          details: "new resource",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printCustomizationDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("desktop.js");
+    expect(noteContent).toContain("app.js");
+  });
+
+  it("warning entries は summary に含まれず p.log.warn で出力される", () => {
+    const result: DiffResult<CustomizationDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          platform: "desktop",
+          category: "js",
+          name: "app.js",
+          details: "new resource",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [
+        "[desktop.js] duplicate basenames detected; diff results may be inaccurate for FILE resources",
+      ],
+    };
+    printCustomizationDiffResult(result);
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("duplicate basenames"),
+    );
+    const infoCall = vi
+      .mocked(p.log.info)
+      .mock.calls.find(
+        (c) => typeof c[0] === "string" && c[0].includes("Changes:"),
+      );
+    expect(infoCall).toBeDefined();
+    expect(infoCall?.[0]).not.toContain("~1");
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).not.toContain("(warning)");
+  });
+});
+
+describe("printNotificationDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<NotificationDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printNotificationDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("セクション名と通知名が出力される", () => {
+    const result: DiffResult<NotificationDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          section: "general",
+          name: "USER:user1",
+          details: "new notification",
+        },
+        {
+          type: "deleted",
+          section: "perRecord",
+          name: "Test",
+          details: "removed",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 1, total: 2 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printNotificationDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("general");
+    expect(noteContent).toContain("perRecord");
+  });
+});
+
+describe("printActionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<ActionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printActionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("アクション名と details が出力される", () => {
+    const result: DiffResult<ActionDiffEntry> = {
+      entries: [
+        { type: "added", actionName: "copyAction", details: "dest: 42" },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printActionDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("copyAction"),
+      "Action Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printPluginDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<PluginDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printPluginDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("pluginId と details が出力される", () => {
+    const result: DiffResult<PluginDiffEntry> = {
+      entries: [
+        {
+          type: "deleted",
+          pluginId: "com.example.plugin",
+          details: '"My Plugin"',
+        },
+      ],
+      summary: { added: 0, modified: 0, deleted: 1, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printPluginDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("com.example.plugin"),
+      "Plugin Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printRecordPermissionDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printRecordPermissionDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("filterCond が空の場合、'(all records)' が表示される", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [{ type: "added", filterCond: "", details: "entities: 2" }],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printRecordPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain("(all records)");
+  });
+
+  it("filterCond がある場合、そのまま表示される", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          filterCond: 'status = "active"',
+          details: "entities changed",
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printRecordPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteContent).toContain('status = "active"');
+  });
+});
+
+describe("printReportDiffResult", () => {
+  it("差分がない場合、'No changes detected.' とログ出力される", () => {
+    const result: DiffResult<ReportDiffEntry> = {
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [],
+    };
+    printReportDiffResult(result);
+    expect(p.log.info).toHaveBeenCalledWith("No changes detected.");
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("レポート名と details が出力される", () => {
+    const result: DiffResult<ReportDiffEntry> = {
+      entries: [
+        {
+          type: "added",
+          reportName: "Sales Report",
+          details: "chartType: TABLE",
+        },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printReportDiffResult(result);
+    expect(p.note).toHaveBeenCalledWith(
+      expect.stringContaining("Sales Report"),
+      "Report Diff Details",
+      expect.objectContaining({ format: expect.any(Function) }),
+    );
   });
 });

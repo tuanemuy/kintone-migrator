@@ -1,41 +1,12 @@
-import { isRecord } from "@/core/domain/typeGuards";
-import type { DiffEntry, FormDiff, FormLayout, Schema } from "../entity";
-import { FormDiff as FormDiffFactory } from "../entity";
-import type { FieldCode, FieldDefinition } from "../valueObject";
-
-function isArrayEqual(a: unknown, b: unknown): boolean {
-  if (!Array.isArray(a) || !Array.isArray(b)) return false;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (!isValueEqual(a[i], b[i])) return false;
-  }
-  return true;
-}
-
-function isRecordEqual(
-  a: Record<string, unknown>,
-  b: Record<string, unknown>,
-): boolean {
-  const keysA = Object.keys(a);
-  const keysB = Object.keys(b);
-  if (keysA.length !== keysB.length) return false;
-  for (const key of keysA) {
-    if (!Object.hasOwn(b, key)) return false;
-    if (!isValueEqual(a[key], b[key])) return false;
-  }
-  return true;
-}
-
-function isValueEqual(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (a === null || b === null) return a === b;
-  if (typeof a !== typeof b) return false;
-  if (Array.isArray(a)) return isArrayEqual(a, b);
-  if (isRecord(a) && isRecord(b)) {
-    return isRecordEqual(a, b);
-  }
-  return false;
-}
+import { deepEqual } from "@/lib/deepEqual";
+import { buildDiffResult } from "../../diff";
+import type { FormLayout, Schema } from "../entity";
+import type {
+  FieldCode,
+  FieldDefinition,
+  FormSchemaDiff,
+  FormSchemaDiffEntry,
+} from "../valueObject";
 
 function isMapEqual(
   a: ReadonlyMap<FieldCode, FieldDefinition>,
@@ -56,15 +27,10 @@ function isPropertiesEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   }
 
   if (a.type === "REFERENCE_TABLE" && b.type === "REFERENCE_TABLE") {
-    const refA = a.properties.referenceTable;
-    const refB = b.properties.referenceTable;
-    return isValueEqual(
-      { ...refA, displayFields: [...refA.displayFields] },
-      { ...refB, displayFields: [...refB.displayFields] },
-    );
+    return deepEqual(a.properties.referenceTable, b.properties.referenceTable);
   }
 
-  return isValueEqual(a.properties, b.properties);
+  return deepEqual(a.properties, b.properties);
 }
 
 function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
@@ -73,26 +39,6 @@ function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   if (a.code !== b.code) return false;
   if (Boolean(a.noLabel) !== Boolean(b.noLabel)) return false;
   return isPropertiesEqual(a, b);
-}
-
-function hasPropertiesChanged(
-  before: FieldDefinition,
-  after: FieldDefinition,
-): boolean {
-  if (before.type === "SUBTABLE" && after.type === "SUBTABLE") {
-    return !isMapEqual(before.properties.fields, after.properties.fields);
-  }
-
-  if (before.type === "REFERENCE_TABLE" && after.type === "REFERENCE_TABLE") {
-    const refB = before.properties.referenceTable;
-    const refA = after.properties.referenceTable;
-    return !isValueEqual(
-      { ...refB, displayFields: [...refB.displayFields] },
-      { ...refA, displayFields: [...refA.displayFields] },
-    );
-  }
-
-  return !isValueEqual(before.properties, after.properties);
 }
 
 function describeChanges(
@@ -115,7 +61,7 @@ function describeChanges(
     );
   }
 
-  if (hasPropertiesChanged(before, after)) {
+  if (!isPropertiesEqual(before, after)) {
     changes.push("properties changed");
   }
 
@@ -123,7 +69,7 @@ function describeChanges(
 }
 
 function isLayoutEqual(a: FormLayout, b: FormLayout): boolean {
-  return isValueEqual(a, b);
+  return deepEqual(a, b);
 }
 
 export const DiffDetector = {
@@ -137,8 +83,8 @@ export const DiffDetector = {
   detect: (
     schema: Schema,
     current: ReadonlyMap<FieldCode, FieldDefinition>,
-  ): FormDiff => {
-    const entries: DiffEntry[] = [];
+  ): FormSchemaDiff => {
+    const entries: FormSchemaDiffEntry[] = [];
 
     for (const [fieldCode, schemaDef] of schema.fields) {
       const currentDef = current.get(fieldCode);
@@ -169,12 +115,12 @@ export const DiffDetector = {
           type: "deleted",
           fieldCode,
           fieldLabel: currentDef.label,
-          details: "deleted",
+          details: "removed",
           before: currentDef,
         });
       }
     }
 
-    return FormDiffFactory.create(entries);
+    return buildDiffResult(entries);
   },
 };

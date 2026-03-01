@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type CustomizationScope = "ALL" | "ADMIN" | "NONE";
 
 export type LocalFileResource = Readonly<{
@@ -45,4 +47,24 @@ export type ResolvedPlatform = Readonly<{
 export type RemotePlatform = Readonly<{
   js: readonly RemoteResource[];
   css: readonly RemoteResource[];
+}>;
+
+export type CustomizationDiffCategory = "js" | "css" | "scope";
+
+export type CustomizationDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  platform: "desktop" | "mobile" | "config";
+  category: CustomizationDiffCategory;
+  name: string;
+  details: string;
+}>;
+
+export type CustomizationDiff = DiffResult<CustomizationDiffEntry>;
+
+export const DEFAULT_CUSTOMIZATION_SCOPE: CustomizationScope = "ALL";
+
+export type RemoteCustomization = Readonly<{
+  scope: CustomizationScope;
+  desktop: RemotePlatform;
+  mobile: RemotePlatform;
 }>;

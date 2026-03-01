@@ -15,7 +15,13 @@ import {
 async function runDiff(container: FormSchemaContainer): Promise<void> {
   const s = p.spinner();
   s.start("Fetching form schema...");
-  const result = await detectDiff({ container });
+  let result: Awaited<ReturnType<typeof detectDiff>>;
+  try {
+    result = await detectDiff({ container });
+  } catch (error) {
+    s.stop("Comparison failed.");
+    throw error;
+  }
   s.stop("Form schema fetched.");
 
   printDiffResult(result);
@@ -40,12 +46,20 @@ export default define({
           await runDiff(container);
         },
         multiApp: async (plan, projectConfig) => {
-          await runMultiAppWithFailCheck(plan, async (app) => {
-            const config = resolveAppCliConfig(app, projectConfig, ctx.values);
-            const container = createCliContainer(config);
-            printAppHeader(app.name, app.appId);
-            await runDiff(container);
-          });
+          await runMultiAppWithFailCheck(
+            plan,
+            async (app) => {
+              const config = resolveAppCliConfig(
+                app,
+                projectConfig,
+                ctx.values,
+              );
+              const container = createCliContainer(config);
+              printAppHeader(app.name, app.appId);
+              await runDiff(container);
+            },
+            "All schema diffs completed successfully.",
+          );
         },
       });
     } catch (error) {

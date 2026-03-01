@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { DiffEntry, FormLayout, Schema } from "../../entity";
+import type { FormLayout, Schema } from "../../entity";
 import type {
   FieldCode,
   FieldDefinition,
+  FormSchemaDiffEntry,
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../../valueObject";
@@ -298,7 +299,7 @@ describe("DiffDetector", () => {
       const current = makeFieldMap([deleted, modBefore]);
 
       const diff = DiffDetector.detect(schema, current);
-      const types = diff.entries.map((e: DiffEntry) => e.type);
+      const types = diff.entries.map((e: FormSchemaDiffEntry) => e.type);
       expect(types).toEqual(["added", "modified", "deleted"]);
     });
 
@@ -321,7 +322,7 @@ describe("DiffDetector", () => {
       const diff = DiffDetector.detect(schema, current);
       expect(diff.entries[0].before).toEqual(field);
       expect(diff.entries[0].after).toBeUndefined();
-      expect(diff.entries[0].details).toBe("deleted");
+      expect(diff.entries[0].details).toBe("removed");
     });
 
     it("modifiedエントリは before と after の両方を持つ", () => {

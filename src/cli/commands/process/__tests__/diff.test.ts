@@ -72,6 +72,7 @@ describe("process diff コマンド", () => {
       ],
       isEmpty: false,
       summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      warnings: [],
     };
     vi.mocked(detectProcessManagementDiff).mockResolvedValue(mockResult);
 
@@ -86,6 +87,7 @@ describe("process diff コマンド", () => {
       entries: [],
       isEmpty: true,
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      warnings: [],
     };
     vi.mocked(detectProcessManagementDiff).mockResolvedValue(mockResult);
 

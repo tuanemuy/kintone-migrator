@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type ChartType =
   | "BAR"
   | "COLUMN"
@@ -68,3 +70,11 @@ export type PeriodicReport = Readonly<{
   active: boolean;
   period: PeriodicReportPeriod;
 }>;
+
+export type ReportDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  reportName: string;
+  details: string;
+}>;
+
+export type ReportDiff = DiffResult<ReportDiffEntry>;

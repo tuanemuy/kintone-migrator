@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type ActionDestApp = Readonly<{
   app?: string;
   code?: string;
@@ -23,3 +25,11 @@ export type ActionEntity = Readonly<{
   type: ActionEntityType;
   code: string;
 }>;
+
+export type ActionDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  actionName: string;
+  details: string;
+}>;
+
+export type ActionDiff = DiffResult<ActionDiffEntry>;

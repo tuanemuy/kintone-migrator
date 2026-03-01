@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type ThemeType =
   | "WHITE"
   | "RED"
@@ -31,3 +33,12 @@ export type NumberPrecisionConfig = Readonly<{
   decimalPlaces: number;
   roundingMode: RoundingMode;
 }>;
+
+/** Only "modified" is used because general settings is a singleton config with no add/delete semantics. */
+export type GeneralSettingsDiffEntry = Readonly<{
+  type: "modified";
+  field: string;
+  details: string;
+}>;
+
+export type GeneralSettingsDiff = DiffResult<GeneralSettingsDiffEntry>;

@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type RecordPermissionEntityType =
   | "USER"
   | "GROUP"
@@ -16,3 +18,11 @@ export type RecordPermissionRightEntity = Readonly<{
   deletable: boolean;
   includeSubs: boolean;
 }>;
+
+export type RecordPermissionDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  filterCond: string;
+  details: string;
+}>;
+
+export type RecordPermissionDiff = DiffResult<RecordPermissionDiffEntry>;

@@ -1,23 +1,21 @@
 import { ProcessManagementDiffDetector } from "@/core/domain/processManagement/services/diffDetector";
-import type { ProcessManagementServiceArgs } from "../container/processManagement";
-import { ValidationError, ValidationErrorCode } from "../error";
-import type { DetectProcessManagementDiffOutput } from "./dto";
+import type { ProcessManagementDiff } from "@/core/domain/processManagement/valueObject";
+import type { ProcessManagementDiffServiceArgs } from "../container/processManagement";
+import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseProcessManagementConfigText } from "./parseConfig";
+
+export type { ProcessManagementDiffEntry } from "@/core/domain/processManagement/valueObject";
 
 export async function detectProcessManagementDiff({
   container,
-}: ProcessManagementServiceArgs): Promise<DetectProcessManagementDiffOutput> {
-  const result = await container.processManagementStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "Process management config file not found",
-    );
-  }
-  const localConfig = parseProcessManagementConfigText(result.content);
-
-  const { config: remoteConfig } =
-    await container.processManagementConfigurator.getProcessManagement();
-
-  return ProcessManagementDiffDetector.detect(localConfig, remoteConfig);
+}: ProcessManagementDiffServiceArgs): Promise<ProcessManagementDiff> {
+  return detectDiffFromConfig({
+    getStorage: () => container.processManagementStorage.get(),
+    fetchRemote: () =>
+      container.processManagementConfigurator.getProcessManagement(),
+    parseConfig: parseProcessManagementConfigText,
+    detect: (local, remote) =>
+      ProcessManagementDiffDetector.detect(local, remote.config),
+    notFoundMessage: "Process management config file not found",
+  });
 }

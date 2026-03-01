@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { DiffEntry } from "../entity";
-import { FormDiff, type FormLayout, type LayoutRow, Schema } from "../entity";
+import { buildDiffResult } from "../../diff";
+import type { FormLayout, LayoutRow } from "../entity";
+import { Schema } from "../entity";
 import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
@@ -8,6 +9,7 @@ import {
 import {
   FieldCode,
   type FieldDefinition,
+  type FormSchemaDiffEntry,
   type SubtableFieldDefinition,
 } from "../valueObject";
 
@@ -65,11 +67,11 @@ function groupField(
   } as FieldDefinition;
 }
 
-// --- FormDiff.create ---
+// --- buildDiffResult for FormSchemaDiffEntry ---
 
-describe("FormDiff.create", () => {
-  it("空のエントリから空のFormDiffを生成する", () => {
-    const diff = FormDiff.create([]);
+describe("buildDiffResult for FormSchemaDiffEntry", () => {
+  it("空のエントリから空のFormSchemaDiffを生成する", () => {
+    const diff = buildDiffResult<FormSchemaDiffEntry>([]);
     expect(diff.isEmpty).toBe(true);
     expect(diff.entries).toHaveLength(0);
     expect(diff.summary).toEqual({
@@ -81,7 +83,7 @@ describe("FormDiff.create", () => {
   });
 
   it("エントリ数からサマリーを正しく集計する", () => {
-    const entries: DiffEntry[] = [
+    const entries: FormSchemaDiffEntry[] = [
       {
         type: "added",
         fieldCode: FieldCode.create("f1"),
@@ -108,12 +110,12 @@ describe("FormDiff.create", () => {
         type: "deleted",
         fieldCode: FieldCode.create("f4"),
         fieldLabel: "F4",
-        details: "deleted",
+        details: "removed",
         before: textField("f4", "F4"),
       },
     ];
 
-    const diff = FormDiff.create(entries);
+    const diff = buildDiffResult(entries);
     expect(diff.isEmpty).toBe(false);
     expect(diff.summary).toEqual({
       added: 2,
@@ -124,12 +126,12 @@ describe("FormDiff.create", () => {
   });
 
   it("エントリをadded→modified→deletedの順にソートする", () => {
-    const entries: DiffEntry[] = [
+    const entries: FormSchemaDiffEntry[] = [
       {
         type: "deleted",
         fieldCode: FieldCode.create("d1"),
         fieldLabel: "D1",
-        details: "deleted",
+        details: "removed",
         before: textField("d1", "D1"),
       },
       {
@@ -149,7 +151,7 @@ describe("FormDiff.create", () => {
       },
     ];
 
-    const diff = FormDiff.create(entries);
+    const diff = buildDiffResult(entries);
     expect(diff.entries[0].type).toBe("added");
     expect(diff.entries[1].type).toBe("modified");
     expect(diff.entries[2].type).toBe("deleted");

@@ -1,4 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
+import type { DiffResult } from "../diff";
 import { FormSchemaErrorCode } from "./errorCode";
 
 // Lookup
@@ -54,16 +55,16 @@ export type FieldType =
   | "SUBTABLE"
   | "REFERENCE_TABLE";
 
-// DiffType
-export type DiffType = "added" | "modified" | "deleted";
-
-// DiffSummary
-export type DiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
+export type FormSchemaDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  fieldCode: FieldCode;
+  fieldLabel: string;
+  details: string;
+  before?: FieldDefinition;
+  after?: FieldDefinition;
 }>;
+
+export type FormSchemaDiff = DiffResult<FormSchemaDiffEntry>;
 
 // SelectionOption
 export type SelectionOption = Readonly<{

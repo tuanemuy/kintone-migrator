@@ -1,28 +1,19 @@
 import { ViewDiffDetector } from "@/core/domain/view/services/diffDetector";
-import type { ViewServiceArgs } from "../container/view";
-import { ValidationError, ValidationErrorCode } from "../error";
-import type { DetectViewDiffOutput } from "./dto";
+import type { ViewDiff } from "@/core/domain/view/valueObject";
+import type { ViewDiffServiceArgs } from "../container/view";
+import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseViewConfigText } from "./parseConfig";
+
+export type { ViewDiffEntry } from "@/core/domain/view/valueObject";
 
 export async function detectViewDiff({
   container,
-}: ViewServiceArgs): Promise<DetectViewDiffOutput> {
-  const result = await container.viewStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "View config file not found",
-    );
-  }
-  const config = parseViewConfigText(result.content);
-
-  const { views: remoteViews } = await container.viewConfigurator.getViews();
-
-  const diff = ViewDiffDetector.detect(config.views, remoteViews);
-
-  return {
-    entries: diff.entries,
-    summary: diff.summary,
-    isEmpty: diff.isEmpty,
-  };
+}: ViewDiffServiceArgs): Promise<ViewDiff> {
+  return detectDiffFromConfig({
+    getStorage: () => container.viewStorage.get(),
+    fetchRemote: () => container.viewConfigurator.getViews(),
+    parseConfig: (content) => parseViewConfigText(content).views,
+    detect: (views, remote) => ViewDiffDetector.detect(views, remote.views),
+    notFoundMessage: "View config file not found",
+  });
 }

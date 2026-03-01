@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type ProcessEntityType =
   | "USER"
   | "GROUP"
@@ -32,28 +34,13 @@ export type ProcessAction = Readonly<{
   }>;
 }>;
 
-// Diff types
-
-export type ProcessManagementDiffType = "added" | "modified" | "deleted";
-
 export type ProcessManagementDiffCategory = "enable" | "state" | "action";
 
 export type ProcessManagementDiffEntry = Readonly<{
-  type: ProcessManagementDiffType;
+  type: "added" | "modified" | "deleted";
   category: ProcessManagementDiffCategory;
   name: string;
   details: string;
 }>;
 
-export type ProcessManagementDiffSummary = Readonly<{
-  added: number;
-  modified: number;
-  deleted: number;
-  total: number;
-}>;
-
-export type ProcessManagementDiff = Readonly<{
-  entries: readonly ProcessManagementDiffEntry[];
-  summary: ProcessManagementDiffSummary;
-  isEmpty: boolean;
-}>;
+export type ProcessManagementDiff = DiffResult<ProcessManagementDiffEntry>;

@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type FieldRightAccessibility = "READ" | "WRITE" | "NONE";
 
 export type EntityType = "USER" | "GROUP" | "ORGANIZATION" | "FIELD_ENTITY";
@@ -12,3 +14,11 @@ export type FieldRightEntity = Readonly<{
   entity: FieldPermissionEntity;
   includeSubs?: boolean;
 }>;
+
+export type FieldPermissionDiffEntry = Readonly<{
+  type: "added" | "modified" | "deleted";
+  fieldCode: string;
+  details: string;
+}>;
+
+export type FieldPermissionDiff = DiffResult<FieldPermissionDiffEntry>;
