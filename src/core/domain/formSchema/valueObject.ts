@@ -20,12 +20,28 @@ export type Lookup = Readonly<{
 // FieldCode
 export type FieldCode = string & { readonly brand: "FieldCode" };
 
+function hasInvalidFieldCodeChars(code: string): boolean {
+  for (let i = 0; i < code.length; i++) {
+    const ch = code.charCodeAt(i);
+    if (ch <= 0x1f || ch === 0x7f) return true;
+    const c = code[i];
+    if (c === "/" || c === "\\") return true;
+  }
+  return false;
+}
+
 export const FieldCode = {
   create: (code: string): FieldCode => {
     if (code.length === 0) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.FsEmptyFieldCode,
         "Field code cannot be empty",
+      );
+    }
+    if (hasInvalidFieldCodeChars(code)) {
+      throw new BusinessRuleError(
+        FormSchemaErrorCode.FsEmptyFieldCode,
+        `Field code "${code}" contains invalid characters`,
       );
     }
     return code as FieldCode;

@@ -1,11 +1,8 @@
 import { BusinessRuleError } from "@/core/domain/error";
+import { isRecord } from "@/core/domain/typeGuards";
 import type { AppEntry, AuthConfig, ProjectConfig } from "../entity";
 import { ProjectConfigErrorCode } from "../errorCode";
 import { AppName } from "../valueObject";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 function asOptionalString(value: unknown): string | undefined {
   return typeof value === "string" ? value : undefined;
@@ -174,25 +171,32 @@ function parseAuth(
 
   const apiToken = asOptionalString(raw.apiToken);
   if (apiToken !== undefined) {
-    if (apiToken.trim().length === 0) {
+    const trimmed = apiToken.trim();
+    if (trimmed.length === 0) {
       throw new BusinessRuleError(
         ProjectConfigErrorCode.PcInvalidAuthConfig,
         "apiToken must not be empty",
       );
     }
-    return { type: "apiToken", apiToken };
+    return { type: "apiToken", apiToken: trimmed };
   }
 
   const username = asOptionalString(raw.username);
   const password = asOptionalString(raw.password);
   if (username !== undefined && password !== undefined) {
-    if (username.trim().length === 0 || password.trim().length === 0) {
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+    if (trimmedUsername.length === 0 || trimmedPassword.length === 0) {
       throw new BusinessRuleError(
         ProjectConfigErrorCode.PcInvalidAuthConfig,
         "username and password must not be empty",
       );
     }
-    return { type: "password", username, password };
+    return {
+      type: "password",
+      username: trimmedUsername,
+      password: trimmedPassword,
+    };
   }
 
   throw new BusinessRuleError(

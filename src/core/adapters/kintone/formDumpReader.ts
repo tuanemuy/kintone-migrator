@@ -21,7 +21,7 @@ export class KintoneFormDumpReader implements FormDumpReader {
 
       return {
         fields: fields as unknown as Record<string, unknown>,
-        layout: layout as unknown as Record<string, unknown>,
+        layout: layout as unknown,
       };
     } catch (error) {
       if (isBusinessRuleError(error)) throw error;
