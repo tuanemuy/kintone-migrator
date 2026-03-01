@@ -4,6 +4,7 @@ export const ProjectConfigErrorCode = {
   PcEmptyApps: "PC_EMPTY_APPS",
   PcEmptyAppId: "PC_EMPTY_APP_ID",
   PcEmptyAppName: "PC_EMPTY_APP_NAME",
+  PcInvalidAppName: "PC_INVALID_APP_NAME",
   PcInvalidConfigStructure: "PC_INVALID_CONFIG_STRUCTURE",
   PcInvalidAuthConfig: "PC_INVALID_AUTH_CONFIG",
 } as const;

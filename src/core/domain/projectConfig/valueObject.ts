@@ -18,7 +18,7 @@ const INVALID_APP_NAME_CHARS = new Set([
 function hasInvalidAppNameChars(name: string): boolean {
   for (let i = 0; i < name.length; i++) {
     const ch = name.charCodeAt(i);
-    if (ch <= 0x1f) return true;
+    if (ch <= 0x1f || ch === 0x7f) return true;
     if (INVALID_APP_NAME_CHARS.has(name[i])) return true;
   }
   return false;
@@ -34,13 +34,13 @@ export const AppName = {
     }
     if (hasInvalidAppNameChars(name)) {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.PcEmptyAppName,
+        ProjectConfigErrorCode.PcInvalidAppName,
         `App name "${name}" contains invalid characters (path separators or control characters are not allowed)`,
       );
     }
     if (name === "." || name === "..") {
       throw new BusinessRuleError(
-        ProjectConfigErrorCode.PcEmptyAppName,
+        ProjectConfigErrorCode.PcInvalidAppName,
         `App name "${name}" is not allowed (reserved path component)`,
       );
     }

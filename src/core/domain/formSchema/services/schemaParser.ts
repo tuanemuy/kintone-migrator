@@ -5,8 +5,8 @@ import type {
   LayoutItem,
   LayoutRow,
   ReferenceTableLayoutItem,
-  Schema,
 } from "../entity";
+import { Schema } from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
   DecorationElement,
@@ -199,7 +199,12 @@ const BOOLEAN_PROPERTIES: ReadonlySet<string> = new Set([
 function normalizePropertyValue(key: string, value: unknown): unknown {
   if (typeof value === "number") return String(value);
   if (BOOLEAN_PROPERTIES.has(key) && typeof value === "string") {
-    return value === "true";
+    if (value === "true") return true;
+    if (value === "false") return false;
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.FsInvalidSchemaStructure,
+      `Invalid boolean string "${value}" for property "${key}". Expected "true" or "false"`,
+    );
   }
   return value;
 }
@@ -752,6 +757,6 @@ export const SchemaParser = {
       fieldMap = mergeFieldMaps(fieldMap, result.fields);
     }
 
-    return { fields: fieldMap, layout };
+    return Schema.create(fieldMap, layout);
   },
 };

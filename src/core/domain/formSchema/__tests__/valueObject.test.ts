@@ -20,4 +20,52 @@ describe("FieldCode", () => {
       );
     }
   });
+
+  it("スラッシュを含むコードはInvalidFieldCodeエラーが発生する", () => {
+    try {
+      FieldCode.create("foo/bar");
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        FormSchemaErrorCode.FsInvalidFieldCode,
+      );
+    }
+  });
+
+  it("バックスラッシュを含むコードはInvalidFieldCodeエラーが発生する", () => {
+    try {
+      FieldCode.create("foo\\bar");
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        FormSchemaErrorCode.FsInvalidFieldCode,
+      );
+    }
+  });
+
+  it("制御文字を含むコードはInvalidFieldCodeエラーが発生する", () => {
+    try {
+      FieldCode.create("foo\x00bar");
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        FormSchemaErrorCode.FsInvalidFieldCode,
+      );
+    }
+  });
+
+  it("DEL文字(0x7f)を含むコードはInvalidFieldCodeエラーが発生する", () => {
+    try {
+      FieldCode.create("foo\x7fbar");
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        FormSchemaErrorCode.FsInvalidFieldCode,
+      );
+    }
+  });
 });

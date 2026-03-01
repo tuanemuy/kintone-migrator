@@ -185,8 +185,7 @@ function parseAuth(
   const password = asOptionalString(raw.password);
   if (username !== undefined && password !== undefined) {
     const trimmedUsername = username.trim();
-    const trimmedPassword = password.trim();
-    if (trimmedUsername.length === 0 || trimmedPassword.length === 0) {
+    if (trimmedUsername.length === 0 || password.length === 0) {
       throw new BusinessRuleError(
         ProjectConfigErrorCode.PcInvalidAuthConfig,
         "username and password must not be empty",
@@ -195,7 +194,7 @@ function parseAuth(
     return {
       type: "password",
       username: trimmedUsername,
-      password: trimmedPassword,
+      password,
     };
   }
 

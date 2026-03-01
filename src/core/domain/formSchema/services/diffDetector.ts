@@ -37,7 +37,7 @@ function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   if (a.type !== b.type) return false;
   if (a.label !== b.label) return false;
   if (a.code !== b.code) return false;
-  if (a.noLabel !== b.noLabel) return false;
+  if ((a.noLabel ?? false) !== (b.noLabel ?? false)) return false;
   return isPropertiesEqual(a, b);
 }
 
@@ -55,9 +55,9 @@ function describeChanges(
     changes.push(`label: ${before.label} -> ${after.label}`);
   }
 
-  if (before.noLabel !== after.noLabel) {
+  if ((before.noLabel ?? false) !== (after.noLabel ?? false)) {
     changes.push(
-      `noLabel: ${before.noLabel ?? "undefined"} -> ${after.noLabel ?? "undefined"}`,
+      `noLabel: ${before.noLabel ?? false} -> ${after.noLabel ?? false}`,
     );
   }
 

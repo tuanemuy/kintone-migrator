@@ -40,7 +40,7 @@ export const FieldCode = {
     }
     if (hasInvalidFieldCodeChars(code)) {
       throw new BusinessRuleError(
-        FormSchemaErrorCode.FsEmptyFieldCode,
+        FormSchemaErrorCode.FsInvalidFieldCode,
         `Field code "${code}" contains invalid characters`,
       );
     }
