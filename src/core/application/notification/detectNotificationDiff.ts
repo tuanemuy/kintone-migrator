@@ -1,12 +1,11 @@
 import type { NotificationConfig } from "@/core/domain/notification/entity";
 import { NotificationDiffDetector } from "@/core/domain/notification/services/diffDetector";
 import type { NotificationDiff } from "@/core/domain/notification/valueObject";
-
-export type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
-
 import type { NotificationDiffServiceArgs } from "../container/notification";
 import { ValidationError, ValidationErrorCode } from "../error";
 import { parseNotificationConfigText } from "./parseConfig";
+
+export type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
 
 export async function detectNotificationDiff({
   container,

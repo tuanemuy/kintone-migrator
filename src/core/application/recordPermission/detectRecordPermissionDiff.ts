@@ -1,11 +1,10 @@
 import { RecordPermissionDiffDetector } from "@/core/domain/recordPermission/services/diffDetector";
 import type { RecordPermissionDiff } from "@/core/domain/recordPermission/valueObject";
-
-export type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
-
 import type { RecordPermissionDiffServiceArgs } from "../container/recordPermission";
 import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseRecordPermissionConfigText } from "./parseConfig";
+
+export type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
 
 export async function detectRecordPermissionDiff({
   container,

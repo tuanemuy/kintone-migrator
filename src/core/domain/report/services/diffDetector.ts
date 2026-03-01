@@ -14,7 +14,7 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
   }
   if ((local.chartMode ?? "") !== (remote.chartMode ?? "")) {
     diffs.push(
-      `chartMode: ${remote.chartMode || "(unset)"} -> ${local.chartMode || "(unset)"}`,
+      `chartMode: ${remote.chartMode ?? "(unset)"} -> ${local.chartMode ?? "(unset)"}`,
     );
   }
   if (local.index !== remote.index) {

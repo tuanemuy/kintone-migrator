@@ -69,10 +69,62 @@ function printGenericDiffResult<
   p.note(lines.join("\n"), title, { format: (v) => v });
 }
 
+// --- Diff result printers (alphabetical order) ---
+
+export function printActionDiffResult(
+  result: DiffResult<ActionDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Action Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.actionName)}${pc.dim(":")} ${entry.details}`,
+  );
+}
+
+export function printAdminNotesDiffResult(
+  result: DiffResult<AdminNotesDiffEntry>,
+): void {
+  printFieldDiffResult(result, "Admin Notes Diff Details");
+}
+
+export function printAppPermissionDiffResult(
+  result: DiffResult<AppPermissionDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "App Permission Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.entityKey)}${pc.dim(":")} ${entry.details}`,
+  );
+}
+
+export function printCustomizationDiffResult(
+  result: DiffResult<CustomizationDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Customization Diff Details",
+    (entry, colorize, prefix) => {
+      const location =
+        entry.platform === "config"
+          ? entry.category
+          : `${entry.platform}.${entry.category}`;
+      return `${colorize(prefix)} ${pc.dim("[")}${colorize(location)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
+    },
+  );
+}
+
 // printDiffResult does not use printGenericDiffResult because DetectDiffOutput
 // requires special handling for hasLayoutChanges (shown between summary and note)
 // that doesn't fit the generic pattern.
 export function printDiffResult(result: DetectDiffOutput): void {
+  if ("warnings" in result) {
+    for (const w of (result as { warnings: readonly string[] }).warnings) {
+      p.log.warn(w);
+    }
+  }
+
   if (result.isEmpty) {
     p.log.info("No changes detected.");
     return;
@@ -92,59 +144,6 @@ export function printDiffResult(result: DetectDiffOutput): void {
   p.note(lines.join("\n"), "Diff Details", { format: (v) => v });
 }
 
-export function printViewDiffResult(result: DiffResult<ViewDiffEntry>): void {
-  printGenericDiffResult(
-    result,
-    "View Diff Details",
-    (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${colorize(entry.viewName)}${pc.dim(":")} ${entry.details}`,
-  );
-}
-
-export function printProcessDiffResult(
-  result: DiffResult<ProcessManagementDiffEntry>,
-): void {
-  printGenericDiffResult(
-    result,
-    "Process Management Diff Details",
-    (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.category)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`,
-  );
-}
-
-export function printAdminNotesDiffResult(
-  result: DiffResult<AdminNotesDiffEntry>,
-): void {
-  printGenericDiffResult(
-    result,
-    "Admin Notes Diff Details",
-    (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`,
-  );
-}
-
-export function printGeneralSettingsDiffResult(
-  result: DiffResult<GeneralSettingsDiffEntry>,
-): void {
-  printGenericDiffResult(
-    result,
-    "General Settings Diff Details",
-    (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`,
-  );
-}
-
-export function printAppPermissionDiffResult(
-  result: DiffResult<AppPermissionDiffEntry>,
-): void {
-  printGenericDiffResult(
-    result,
-    "App Permission Diff Details",
-    (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${colorize(entry.entityKey)}${pc.dim(":")} ${entry.details}`,
-  );
-}
-
 export function printFieldPermissionDiffResult(
   result: DiffResult<FieldPermissionDiffEntry>,
 ): void {
@@ -152,24 +151,14 @@ export function printFieldPermissionDiffResult(
     result,
     "Field Permission Diff Details",
     (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")} ${entry.details}`,
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]:")} ${entry.details}`,
   );
 }
 
-export function printCustomizationDiffResult(
-  result: DiffResult<CustomizationDiffEntry>,
+export function printGeneralSettingsDiffResult(
+  result: DiffResult<GeneralSettingsDiffEntry>,
 ): void {
-  printGenericDiffResult(
-    result,
-    "Customization Diff Details",
-    (entry, colorize, prefix) => {
-      const location =
-        entry.platform === "config"
-          ? entry.resourceType
-          : `${entry.platform}.${entry.resourceType}`;
-      return `${colorize(prefix)} ${pc.dim("[")}${colorize(location)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
-    },
-  );
+  printFieldDiffResult(result, "General Settings Diff Details");
 }
 
 export function printNotificationDiffResult(
@@ -180,17 +169,6 @@ export function printNotificationDiffResult(
     "Notification Diff Details",
     (entry, colorize, prefix) =>
       `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.section)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`,
-  );
-}
-
-export function printActionDiffResult(
-  result: DiffResult<ActionDiffEntry>,
-): void {
-  printGenericDiffResult(
-    result,
-    "Action Diff Details",
-    (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${colorize(entry.actionName)}${pc.dim(":")} ${entry.details}`,
   );
 }
 
@@ -205,6 +183,17 @@ export function printPluginDiffResult(
   );
 }
 
+export function printProcessDiffResult(
+  result: DiffResult<ProcessManagementDiffEntry>,
+): void {
+  printGenericDiffResult(
+    result,
+    "Process Management Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.category)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`,
+  );
+}
+
 export function printRecordPermissionDiffResult(
   result: DiffResult<RecordPermissionDiffEntry>,
 ): void {
@@ -212,7 +201,7 @@ export function printRecordPermissionDiffResult(
     result,
     "Record Permission Diff Details",
     (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond === "" ? "(all records)" : entry.filterCond)}${pc.dim("]")} ${entry.details}`,
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond === "" ? "(all records)" : entry.filterCond)}${pc.dim("]:")} ${entry.details}`,
   );
 }
 
@@ -226,6 +215,34 @@ export function printReportDiffResult(
       `${colorize(prefix)} ${colorize(entry.reportName)}${pc.dim(":")} ${entry.details}`,
   );
 }
+
+export function printViewDiffResult(result: DiffResult<ViewDiffEntry>): void {
+  printGenericDiffResult(
+    result,
+    "View Diff Details",
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.viewName)}${pc.dim(":")} ${entry.details}`,
+  );
+}
+
+// Shared formatter for singleton config diffs (adminNotes, generalSettings)
+// that use { field, details } shape.
+function printFieldDiffResult<
+  E extends {
+    type: "added" | "modified" | "deleted";
+    field: string;
+    details: string;
+  },
+>(result: DiffResult<E>, title: string): void {
+  printGenericDiffResult(
+    result,
+    title,
+    (entry, colorize, prefix) =>
+      `${colorize(prefix)} ${colorize(entry.field)}${pc.dim(":")} ${entry.details}`,
+  );
+}
+
+// --- Non-diff output functions ---
 
 export function printAppHeader(appName: string, appId: string): void {
   p.log.step(`\n=== [${pc.bold(appName)}] (app: ${appId}) ===`);

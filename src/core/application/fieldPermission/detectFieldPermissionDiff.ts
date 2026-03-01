@@ -1,11 +1,10 @@
 import { FieldPermissionDiffDetector } from "@/core/domain/fieldPermission/services/diffDetector";
 import type { FieldPermissionDiff } from "@/core/domain/fieldPermission/valueObject";
-
-export type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/valueObject";
-
 import type { FieldPermissionDiffServiceArgs } from "../container/fieldPermission";
 import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseFieldPermissionConfigText } from "./parseConfig";
+
+export type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/valueObject";
 
 export async function detectFieldPermissionDiff({
   container,

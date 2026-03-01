@@ -41,12 +41,14 @@ describe("GeneralSettingsDiffDetector", () => {
       expect(result.entries[0].details).toContain("New Name");
     });
 
-    it("should detect description change", () => {
+    it("should detect description change with suppressed values", () => {
       const local = makeConfig({ description: "new desc" });
       const remote = makeConfig({ description: "old desc" });
       const result = GeneralSettingsDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].field).toBe("description");
+      expect(result.entries[0].details).toBe("description changed");
+      expect(result.entries[0].details).not.toContain("old desc");
     });
 
     it("should detect theme change", () => {

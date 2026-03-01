@@ -1,11 +1,10 @@
 import { ReportDiffDetector } from "@/core/domain/report/services/diffDetector";
 import type { ReportDiff } from "@/core/domain/report/valueObject";
-
-export type { ReportDiffEntry } from "@/core/domain/report/valueObject";
-
 import type { ReportDiffServiceArgs } from "../container/report";
 import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseReportConfigText } from "./parseConfig";
+
+export type { ReportDiffEntry } from "@/core/domain/report/valueObject";
 
 export async function detectReportDiff({
   container,

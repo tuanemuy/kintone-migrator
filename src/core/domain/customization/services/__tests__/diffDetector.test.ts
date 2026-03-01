@@ -50,7 +50,7 @@ describe("CustomizationDiffDetector", () => {
       expect(result.isEmpty).toBe(true);
       expect(
         result.entries.some(
-          (e) => e.platform === "config" && e.resourceType === "scope",
+          (e) => e.platform === "config" && e.category === "scope",
         ),
       ).toBe(false);
     });
@@ -67,7 +67,7 @@ describe("CustomizationDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].platform).toBe("config");
-      expect(result.entries[0].resourceType).toBe("scope");
+      expect(result.entries[0].category).toBe("scope");
       expect(result.entries[0].details).toContain("ALL");
       expect(result.entries[0].details).toContain("ADMIN");
     });
@@ -89,7 +89,7 @@ describe("CustomizationDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].platform).toBe("desktop");
-      expect(result.entries[0].resourceType).toBe("js");
+      expect(result.entries[0].category).toBe("js");
     });
 
     it("should detect deleted mobile CSS resource", () => {
@@ -104,7 +104,7 @@ describe("CustomizationDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].platform).toBe("mobile");
-      expect(result.entries[0].resourceType).toBe("css");
+      expect(result.entries[0].category).toBe("css");
     });
 
     it("should detect FILE resource by basename", () => {

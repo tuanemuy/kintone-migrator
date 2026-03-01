@@ -63,6 +63,34 @@ describe("detectRecordPermissionDiff", () => {
       expect(result.summary.total).toBe(1);
     });
 
+    it("should detect modified record permission", async () => {
+      const container = getContainer();
+      container.recordPermissionStorage.setContent(VALID_CONFIG);
+      container.recordPermissionConfigurator.setPermissions({
+        rights: [
+          {
+            filterCond: "",
+            entities: [
+              {
+                entity: { type: "USER", code: "user1" },
+                viewable: true,
+                editable: true,
+                deletable: false,
+                includeSubs: false,
+              },
+            ],
+          },
+        ],
+        revision: "1",
+      });
+
+      const result = await detectRecordPermissionDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.modified).toBe(1);
+      expect(result.entries[0].type).toBe("modified");
+    });
+
     it("should detect deleted record permission", async () => {
       const container = getContainer();
       container.recordPermissionStorage.setContent(`

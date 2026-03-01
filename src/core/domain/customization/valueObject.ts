@@ -49,10 +49,12 @@ export type RemotePlatform = Readonly<{
   css: readonly RemoteResource[];
 }>;
 
+export type CustomizationDiffCategory = "js" | "css" | "scope";
+
 export type CustomizationDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";
   platform: "desktop" | "mobile" | "config";
-  resourceType: "js" | "css" | "scope";
+  category: CustomizationDiffCategory;
   name: string;
   details: string;
 }>;

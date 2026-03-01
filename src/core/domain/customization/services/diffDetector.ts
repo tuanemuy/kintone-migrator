@@ -53,7 +53,7 @@ function compareResourceLists(
       entries.push({
         type: "added",
         platform,
-        resourceType,
+        category: resourceType,
         name,
         details: "new resource",
       });
@@ -65,11 +65,22 @@ function compareResourceLists(
       entries.push({
         type: "deleted",
         platform,
-        resourceType,
+        category: resourceType,
         name,
         details: "removed",
       });
     }
+  }
+
+  // FILE resources matched by basename are not compared at content level.
+  // Warn users that content changes within matched files won't appear in the diff.
+  const matchedFiles = [...localNameSet].filter((n) => remoteNameSet.has(n));
+  const hasLocalFiles = localResources.some((r) => r.type === "FILE");
+  const hasRemoteFiles = remoteResources.some((r) => r.type === "FILE");
+  if (matchedFiles.length > 0 && hasLocalFiles && hasRemoteFiles) {
+    warnings.push(
+      `[${platform}.${resourceType}] FILE resources are compared by name only; content changes are not detected`,
+    );
   }
 
   // Detect order changes among shared resources.
@@ -85,7 +96,7 @@ function compareResourceLists(
       entries.push({
         type: "modified",
         platform,
-        resourceType,
+        category: resourceType,
         name: "(order)",
         details: "resource load order changed",
       });
@@ -121,7 +132,7 @@ export const CustomizationDiffDetector = {
       entries.push({
         type: "modified",
         platform: "config",
-        resourceType: "scope",
+        category: "scope",
         name: "scope",
         details: `${remote.scope} -> ${localScope}`,
       });

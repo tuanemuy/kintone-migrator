@@ -45,6 +45,25 @@ describe("detectGeneralSettingsDiff", () => {
       expect(result.summary.total).toBe(3);
     });
 
+    it("should detect modified field only", async () => {
+      const container = getContainer();
+      container.generalSettingsStorage.setContent(VALID_CONFIG);
+      container.generalSettingsConfigurator.setConfig({
+        name: "My App",
+        theme: "RED",
+        enableThumbnails: true,
+      });
+
+      const result = await detectGeneralSettingsDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.modified).toBe(1);
+      expect(result.summary.added).toBe(0);
+      expect(result.summary.deleted).toBe(0);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].field).toBe("theme");
+    });
+
     it("should detect no changes when both configs have default values", async () => {
       const container = getContainer();
       container.generalSettingsStorage.setContent(`

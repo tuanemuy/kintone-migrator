@@ -6,11 +6,11 @@ import type {
   GeneralSettingsDiffEntry,
 } from "../valueObject";
 
-// Default values match the kintone API defaults:
-// - string fields: "" (empty string)
-// - boolean fields: false
-// - firstMonthOfFiscalYear: 1 (January)
-// - object fields (icon, titleField, numberPrecision): compared via deepEqual (undefined == undefined)
+// kintone API defaults for optional fields
+const DEFAULT_STRING = "";
+const DEFAULT_BOOLEAN = false;
+const DEFAULT_FIRST_MONTH = 1; // January
+
 function compareConfigs(
   local: GeneralSettingsConfig,
   remote: GeneralSettingsConfig,
@@ -22,7 +22,7 @@ function compareConfigs(
     l: string | undefined,
     r: string | undefined,
     defaultValue: string,
-    longText = false,
+    suppressValues = false,
   ): void {
     const lv = l ?? defaultValue;
     const rv = r ?? defaultValue;
@@ -30,7 +30,7 @@ function compareConfigs(
       entries.push({
         type: "modified",
         field,
-        details: longText ? `${field} changed` : `"${rv}" -> "${lv}"`,
+        details: suppressValues ? `${field} changed` : `"${rv}" -> "${lv}"`,
       });
     }
   }
@@ -79,40 +79,46 @@ function compareConfigs(
     }
   }
 
-  compareString("name", local.name, remote.name, "");
-  compareString("description", local.description, remote.description, "", true);
+  compareString("name", local.name, remote.name, DEFAULT_STRING);
+  compareString(
+    "description",
+    local.description,
+    remote.description,
+    DEFAULT_STRING,
+    true,
+  );
   compareDeepEqual("icon", local.icon, remote.icon);
-  compareString("theme", local.theme, remote.theme, "");
+  compareString("theme", local.theme, remote.theme, DEFAULT_STRING);
   compareDeepEqual("titleField", local.titleField, remote.titleField);
   compareBoolean(
     "enableThumbnails",
     local.enableThumbnails,
     remote.enableThumbnails,
-    false,
+    DEFAULT_BOOLEAN,
   );
   compareBoolean(
     "enableBulkDeletion",
     local.enableBulkDeletion,
     remote.enableBulkDeletion,
-    false,
+    DEFAULT_BOOLEAN,
   );
   compareBoolean(
     "enableComments",
     local.enableComments,
     remote.enableComments,
-    false,
+    DEFAULT_BOOLEAN,
   );
   compareBoolean(
     "enableDuplicateRecord",
     local.enableDuplicateRecord,
     remote.enableDuplicateRecord,
-    false,
+    DEFAULT_BOOLEAN,
   );
   compareBoolean(
     "enableInlineRecordEditing",
     local.enableInlineRecordEditing,
     remote.enableInlineRecordEditing,
-    false,
+    DEFAULT_BOOLEAN,
   );
   compareDeepEqual(
     "numberPrecision",
@@ -123,7 +129,7 @@ function compareConfigs(
     "firstMonthOfFiscalYear",
     local.firstMonthOfFiscalYear,
     remote.firstMonthOfFiscalYear,
-    1,
+    DEFAULT_FIRST_MONTH,
   );
 
   return entries;

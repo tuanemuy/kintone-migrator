@@ -117,6 +117,32 @@ function perRecordLabel(notif: PerRecordNotification): string {
   return notif.title || notif.filterCond || "(empty filter)";
 }
 
+function describePerRecordChanges(
+  local: PerRecordNotification,
+  remote: PerRecordNotification,
+): string {
+  const diffs: string[] = [];
+  if (local.title !== remote.title) diffs.push("title changed");
+  if (local.filterCond !== remote.filterCond) diffs.push("filterCond changed");
+  if (!deepEqual(local.targets, remote.targets)) diffs.push("targets changed");
+  return diffs.length > 0 ? diffs.join(", ") : "changed";
+}
+
+function describeReminderChanges(
+  local: ReminderNotification,
+  remote: ReminderNotification,
+): string {
+  const diffs: string[] = [];
+  if (local.title !== remote.title) diffs.push("title changed");
+  if (local.daysLater !== remote.daysLater) diffs.push("daysLater changed");
+  if ((local.hoursLater ?? 0) !== (remote.hoursLater ?? 0))
+    diffs.push("hoursLater changed");
+  if ((local.time ?? "") !== (remote.time ?? "")) diffs.push("time changed");
+  if (local.filterCond !== remote.filterCond) diffs.push("filterCond changed");
+  if (!deepEqual(local.targets, remote.targets)) diffs.push("targets changed");
+  return diffs.length > 0 ? diffs.join(", ") : "changed";
+}
+
 function comparePerRecordSection(
   local: readonly PerRecordNotification[],
   remote: readonly PerRecordNotification[],
@@ -153,11 +179,12 @@ function comparePerRecordSection(
         remoteNotif &&
         !deepEqual(localNotif, remoteNotif)
       ) {
+        const diffs = describePerRecordChanges(localNotif, remoteNotif);
         entries.push({
           type: "modified",
           section: "perRecord",
           name: perRecordLabel(localNotif),
-          details: "changed",
+          details: diffs,
         });
       }
     }
@@ -202,7 +229,7 @@ function compareReminderSection(
         type: "modified",
         section: "reminder",
         name: code,
-        details: "changed",
+        details: describeReminderChanges(localNotif, remoteNotif),
       });
     }
   }

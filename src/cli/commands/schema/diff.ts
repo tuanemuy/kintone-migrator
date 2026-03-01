@@ -46,12 +46,20 @@ export default define({
           await runDiff(container);
         },
         multiApp: async (plan, projectConfig) => {
-          await runMultiAppWithFailCheck(plan, async (app) => {
-            const config = resolveAppCliConfig(app, projectConfig, ctx.values);
-            const container = createCliContainer(config);
-            printAppHeader(app.name, app.appId);
-            await runDiff(container);
-          });
+          await runMultiAppWithFailCheck(
+            plan,
+            async (app) => {
+              const config = resolveAppCliConfig(
+                app,
+                projectConfig,
+                ctx.values,
+              );
+              const container = createCliContainer(config);
+              printAppHeader(app.name, app.appId);
+              await runDiff(container);
+            },
+            "All schema diffs completed successfully.",
+          );
         },
       });
     } catch (error) {

@@ -1,11 +1,10 @@
 import { AdminNotesDiffDetector } from "@/core/domain/adminNotes/services/diffDetector";
 import type { AdminNotesDiff } from "@/core/domain/adminNotes/valueObject";
-
-export type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
-
 import type { AdminNotesDiffServiceArgs } from "../container/adminNotes";
 import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseAdminNotesConfigText } from "./parseConfig";
+
+export type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
 
 export async function detectAdminNotesDiff({
   container,

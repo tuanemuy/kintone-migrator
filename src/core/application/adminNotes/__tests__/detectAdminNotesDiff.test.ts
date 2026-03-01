@@ -43,6 +43,24 @@ describe("detectAdminNotesDiff", () => {
       expect(result.summary.total).toBe(2);
     });
 
+    it("should detect modified field only", async () => {
+      const container = getContainer();
+      container.adminNotesStorage.setContent(VALID_CONFIG);
+      container.adminNotesConfigurator.setConfig({
+        content: "<p>Test memo</p>\n",
+        includeInTemplateAndDuplicates: false,
+      });
+
+      const result = await detectAdminNotesDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.modified).toBe(1);
+      expect(result.summary.added).toBe(0);
+      expect(result.summary.deleted).toBe(0);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].field).toBe("includeInTemplateAndDuplicates");
+    });
+
     it("should detect no changes when both configs are empty", async () => {
       const container = getContainer();
       container.adminNotesStorage.setContent(`

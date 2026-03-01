@@ -390,7 +390,9 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].section).toBe("reminder");
       expect(result.entries[0].name).toBe("reminder1");
-      expect(result.entries[0].details).toBe("changed");
+      expect(result.entries[0].details).toBe(
+        "title changed, daysLater changed",
+      );
     });
 
     it("should detect deleted reminder notification", () => {

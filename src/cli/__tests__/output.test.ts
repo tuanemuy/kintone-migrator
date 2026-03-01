@@ -834,13 +834,13 @@ describe("printCustomizationDiffResult", () => {
     expect(p.note).not.toHaveBeenCalled();
   });
 
-  it("platform が 'config' の場合、resourceType のみが location として表示される", () => {
+  it("platform が 'config' の場合、category のみが location として表示される", () => {
     const result: DiffResult<CustomizationDiffEntry> = {
       entries: [
         {
           type: "modified",
           platform: "config",
-          resourceType: "scope",
+          category: "scope",
           name: "scope",
           details: "ALL -> ADMIN",
         },
@@ -855,13 +855,13 @@ describe("printCustomizationDiffResult", () => {
     expect(noteContent).not.toContain("config.scope");
   });
 
-  it("platform が 'desktop' の場合、platform.resourceType が location として表示される", () => {
+  it("platform が 'desktop' の場合、platform.category が location として表示される", () => {
     const result: DiffResult<CustomizationDiffEntry> = {
       entries: [
         {
           type: "added",
           platform: "desktop",
-          resourceType: "js",
+          category: "js",
           name: "app.js",
           details: "new resource",
         },
@@ -882,7 +882,7 @@ describe("printCustomizationDiffResult", () => {
         {
           type: "added",
           platform: "desktop",
-          resourceType: "js",
+          category: "js",
           name: "app.js",
           details: "new resource",
         },
