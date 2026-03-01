@@ -168,6 +168,12 @@ const SUBTABLE_ATTRIBUTES: ReadonlySet<string> = new Set(["fields"]);
 
 type RawField = Record<string, unknown>;
 
+/**
+ * Parses a raw size object into an ElementSize.
+ * Returns undefined when no size properties are present, treating an empty
+ * object the same as absent — layout elements without explicit sizing should
+ * not carry a redundant empty size object.
+ */
 function parseSize(raw: unknown): ElementSize | undefined {
   if (!isRecord(raw)) return undefined;
   const obj = raw;
@@ -197,6 +203,7 @@ const BOOLEAN_PROPERTIES: ReadonlySet<string> = new Set([
 ]);
 
 function normalizePropertyValue(key: string, value: unknown): unknown {
+  if (typeof value === "boolean") return value;
   if (typeof value === "number") return String(value);
   if (BOOLEAN_PROPERTIES.has(key) && typeof value === "string") {
     if (value === "true") return true;
@@ -740,18 +747,17 @@ export const SchemaParser = {
     }
 
     const rawLayout = obj.layout as unknown[];
+    let fieldMap = new Map<FieldCode, FieldDefinition>();
+    const layout: LayoutItem[] = [];
+
     for (let i = 0; i < rawLayout.length; i++) {
-      if (!isRecord(rawLayout[i])) {
+      const rawItem = rawLayout[i];
+      if (!isRecord(rawItem)) {
         throw new BusinessRuleError(
           FormSchemaErrorCode.FsInvalidLayoutStructure,
           `Layout item at index ${i} must be an object`,
         );
       }
-    }
-    let fieldMap = new Map<FieldCode, FieldDefinition>();
-    const layout: LayoutItem[] = [];
-
-    for (const rawItem of rawLayout as Record<string, unknown>[]) {
       const result = parseLayoutItem(rawItem);
       layout.push(result.item);
       fieldMap = mergeFieldMaps(fieldMap, result.fields);

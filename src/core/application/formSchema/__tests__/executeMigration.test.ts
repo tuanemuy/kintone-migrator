@@ -207,12 +207,16 @@ layout:
 
   it("サブテーブル内部フィールドは直接削除しない", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
 
     // 現在のフォームにサブテーブルがある
     const innerField = textField("item_name", "品名");
@@ -226,6 +230,7 @@ layout:
     };
     container.formConfigurator.setFields(
       new Map([
+        [FieldCode.create("keep"), keep],
         [FieldCode.create("items"), subField],
         [FieldCode.create("item_name"), innerField],
       ]),
@@ -708,17 +713,26 @@ layout:
 
   it("削除エントリのみがある場合、deleteFieldsのみが呼ばれる", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
     const extra = textField("extra", "余分");
     container.formConfigurator.setFields(
-      new Map([[FieldCode.create("extra"), extra]]),
+      new Map([
+        [FieldCode.create("keep"), keep],
+        [FieldCode.create("extra"), extra],
+      ]),
     );
-    container.formConfigurator.setLayout([{ type: "ROW", fields: [] }]);
+    container.formConfigurator.setLayout([
+      { type: "ROW", fields: [{ kind: "field", field: keep }] },
+    ]);
     container.formConfigurator.resetCallLog();
 
     await executeMigration({ container });
@@ -952,17 +966,26 @@ layout:
 
   it("deleteFieldsの通信に失敗した場合、SystemErrorがスローされる", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
     const extra = textField("extra", "余分");
     container.formConfigurator.setFields(
-      new Map([[FieldCode.create("extra"), extra]]),
+      new Map([
+        [FieldCode.create("keep"), keep],
+        [FieldCode.create("extra"), extra],
+      ]),
     );
-    container.formConfigurator.setLayout([{ type: "ROW", fields: [] }]);
+    container.formConfigurator.setLayout([
+      { type: "ROW", fields: [{ kind: "field", field: keep }] },
+    ]);
     container.formConfigurator.setFailOn("deleteFields");
 
     await expect(executeMigration({ container })).rejects.toThrow(SystemError);
@@ -1047,12 +1070,16 @@ layout:
 
   it("GROUP フィールドを削除するマイグレーションを実行できる", async () => {
     const container = getContainer();
-    const emptySchema = `
+    const keep = textField("keep", "残す");
+    const schemaWithKeep = `
 layout:
   - type: ROW
-    fields: []
+    fields:
+      - code: keep
+        type: SINGLE_LINE_TEXT
+        label: 残す
 `;
-    container.schemaStorage.setContent(emptySchema);
+    container.schemaStorage.setContent(schemaWithKeep);
 
     const grpField: FieldDefinition = {
       code: FieldCode.create("grp1"),
@@ -1063,11 +1090,14 @@ layout:
     const inner = textField("inner", "内部");
     container.formConfigurator.setFields(
       new Map([
+        [FieldCode.create("keep"), keep],
         [FieldCode.create("grp1"), grpField],
         [FieldCode.create("inner"), inner],
       ]),
     );
-    container.formConfigurator.setLayout([{ type: "ROW", fields: [] }]);
+    container.formConfigurator.setLayout([
+      { type: "ROW", fields: [{ kind: "field", field: keep }] },
+    ]);
 
     await executeMigration({ container });
 

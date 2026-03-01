@@ -68,4 +68,16 @@ describe("FieldCode", () => {
       );
     }
   });
+
+  it("制御文字がエラーメッセージ内でサニタイズされる", () => {
+    try {
+      FieldCode.create("foo\x00bar");
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      const msg = (e as BusinessRuleError).message;
+      expect(msg).toContain("foo\\x00bar");
+      expect(msg).not.toContain("foo\x00bar");
+    }
+  });
 });

@@ -182,6 +182,8 @@ function parseAuth(
   }
 
   const username = asOptionalString(raw.username);
+  // Password is intentionally not trimmed — passwords may legitimately contain
+  // leading/trailing whitespace, unlike usernames and API tokens.
   const password = asOptionalString(raw.password);
   if (username !== undefined && password !== undefined) {
     const trimmedUsername = username.trim();

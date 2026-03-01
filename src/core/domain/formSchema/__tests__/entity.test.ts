@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { BusinessRuleError } from "@/core/domain/error";
 import { buildDiffResult } from "../../diff";
 import type { FormLayout, LayoutRow } from "../entity";
 import { Schema } from "../entity";
+import { FormSchemaErrorCode } from "../errorCode";
 import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
@@ -174,6 +176,20 @@ describe("Schema.create", () => {
     const schema = Schema.create(fields, layout);
     expect(schema.fields.size).toBe(1);
     expect(schema.layout).toHaveLength(1);
+  });
+
+  it("空のfieldsでFsEmptyFieldsエラーが発生する", () => {
+    const fields = new Map<FieldCode, FieldDefinition>();
+    const layout: FormLayout = [];
+    try {
+      Schema.create(fields, layout);
+      expect.unreachable("should throw");
+    } catch (e) {
+      expect(e).toBeInstanceOf(BusinessRuleError);
+      expect((e as BusinessRuleError).code).toBe(
+        FormSchemaErrorCode.FsEmptyFields,
+      );
+    }
   });
 });
 
