@@ -44,6 +44,16 @@ describe("ActionDiffDetector", () => {
       expect(result.entries[0].actionName).toBe("a");
       expect(result.summary.added).toBe(1);
     });
+
+    it("should use '(unspecified)' when destApp has neither app nor code", () => {
+      const local = makeConfig({
+        a: makeAction({ destApp: {} }),
+      });
+      const result = ActionDiffDetector.detect(local, makeConfig());
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("added");
+      expect(result.entries[0].details).toContain("(unspecified)");
+    });
   });
 
   describe("deleted actions", () => {

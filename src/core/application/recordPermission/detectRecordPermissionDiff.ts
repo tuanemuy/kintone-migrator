@@ -1,25 +1,22 @@
 import { RecordPermissionDiffDetector } from "@/core/domain/recordPermission/services/diffDetector";
 import type { RecordPermissionDiff } from "@/core/domain/recordPermission/valueObject";
-import type { RecordPermissionServiceArgs } from "../container/recordPermission";
-import { ValidationError, ValidationErrorCode } from "../error";
+
+export type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
+
+import type { RecordPermissionDiffServiceArgs } from "../container/recordPermission";
+import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseRecordPermissionConfigText } from "./parseConfig";
 
 export async function detectRecordPermissionDiff({
   container,
-}: RecordPermissionServiceArgs): Promise<RecordPermissionDiff> {
-  const result = await container.recordPermissionStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "Record permission config file not found",
-    );
-  }
-  const localConfig = parseRecordPermissionConfigText(result.content);
-
-  const { rights: remoteRights } =
-    await container.recordPermissionConfigurator.getRecordPermissions();
-
-  return RecordPermissionDiffDetector.detect(localConfig, {
-    rights: remoteRights,
+}: RecordPermissionDiffServiceArgs): Promise<RecordPermissionDiff> {
+  return detectDiffFromConfig({
+    getStorage: () => container.recordPermissionStorage.get(),
+    fetchRemote: () =>
+      container.recordPermissionConfigurator.getRecordPermissions(),
+    parseConfig: parseRecordPermissionConfigText,
+    detect: (local, remote) =>
+      RecordPermissionDiffDetector.detect(local, { rights: remote.rights }),
+    notFoundMessage: "Record permission config file not found",
   });
 }

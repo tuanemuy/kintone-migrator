@@ -1,23 +1,22 @@
 import { GeneralSettingsDiffDetector } from "@/core/domain/generalSettings/services/diffDetector";
 import type { GeneralSettingsDiff } from "@/core/domain/generalSettings/valueObject";
-import type { GeneralSettingsServiceArgs } from "../container/generalSettings";
-import { ValidationError, ValidationErrorCode } from "../error";
+
+export type { GeneralSettingsDiffEntry } from "@/core/domain/generalSettings/valueObject";
+
+import type { GeneralSettingsDiffServiceArgs } from "../container/generalSettings";
+import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseGeneralSettingsConfigText } from "./parseConfig";
 
 export async function detectGeneralSettingsDiff({
   container,
-}: GeneralSettingsServiceArgs): Promise<GeneralSettingsDiff> {
-  const result = await container.generalSettingsStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "General settings config file not found",
-    );
-  }
-  const localConfig = parseGeneralSettingsConfigText(result.content);
-
-  const { config: remoteConfig } =
-    await container.generalSettingsConfigurator.getGeneralSettings();
-
-  return GeneralSettingsDiffDetector.detect(localConfig, remoteConfig);
+}: GeneralSettingsDiffServiceArgs): Promise<GeneralSettingsDiff> {
+  return detectDiffFromConfig({
+    getStorage: () => container.generalSettingsStorage.get(),
+    fetchRemote: () =>
+      container.generalSettingsConfigurator.getGeneralSettings(),
+    parseConfig: parseGeneralSettingsConfigText,
+    detect: (local, remote) =>
+      GeneralSettingsDiffDetector.detect(local, remote.config),
+    notFoundMessage: "General settings config file not found",
+  });
 }

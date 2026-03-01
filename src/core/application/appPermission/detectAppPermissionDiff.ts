@@ -1,25 +1,21 @@
 import { AppPermissionDiffDetector } from "@/core/domain/appPermission/services/diffDetector";
 import type { AppPermissionDiff } from "@/core/domain/appPermission/valueObject";
-import type { AppPermissionServiceArgs } from "../container/appPermission";
-import { ValidationError, ValidationErrorCode } from "../error";
+
+export type { AppPermissionDiffEntry } from "@/core/domain/appPermission/valueObject";
+
+import type { AppPermissionDiffServiceArgs } from "../container/appPermission";
+import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseAppPermissionConfigText } from "./parseConfig";
 
 export async function detectAppPermissionDiff({
   container,
-}: AppPermissionServiceArgs): Promise<AppPermissionDiff> {
-  const result = await container.appPermissionStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "App permission config file not found",
-    );
-  }
-  const localConfig = parseAppPermissionConfigText(result.content);
-
-  const { rights: remoteRights } =
-    await container.appPermissionConfigurator.getAppPermissions();
-
-  return AppPermissionDiffDetector.detect(localConfig, {
-    rights: remoteRights,
+}: AppPermissionDiffServiceArgs): Promise<AppPermissionDiff> {
+  return detectDiffFromConfig({
+    getStorage: () => container.appPermissionStorage.get(),
+    fetchRemote: () => container.appPermissionConfigurator.getAppPermissions(),
+    parseConfig: parseAppPermissionConfigText,
+    detect: (local, remote) =>
+      AppPermissionDiffDetector.detect(local, { rights: remote.rights }),
+    notFoundMessage: "App permission config file not found",
   });
 }

@@ -54,6 +54,50 @@ describe("detectActionDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.entries[0].type).toBe("added");
     });
+
+    it("should detect modified action", async () => {
+      const container = getContainer();
+      container.actionStorage.setContent(VALID_CONFIG);
+      container.actionConfigurator.setActions({
+        test: {
+          index: 1,
+          name: "test",
+          destApp: { code: "target-app" },
+          mappings: [{ srcType: "FIELD", srcField: "src", destField: "dest" }],
+          entities: [{ type: "USER", code: "user1" }],
+          filterCond: "",
+        },
+      });
+
+      const result = await detectActionDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.modified).toBe(1);
+      expect(result.entries[0].type).toBe("modified");
+    });
+
+    it("should detect deleted action", async () => {
+      const container = getContainer();
+      container.actionStorage.setContent(`
+actions: {}
+`);
+      container.actionConfigurator.setActions({
+        old_action: {
+          index: 0,
+          name: "old_action",
+          destApp: { app: "1" },
+          mappings: [],
+          entities: [],
+          filterCond: "",
+        },
+      });
+
+      const result = await detectActionDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
   });
 
   describe("error cases", () => {
@@ -61,7 +105,7 @@ describe("detectActionDiff", () => {
       const container = getContainer();
 
       await expect(detectActionDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

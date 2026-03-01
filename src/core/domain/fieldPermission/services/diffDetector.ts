@@ -24,6 +24,8 @@ function areEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
 }
 
 export const FieldPermissionDiffDetector = {
+  // Order-sensitive within each field: entity ordering determines precedence
+  // in kintone's field permission evaluation.
   detect: (
     local: FieldPermissionConfig,
     remote: FieldPermissionConfig,

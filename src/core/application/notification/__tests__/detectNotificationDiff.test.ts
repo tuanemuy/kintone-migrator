@@ -102,7 +102,7 @@ general:
       const container = getContainer();
 
       await expect(detectNotificationDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

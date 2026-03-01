@@ -382,7 +382,9 @@ actions: []
 
       await expect(
         detectProcessManagementDiff({ container }),
-      ).rejects.toSatisfy(isValidationError);
+      ).rejects.toSatisfy(
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
+      );
     });
 
     it("storage.get 失敗時に SystemError をスローする", async () => {

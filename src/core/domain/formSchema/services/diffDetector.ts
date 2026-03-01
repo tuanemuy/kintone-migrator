@@ -27,12 +27,7 @@ function isPropertiesEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   }
 
   if (a.type === "REFERENCE_TABLE" && b.type === "REFERENCE_TABLE") {
-    const refA = a.properties.referenceTable;
-    const refB = b.properties.referenceTable;
-    return deepEqual(
-      { ...refA, displayFields: [...refA.displayFields] },
-      { ...refB, displayFields: [...refB.displayFields] },
-    );
+    return deepEqual(a.properties.referenceTable, b.properties.referenceTable);
   }
 
   return deepEqual(a.properties, b.properties);

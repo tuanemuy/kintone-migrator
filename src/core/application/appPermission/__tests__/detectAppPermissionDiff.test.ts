@@ -115,7 +115,7 @@ rights: []
       const container = getContainer();
 
       await expect(detectAppPermissionDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

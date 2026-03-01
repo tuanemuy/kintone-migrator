@@ -56,6 +56,33 @@ describe("detectFieldPermissionDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.summary.total).toBe(1);
     });
+
+    it("should detect deleted field permission", async () => {
+      const container = getContainer();
+      container.fieldPermissionStorage.setContent(`
+rights: []
+`);
+      container.fieldPermissionConfigurator.setPermissions({
+        rights: [
+          {
+            code: "name",
+            entities: [
+              {
+                accessibility: "WRITE",
+                entity: { type: "USER", code: "user1" },
+              },
+            ],
+          },
+        ],
+        revision: "1",
+      });
+
+      const result = await detectFieldPermissionDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
   });
 
   describe("error cases", () => {
@@ -63,7 +90,7 @@ describe("detectFieldPermissionDiff", () => {
       const container = getContainer();
 
       await expect(detectFieldPermissionDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

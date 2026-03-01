@@ -62,6 +62,41 @@ describe("detectCustomizationDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.summary.total).toBe(1);
     });
+
+    it("should detect deleted customization resource", async () => {
+      const container = getContainer();
+      container.customizationStorage.setContent(`
+scope: ALL
+desktop:
+  js: []
+  css: []
+`);
+      container.customizationConfigurator.setCustomization({
+        scope: "ALL",
+        desktop: {
+          js: [
+            {
+              type: "FILE",
+              file: {
+                fileKey: "fk-1",
+                name: "main.js",
+                contentType: "application/javascript",
+                size: "100",
+              },
+            },
+          ],
+          css: [],
+        },
+        mobile: { js: [], css: [] },
+        revision: "1",
+      });
+
+      const result = await detectCustomizationDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
   });
 
   describe("error cases", () => {

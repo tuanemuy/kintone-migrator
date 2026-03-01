@@ -94,6 +94,26 @@ describe("AppPermissionDiffDetector", () => {
     });
   });
 
+  describe("edge cases", () => {
+    it("should report 'no permissions' when all flags are false", () => {
+      const local = makeConfig([
+        makeRight({
+          recordViewable: false,
+          recordAddable: false,
+          recordEditable: false,
+          recordDeletable: false,
+          recordImportable: false,
+          recordExportable: false,
+          appEditable: false,
+        }),
+      ]);
+      const result = AppPermissionDiffDetector.detect(local, makeConfig());
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("added");
+      expect(result.entries[0].details).toBe("no permissions");
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect added, modified, and deleted simultaneously", () => {
       const local = makeConfig([

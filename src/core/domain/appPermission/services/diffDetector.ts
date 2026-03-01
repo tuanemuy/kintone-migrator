@@ -33,6 +33,8 @@ function compareRights(local: AppRight, remote: AppRight): string[] {
 }
 
 export const AppPermissionDiffDetector = {
+  // Order-insensitive: app permissions are keyed by entity (type:code),
+  // so insertion order does not affect semantics.
   detect: (
     local: AppPermissionConfig,
     remote: AppPermissionConfig,

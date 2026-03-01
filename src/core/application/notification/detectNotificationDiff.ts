@@ -1,27 +1,31 @@
 import type { NotificationConfig } from "@/core/domain/notification/entity";
 import { NotificationDiffDetector } from "@/core/domain/notification/services/diffDetector";
 import type { NotificationDiff } from "@/core/domain/notification/valueObject";
-import type { NotificationServiceArgs } from "../container/notification";
+
+export type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
+
+import type { NotificationDiffServiceArgs } from "../container/notification";
 import { ValidationError, ValidationErrorCode } from "../error";
 import { parseNotificationConfigText } from "./parseConfig";
 
 export async function detectNotificationDiff({
   container,
-}: NotificationServiceArgs): Promise<NotificationDiff> {
-  const result = await container.notificationStorage.get();
-  if (!result.exists) {
+}: NotificationDiffServiceArgs): Promise<NotificationDiff> {
+  const [storageResult, generalResult, perRecordResult, reminderResult] =
+    await Promise.all([
+      container.notificationStorage.get(),
+      container.notificationConfigurator.getGeneralNotifications(),
+      container.notificationConfigurator.getPerRecordNotifications(),
+      container.notificationConfigurator.getReminderNotifications(),
+    ]);
+
+  if (!storageResult.exists) {
     throw new ValidationError(
       ValidationErrorCode.InvalidInput,
       "Notification config file not found",
     );
   }
-  const localConfig = parseNotificationConfigText(result.content);
-
-  const [generalResult, perRecordResult, reminderResult] = await Promise.all([
-    container.notificationConfigurator.getGeneralNotifications(),
-    container.notificationConfigurator.getPerRecordNotifications(),
-    container.notificationConfigurator.getReminderNotifications(),
-  ]);
+  const localConfig = parseNotificationConfigText(storageResult.content);
 
   // The kintone API always returns all three sections (general, perRecord, reminder)
   // even when they are empty (empty arrays / default values). This matches the

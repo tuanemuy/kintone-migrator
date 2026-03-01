@@ -1,23 +1,21 @@
 import { ActionDiffDetector } from "@/core/domain/action/services/diffDetector";
 import type { ActionDiff } from "@/core/domain/action/valueObject";
-import type { ActionServiceArgs } from "../container/action";
-import { ValidationError, ValidationErrorCode } from "../error";
+
+export type { ActionDiffEntry } from "@/core/domain/action/valueObject";
+
+import type { ActionDiffServiceArgs } from "../container/action";
+import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseActionConfigText } from "./parseConfig";
 
 export async function detectActionDiff({
   container,
-}: ActionServiceArgs): Promise<ActionDiff> {
-  const result = await container.actionStorage.get();
-  if (!result.exists) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      "Action config file not found",
-    );
-  }
-  const localConfig = parseActionConfigText(result.content);
-
-  const { actions: remoteActions } =
-    await container.actionConfigurator.getActions();
-
-  return ActionDiffDetector.detect(localConfig, { actions: remoteActions });
+}: ActionDiffServiceArgs): Promise<ActionDiff> {
+  return detectDiffFromConfig({
+    getStorage: () => container.actionStorage.get(),
+    fetchRemote: () => container.actionConfigurator.getActions(),
+    parseConfig: parseActionConfigText,
+    detect: (local, remote) =>
+      ActionDiffDetector.detect(local, { actions: remote.actions }),
+    notFoundMessage: "Action config file not found",
+  });
 }

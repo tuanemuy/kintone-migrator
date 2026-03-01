@@ -89,5 +89,23 @@ describe("PluginDiffDetector", () => {
       expect(result.summary.deleted).toBe(1);
       expect(result.summary.total).toBe(3);
     });
+
+    it("should distinguish plugins with same name but different IDs", () => {
+      const local = makeConfig([
+        makePlugin({ id: "plugin-a", name: "Same Name" }),
+      ]);
+      const remote = makeConfig([
+        makePlugin({ id: "plugin-b", name: "Same Name" }),
+      ]);
+      const result = PluginDiffDetector.detect(local, remote);
+      expect(result.summary.added).toBe(1);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries.find((e) => e.type === "added")?.pluginId).toBe(
+        "plugin-a",
+      );
+      expect(result.entries.find((e) => e.type === "deleted")?.pluginId).toBe(
+        "plugin-b",
+      );
+    });
   });
 });

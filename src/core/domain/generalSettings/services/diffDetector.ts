@@ -22,6 +22,7 @@ function compareConfigs(
     l: string | undefined,
     r: string | undefined,
     defaultValue: string,
+    longText = false,
   ): void {
     const lv = l ?? defaultValue;
     const rv = r ?? defaultValue;
@@ -29,10 +30,7 @@ function compareConfigs(
       entries.push({
         type: "modified",
         field,
-        details:
-          field === "description"
-            ? "description changed"
-            : `"${rv}" -> "${lv}"`,
+        details: longText ? `${field} changed` : `"${rv}" -> "${lv}"`,
       });
     }
   }
@@ -72,7 +70,6 @@ function compareConfigs(
   }
 
   function compareDeepEqual(field: string, l: unknown, r: unknown): void {
-    if (l === undefined && r === undefined) return;
     if (!deepEqual(l, r)) {
       entries.push({
         type: "modified",
@@ -83,7 +80,7 @@ function compareConfigs(
   }
 
   compareString("name", local.name, remote.name, "");
-  compareString("description", local.description, remote.description, "");
+  compareString("description", local.description, remote.description, "", true);
   compareDeepEqual("icon", local.icon, remote.icon);
   compareString("theme", local.theme, remote.theme, "");
   compareDeepEqual("titleField", local.titleField, remote.titleField);

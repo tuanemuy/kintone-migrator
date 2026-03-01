@@ -68,7 +68,7 @@ theme: WHITE
       const container = getContainer();
 
       await expect(detectGeneralSettingsDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

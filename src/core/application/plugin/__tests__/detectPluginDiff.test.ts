@@ -42,6 +42,44 @@ describe("detectPluginDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.entries[0].type).toBe("added");
     });
+
+    it("should detect modified plugin", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(VALID_CONFIG);
+      container.pluginConfigurator.setPlugins([
+        {
+          id: "djmhffjlbkikgmepoociabnpfcfjhdge",
+          name: "Renamed Plugin",
+          enabled: true,
+        },
+      ]);
+
+      const result = await detectPluginDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.modified).toBe(1);
+      expect(result.entries[0].type).toBe("modified");
+    });
+
+    it("should detect deleted plugin", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(`
+plugins: []
+`);
+      container.pluginConfigurator.setPlugins([
+        {
+          id: "djmhffjlbkikgmepoociabnpfcfjhdge",
+          name: "Test Plugin",
+          enabled: true,
+        },
+      ]);
+
+      const result = await detectPluginDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
   });
 
   describe("error cases", () => {
@@ -49,7 +87,7 @@ describe("detectPluginDiff", () => {
       const container = getContainer();
 
       await expect(detectPluginDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

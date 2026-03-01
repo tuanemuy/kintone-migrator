@@ -1,5 +1,8 @@
 import { CustomizationDiffDetector } from "@/core/domain/customization/services/diffDetector";
 import type { CustomizationDiff } from "@/core/domain/customization/valueObject";
+
+export type { CustomizationDiffEntry } from "@/core/domain/customization/valueObject";
+
 import type { CustomizationDiffServiceArgs } from "../container/customization";
 import { ValidationError, ValidationErrorCode } from "../error";
 import { parseConfigText } from "./parseConfig";

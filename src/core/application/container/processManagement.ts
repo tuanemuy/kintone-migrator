@@ -3,11 +3,19 @@ import type { ProcessManagementConfigurator } from "@/core/domain/processManagem
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
 import type { ServiceArgs } from "../types";
 
-export type ProcessManagementContainer = {
+export type ProcessManagementDiffContainer = {
   processManagementConfigurator: ProcessManagementConfigurator;
   processManagementStorage: ProcessManagementStorage;
+};
+
+export type ProcessManagementContainer = ProcessManagementDiffContainer & {
   appDeployer: AppDeployer;
 };
+
+export type ProcessManagementDiffServiceArgs<T = undefined> = ServiceArgs<
+  ProcessManagementDiffContainer,
+  T
+>;
 
 export type ProcessManagementServiceArgs<T = undefined> = ServiceArgs<
   ProcessManagementContainer,

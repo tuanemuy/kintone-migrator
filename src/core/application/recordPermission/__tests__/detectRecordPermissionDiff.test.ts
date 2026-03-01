@@ -62,6 +62,36 @@ describe("detectRecordPermissionDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.summary.total).toBe(1);
     });
+
+    it("should detect deleted record permission", async () => {
+      const container = getContainer();
+      container.recordPermissionStorage.setContent(`
+rights: []
+`);
+      container.recordPermissionConfigurator.setPermissions({
+        rights: [
+          {
+            filterCond: "",
+            entities: [
+              {
+                entity: { type: "USER", code: "user1" },
+                viewable: true,
+                editable: false,
+                deletable: false,
+                includeSubs: false,
+              },
+            ],
+          },
+        ],
+        revision: "1",
+      });
+
+      const result = await detectRecordPermissionDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
   });
 
   describe("error cases", () => {
@@ -69,7 +99,7 @@ describe("detectRecordPermissionDiff", () => {
       const container = getContainer();
 
       await expect(detectRecordPermissionDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

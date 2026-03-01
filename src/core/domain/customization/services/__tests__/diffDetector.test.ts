@@ -208,6 +208,37 @@ describe("CustomizationDiffDetector", () => {
       expect(result.summary.modified).toBe(0);
     });
 
+    it("should not emit spurious order entry when duplicates exist", () => {
+      const local = makeLocalConfig({
+        desktop: {
+          js: [
+            { type: "FILE", path: "src/app.js" },
+            { type: "FILE", path: "lib/app.js" },
+          ],
+          css: [],
+        },
+      });
+      const remoteDesktop = makeRemotePlatform({
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "key1",
+              name: "app.js",
+              contentType: "application/javascript",
+              size: "100",
+            },
+          },
+        ],
+      });
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: remoteDesktop,
+        mobile: makeRemotePlatform(),
+      });
+      expect(result.entries.some((e) => e.name === "(order)")).toBe(false);
+    });
+
     it("should not emit warning when basenames are unique", () => {
       const local = makeLocalConfig({
         desktop: {

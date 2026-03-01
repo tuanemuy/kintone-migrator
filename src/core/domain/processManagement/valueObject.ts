@@ -1,3 +1,5 @@
+import type { DiffResult } from "../diff";
+
 export type ProcessEntityType =
   | "USER"
   | "GROUP"
@@ -20,8 +22,6 @@ export type ProcessAssignee = Readonly<{
 }>;
 
 export type ProcessActionType = "PRIMARY" | "SECONDARY";
-
-import type { DiffResult } from "../diff";
 
 export type ProcessAction = Readonly<{
   name: string;

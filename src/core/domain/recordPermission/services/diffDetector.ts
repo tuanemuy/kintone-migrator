@@ -7,30 +7,26 @@ import type {
   RecordPermissionDiffEntry,
 } from "../valueObject";
 
+// filterCond is already used as the grouping key in detect(), so it is
+// excluded from the equality check here to avoid redundant comparison.
 function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
   return deepEqual(
-    {
-      filterCond: a.filterCond,
-      entities: a.entities.map((e) => ({
-        type: e.entity.type,
-        code: e.entity.code,
-        viewable: e.viewable,
-        editable: e.editable,
-        deletable: e.deletable,
-        includeSubs: e.includeSubs,
-      })),
-    },
-    {
-      filterCond: b.filterCond,
-      entities: b.entities.map((e) => ({
-        type: e.entity.type,
-        code: e.entity.code,
-        viewable: e.viewable,
-        editable: e.editable,
-        deletable: e.deletable,
-        includeSubs: e.includeSubs,
-      })),
-    },
+    a.entities.map((e) => ({
+      type: e.entity.type,
+      code: e.entity.code,
+      viewable: e.viewable,
+      editable: e.editable,
+      deletable: e.deletable,
+      includeSubs: e.includeSubs,
+    })),
+    b.entities.map((e) => ({
+      type: e.entity.type,
+      code: e.entity.code,
+      viewable: e.viewable,
+      editable: e.editable,
+      deletable: e.deletable,
+      includeSubs: e.includeSubs,
+    })),
   );
 }
 
@@ -39,6 +35,9 @@ function describeRight(right: RecordRight): string {
 }
 
 export const RecordPermissionDiffDetector = {
+  // Partially order-sensitive: rights are grouped by filterCond, and within
+  // each group, positional comparison is used (order matters). Across groups,
+  // order does not matter since each filterCond is an independent rule set.
   detect: (
     local: RecordPermissionConfig,
     remote: RecordPermissionConfig,

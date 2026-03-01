@@ -21,21 +21,21 @@ vi.mock("../handleError", () => ({
 }));
 
 import * as p from "@clack/prompts";
-import type { ActionDiffEntry } from "@/core/domain/action/valueObject";
-import type { AdminNotesDiffEntry } from "@/core/domain/adminNotes/valueObject";
-import type { AppPermissionDiffEntry } from "@/core/domain/appPermission/valueObject";
-import type { CustomizationDiffEntry } from "@/core/domain/customization/valueObject";
+import type { ActionDiffEntry } from "@/core/application/action/detectActionDiff";
+import type { AdminNotesDiffEntry } from "@/core/application/adminNotes/detectAdminNotesDiff";
+import type { AppPermissionDiffEntry } from "@/core/application/appPermission/detectAppPermissionDiff";
+import type { CustomizationDiffEntry } from "@/core/application/customization/detectCustomizationDiff";
+import type { FieldPermissionDiffEntry } from "@/core/application/fieldPermission/detectFieldPermissionDiff";
+import type { GeneralSettingsDiffEntry } from "@/core/application/generalSettings/detectGeneralSettingsDiff";
+import type { NotificationDiffEntry } from "@/core/application/notification/detectNotificationDiff";
+import type { PluginDiffEntry } from "@/core/application/plugin/detectPluginDiff";
+import type { ProcessManagementDiffEntry } from "@/core/application/processManagement/detectProcessManagementDiff";
+import type { RecordPermissionDiffEntry } from "@/core/application/recordPermission/detectRecordPermissionDiff";
+import type { ReportDiffEntry } from "@/core/application/report/detectReportDiff";
+import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
 import type { DiffResult } from "@/core/domain/diff";
-import type { FieldPermissionDiffEntry } from "@/core/domain/fieldPermission/valueObject";
-import type { GeneralSettingsDiffEntry } from "@/core/domain/generalSettings/valueObject";
-import type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
-import type { PluginDiffEntry } from "@/core/domain/plugin/valueObject";
-import type { ProcessManagementDiffEntry } from "@/core/domain/processManagement/valueObject";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
-import type { RecordPermissionDiffEntry } from "@/core/domain/recordPermission/valueObject";
-import type { ReportDiffEntry } from "@/core/domain/report/valueObject";
-import type { ViewDiffEntry } from "@/core/domain/view/valueObject";
 import { logError } from "../handleError";
 import {
   confirmAndDeploy,
@@ -357,6 +357,19 @@ describe("printViewDiffResult", () => {
     expect(changeLine).toContain("+1 added");
     expect(changeLine).toContain("~1 modified");
     expect(changeLine).toContain("-1 deleted");
+  });
+
+  it("warnings がある場合、p.log.warn で出力される", () => {
+    const result: DiffResult<ViewDiffEntry> = {
+      entries: [
+        { type: "added", viewName: "一覧", details: "LIST view を追加" },
+      ],
+      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: ["test warning message"],
+    };
+    printViewDiffResult(result);
+    expect(p.log.warn).toHaveBeenCalledWith("test warning message");
   });
 });
 

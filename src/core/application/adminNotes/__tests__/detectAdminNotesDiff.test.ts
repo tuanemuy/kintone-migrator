@@ -66,7 +66,7 @@ includeInTemplateAndDuplicates: false
       const container = getContainer();
 
       await expect(detectAdminNotesDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 

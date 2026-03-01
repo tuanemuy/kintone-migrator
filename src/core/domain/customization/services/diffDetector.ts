@@ -38,10 +38,11 @@ function compareResourceLists(
   const localNameSet = new Set(localNames);
   const remoteNameSet = new Set(remoteNames);
 
-  if (
+  const hasDuplicates =
     localNames.length !== localNameSet.size ||
-    remoteNames.length !== remoteNameSet.size
-  ) {
+    remoteNames.length !== remoteNameSet.size;
+
+  if (hasDuplicates) {
     warnings.push(
       `[${platform}.${resourceType}] duplicate basenames detected; diff results may be inaccurate for FILE resources`,
     );
@@ -71,21 +72,24 @@ function compareResourceLists(
     }
   }
 
-  // Detect order changes among shared resources
-  const localShared = localNames.filter((n) => remoteNameSet.has(n));
-  const remoteShared = remoteNames.filter((n) => localNameSet.has(n));
-  if (
-    localShared.length > 1 &&
-    localShared.length === remoteShared.length &&
-    localShared.some((n, i) => n !== remoteShared[i])
-  ) {
-    entries.push({
-      type: "modified",
-      platform,
-      resourceType,
-      name: "(order)",
-      details: "resource load order changed",
-    });
+  // Detect order changes among shared resources.
+  // Skip when duplicates exist — Set-based deduplication makes order comparison unreliable.
+  if (!hasDuplicates) {
+    const localShared = localNames.filter((n) => remoteNameSet.has(n));
+    const remoteShared = remoteNames.filter((n) => localNameSet.has(n));
+    if (
+      localShared.length > 1 &&
+      localShared.length === remoteShared.length &&
+      localShared.some((n, i) => n !== remoteShared[i])
+    ) {
+      entries.push({
+        type: "modified",
+        platform,
+        resourceType,
+        name: "(order)",
+        details: "resource load order changed",
+      });
+    }
   }
 
   return entries;

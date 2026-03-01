@@ -55,6 +55,54 @@ describe("detectReportDiff", () => {
       expect(result.summary.added).toBe(1);
       expect(result.entries[0].type).toBe("added");
     });
+
+    it("should detect modified report", async () => {
+      const container = getContainer();
+      container.reportStorage.setContent(VALID_CONFIG);
+      container.reportConfigurator.setReports({
+        テスト: {
+          chartType: "LINE",
+          chartMode: "NORMAL",
+          index: 0,
+          name: "テスト",
+          groups: [{ code: "担当者" }],
+          aggregations: [{ type: "COUNT" }],
+          filterCond: "",
+          sorts: [],
+        },
+      });
+
+      const result = await detectReportDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.modified).toBe(1);
+      expect(result.entries[0].type).toBe("modified");
+    });
+
+    it("should detect deleted report", async () => {
+      const container = getContainer();
+      container.reportStorage.setContent(`
+reports: {}
+`);
+      container.reportConfigurator.setReports({
+        旧レポート: {
+          chartType: "BAR",
+          chartMode: "NORMAL",
+          index: 0,
+          name: "旧レポート",
+          groups: [{ code: "担当者" }],
+          aggregations: [{ type: "COUNT" }],
+          filterCond: "",
+          sorts: [],
+        },
+      });
+
+      const result = await detectReportDiff({ container });
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.summary.deleted).toBe(1);
+      expect(result.entries[0].type).toBe("deleted");
+    });
   });
 
   describe("error cases", () => {
@@ -62,7 +110,7 @@ describe("detectReportDiff", () => {
       const container = getContainer();
 
       await expect(detectReportDiff({ container })).rejects.toSatisfy(
-        isValidationError,
+        (error) => isValidationError(error) && error.code === "INVALID_INPUT",
       );
     });
 
