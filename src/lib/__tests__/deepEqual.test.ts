@@ -187,4 +187,14 @@ describe("deepEqual", () => {
     expect(deepEqual(undefined, {})).toBe(false);
     expect(deepEqual(undefined, [])).toBe(false);
   });
+
+  it("should distinguish null property from undefined property", () => {
+    expect(deepEqual({ a: null }, { a: undefined })).toBe(false);
+    expect(deepEqual({ a: undefined }, { a: null })).toBe(false);
+  });
+
+  it("should return false for NaN comparisons", () => {
+    expect(deepEqual(Number.NaN, Number.NaN)).toBe(false);
+    expect(deepEqual({ a: Number.NaN }, { a: Number.NaN })).toBe(false);
+  });
 });

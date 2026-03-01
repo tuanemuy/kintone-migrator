@@ -18,7 +18,7 @@ function compareConfigs(
   const entries: GeneralSettingsDiffEntry[] = [];
 
   function compareString(
-    field: string,
+    field: keyof GeneralSettingsConfig & string,
     l: string | undefined,
     r: string | undefined,
     defaultValue: string,
@@ -36,7 +36,7 @@ function compareConfigs(
   }
 
   function compareBoolean(
-    field: string,
+    field: keyof GeneralSettingsConfig & string,
     l: boolean | undefined,
     r: boolean | undefined,
     defaultValue: boolean,
@@ -53,7 +53,7 @@ function compareConfigs(
   }
 
   function compareNumber(
-    field: string,
+    field: keyof GeneralSettingsConfig & string,
     l: number | undefined,
     r: number | undefined,
     defaultValue: number,
@@ -69,7 +69,11 @@ function compareConfigs(
     }
   }
 
-  function compareDeepEqual(field: string, l: unknown, r: unknown): void {
+  function compareDeepEqual(
+    field: keyof GeneralSettingsConfig & string,
+    l: unknown,
+    r: unknown,
+  ): void {
     if (!deepEqual(l, r)) {
       entries.push({
         type: "modified",

@@ -117,22 +117,25 @@ function perRecordLabel(notif: PerRecordNotification): string {
   return notif.title || notif.filterCond || "(empty filter)";
 }
 
+// Covers all PerRecordNotification fields except filterCond (used as grouping key).
 function describePerRecordChanges(
   local: PerRecordNotification,
   remote: PerRecordNotification,
 ): string {
   const diffs: string[] = [];
   if (local.title !== remote.title) diffs.push("title changed");
-  if (local.filterCond !== remote.filterCond) diffs.push("filterCond changed");
+  // filterCond is the grouping key — matched pairs always share the same value.
   if (!deepEqual(local.targets, remote.targets)) diffs.push("targets changed");
   return diffs.length > 0 ? diffs.join(", ") : "changed";
 }
 
+// Covers all ReminderNotification fields except code (used as Map key).
 function describeReminderChanges(
   local: ReminderNotification,
   remote: ReminderNotification,
 ): string {
   const diffs: string[] = [];
+  // code is the Map key — matched pairs always share the same value.
   if (local.title !== remote.title) diffs.push("title changed");
   if (local.daysLater !== remote.daysLater) diffs.push("daysLater changed");
   if ((local.hoursLater ?? 0) !== (remote.hoursLater ?? 0))

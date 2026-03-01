@@ -31,7 +31,17 @@ function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
 }
 
 function describeRight(right: RecordRight): string {
-  return `entities: ${right.entities.length}`;
+  const perEntity = right.entities.map((e) => {
+    const perms = [
+      e.viewable ? "view" : null,
+      e.editable ? "edit" : null,
+      e.deletable ? "delete" : null,
+    ]
+      .filter(Boolean)
+      .join("/");
+    return `${e.entity.type}:${e.entity.code}(${perms || "none"})`;
+  });
+  return perEntity.length > 0 ? perEntity.join(", ") : "no entities";
 }
 
 export const RecordPermissionDiffDetector = {

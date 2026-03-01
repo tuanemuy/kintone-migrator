@@ -93,7 +93,7 @@ export const ViewDiffDetector = {
         entries.push({
           type: "deleted",
           viewName: name,
-          details: "deleted",
+          details: "removed",
         });
       }
     }

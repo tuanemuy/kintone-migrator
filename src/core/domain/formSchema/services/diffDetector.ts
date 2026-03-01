@@ -115,7 +115,7 @@ export const DiffDetector = {
           type: "deleted",
           fieldCode,
           fieldLabel: currentDef.label,
-          details: "deleted",
+          details: "removed",
           before: currentDef,
         });
       }

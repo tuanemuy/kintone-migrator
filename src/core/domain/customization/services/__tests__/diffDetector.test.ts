@@ -239,6 +239,38 @@ describe("CustomizationDiffDetector", () => {
       expect(result.entries.some((e) => e.name === "(order)")).toBe(false);
     });
 
+    it("should emit FILE content warning when FILE resources match by basename", () => {
+      const local = makeLocalConfig({
+        desktop: {
+          js: [{ type: "FILE", path: "src/app.js" }],
+          css: [],
+        },
+      });
+      const remoteDesktop = makeRemotePlatform({
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "key1",
+              name: "app.js",
+              contentType: "application/javascript",
+              size: "100",
+            },
+          },
+        ],
+      });
+      const result = CustomizationDiffDetector.detect(local, {
+        scope: "ALL",
+        desktop: remoteDesktop,
+        mobile: makeRemotePlatform(),
+      });
+      expect(
+        result.warnings.some((w) =>
+          w.includes("FILE resources are compared by name only"),
+        ),
+      ).toBe(true);
+    });
+
     it("should not emit warning when basenames are unique", () => {
       const local = makeLocalConfig({
         desktop: {
@@ -275,7 +307,7 @@ describe("CustomizationDiffDetector", () => {
         desktop: remoteDesktop,
         mobile: makeRemotePlatform(),
       });
-      expect(result.summary.total).toBeGreaterThanOrEqual(2);
+      expect(result.summary.total).toBe(3);
       expect(result.isEmpty).toBe(false);
     });
   });

@@ -1,11 +1,10 @@
 import { ViewDiffDetector } from "@/core/domain/view/services/diffDetector";
 import type { ViewDiff } from "@/core/domain/view/valueObject";
-
-export type { ViewDiffEntry } from "@/core/domain/view/valueObject";
-
 import type { ViewDiffServiceArgs } from "../container/view";
 import { detectDiffFromConfig } from "../detectDiffBase";
 import { parseViewConfigText } from "./parseConfig";
+
+export type { ViewDiffEntry } from "@/core/domain/view/valueObject";
 
 export async function detectViewDiff({
   container,

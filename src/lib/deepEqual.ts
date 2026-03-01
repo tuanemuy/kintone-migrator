@@ -109,6 +109,9 @@ function deepEqualInner(
  * Set comparison is order-independent: each element in one set is matched to an
  * element in the other using deep equality (O(n²)).
  *
+ * NaN handling: `deepEqual(NaN, NaN)` returns `false` because the comparison
+ * uses strict equality (`===`) for primitives, and `NaN !== NaN` in JavaScript.
+ *
  * Circular reference limitation: objects already visited by the traversal are
  * treated as non-equal. This means structurally identical circular references
  * (e.g. `a.self = a` vs `b.self = b`) return `false`. This is a conservative

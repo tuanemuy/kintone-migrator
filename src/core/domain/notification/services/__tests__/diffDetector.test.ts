@@ -395,6 +395,88 @@ describe("NotificationDiffDetector", () => {
       );
     });
 
+    it("should detect hoursLater change in reminder", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ code: "r1", hoursLater: 3 })],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ code: "r1", hoursLater: 1 })],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toBe("hoursLater changed");
+    });
+
+    it("should detect time change in reminder", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ code: "r1", time: "09:00" })],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ code: "r1", time: "18:00" })],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toBe("time changed");
+    });
+
+    it("should detect targets change in reminder", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({
+              code: "r1",
+              targets: [{ entity: { type: "USER", code: "user1" } }],
+            }),
+          ],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({
+              code: "r1",
+              targets: [{ entity: { type: "USER", code: "user2" } }],
+            }),
+          ],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toBe("targets changed");
+    });
+
+    it("should detect targets change in perRecord notification", () => {
+      const local: NotificationConfig = {
+        perRecord: [
+          makePerRecord({
+            targets: [{ entity: { type: "USER", code: "user1" } }],
+          }),
+        ],
+      };
+      const remote: NotificationConfig = {
+        perRecord: [
+          makePerRecord({
+            targets: [{ entity: { type: "USER", code: "user2" } }],
+          }),
+        ],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].details).toBe("targets changed");
+    });
+
     it("should detect deleted reminder notification", () => {
       const local: NotificationConfig = {
         reminder: makeReminderConfig({
@@ -483,7 +565,7 @@ describe("NotificationDiffDetector", () => {
         reminder: makeReminderConfig({ timezone: "Asia/Tokyo" }),
       };
       const result = NotificationDiffDetector.detect(local, remote);
-      expect(result.summary.total).toBeGreaterThanOrEqual(3);
+      expect(result.summary.total).toBe(3);
       expect(result.isEmpty).toBe(false);
     });
   });
@@ -556,8 +638,8 @@ describe("NotificationDiffDetector", () => {
       expect(result.isEmpty).toBe(false);
       // "a" group: local has 2, remote has 1 -> 1 added
       // "b" group: local has 1, remote has 2 -> 1 deleted
-      expect(result.summary.added).toBeGreaterThanOrEqual(1);
-      expect(result.summary.deleted).toBeGreaterThanOrEqual(1);
+      expect(result.summary.added).toBe(1);
+      expect(result.summary.deleted).toBe(1);
     });
   });
 });

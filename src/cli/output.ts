@@ -119,12 +119,6 @@ export function printCustomizationDiffResult(
 // requires special handling for hasLayoutChanges (shown between summary and note)
 // that doesn't fit the generic pattern.
 export function printDiffResult(result: DetectDiffOutput): void {
-  if ("warnings" in result) {
-    for (const w of (result as { warnings: readonly string[] }).warnings) {
-      p.log.warn(w);
-    }
-  }
-
   if (result.isEmpty) {
     p.log.info("No changes detected.");
     return;

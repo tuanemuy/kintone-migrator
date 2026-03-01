@@ -322,7 +322,7 @@ describe("DiffDetector", () => {
       const diff = DiffDetector.detect(schema, current);
       expect(diff.entries[0].before).toEqual(field);
       expect(diff.entries[0].after).toBeUndefined();
-      expect(diff.entries[0].details).toBe("deleted");
+      expect(diff.entries[0].details).toBe("removed");
     });
 
     it("modifiedエントリは before と after の両方を持つ", () => {

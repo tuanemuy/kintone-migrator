@@ -110,7 +110,7 @@ describe("buildDiffResult for FormSchemaDiffEntry", () => {
         type: "deleted",
         fieldCode: FieldCode.create("f4"),
         fieldLabel: "F4",
-        details: "deleted",
+        details: "removed",
         before: textField("f4", "F4"),
       },
     ];
@@ -131,7 +131,7 @@ describe("buildDiffResult for FormSchemaDiffEntry", () => {
         type: "deleted",
         fieldCode: FieldCode.create("d1"),
         fieldLabel: "D1",
-        details: "deleted",
+        details: "removed",
         before: textField("d1", "D1"),
       },
       {

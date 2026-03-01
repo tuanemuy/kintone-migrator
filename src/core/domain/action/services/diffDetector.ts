@@ -19,9 +19,13 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
     diffs.push("filterCond changed");
   }
   if (!deepEqual(local.mappings, remote.mappings)) {
-    diffs.push(
-      `mappings changed (${local.mappings.length} local, ${remote.mappings.length} remote)`,
-    );
+    if (local.mappings.length !== remote.mappings.length) {
+      diffs.push(
+        `mappings: ${remote.mappings.length} -> ${local.mappings.length}`,
+      );
+    } else {
+      diffs.push("mappings changed");
+    }
   }
   if (!deepEqual(local.entities, remote.entities)) {
     diffs.push("entities changed");

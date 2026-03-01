@@ -47,40 +47,29 @@ describe("detectDiffFromConfig", () => {
 
     expect(getStorage).toHaveBeenCalledOnce();
     expect(fetchRemote).toHaveBeenCalledOnce();
-    // Both should start before either finishes
-    expect(callOrder.indexOf("storage-start")).toBeLessThan(
+    // Both should start before either finishes (proves parallel execution)
+    expect(callOrder.indexOf("remote-start")).toBeLessThan(
       callOrder.indexOf("storage-end"),
     );
-    expect(callOrder.indexOf("remote-start")).toBeLessThan(
+    expect(callOrder.indexOf("storage-start")).toBeLessThan(
       callOrder.indexOf("remote-end"),
     );
   });
 
   it("should throw ValidationError when storage does not exist", async () => {
-    await expect(
-      detectDiffFromConfig({
-        getStorage: vi.fn().mockResolvedValue({ exists: false }),
-        fetchRemote: vi.fn().mockResolvedValue({}),
-        parseConfig: vi.fn(),
-        detect: vi.fn(),
-        notFoundMessage: "Config not found",
-      }),
-    ).rejects.toThrow(ValidationError);
+    const promise = detectDiffFromConfig({
+      getStorage: vi.fn().mockResolvedValue({ exists: false }),
+      fetchRemote: vi.fn().mockResolvedValue({}),
+      parseConfig: vi.fn(),
+      detect: vi.fn(),
+      notFoundMessage: "Config not found",
+    });
 
-    try {
-      await detectDiffFromConfig({
-        getStorage: vi.fn().mockResolvedValue({ exists: false }),
-        fetchRemote: vi.fn().mockResolvedValue({}),
-        parseConfig: vi.fn(),
-        detect: vi.fn(),
-        notFoundMessage: "Config not found",
-      });
-    } catch (error) {
-      expect(error).toBeInstanceOf(ValidationError);
-      const validationError = error as ValidationError;
-      expect(validationError.code).toBe(ValidationErrorCode.InvalidInput);
-      expect(validationError.message).toBe("Config not found");
-    }
+    await expect(promise).rejects.toThrow(ValidationError);
+    await expect(promise).rejects.toMatchObject({
+      code: ValidationErrorCode.InvalidInput,
+      message: "Config not found",
+    });
   });
 
   it("should pass parsed config and remote to detect", async () => {

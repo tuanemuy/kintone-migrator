@@ -13,7 +13,8 @@ import {
 // FILE resources are compared by basename only; content-level diff is not supported.
 function resourceName(resource: CustomizationResource): string {
   if (resource.type === "URL") return resource.url;
-  return resource.path.replace(/\\/g, "/").split("/").pop() ?? resource.path;
+  const parts = resource.path.replace(/\\/g, "/").split("/");
+  return parts[parts.length - 1];
 }
 
 function remoteResourceName(resource: RemoteResource): string {
