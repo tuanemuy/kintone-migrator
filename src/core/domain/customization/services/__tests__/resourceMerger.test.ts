@@ -34,15 +34,13 @@ describe("ResourceMerger", () => {
       expect(() =>
         ResourceMerger.assertResourceCount("desktop.js", resources),
       ).toThrow(BusinessRuleError);
-
-      try {
-        ResourceMerger.assertResourceCount("desktop.js", resources);
-      } catch (e) {
-        expect(e).toBeInstanceOf(BusinessRuleError);
-        expect((e as BusinessRuleError).code).toBe(
-          CustomizationErrorCode.CzTooManyFiles,
-        );
-      }
+      expect(() =>
+        ResourceMerger.assertResourceCount("desktop.js", resources),
+      ).toThrow(
+        expect.objectContaining({
+          code: CustomizationErrorCode.CzTooManyFiles,
+        }),
+      );
     });
 
     it("空配列の場合、エラーをスローしない", () => {
@@ -154,6 +152,22 @@ describe("ResourceMerger", () => {
         { type: "URL", url: "https://cdn.example.com/existing.js" },
         { type: "FILE", fileKey: "fk-new", name: "new.js" },
         { type: "URL", url: "https://cdn.example.com/new.js" },
+      ]);
+    });
+
+    it("受信リソースに同名ファイルが含まれる場合、両方とも結果に含まれる", () => {
+      const current: RemoteResource[] = [];
+      const incoming: ResolvedResource[] = [
+        { type: "FILE", fileKey: "fk-1", name: "app.js" },
+        { type: "FILE", fileKey: "fk-2", name: "app.js" },
+      ];
+
+      const result = ResourceMerger.mergeResources(current, incoming);
+
+      // incoming is appended as-is; no deduplication within incoming
+      expect(result).toEqual([
+        { type: "FILE", fileKey: "fk-1", name: "app.js" },
+        { type: "FILE", fileKey: "fk-2", name: "app.js" },
       ]);
     });
 

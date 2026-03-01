@@ -169,75 +169,73 @@ reminder:
   });
 
   it("空テキストでNtEmptyConfigTextエラー", () => {
-    try {
-      NotificationConfigParser.parse("");
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtEmptyConfigText,
-      );
-    }
+    expect(() => NotificationConfigParser.parse("")).toThrow(BusinessRuleError);
+    expect(() => NotificationConfigParser.parse("")).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtEmptyConfigText,
+      }),
+    );
   });
 
   it("無効なYAMLでNtInvalidConfigYamlエラー", () => {
-    try {
-      NotificationConfigParser.parse("{ invalid yaml: [");
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigYaml,
-      );
-    }
+    expect(() => NotificationConfigParser.parse("{ invalid yaml: [")).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse("{ invalid yaml: [")).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigYaml,
+      }),
+    );
   });
 
   it("非オブジェクトでNtInvalidConfigStructureエラー", () => {
-    try {
-      NotificationConfigParser.parse("just a string");
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse("just a string")).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse("just a string")).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("generalが非オブジェクトでNtInvalidConfigStructureエラー", () => {
-    try {
-      NotificationConfigParser.parse("general: not_an_object");
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() =>
+      NotificationConfigParser.parse("general: not_an_object"),
+    ).toThrow(BusinessRuleError);
+    expect(() =>
+      NotificationConfigParser.parse("general: not_an_object"),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("perRecordが非配列でNtInvalidConfigStructureエラー", () => {
-    try {
-      NotificationConfigParser.parse("perRecord: not_an_array");
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() =>
+      NotificationConfigParser.parse("perRecord: not_an_array"),
+    ).toThrow(BusinessRuleError);
+    expect(() =>
+      NotificationConfigParser.parse("perRecord: not_an_array"),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("reminderが非オブジェクトでNtInvalidConfigStructureエラー", () => {
-    try {
-      NotificationConfigParser.parse("reminder: not_an_object");
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() =>
+      NotificationConfigParser.parse("reminder: not_an_object"),
+    ).toThrow(BusinessRuleError);
+    expect(() =>
+      NotificationConfigParser.parse("reminder: not_an_object"),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("無効なentity typeでNtInvalidEntityTypeエラー", () => {
@@ -254,15 +252,14 @@ general:
       statusChanged: false
       fileImported: false
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidEntityType,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidEntityType,
+      }),
+    );
   });
 
   it("空のentity codeでNtEmptyEntityCodeエラー", () => {
@@ -279,15 +276,14 @@ general:
       statusChanged: false
       fileImported: false
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtEmptyEntityCode,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtEmptyEntityCode,
+      }),
+    );
   });
 
   it("perRecordのfilterCond未指定でNtMissingRequiredFieldエラー", () => {
@@ -299,15 +295,14 @@ perRecord:
           type: USER
           code: admin
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtMissingRequiredField,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtMissingRequiredField,
+      }),
+    );
   });
 
   it("perRecordのtitle未指定で空文字列にデフォルトされる", () => {
@@ -338,15 +333,14 @@ reminder:
             type: USER
             code: admin
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtMissingRequiredField,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtMissingRequiredField,
+      }),
+    );
   });
 
   it("reminderのcode未指定でエラー", () => {
@@ -363,15 +357,14 @@ reminder:
             type: USER
             code: admin
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("generalのincludeSubsを指定できる", () => {
@@ -513,15 +506,14 @@ general:
   notifications:
     - not_an_object
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("generalのnotificationsが配列でない場合にエラー", () => {
@@ -530,15 +522,14 @@ general:
   notifyToCommenter: false
   notifications: not_an_array
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("perRecordのnotificationが非オブジェクトでエラー", () => {
@@ -546,15 +537,14 @@ general:
 perRecord:
   - not_an_object
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("perRecordのtargetsが配列でない場合にエラー", () => {
@@ -563,15 +553,14 @@ perRecord:
   - filterCond: 'status = "open"'
     targets: not_an_array
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("perRecordのtargetが非オブジェクトでエラー", () => {
@@ -581,15 +570,14 @@ perRecord:
     targets:
       - not_an_object
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("reminderの通知が非オブジェクトでエラー", () => {
@@ -598,15 +586,14 @@ reminder:
   notifications:
     - not_an_object
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("reminderのnotificationsが配列でない場合にエラー", () => {
@@ -614,15 +601,14 @@ reminder:
 reminder:
   notifications: not_an_array
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("reminderのtargetsが配列でない場合にエラー", () => {
@@ -633,15 +619,14 @@ reminder:
       daysLater: 1
       targets: not_an_array
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("entityが非オブジェクトでNtInvalidConfigStructureエラー", () => {
@@ -656,15 +641,14 @@ general:
       statusChanged: false
       fileImported: false
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtInvalidConfigStructure,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("reminderのhoursLaterとtime両方指定でNtConflictingTimingFieldsエラー", () => {
@@ -683,14 +667,38 @@ reminder:
             type: USER
             code: admin
 `;
-    try {
-      NotificationConfigParser.parse(yaml);
-      expect.unreachable("should throw");
-    } catch (e) {
-      expect(e).toBeInstanceOf(BusinessRuleError);
-      expect((e as BusinessRuleError).code).toBe(
-        NotificationErrorCode.NtConflictingTimingFields,
-      );
-    }
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtConflictingTimingFields,
+      }),
+    );
+  });
+
+  it("reminderのhoursLaterが非数値でNtInvalidHoursLaterエラー", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: "not_a_number"
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidHoursLater,
+      }),
+    );
   });
 });

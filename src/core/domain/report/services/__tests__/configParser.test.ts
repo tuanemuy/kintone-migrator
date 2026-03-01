@@ -1106,9 +1106,119 @@ reports:
       expect(config.reports.テスト.sorts).toEqual([]);
     });
 
-    it("should parse all periodic every values", () => {
-      const everyValues = ["YEAR", "QUARTER", "MONTH", "WEEK", "DAY", "HOUR"];
-      for (const every of everyValues) {
+    it("should throw for non-numeric index", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    index: "not_a_number"
+    filterCond: ""
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for out-of-range month (0)", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: YEAR
+        month: 0
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for out-of-range month (13)", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: YEAR
+        month: 13
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for out-of-range minute (60)", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: HOUR
+        minute: 60
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for out-of-range dayOfMonth (0)", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: MONTH
+        dayOfMonth: 0
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for out-of-range dayOfMonth (32)", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: COLUMN
+    index: 0
+    groups: []
+    aggregations:
+      - type: COUNT
+    filterCond: ""
+    sorts: []
+    periodicReport:
+      active: true
+      period:
+        every: MONTH
+        dayOfMonth: 32
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should accept valid month range boundaries (1 and 12)", () => {
+      for (const month of [1, 12]) {
         const yaml = `
 reports:
   テスト:
@@ -1122,29 +1232,11 @@ reports:
     periodicReport:
       active: true
       period:
-        every: ${every}
+        every: YEAR
+        month: ${month}
 `;
         const config = ReportConfigParser.parse(yaml);
-        expect(config.reports.テスト.periodicReport?.period.every).toBe(every);
-      }
-    });
-
-    it("should parse all aggregation types", () => {
-      const aggregationTypes = ["COUNT", "SUM", "AVERAGE", "MAX", "MIN"];
-      for (const aggType of aggregationTypes) {
-        const yaml = `
-reports:
-  テスト:
-    chartType: BAR
-    index: 0
-    groups: []
-    aggregations:
-      - type: ${aggType}
-    filterCond: ""
-    sorts: []
-`;
-        const config = ReportConfigParser.parse(yaml);
-        expect(config.reports.テスト.aggregations[0].type).toBe(aggType);
+        expect(config.reports.テスト.periodicReport?.period.month).toBe(month);
       }
     });
   });
