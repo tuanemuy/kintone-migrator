@@ -701,4 +701,64 @@ reminder:
       }),
     );
   });
+
+  it("reminderのdaysLaterが負数でエラー", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: -1
+      hoursLater: 9
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+  });
+
+  it("reminderのhoursLaterが小数でエラー", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: 1.5
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+  });
+
+  it("reminderのtimeが非文字列でエラー", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      time: 900
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      BusinessRuleError,
+    );
+  });
 });

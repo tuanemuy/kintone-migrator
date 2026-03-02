@@ -70,4 +70,80 @@ describe("detectRecordDiff", () => {
       { type: "deleted", key: "c", value: 3 },
     ]);
   });
+
+  it("should correctly handle V that includes undefined using Object.hasOwn", () => {
+    type Entry = {
+      type: "added" | "modified" | "deleted";
+      key: string;
+      value: string | undefined;
+    };
+
+    const undefinedCallbacks = {
+      onAdded: (key: string, local: string | undefined): Entry => ({
+        type: "added",
+        key,
+        value: local,
+      }),
+      onModified: (
+        key: string,
+        local: string | undefined,
+        remote: string | undefined,
+      ): Entry | undefined => {
+        if (local !== remote) {
+          return { type: "modified", key, value: local };
+        }
+        return undefined;
+      },
+      onDeleted: (key: string, remote: string | undefined): Entry => ({
+        type: "deleted",
+        key,
+        value: remote,
+      }),
+    };
+
+    // Key "a" exists in local with value undefined, but does NOT exist in remote
+    // Should be classified as "added", not "modified"
+    const local: Record<string, string | undefined> = { a: undefined };
+    const remote: Record<string, string | undefined> = {};
+
+    const result = detectRecordDiff(local, remote, undefinedCallbacks);
+    expect(result).toEqual([{ type: "added", key: "a", value: undefined }]);
+  });
+
+  it("should detect deleted when key exists in remote with undefined value but not in local", () => {
+    type Entry = {
+      type: "added" | "modified" | "deleted";
+      key: string;
+      value: string | undefined;
+    };
+
+    const undefinedCallbacks = {
+      onAdded: (key: string, local: string | undefined): Entry => ({
+        type: "added",
+        key,
+        value: local,
+      }),
+      onModified: (
+        key: string,
+        local: string | undefined,
+        remote: string | undefined,
+      ): Entry | undefined => {
+        if (local !== remote) {
+          return { type: "modified", key, value: local };
+        }
+        return undefined;
+      },
+      onDeleted: (key: string, remote: string | undefined): Entry => ({
+        type: "deleted",
+        key,
+        value: remote,
+      }),
+    };
+
+    const local: Record<string, string | undefined> = {};
+    const remote: Record<string, string | undefined> = { a: undefined };
+
+    const result = detectRecordDiff(local, remote, undefinedCallbacks);
+    expect(result).toEqual([{ type: "deleted", key: "a", value: undefined }]);
+  });
 });

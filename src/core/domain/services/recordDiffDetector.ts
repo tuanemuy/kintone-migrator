@@ -13,7 +13,7 @@ export function detectRecordDiff<V, E>(
 
   for (const [key, localValue] of Object.entries(localRecord)) {
     const remoteValue = remoteRecord[key];
-    if (remoteValue === undefined) {
+    if (!Object.hasOwn(remoteRecord, key)) {
       entries.push(callbacks.onAdded(key, localValue));
     } else {
       const entry = callbacks.onModified(key, localValue, remoteValue);
@@ -24,7 +24,7 @@ export function detectRecordDiff<V, E>(
   }
 
   for (const [key, remoteValue] of Object.entries(remoteRecord)) {
-    if (localRecord[key] === undefined) {
+    if (!Object.hasOwn(localRecord, key)) {
       entries.push(callbacks.onDeleted(key, remoteValue));
     }
   }

@@ -243,4 +243,48 @@ views:
       expect(() => ViewConfigParser.parse(yaml)).toThrow();
     });
   });
+
+  describe("validation", () => {
+    it("should throw for non-array fields", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: 0
+    fields: not_an_array
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for string pager", () => {
+      const yaml = `
+views:
+  test:
+    type: CUSTOM
+    index: 0
+    pager: "false"
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for negative index", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: -1
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for fractional index", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: 1.5
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+  });
 });

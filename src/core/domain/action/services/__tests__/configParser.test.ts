@@ -442,7 +442,7 @@ actions: {}
       expect(Object.keys(config.actions)).toHaveLength(0);
     });
 
-    it("should parse empty destApp object (both app and code optional)", () => {
+    it("should throw for empty destApp object (both app and code missing)", () => {
       const yaml = `
 actions:
   test:
@@ -451,10 +451,68 @@ actions:
     mappings: []
     entities: []
 `;
-      const config = ActionConfigParser.parse(yaml);
-      expect(config.actions.test.destApp).toEqual({});
-      expect(config.actions.test.destApp.app).toBeUndefined();
-      expect(config.actions.test.destApp.code).toBeUndefined();
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for srcType FIELD without srcField", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings:
+      - srcType: FIELD
+        destField: field1
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for negative index", () => {
+      const yaml = `
+actions:
+  test:
+    index: -1
+    destApp:
+      code: target-app
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for fractional index", () => {
+      const yaml = `
+actions:
+  test:
+    index: 1.5
+    destApp:
+      code: target-app
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
     });
   });
 });

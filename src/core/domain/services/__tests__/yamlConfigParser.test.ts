@@ -57,6 +57,43 @@ describe("parseYamlConfig", () => {
     expect(result).toEqual({ key: "value", num: 42 });
   });
 
+  it("should throw on YAML null document", () => {
+    expect(() => parseYamlConfig("null", errorCodes, "Test")).toThrow(
+      "Test config must be a YAML object",
+    );
+    expect(() => parseYamlConfig("~", errorCodes, "Test")).toThrow(
+      "Test config must be a YAML object",
+    );
+  });
+
+  it("should throw with correct error code", () => {
+    expect(() => parseYamlConfig("", errorCodes, "Test")).toThrow(
+      expect.objectContaining({
+        code: ActionErrorCode.AcEmptyConfigText,
+      }),
+    );
+    expect(() => parseYamlConfig("key: [unclosed", errorCodes, "Test")).toThrow(
+      expect.objectContaining({
+        code: ActionErrorCode.AcInvalidConfigYaml,
+      }),
+    );
+    expect(() => parseYamlConfig("just a string", errorCodes, "Test")).toThrow(
+      expect.objectContaining({
+        code: ActionErrorCode.AcInvalidConfigStructure,
+      }),
+    );
+  });
+
+  it("should preserve cause on YAML parse errors", () => {
+    try {
+      parseYamlConfig("key: [unclosed", errorCodes, "Test");
+      expect.fail("Expected error to be thrown");
+    } catch (error) {
+      expect(error).toBeInstanceOf(BusinessRuleError);
+      expect((error as BusinessRuleError).cause).toBeDefined();
+    }
+  });
+
   it("should include domainLabel in error messages", () => {
     expect(() => parseYamlConfig("", errorCodes, "Report")).toThrow(
       "Report config text is empty",

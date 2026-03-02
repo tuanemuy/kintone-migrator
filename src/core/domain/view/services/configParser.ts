@@ -25,47 +25,63 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !isViewType(obj.type)) {
+  if (typeof raw.type !== "string" || !isViewType(raw.type)) {
     throw new BusinessRuleError(
       ViewErrorCode.VwInvalidViewType,
-      `View "${name}" has invalid type: ${String(obj.type)}. Must be LIST, CALENDAR, or CUSTOM`,
+      `View "${name}" has invalid type: ${String(raw.type)}. Must be LIST, CALENDAR, or CUSTOM`,
     );
   }
 
   // Reject non-numeric index early to avoid silent coercion
-  if (obj.index !== undefined && typeof obj.index !== "number") {
+  if (
+    raw.index !== undefined &&
+    (typeof raw.index !== "number" ||
+      !Number.isInteger(raw.index) ||
+      raw.index < 0)
+  ) {
     throw new BusinessRuleError(
       ViewErrorCode.VwInvalidIndex,
-      `View "${name}" has non-numeric index: ${String(obj.index)}`,
+      `View "${name}" has invalid index: ${String(raw.index)}. Must be a non-negative integer`,
     );
   }
 
-  const device = parseDeviceType(name, obj.device);
+  if (raw.fields !== undefined && !Array.isArray(raw.fields)) {
+    throw new BusinessRuleError(
+      ViewErrorCode.VwInvalidConfigStructure,
+      `View "${name}" has invalid fields: must be an array`,
+    );
+  }
+
+  if (raw.pager !== undefined && typeof raw.pager !== "boolean") {
+    throw new BusinessRuleError(
+      ViewErrorCode.VwInvalidConfigStructure,
+      `View "${name}" has invalid pager: must be a boolean`,
+    );
+  }
+
+  const device = parseDeviceType(name, raw.device);
 
   const config: ViewConfig = {
-    type: obj.type,
-    index: typeof obj.index === "number" ? obj.index : 0,
+    type: raw.type,
+    index: typeof raw.index === "number" ? raw.index : 0,
     name,
-    ...(obj.builtinType !== undefined && {
-      builtinType: String(obj.builtinType),
+    ...(raw.builtinType !== undefined && {
+      builtinType: String(raw.builtinType),
     }),
-    // Non-string values are coerced to strings for safety
-    ...(Array.isArray(obj.fields) && {
-      fields: obj.fields.map((f: unknown) =>
+    ...(Array.isArray(raw.fields) && {
+      fields: raw.fields.map((f: unknown) =>
         typeof f === "string" ? f : String(f),
       ),
     }),
-    ...(obj.date !== undefined && { date: String(obj.date) }),
-    ...(obj.title !== undefined && { title: String(obj.title) }),
-    ...(obj.html !== undefined && { html: String(obj.html) }),
-    ...(obj.pager !== undefined && { pager: Boolean(obj.pager) }),
+    ...(raw.date !== undefined && { date: String(raw.date) }),
+    ...(raw.title !== undefined && { title: String(raw.title) }),
+    ...(raw.html !== undefined && { html: String(raw.html) }),
+    ...(raw.pager !== undefined && { pager: raw.pager }),
     ...(device !== undefined && { device }),
-    ...(obj.filterCond !== undefined && {
-      filterCond: String(obj.filterCond),
+    ...(raw.filterCond !== undefined && {
+      filterCond: String(raw.filterCond),
     }),
-    ...(obj.sort !== undefined && { sort: String(obj.sort) }),
+    ...(raw.sort !== undefined && { sort: String(raw.sort) }),
   };
 
   return config;

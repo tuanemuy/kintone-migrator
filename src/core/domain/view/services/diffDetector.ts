@@ -7,10 +7,6 @@ import type { ViewDiff, ViewDiffEntry } from "../valueObject";
 function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
   const changes: string[] = [];
 
-  if (local.name !== remote.name) {
-    changes.push(`name: "${remote.name}" -> "${local.name}"`);
-  }
-
   if (local.type !== remote.type) {
     changes.push(`type: ${remote.type} -> ${local.type}`);
   }

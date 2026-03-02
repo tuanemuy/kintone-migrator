@@ -18,15 +18,21 @@ function parseDestApp(raw: unknown, actionName: string): ActionDestApp {
     );
   }
 
-  const obj = raw;
   const result: { app?: string; code?: string } = {};
 
-  if (obj.app !== undefined && obj.app !== null) {
-    result.app = String(obj.app);
+  if (raw.app !== undefined && raw.app !== null) {
+    result.app = String(raw.app);
   }
 
-  if (obj.code !== undefined && obj.code !== null) {
-    result.code = String(obj.code);
+  if (raw.code !== undefined && raw.code !== null) {
+    result.code = String(raw.code);
+  }
+
+  if (result.app === undefined && result.code === undefined) {
+    throw new BusinessRuleError(
+      ActionErrorCode.AcInvalidConfigStructure,
+      `Action "${actionName}" destApp must have at least "app" or "code" property`,
+    );
   }
 
   return result;
@@ -44,16 +50,14 @@ function parseMapping(
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.srcType !== "string" || !isActionMappingSrcType(obj.srcType)) {
+  if (typeof raw.srcType !== "string" || !isActionMappingSrcType(raw.srcType)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidSrcType,
-      `Action "${actionName}" mapping at index ${index} has invalid srcType: ${String(obj.srcType)}. Must be FIELD or RECORD_URL`,
+      `Action "${actionName}" mapping at index ${index} has invalid srcType: ${String(raw.srcType)}. Must be FIELD or RECORD_URL`,
     );
   }
 
-  if (typeof obj.destField !== "string" || obj.destField.length === 0) {
+  if (typeof raw.destField !== "string" || raw.destField.length === 0) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" mapping at index ${index} must have a non-empty "destField" property`,
@@ -61,14 +65,21 @@ function parseMapping(
   }
 
   const result: ActionMapping = {
-    srcType: obj.srcType,
-    destField: obj.destField,
-    ...(obj.srcField !== undefined &&
-    obj.srcField !== null &&
-    typeof obj.srcField === "string"
-      ? { srcField: obj.srcField }
+    srcType: raw.srcType,
+    destField: raw.destField,
+    ...(raw.srcField !== undefined &&
+    raw.srcField !== null &&
+    typeof raw.srcField === "string"
+      ? { srcField: raw.srcField }
       : {}),
   };
+
+  if (result.srcType === "FIELD" && result.srcField === undefined) {
+    throw new BusinessRuleError(
+      ActionErrorCode.AcInvalidConfigStructure,
+      `Action "${actionName}" mapping at index ${index} with srcType "FIELD" must have a "srcField" property`,
+    );
+  }
 
   return result;
 }
@@ -85,23 +96,21 @@ function parseEntity(
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !isActionEntityType(obj.type)) {
+  if (typeof raw.type !== "string" || !isActionEntityType(raw.type)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidEntityType,
-      `Action "${actionName}" entity at index ${index} has invalid type: ${String(obj.type)}. Must be USER, GROUP, or ORGANIZATION`,
+      `Action "${actionName}" entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, or ORGANIZATION`,
     );
   }
 
-  if (typeof obj.code !== "string" || obj.code.length === 0) {
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" entity at index ${index} must have a non-empty "code" property`,
     );
   }
 
-  return { type: obj.type, code: obj.code };
+  return { type: raw.type, code: raw.code };
 }
 
 function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
@@ -120,50 +129,52 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.index !== "number") {
+  if (
+    typeof raw.index !== "number" ||
+    !Number.isInteger(raw.index) ||
+    raw.index < 0
+  ) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
-      `Action "${actionName}" must have a numeric "index" property`,
+      `Action "${actionName}" must have a non-negative integer "index" property`,
     );
   }
 
-  if (!isRecord(obj.destApp)) {
+  if (!isRecord(raw.destApp)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have a "destApp" object`,
     );
   }
 
-  const destApp = parseDestApp(obj.destApp, actionName);
+  const destApp = parseDestApp(raw.destApp, actionName);
 
-  if (!Array.isArray(obj.mappings)) {
+  if (!Array.isArray(raw.mappings)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have a "mappings" array`,
     );
   }
 
-  const mappings = obj.mappings.map((item: unknown, i: number) =>
+  const mappings = raw.mappings.map((item: unknown, i: number) =>
     parseMapping(item, i, actionName),
   );
 
-  if (!Array.isArray(obj.entities)) {
+  if (!Array.isArray(raw.entities)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have an "entities" array`,
     );
   }
 
-  const entities = obj.entities.map((item: unknown, i: number) =>
+  const entities = raw.entities.map((item: unknown, i: number) =>
     parseEntity(item, i, actionName),
   );
 
-  const filterCond = typeof obj.filterCond === "string" ? obj.filterCond : "";
+  const filterCond = typeof raw.filterCond === "string" ? raw.filterCond : "";
 
   return {
-    index: obj.index,
+    index: raw.index,
     name: actionName,
     destApp,
     mappings,

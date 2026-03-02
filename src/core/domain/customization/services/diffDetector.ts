@@ -16,7 +16,7 @@ import {
 // paths always refer to files, not directories.
 function resourceName(resource: CustomizationResource): string {
   if (resource.type === "URL") return resource.url;
-  const parts = resource.path.replace(/\\/g, "/").split("/");
+  const parts = resource.path.replace(/\\/g, "/").split("/").filter(Boolean);
   return parts[parts.length - 1];
 }
 

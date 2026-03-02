@@ -12,9 +12,7 @@ function parsePluginEntry(raw: unknown, index: number): PluginConfig {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.id !== "string" || obj.id.length === 0) {
+  if (typeof raw.id !== "string" || raw.id.length === 0) {
     throw new BusinessRuleError(
       PluginErrorCode.PlEmptyPluginId,
       `Plugin at index ${index} must have a non-empty "id" property`,
@@ -22,10 +20,10 @@ function parsePluginEntry(raw: unknown, index: number): PluginConfig {
   }
 
   return {
-    id: obj.id,
-    name: typeof obj.name === "string" ? obj.name : "",
+    id: raw.id,
+    name: typeof raw.name === "string" ? raw.name : "",
     // Defaults to true when not specified — matches kintone's default behavior
-    enabled: typeof obj.enabled === "boolean" ? obj.enabled : true,
+    enabled: typeof raw.enabled === "boolean" ? raw.enabled : true,
   };
 }
 

@@ -28,6 +28,7 @@ export function parseYamlConfig(
     throw new BusinessRuleError(
       errorCodes.invalidConfigYaml,
       `Failed to parse ${domainLabel} YAML: ${error instanceof Error ? error.message : String(error)}`,
+      error,
     );
   }
 

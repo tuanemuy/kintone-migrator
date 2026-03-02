@@ -157,7 +157,20 @@ function fromKintonePeriodicReportPeriod(
 
   const period: PeriodicReportPeriod = {
     every: raw.every,
-    ...(raw.month !== undefined ? { month: Number(raw.month) } : {}),
+    ...(raw.month !== undefined
+      ? {
+          month: (() => {
+            const m = Number(raw.month);
+            if (!Number.isFinite(m)) {
+              throw new SystemError(
+                SystemErrorCode.ExternalApiError,
+                `Unexpected non-numeric month from kintone API: ${raw.month}`,
+              );
+            }
+            return m;
+          })(),
+        }
+      : {}),
     ...(raw.pattern !== undefined && isPeriodicReportPattern(raw.pattern)
       ? { pattern: raw.pattern }
       : {}),
@@ -204,7 +217,16 @@ function fromKintoneReportConfig(raw: KintoneReportConfig): ReportConfig {
     isChartMode(raw.chartMode)
       ? { chartMode: raw.chartMode }
       : {}),
-    index: Number(raw.index),
+    index: (() => {
+      const idx = Number(raw.index);
+      if (!Number.isFinite(idx)) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected non-numeric index from kintone API: ${raw.index}`,
+        );
+      }
+      return idx;
+    })(),
     name: raw.name,
     groups: raw.groups.map(fromKintoneGroup),
     aggregations: raw.aggregations.map(fromKintoneAggregation),
@@ -265,7 +287,10 @@ function toKintonePeriodicReportPeriod(
   }
 
   if (period.dayOfMonth !== undefined) {
-    result.dayOfMonth = period.dayOfMonth;
+    result.dayOfMonth =
+      typeof period.dayOfMonth === "number"
+        ? String(period.dayOfMonth)
+        : period.dayOfMonth;
   }
 
   if (period.time !== undefined) {

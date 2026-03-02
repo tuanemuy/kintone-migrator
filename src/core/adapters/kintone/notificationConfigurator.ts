@@ -123,16 +123,31 @@ function fromKintoneReminderTarget(
 function fromKintoneReminderNotification(
   raw: KintoneReminderNotification,
 ): ReminderNotification {
+  const daysLater = Number(raw.timing.daysLater);
+  if (!Number.isFinite(daysLater)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected non-numeric daysLater from kintone API: ${raw.timing.daysLater}`,
+    );
+  }
+
   const result: ReminderNotification = {
     code: raw.timing.code,
-    daysLater: Number(raw.timing.daysLater),
+    daysLater,
     filterCond: raw.filterCond,
     title: raw.title,
     targets: raw.targets.map(fromKintoneReminderTarget),
   };
 
   if ("hoursLater" in raw.timing) {
-    return { ...result, hoursLater: Number(raw.timing.hoursLater) };
+    const hoursLater = Number(raw.timing.hoursLater);
+    if (!Number.isFinite(hoursLater)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Unexpected non-numeric hoursLater from kintone API: ${raw.timing.hoursLater}`,
+      );
+    }
+    return { ...result, hoursLater };
   }
 
   if ("time" in raw.timing) {

@@ -1,6 +1,6 @@
 import { stringify as stringifyYaml } from "yaml";
 
-export function serializeToYaml(data: unknown): string {
+export function serializeToYaml(data: Record<string, unknown>): string {
   return stringifyYaml(data, {
     lineWidth: 0,
     defaultKeyType: "PLAIN",

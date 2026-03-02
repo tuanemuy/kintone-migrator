@@ -85,8 +85,15 @@ function fromKintoneEntity(raw: KintoneActionEntity): ActionEntity {
 }
 
 function fromKintoneAction(raw: KintoneActionConfig): ActionConfig {
+  const index = Number(raw.index);
+  if (!Number.isFinite(index)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected non-numeric index from kintone API: ${raw.index}`,
+    );
+  }
   return {
-    index: Number(raw.index),
+    index,
     name: raw.name,
     destApp: fromKintoneDestApp(raw.destApp),
     mappings: raw.mappings.map(fromKintoneMapping),

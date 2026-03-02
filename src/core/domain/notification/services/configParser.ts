@@ -22,23 +22,21 @@ function parseEntity(raw: unknown, context: string): NotificationEntity {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !isNotificationEntityType(obj.type)) {
+  if (typeof raw.type !== "string" || !isNotificationEntityType(raw.type)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidEntityType,
-      `${context}: entity has invalid type: ${String(obj.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
+      `${context}: entity has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
     );
   }
 
-  if (typeof obj.code !== "string" || obj.code.length === 0) {
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtEmptyEntityCode,
       `${context}: entity must have a non-empty "code" property`,
     );
   }
 
-  return { type: obj.type, code: obj.code };
+  return { type: raw.type, code: raw.code };
 }
 
 function parseGeneralNotification(
@@ -52,23 +50,22 @@ function parseGeneralNotification(
     );
   }
 
-  const obj = raw;
   const entity = parseEntity(
-    obj.entity,
+    raw.entity,
     `General notification at index ${index}`,
   );
 
   const result: GeneralNotification = {
     entity,
-    recordAdded: Boolean(obj.recordAdded),
-    recordEdited: Boolean(obj.recordEdited),
-    commentAdded: Boolean(obj.commentAdded),
-    statusChanged: Boolean(obj.statusChanged),
-    fileImported: Boolean(obj.fileImported),
+    recordAdded: Boolean(raw.recordAdded),
+    recordEdited: Boolean(raw.recordEdited),
+    commentAdded: Boolean(raw.commentAdded),
+    statusChanged: Boolean(raw.statusChanged),
+    fileImported: Boolean(raw.fileImported),
   };
 
-  if (obj.includeSubs !== undefined && obj.includeSubs !== null) {
-    return { ...result, includeSubs: Boolean(obj.includeSubs) };
+  if (raw.includeSubs !== undefined && raw.includeSubs !== null) {
+    return { ...result, includeSubs: Boolean(raw.includeSubs) };
   }
 
   return result;
@@ -82,21 +79,19 @@ function parseGeneralConfig(raw: unknown): GeneralNotificationConfig {
     );
   }
 
-  const obj = raw;
-
-  if (!Array.isArray(obj.notifications)) {
+  if (!Array.isArray(raw.notifications)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       '"general" must have a "notifications" array',
     );
   }
 
-  const notifications = obj.notifications.map((item: unknown, i: number) =>
+  const notifications = raw.notifications.map((item: unknown, i: number) =>
     parseGeneralNotification(item, i),
   );
 
   return {
-    notifyToCommenter: Boolean(obj.notifyToCommenter),
+    notifyToCommenter: Boolean(raw.notifyToCommenter),
     notifications,
   };
 }
@@ -113,13 +108,12 @@ function parseTarget(
     );
   }
 
-  const obj = raw;
-  const entity = parseEntity(obj.entity, `${context} target at index ${index}`);
+  const entity = parseEntity(raw.entity, `${context} target at index ${index}`);
 
   const result: NotificationTarget = { entity };
 
-  if (obj.includeSubs !== undefined && obj.includeSubs !== null) {
-    return { ...result, includeSubs: Boolean(obj.includeSubs) };
+  if (raw.includeSubs !== undefined && raw.includeSubs !== null) {
+    return { ...result, includeSubs: Boolean(raw.includeSubs) };
   }
 
   return result;
@@ -136,20 +130,18 @@ function parsePerRecordNotification(
     );
   }
 
-  const obj = raw;
-
-  if (!Array.isArray(obj.targets)) {
+  if (!Array.isArray(raw.targets)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Per-record notification at index ${index} must have a "targets" array`,
     );
   }
 
-  const targets = obj.targets.map((item: unknown, i: number) =>
+  const targets = raw.targets.map((item: unknown, i: number) =>
     parseTarget(item, i, "Per-record"),
   );
 
-  if (typeof obj.filterCond !== "string") {
+  if (typeof raw.filterCond !== "string") {
     throw new BusinessRuleError(
       NotificationErrorCode.NtMissingRequiredField,
       `Per-record notification at index ${index} must have a "filterCond" string property`,
@@ -157,8 +149,8 @@ function parsePerRecordNotification(
   }
 
   return {
-    filterCond: obj.filterCond,
-    title: typeof obj.title === "string" ? obj.title : "",
+    filterCond: raw.filterCond,
+    title: typeof raw.title === "string" ? raw.title : "",
     targets,
   };
 }
@@ -187,35 +179,37 @@ function parseReminderNotification(
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.code !== "string" || obj.code.length === 0) {
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Reminder notification at index ${index} must have a non-empty "code" property`,
     );
   }
 
-  if (!Array.isArray(obj.targets)) {
+  if (!Array.isArray(raw.targets)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       `Reminder notification at index ${index} must have a "targets" array`,
     );
   }
 
-  const targets = obj.targets.map((item: unknown, i: number) =>
+  const targets = raw.targets.map((item: unknown, i: number) =>
     parseTarget(item, i, "Reminder"),
   );
 
-  if (typeof obj.daysLater !== "number") {
+  if (
+    typeof raw.daysLater !== "number" ||
+    !Number.isInteger(raw.daysLater) ||
+    raw.daysLater < 0
+  ) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtMissingRequiredField,
-      `Reminder notification at index ${index} must have a "daysLater" number property`,
+      `Reminder notification at index ${index} must have a non-negative integer "daysLater" property`,
     );
   }
 
-  const hasHoursLater = obj.hoursLater !== undefined && obj.hoursLater !== null;
-  const hasTime = obj.time !== undefined && obj.time !== null;
+  const hasHoursLater = raw.hoursLater !== undefined && raw.hoursLater !== null;
+  const hasTime = raw.time !== undefined && raw.time !== null;
 
   if (hasHoursLater && hasTime) {
     throw new BusinessRuleError(
@@ -224,33 +218,46 @@ function parseReminderNotification(
     );
   }
 
-  // Validate that hoursLater is a number when present
-  if (hasHoursLater && typeof obj.hoursLater !== "number") {
+  // Validate that hoursLater is a non-negative integer when present
+  if (
+    hasHoursLater &&
+    (typeof raw.hoursLater !== "number" ||
+      !Number.isInteger(raw.hoursLater) ||
+      raw.hoursLater < 0)
+  ) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidHoursLater,
-      `Reminder notification at index ${index} has non-numeric "hoursLater": ${String(obj.hoursLater)}`,
+      `Reminder notification at index ${index} has invalid "hoursLater": ${String(raw.hoursLater)}. Must be a non-negative integer`,
+    );
+  }
+
+  // Validate that time is a string when present
+  if (hasTime && typeof raw.time !== "string") {
+    throw new BusinessRuleError(
+      NotificationErrorCode.NtInvalidConfigStructure,
+      `Reminder notification at index ${index} has non-string "time": ${String(raw.time)}`,
     );
   }
 
   const result: ReminderNotification = {
-    code: obj.code,
-    daysLater: obj.daysLater,
-    filterCond: typeof obj.filterCond === "string" ? obj.filterCond : "",
-    title: typeof obj.title === "string" ? obj.title : "",
+    code: raw.code,
+    daysLater: raw.daysLater,
+    filterCond: typeof raw.filterCond === "string" ? raw.filterCond : "",
+    title: typeof raw.title === "string" ? raw.title : "",
     targets,
   };
 
-  if (hasHoursLater && typeof obj.hoursLater === "number") {
+  if (hasHoursLater && typeof raw.hoursLater === "number") {
     return {
       ...result,
-      hoursLater: obj.hoursLater,
+      hoursLater: raw.hoursLater,
     };
   }
 
   if (hasTime) {
     return {
       ...result,
-      time: typeof obj.time === "string" ? obj.time : "",
+      time: typeof raw.time === "string" ? raw.time : "",
     };
   }
 
@@ -265,21 +272,19 @@ function parseReminderConfig(raw: unknown): ReminderNotificationConfig {
     );
   }
 
-  const obj = raw;
-
-  if (!Array.isArray(obj.notifications)) {
+  if (!Array.isArray(raw.notifications)) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
       '"reminder" must have a "notifications" array',
     );
   }
 
-  const notifications = obj.notifications.map((item: unknown, i: number) =>
+  const notifications = raw.notifications.map((item: unknown, i: number) =>
     parseReminderNotification(item, i),
   );
 
   return {
-    timezone: typeof obj.timezone === "string" ? obj.timezone : "Asia/Tokyo",
+    timezone: typeof raw.timezone === "string" ? raw.timezone : "Asia/Tokyo",
     notifications,
   };
 }

@@ -10,9 +10,6 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
   if (local.index !== remote.index) {
     diffs.push(`index: ${remote.index} -> ${local.index}`);
   }
-  if (local.name !== remote.name) {
-    diffs.push(`name: "${remote.name}" -> "${local.name}"`);
-  }
   if (!deepEqual(local.destApp, remote.destApp)) {
     diffs.push("destApp changed");
   }

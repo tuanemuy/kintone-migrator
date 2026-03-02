@@ -22,7 +22,13 @@ type KintoneCustomizeResource = {
 };
 
 function fromKintoneResource(raw: KintoneCustomizeResource): RemoteResource {
-  if (raw.type === "FILE" && raw.file) {
+  if (raw.type === "FILE") {
+    if (!raw.file) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "FILE resource from kintone API is missing file metadata",
+      );
+    }
     return {
       type: "FILE",
       file: {

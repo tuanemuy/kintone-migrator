@@ -41,7 +41,16 @@ function fromKintoneView(name: string, raw: KintoneView): ViewConfig {
 
   const config: ViewConfig = {
     type: raw.type,
-    index: typeof raw.index === "string" ? Number(raw.index) : raw.index,
+    index: (() => {
+      const idx = typeof raw.index === "string" ? Number(raw.index) : raw.index;
+      if (!Number.isFinite(idx)) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected non-numeric index from kintone API: ${raw.index}`,
+        );
+      }
+      return idx;
+    })(),
     name,
     ...(raw.builtinType !== undefined && { builtinType: raw.builtinType }),
     ...(raw.fields !== undefined && { fields: raw.fields }),
