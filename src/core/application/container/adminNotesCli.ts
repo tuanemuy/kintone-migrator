@@ -1,12 +1,10 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAdminNotesConfigurator } from "@/core/adapters/kintone/adminNotesConfigurator";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { createLocalFileAdminNotesStorage } from "@/core/adapters/local/adminNotesStorage";
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
-import {
-  buildKintoneAuth,
-  type KintoneAuth,
-} from "@/core/application/container/cli";
+import type { KintoneAuth } from "@/core/application/container/cli";
+import { createKintoneClient } from "./kintoneClient";
 
 export type AdminNotesCliContainerConfig = {
   baseUrl: string;
@@ -14,16 +12,13 @@ export type AdminNotesCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   adminNotesFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createAdminNotesCliContainer(
   config: AdminNotesCliContainerConfig,
 ): AdminNotesContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     adminNotesConfigurator: new KintoneAdminNotesConfigurator(

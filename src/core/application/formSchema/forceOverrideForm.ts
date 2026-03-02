@@ -1,5 +1,6 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/services/layoutEnricher";
+import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subtableFieldSplitter";
 import type {
   FieldCode,
   FieldDefinition,
@@ -35,16 +36,8 @@ export async function forceOverrideForm({
       if (schemaDef.type === "SUBTABLE") {
         const currentDef = currentFields.get(fieldCode);
         if (currentDef !== undefined && currentDef.type === "SUBTABLE") {
-          const newInnerFields = new Map<FieldCode, FieldDefinition>();
-          const existingInnerFields = new Map<FieldCode, FieldDefinition>();
-
-          for (const [code, def] of schemaDef.properties.fields) {
-            if (currentDef.properties.fields.has(code)) {
-              existingInnerFields.set(code, def);
-            } else {
-              newInnerFields.set(code, def);
-            }
-          }
+          const { newInnerFields, existingInnerFields } =
+            splitSubtableInnerFields(schemaDef, currentDef);
 
           if (newInnerFields.size > 0) {
             toAdd.push({

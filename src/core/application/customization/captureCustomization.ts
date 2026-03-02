@@ -8,7 +8,10 @@ import type {
   RemoteResource,
 } from "@/core/domain/customization/valueObject";
 import { deduplicateName } from "@/lib/deduplicateName";
-import type { CustomizationCaptureContainer } from "../container/customization";
+import type {
+  CustomizationCaptureContainer,
+  CustomizationCaptureServiceArgs,
+} from "../container/customization";
 
 export type CaptureCustomizationInput = {
   readonly basePath: string;
@@ -19,11 +22,6 @@ export type CaptureCustomizationOutput = {
   readonly configText: string;
   readonly hasExistingConfig: boolean;
   readonly fileResourceCount: number;
-};
-
-type CaptureCustomizationArgs = {
-  container: CustomizationCaptureContainer;
-  input: CaptureCustomizationInput;
 };
 
 // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional control character match for file name sanitization
@@ -129,17 +127,14 @@ function planResources(
 function planPlatform(
   remotePlatform: RemotePlatform,
   platformName: string,
-  args: CaptureCustomizationArgs,
+  basePath: string,
+  filePrefix: string,
 ): {
   platform: CustomizationPlatform;
   filesToDownload: readonly PlannedFile[];
   fileCount: number;
 } {
-  const platformDir = join(
-    args.input.basePath,
-    args.input.filePrefix,
-    platformName,
-  );
+  const platformDir = join(basePath, filePrefix, platformName);
   const platformPrefix = platformName;
 
   const jsPlan = planResources(
@@ -186,18 +181,29 @@ async function downloadFiles(
   );
 }
 
-export async function captureCustomization(
-  args: CaptureCustomizationArgs,
-): Promise<CaptureCustomizationOutput> {
+export async function captureCustomization({
+  container,
+  input,
+}: CustomizationCaptureServiceArgs<CaptureCustomizationInput>): Promise<CaptureCustomizationOutput> {
   // Check existing config *before* downloading files so callers can act on it early
-  const existing = await args.container.customizationStorage.get();
+  const existing = await container.customizationStorage.get();
 
   const { scope, desktop, mobile } =
-    await args.container.customizationConfigurator.getCustomization();
+    await container.customizationConfigurator.getCustomization();
 
   // Phase 1: Plan file paths and build config (no I/O yet)
-  const desktopPlan = planPlatform(desktop, "desktop", args);
-  const mobilePlan = planPlatform(mobile, "mobile", args);
+  const desktopPlan = planPlatform(
+    desktop,
+    "desktop",
+    input.basePath,
+    input.filePrefix,
+  );
+  const mobilePlan = planPlatform(
+    mobile,
+    "mobile",
+    input.basePath,
+    input.filePrefix,
+  );
 
   const config: CustomizationConfig = {
     scope,
@@ -212,7 +218,7 @@ export async function captureCustomization(
     ...desktopPlan.filesToDownload,
     ...mobilePlan.filesToDownload,
   ];
-  await downloadFiles(allFiles, args.container);
+  await downloadFiles(allFiles, container);
 
   return {
     configText,

@@ -10,12 +10,11 @@ export type CaptureNotificationOutput = {
 export async function captureNotification({
   container,
 }: NotificationServiceArgs): Promise<CaptureNotificationOutput> {
-  const general =
-    await container.notificationConfigurator.getGeneralNotifications();
-  const perRecord =
-    await container.notificationConfigurator.getPerRecordNotifications();
-  const reminder =
-    await container.notificationConfigurator.getReminderNotifications();
+  const [general, perRecord, reminder] = await Promise.all([
+    container.notificationConfigurator.getGeneralNotifications(),
+    container.notificationConfigurator.getPerRecordNotifications(),
+    container.notificationConfigurator.getReminderNotifications(),
+  ]);
 
   const config: NotificationConfig = {
     general: {

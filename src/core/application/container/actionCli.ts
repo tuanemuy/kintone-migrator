@@ -1,12 +1,10 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneActionConfigurator } from "@/core/adapters/kintone/actionConfigurator";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { createLocalFileActionStorage } from "@/core/adapters/local/actionStorage";
 import type { ActionContainer } from "@/core/application/container/action";
-import {
-  buildKintoneAuth,
-  type KintoneAuth,
-} from "@/core/application/container/cli";
+import type { KintoneAuth } from "@/core/application/container/cli";
+import { createKintoneClient } from "./kintoneClient";
 
 export type ActionCliContainerConfig = {
   baseUrl: string;
@@ -14,16 +12,13 @@ export type ActionCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   actionFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createActionCliContainer(
   config: ActionCliContainerConfig,
 ): ActionContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     actionConfigurator: new KintoneActionConfigurator(client, config.appId),

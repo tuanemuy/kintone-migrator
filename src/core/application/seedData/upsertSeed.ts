@@ -1,8 +1,8 @@
-import { SeedParser } from "@/core/domain/seedData/services/seedParser";
 import { UpsertPlanner } from "@/core/domain/seedData/services/upsertPlanner";
 import type { SeedServiceArgs } from "../container/seed";
 import { ValidationError, ValidationErrorCode } from "../error";
 import type { UpsertSeedOutput } from "./dto";
+import { parseSeedText } from "./parseConfig";
 
 export type UpsertSeedInput = {
   readonly clean?: boolean;
@@ -19,7 +19,7 @@ export async function upsertSeed({
       "Seed file not found",
     );
   }
-  const seedData = SeedParser.parse(result.content);
+  const seedData = parseSeedText(result.content);
 
   if (input.clean) {
     const { deletedCount } = await container.recordManager.deleteAllRecords();

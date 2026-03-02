@@ -37,6 +37,11 @@ export type CustomizationApplyServiceArgs<T = undefined> = ServiceArgs<
   T
 >;
 
+export type CustomizationCaptureServiceArgs<T = undefined> = ServiceArgs<
+  CustomizationCaptureContainer,
+  T
+>;
+
 export type CustomizationDiffServiceArgs<T = undefined> = ServiceArgs<
   CustomizationDiffContainer,
   T

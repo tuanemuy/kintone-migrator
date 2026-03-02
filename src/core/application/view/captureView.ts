@@ -1,21 +1,18 @@
 import { ViewConfigSerializer } from "@/core/domain/view/services/configSerializer";
+import {
+  type CaptureOutput,
+  captureFromConfig,
+} from "../captureFromConfigBase";
 import type { ViewServiceArgs } from "../container/view";
 
-export type CaptureViewOutput = {
-  readonly configText: string;
-  readonly hasExistingConfig: boolean;
-};
+export type CaptureViewOutput = CaptureOutput;
 
 export async function captureView({
   container,
 }: ViewServiceArgs): Promise<CaptureViewOutput> {
-  const { views } = await container.viewConfigurator.getViews();
-
-  const configText = ViewConfigSerializer.serialize({ views });
-  const existing = await container.viewStorage.get();
-
-  return {
-    configText,
-    hasExistingConfig: existing.exists,
-  };
+  return captureFromConfig({
+    fetchRemote: () => container.viewConfigurator.getViews(),
+    serialize: ({ views }) => ViewConfigSerializer.serialize({ views }),
+    getStorage: () => container.viewStorage.get(),
+  });
 }

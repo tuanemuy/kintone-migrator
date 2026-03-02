@@ -15,6 +15,9 @@ export type LoadProjectConfigInput = Readonly<{
 export function loadProjectConfig(
   input: LoadProjectConfigInput,
 ): ProjectConfig {
+  // try-catch converts external library (yaml) exceptions into application-layer
+  // ValidationError. wrapBusinessRuleError is not applicable here because
+  // parseYaml throws its own error types, not BusinessRuleError.
   let raw: unknown;
   try {
     raw = parseYaml(input.content);

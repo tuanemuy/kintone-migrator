@@ -1,8 +1,9 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintonePluginConfigurator } from "@/core/adapters/kintone/pluginConfigurator";
 import { createLocalFilePluginStorage } from "@/core/adapters/local/pluginStorage";
-import { buildKintoneAuth, type KintoneAuth } from "./cli";
+import type { KintoneAuth } from "./cli";
+import { createKintoneClient } from "./kintoneClient";
 import type { PluginContainer } from "./plugin";
 
 export type PluginCliContainerConfig = {
@@ -11,16 +12,13 @@ export type PluginCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   pluginFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createPluginCliContainer(
   config: PluginCliContainerConfig,
 ): PluginContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     pluginConfigurator: new KintonePluginConfigurator(client, config.appId),

@@ -1,22 +1,19 @@
 import { AppPermissionConfigSerializer } from "@/core/domain/appPermission/services/configSerializer";
+import {
+  type CaptureOutput,
+  captureFromConfig,
+} from "../captureFromConfigBase";
 import type { AppPermissionServiceArgs } from "../container/appPermission";
 
-export type CaptureAppPermissionOutput = {
-  readonly configText: string;
-  readonly hasExistingConfig: boolean;
-};
+export type CaptureAppPermissionOutput = CaptureOutput;
 
 export async function captureAppPermission({
   container,
 }: AppPermissionServiceArgs): Promise<CaptureAppPermissionOutput> {
-  const { rights } =
-    await container.appPermissionConfigurator.getAppPermissions();
-
-  const configText = AppPermissionConfigSerializer.serialize({ rights });
-  const existing = await container.appPermissionStorage.get();
-
-  return {
-    configText,
-    hasExistingConfig: existing.exists,
-  };
+  return captureFromConfig({
+    fetchRemote: () => container.appPermissionConfigurator.getAppPermissions(),
+    serialize: ({ rights }) =>
+      AppPermissionConfigSerializer.serialize({ rights }),
+    getStorage: () => container.appPermissionStorage.get(),
+  });
 }

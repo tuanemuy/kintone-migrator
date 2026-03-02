@@ -1,22 +1,20 @@
 import { GeneralSettingsConfigSerializer } from "@/core/domain/generalSettings/services/configSerializer";
+import {
+  type CaptureOutput,
+  captureFromConfig,
+} from "../captureFromConfigBase";
 import type { GeneralSettingsServiceArgs } from "../container/generalSettings";
 
-export type CaptureGeneralSettingsOutput = {
-  readonly configText: string;
-  readonly hasExistingConfig: boolean;
-};
+export type CaptureGeneralSettingsOutput = CaptureOutput;
 
 export async function captureGeneralSettings({
   container,
 }: GeneralSettingsServiceArgs): Promise<CaptureGeneralSettingsOutput> {
-  const { config } =
-    await container.generalSettingsConfigurator.getGeneralSettings();
-
-  const configText = GeneralSettingsConfigSerializer.serialize(config);
-  const existing = await container.generalSettingsStorage.get();
-
-  return {
-    configText,
-    hasExistingConfig: existing.exists,
-  };
+  return captureFromConfig({
+    fetchRemote: () =>
+      container.generalSettingsConfigurator.getGeneralSettings(),
+    serialize: ({ config }) =>
+      GeneralSettingsConfigSerializer.serialize(config),
+    getStorage: () => container.generalSettingsStorage.get(),
+  });
 }

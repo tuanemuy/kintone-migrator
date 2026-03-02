@@ -1,12 +1,10 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneNotificationConfigurator } from "@/core/adapters/kintone/notificationConfigurator";
 import { createLocalFileNotificationStorage } from "@/core/adapters/local/notificationStorage";
-import {
-  buildKintoneAuth,
-  type KintoneAuth,
-} from "@/core/application/container/cli";
+import type { KintoneAuth } from "@/core/application/container/cli";
 import type { NotificationContainer } from "@/core/application/container/notification";
+import { createKintoneClient } from "./kintoneClient";
 
 export type NotificationCliContainerConfig = {
   baseUrl: string;
@@ -14,16 +12,13 @@ export type NotificationCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   notificationFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createNotificationCliContainer(
   config: NotificationCliContainerConfig,
 ): NotificationContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     notificationConfigurator: new KintoneNotificationConfigurator(

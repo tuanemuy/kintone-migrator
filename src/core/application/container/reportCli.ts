@@ -1,8 +1,9 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneReportConfigurator } from "@/core/adapters/kintone/reportConfigurator";
 import { createLocalFileReportStorage } from "@/core/adapters/local/reportStorage";
-import { buildKintoneAuth, type KintoneAuth } from "./cli";
+import type { KintoneAuth } from "./cli";
+import { createKintoneClient } from "./kintoneClient";
 import type { ReportContainer } from "./report";
 
 export type ReportCliContainerConfig = {
@@ -11,16 +12,13 @@ export type ReportCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   reportFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createReportCliContainer(
   config: ReportCliContainerConfig,
 ): ReportContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     reportConfigurator: new KintoneReportConfigurator(client, config.appId),

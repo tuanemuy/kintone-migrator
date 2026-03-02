@@ -1,9 +1,10 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneGeneralSettingsConfigurator } from "@/core/adapters/kintone/generalSettingsConfigurator";
 import { createLocalFileGeneralSettingsStorage } from "@/core/adapters/local/generalSettingsStorage";
-import { buildKintoneAuth, type KintoneAuth } from "./cli";
+import type { KintoneAuth } from "./cli";
 import type { GeneralSettingsContainer } from "./generalSettings";
+import { createKintoneClient } from "./kintoneClient";
 
 export type GeneralSettingsCliContainerConfig = {
   baseUrl: string;
@@ -11,16 +12,13 @@ export type GeneralSettingsCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   settingsFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createGeneralSettingsCliContainer(
   config: GeneralSettingsCliContainerConfig,
 ): GeneralSettingsContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     generalSettingsConfigurator: new KintoneGeneralSettingsConfigurator(

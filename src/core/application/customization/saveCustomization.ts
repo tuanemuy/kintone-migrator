@@ -1,4 +1,4 @@
-import type { CustomizationCaptureContainer } from "../container/customization";
+import type { CustomizationCaptureServiceArgs } from "../container/customization";
 
 export type SaveCustomizationInput = {
   readonly configText: string;
@@ -7,9 +7,6 @@ export type SaveCustomizationInput = {
 export async function saveCustomization({
   container,
   input,
-}: {
-  container: Pick<CustomizationCaptureContainer, "customizationStorage">;
-  input: SaveCustomizationInput;
-}): Promise<void> {
+}: CustomizationCaptureServiceArgs<SaveCustomizationInput>): Promise<void> {
   await container.customizationStorage.update(input.configText);
 }

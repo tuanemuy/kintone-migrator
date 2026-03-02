@@ -32,7 +32,10 @@ export async function applyView({
 
   const current = await container.viewConfigurator.getViews();
 
-  // Merge remote builtinType views to preserve them during the replacement operation
+  // Merge remote builtinType views to preserve them during the replacement operation.
+  // Edge case: if a local non-builtinType view has the same name as a remote
+  // builtinType view, the local view takes precedence. This is unlikely in
+  // practice since builtinType names are system-assigned.
   for (const [name, view] of Object.entries(current.views)) {
     if (view.builtinType !== undefined && filteredViews[name] === undefined) {
       filteredViews[name] = view;

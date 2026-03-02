@@ -4,10 +4,8 @@ import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
 } from "@/core/domain/formSchema/services/layoutEnricher";
-import type {
-  FieldCode,
-  FieldDefinition,
-} from "@/core/domain/formSchema/valueObject";
+import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subtableFieldSplitter";
+import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
@@ -70,16 +68,10 @@ export async function executeMigration({
       before !== undefined &&
       before.type === "SUBTABLE"
     ) {
-      const newInnerFields = new Map<FieldCode, FieldDefinition>();
-      const existingInnerFields = new Map<FieldCode, FieldDefinition>();
-
-      for (const [code, def] of after.properties.fields) {
-        if (before.properties.fields.has(code)) {
-          existingInnerFields.set(code, def);
-        } else {
-          newInnerFields.set(code, def);
-        }
-      }
+      const { newInnerFields, existingInnerFields } = splitSubtableInnerFields(
+        after,
+        before,
+      );
 
       if (newInnerFields.size > 0) {
         fieldsToAdd.push({
