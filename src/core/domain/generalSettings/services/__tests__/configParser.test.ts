@@ -399,5 +399,70 @@ firstMonthOfFiscalYear: 0
         BusinessRuleError,
       );
     });
+
+    it("should throw GsInvalidNumberPrecision for negative digits", () => {
+      const yaml = `
+numberPrecision:
+  digits: -1
+  decimalPlaces: 2
+  roundingMode: HALF_EVEN
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidNumberPrecision,
+        }),
+      );
+    });
+
+    it("should throw GsInvalidNumberPrecision for negative decimalPlaces", () => {
+      const yaml = `
+numberPrecision:
+  digits: 12
+  decimalPlaces: -3
+  roundingMode: HALF_EVEN
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidNumberPrecision,
+        }),
+      );
+    });
+
+    it("should throw GsInvalidNumberPrecision for non-integer digits", () => {
+      const yaml = `
+numberPrecision:
+  digits: 12.5
+  decimalPlaces: 2
+  roundingMode: HALF_EVEN
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidNumberPrecision,
+        }),
+      );
+    });
+
+    it("should throw GsInvalidBooleanField for non-boolean enableThumbnails", () => {
+      const yaml = `
+enableThumbnails: "yes"
+`;
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => GeneralSettingsConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: GeneralSettingsErrorCode.GsInvalidBooleanField,
+        }),
+      );
+    });
   });
 });

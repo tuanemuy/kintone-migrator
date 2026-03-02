@@ -2,10 +2,14 @@ import type { DiffResult } from "../diff";
 
 export type FieldRightAccessibility = "READ" | "WRITE" | "NONE";
 
-export type EntityType = "USER" | "GROUP" | "ORGANIZATION" | "FIELD_ENTITY";
+export type FieldPermissionEntityType =
+  | "USER"
+  | "GROUP"
+  | "ORGANIZATION"
+  | "FIELD_ENTITY";
 
 export type FieldPermissionEntity = Readonly<{
-  type: EntityType;
+  type: FieldPermissionEntityType;
   code: string;
 }>;
 

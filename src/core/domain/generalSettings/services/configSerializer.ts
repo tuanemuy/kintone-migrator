@@ -1,4 +1,4 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { GeneralSettingsConfig } from "../entity";
 
 function serializeConfig(
@@ -74,10 +74,6 @@ export const GeneralSettingsConfigSerializer = {
   serialize: (config: GeneralSettingsConfig): string => {
     const serialized = serializeConfig(config);
 
-    return stringifyYaml(serialized, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
+    return serializeToYaml(serialized);
   },
 };

@@ -3,6 +3,8 @@
  * Use these functions instead of `as` casts when working with `unknown` values.
  */
 
+import type { BusinessRuleErrorCode } from "@/core/domain/error";
+import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/lib/typeGuards";
 
 export { isRecord };
@@ -56,4 +58,48 @@ export function isKintoneSubtableRow(
 export function hasOptionalType(value: unknown): value is { type?: string } {
   if (!isRecord(value)) return false;
   return value.type === undefined || typeof value.type === "string";
+}
+
+/**
+ * Strict boolean validation — rejects non-boolean values.
+ * Returns the boolean value if valid, or `defaultValue` when the value is undefined/null.
+ * Throws `BusinessRuleError` when the value is present but not a boolean.
+ */
+export function parseStrictBoolean(
+  value: unknown,
+  fieldName: string,
+  context: string,
+  errorCode: BusinessRuleErrorCode,
+  defaultValue?: boolean,
+): boolean {
+  if (value === undefined || value === null) {
+    if (defaultValue !== undefined) return defaultValue;
+    throw new BusinessRuleError(
+      errorCode,
+      `${context} must have a boolean "${fieldName}" property`,
+    );
+  }
+  if (typeof value !== "boolean") {
+    throw new BusinessRuleError(
+      errorCode,
+      `${context} has invalid "${fieldName}" value: ${String(value)}. Must be a boolean`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Validates that a string value is within an allowed set and returns a typed value.
+ * Replaces `if (!SET.has(x)) throw; ... x as T` patterns.
+ */
+export function parseEnum<T extends string>(
+  value: string,
+  validValues: ReadonlySet<string>,
+  errorCode: BusinessRuleErrorCode,
+  message: string,
+): T {
+  if (!validValues.has(value)) {
+    throw new BusinessRuleError(errorCode, message);
+  }
+  return value as T;
 }

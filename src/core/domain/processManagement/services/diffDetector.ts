@@ -9,7 +9,7 @@ import type {
 
 function isEntityEqual(a: ProcessEntity, b: ProcessEntity): boolean {
   if (a.type !== b.type) return false;
-  if (a.code !== b.code) return false;
+  if ((a.code ?? "") !== (b.code ?? "")) return false;
   if (Boolean(a.includeSubs) !== Boolean(b.includeSubs)) return false;
   return true;
 }
