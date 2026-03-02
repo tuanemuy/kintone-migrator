@@ -1,52 +1,41 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
-import { isRecord } from "@/core/domain/typeGuards";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import {
+  isRecord,
+  parseEntityBase,
+  parseEnum,
+  parseStrictBoolean,
+} from "@/core/domain/typeGuards";
 import type { FieldPermissionConfig, FieldRight } from "../entity";
 import { FieldPermissionErrorCode } from "../errorCode";
 import type {
-  EntityType,
   FieldPermissionEntity,
+  FieldPermissionEntityType,
   FieldRightAccessibility,
   FieldRightEntity,
 } from "../valueObject";
 
-const VALID_ACCESSIBILITIES: ReadonlySet<string> = new Set([
-  "READ",
-  "WRITE",
-  "NONE",
-]);
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-]);
+const VALID_ACCESSIBILITIES: ReadonlySet<FieldRightAccessibility> =
+  new Set<FieldRightAccessibility>(["READ", "WRITE", "NONE"]);
+const VALID_ENTITY_TYPES: ReadonlySet<FieldPermissionEntityType> =
+  new Set<FieldPermissionEntityType>([
+    "USER",
+    "GROUP",
+    "ORGANIZATION",
+    "FIELD_ENTITY",
+  ]);
 
 function parseEntity(raw: unknown, index: number): FieldPermissionEntity {
-  if (!isRecord(raw)) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpInvalidConfigStructure,
-      `Entity at index ${index} must be an object`,
-    );
-  }
-
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(obj.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
-    );
-  }
-
-  if (typeof obj.code !== "string" || obj.code.length === 0) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpEmptyEntityCode,
-      `Entity at index ${index} must have a non-empty "code" property`,
-    );
-  }
-
-  return { type: obj.type as EntityType, code: obj.code };
+  return parseEntityBase<FieldPermissionEntityType>(
+    raw,
+    index,
+    VALID_ENTITY_TYPES,
+    {
+      invalidStructure: FieldPermissionErrorCode.FpInvalidConfigStructure,
+      invalidType: FieldPermissionErrorCode.FpInvalidEntityType,
+      emptyCode: FieldPermissionErrorCode.FpEmptyEntityCode,
+    },
+  );
 }
 
 function parseFieldRightEntity(raw: unknown, index: number): FieldRightEntity {
@@ -57,27 +46,30 @@ function parseFieldRightEntity(raw: unknown, index: number): FieldRightEntity {
     );
   }
 
-  const obj = raw;
+  const accessibility = parseEnum<FieldRightAccessibility>(
+    raw.accessibility,
+    VALID_ACCESSIBILITIES,
+    FieldPermissionErrorCode.FpInvalidAccessibility,
+    `Field right entity at index ${index} has invalid accessibility: ${String(raw.accessibility)}. Must be READ, WRITE, or NONE`,
+  );
 
-  if (
-    typeof obj.accessibility !== "string" ||
-    !VALID_ACCESSIBILITIES.has(obj.accessibility)
-  ) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpInvalidAccessibility,
-      `Field right entity at index ${index} has invalid accessibility: ${String(obj.accessibility)}. Must be READ, WRITE, or NONE`,
-    );
-  }
-
-  const entity = parseEntity(obj.entity, index);
+  const entity = parseEntity(raw.entity, index);
 
   const result: FieldRightEntity = {
-    accessibility: obj.accessibility as FieldRightAccessibility,
+    accessibility,
     entity,
   };
 
-  if (obj.includeSubs !== undefined && obj.includeSubs !== null) {
-    return { ...result, includeSubs: Boolean(obj.includeSubs) };
+  if (raw.includeSubs !== undefined && raw.includeSubs !== null) {
+    return {
+      ...result,
+      includeSubs: parseStrictBoolean(
+        raw.includeSubs,
+        "includeSubs",
+        `Field right entity at index ${index}`,
+        FieldPermissionErrorCode.FpInvalidBooleanField,
+      ),
+    };
   }
 
   return result;
@@ -91,65 +83,48 @@ function parseFieldRight(raw: unknown, index: number): FieldRight {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.code !== "string" || obj.code.length === 0) {
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
     throw new BusinessRuleError(
       FieldPermissionErrorCode.FpEmptyFieldCode,
       `Field right at index ${index} must have a non-empty "code" property`,
     );
   }
 
-  if (!Array.isArray(obj.entities)) {
+  if (!Array.isArray(raw.entities)) {
     throw new BusinessRuleError(
       FieldPermissionErrorCode.FpInvalidConfigStructure,
       `Field right at index ${index} must have an "entities" array`,
     );
   }
 
-  const entities = obj.entities.map((item: unknown, i: number) =>
+  const entities = raw.entities.map((item: unknown, i: number) =>
     parseFieldRightEntity(item, i),
   );
 
-  return { code: obj.code, entities };
+  return { code: raw.code, entities };
 }
 
 export const FieldPermissionConfigParser = {
   parse: (rawText: string): FieldPermissionConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        FieldPermissionErrorCode.FpEmptyConfigText,
-        "Field permission config text is empty",
-      );
-    }
+    const parsed = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: FieldPermissionErrorCode.FpEmptyConfigText,
+        invalidConfigYaml: FieldPermissionErrorCode.FpInvalidConfigYaml,
+        invalidConfigStructure:
+          FieldPermissionErrorCode.FpInvalidConfigStructure,
+      },
+      "Field permission",
+    );
 
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        FieldPermissionErrorCode.FpInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        FieldPermissionErrorCode.FpInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
-
-    if (!Array.isArray(obj.rights)) {
+    if (!Array.isArray(parsed.rights)) {
       throw new BusinessRuleError(
         FieldPermissionErrorCode.FpInvalidConfigStructure,
         'Config must have a "rights" array',
       );
     }
 
-    const rights = obj.rights.map((item: unknown, i: number) =>
+    const rights = parsed.rights.map((item: unknown, i: number) =>
       parseFieldRight(item, i),
     );
 

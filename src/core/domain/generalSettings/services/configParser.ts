@@ -1,6 +1,10 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
-import { isRecord } from "@/core/domain/typeGuards";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import {
+  isRecord,
+  parseEnum,
+  parseStrictBoolean,
+} from "@/core/domain/typeGuards";
 import type { GeneralSettingsConfig } from "../entity";
 import { GeneralSettingsErrorCode } from "../errorCode";
 import type {
@@ -13,7 +17,21 @@ import type {
   TitleFieldSelectionMode,
 } from "../valueObject";
 
-const VALID_THEMES: ReadonlySet<string> = new Set([
+function parseOptionalBoolean(
+  parsed: Record<string, unknown>,
+  fieldName: string,
+): boolean | undefined {
+  const value = parsed[fieldName];
+  if (value === undefined || value === null) return undefined;
+  return parseStrictBoolean(
+    value,
+    fieldName,
+    "Config",
+    GeneralSettingsErrorCode.GsInvalidBooleanField,
+  );
+}
+
+const VALID_THEMES: ReadonlySet<ThemeType> = new Set<ThemeType>([
   "WHITE",
   "RED",
   "GREEN",
@@ -26,11 +44,15 @@ const VALID_THEMES: ReadonlySet<string> = new Set([
   "CLIPS",
 ]);
 
-const VALID_ICON_TYPES: ReadonlySet<string> = new Set(["PRESET", "FILE"]);
+const VALID_ICON_TYPES: ReadonlySet<IconType> = new Set<IconType>([
+  "PRESET",
+  "FILE",
+]);
 
-const VALID_SELECTION_MODES: ReadonlySet<string> = new Set(["AUTO", "MANUAL"]);
+const VALID_SELECTION_MODES: ReadonlySet<TitleFieldSelectionMode> =
+  new Set<TitleFieldSelectionMode>(["AUTO", "MANUAL"]);
 
-const VALID_ROUNDING_MODES: ReadonlySet<string> = new Set([
+const VALID_ROUNDING_MODES: ReadonlySet<RoundingMode> = new Set<RoundingMode>([
   "HALF_EVEN",
   "UP",
   "DOWN",
@@ -44,23 +66,22 @@ function parseIcon(raw: unknown): IconConfig {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !VALID_ICON_TYPES.has(obj.type)) {
-    throw new BusinessRuleError(
-      GeneralSettingsErrorCode.GsInvalidIconType,
-      `icon.type must be PRESET or FILE, got: ${String(obj.type)}`,
-    );
-  }
-
-  if (typeof obj.key !== "string" || obj.key.length === 0) {
+  if (typeof raw.key !== "string" || raw.key.length === 0) {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       'icon must have a non-empty "key" property',
     );
   }
 
-  return { type: obj.type as IconType, key: obj.key };
+  return {
+    type: parseEnum<IconType>(
+      raw.type,
+      VALID_ICON_TYPES,
+      GeneralSettingsErrorCode.GsInvalidIconType,
+      `icon.type must be PRESET or FILE, got: ${String(raw.type)}`,
+    ),
+    key: raw.key,
+  };
 }
 
 function parseTitleField(raw: unknown): TitleFieldConfig {
@@ -71,30 +92,23 @@ function parseTitleField(raw: unknown): TitleFieldConfig {
     );
   }
 
-  const obj = raw;
-
-  if (
-    typeof obj.selectionMode !== "string" ||
-    !VALID_SELECTION_MODES.has(obj.selectionMode)
-  ) {
-    throw new BusinessRuleError(
-      GeneralSettingsErrorCode.GsInvalidConfigStructure,
-      `titleField.selectionMode must be AUTO or MANUAL, got: ${String(obj.selectionMode)}`,
-    );
-  }
-
   const result: TitleFieldConfig = {
-    selectionMode: obj.selectionMode as TitleFieldSelectionMode,
+    selectionMode: parseEnum<TitleFieldSelectionMode>(
+      raw.selectionMode,
+      VALID_SELECTION_MODES,
+      GeneralSettingsErrorCode.GsInvalidConfigStructure,
+      `titleField.selectionMode must be AUTO or MANUAL, got: ${String(raw.selectionMode)}`,
+    ),
   };
 
-  if (obj.code !== undefined && obj.code !== null) {
-    if (typeof obj.code !== "string") {
+  if (raw.code !== undefined && raw.code !== null) {
+    if (typeof raw.code !== "string") {
       throw new BusinessRuleError(
         GeneralSettingsErrorCode.GsInvalidConfigStructure,
         "titleField.code must be a string",
       );
     }
-    return { ...result, code: obj.code };
+    return { ...result, code: raw.code };
   }
 
   return result;
@@ -108,171 +122,146 @@ function parseNumberPrecision(raw: unknown): NumberPrecisionConfig {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.digits !== "number") {
+  if (typeof raw.digits !== "number") {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       "numberPrecision.digits must be a number",
     );
   }
 
-  if (typeof obj.decimalPlaces !== "number") {
+  if (!Number.isInteger(raw.digits) || raw.digits < 0) {
+    throw new BusinessRuleError(
+      GeneralSettingsErrorCode.GsInvalidNumberPrecision,
+      `numberPrecision.digits must be a non-negative integer, got: ${raw.digits}`,
+    );
+  }
+
+  if (typeof raw.decimalPlaces !== "number") {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       "numberPrecision.decimalPlaces must be a number",
     );
   }
 
-  if (
-    typeof obj.roundingMode !== "string" ||
-    !VALID_ROUNDING_MODES.has(obj.roundingMode)
-  ) {
+  if (!Number.isInteger(raw.decimalPlaces) || raw.decimalPlaces < 0) {
     throw new BusinessRuleError(
-      GeneralSettingsErrorCode.GsInvalidConfigStructure,
-      `numberPrecision.roundingMode must be HALF_EVEN, UP, or DOWN, got: ${String(obj.roundingMode)}`,
+      GeneralSettingsErrorCode.GsInvalidNumberPrecision,
+      `numberPrecision.decimalPlaces must be a non-negative integer, got: ${raw.decimalPlaces}`,
     );
   }
 
   return {
-    digits: obj.digits,
-    decimalPlaces: obj.decimalPlaces,
-    roundingMode: obj.roundingMode as RoundingMode,
+    digits: raw.digits,
+    decimalPlaces: raw.decimalPlaces,
+    roundingMode: parseEnum<RoundingMode>(
+      raw.roundingMode,
+      VALID_ROUNDING_MODES,
+      GeneralSettingsErrorCode.GsInvalidConfigStructure,
+      `numberPrecision.roundingMode must be HALF_EVEN, UP, or DOWN, got: ${String(raw.roundingMode)}`,
+    ),
   };
 }
 
 export const GeneralSettingsConfigParser = {
   parse: (rawText: string): GeneralSettingsConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        GeneralSettingsErrorCode.GsEmptyConfigText,
-        "General settings config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        GeneralSettingsErrorCode.GsInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        GeneralSettingsErrorCode.GsInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const parsed = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: GeneralSettingsErrorCode.GsEmptyConfigText,
+        invalidConfigYaml: GeneralSettingsErrorCode.GsInvalidConfigYaml,
+        invalidConfigStructure:
+          GeneralSettingsErrorCode.GsInvalidConfigStructure,
+      },
+      "General settings",
+    );
 
     let name: string | undefined;
-    if (obj.name !== undefined && obj.name !== null) {
-      if (typeof obj.name !== "string") {
+    if (parsed.name !== undefined && parsed.name !== null) {
+      if (typeof parsed.name !== "string") {
         throw new BusinessRuleError(
           GeneralSettingsErrorCode.GsInvalidConfigStructure,
           "name must be a string",
         );
       }
-      name = obj.name;
+      name = parsed.name;
     }
 
     let description: string | undefined;
-    if (obj.description !== undefined && obj.description !== null) {
-      if (typeof obj.description !== "string") {
+    if (parsed.description !== undefined && parsed.description !== null) {
+      if (typeof parsed.description !== "string") {
         throw new BusinessRuleError(
           GeneralSettingsErrorCode.GsInvalidConfigStructure,
           "description must be a string",
         );
       }
-      description = obj.description;
+      description = parsed.description;
     }
 
     let icon: IconConfig | undefined;
-    if (obj.icon !== undefined && obj.icon !== null) {
-      icon = parseIcon(obj.icon);
+    if (parsed.icon !== undefined && parsed.icon !== null) {
+      icon = parseIcon(parsed.icon);
     }
 
     let theme: ThemeType | undefined;
-    if (obj.theme !== undefined && obj.theme !== null) {
-      if (typeof obj.theme !== "string" || !VALID_THEMES.has(obj.theme)) {
-        throw new BusinessRuleError(
-          GeneralSettingsErrorCode.GsInvalidTheme,
-          `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(obj.theme)}`,
-        );
-      }
-      theme = obj.theme as ThemeType;
+    if (parsed.theme !== undefined && parsed.theme !== null) {
+      theme = parseEnum<ThemeType>(
+        parsed.theme,
+        VALID_THEMES,
+        GeneralSettingsErrorCode.GsInvalidTheme,
+        `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(parsed.theme)}`,
+      );
     }
 
     let titleField: TitleFieldConfig | undefined;
-    if (obj.titleField !== undefined && obj.titleField !== null) {
-      titleField = parseTitleField(obj.titleField);
+    if (parsed.titleField !== undefined && parsed.titleField !== null) {
+      titleField = parseTitleField(parsed.titleField);
     }
 
-    let enableThumbnails: boolean | undefined;
-    if (obj.enableThumbnails !== undefined && obj.enableThumbnails !== null) {
-      enableThumbnails = Boolean(obj.enableThumbnails);
-    }
-
-    let enableBulkDeletion: boolean | undefined;
-    if (
-      obj.enableBulkDeletion !== undefined &&
-      obj.enableBulkDeletion !== null
-    ) {
-      enableBulkDeletion = Boolean(obj.enableBulkDeletion);
-    }
-
-    let enableComments: boolean | undefined;
-    if (obj.enableComments !== undefined && obj.enableComments !== null) {
-      enableComments = Boolean(obj.enableComments);
-    }
-
-    let enableDuplicateRecord: boolean | undefined;
-    if (
-      obj.enableDuplicateRecord !== undefined &&
-      obj.enableDuplicateRecord !== null
-    ) {
-      enableDuplicateRecord = Boolean(obj.enableDuplicateRecord);
-    }
-
-    let enableInlineRecordEditing: boolean | undefined;
-    if (
-      obj.enableInlineRecordEditing !== undefined &&
-      obj.enableInlineRecordEditing !== null
-    ) {
-      enableInlineRecordEditing = Boolean(obj.enableInlineRecordEditing);
-    }
+    const enableThumbnails = parseOptionalBoolean(parsed, "enableThumbnails");
+    const enableBulkDeletion = parseOptionalBoolean(
+      parsed,
+      "enableBulkDeletion",
+    );
+    const enableComments = parseOptionalBoolean(parsed, "enableComments");
+    const enableDuplicateRecord = parseOptionalBoolean(
+      parsed,
+      "enableDuplicateRecord",
+    );
+    const enableInlineRecordEditing = parseOptionalBoolean(
+      parsed,
+      "enableInlineRecordEditing",
+    );
 
     let numberPrecision: NumberPrecisionConfig | undefined;
-    if (obj.numberPrecision !== undefined && obj.numberPrecision !== null) {
-      numberPrecision = parseNumberPrecision(obj.numberPrecision);
+    if (
+      parsed.numberPrecision !== undefined &&
+      parsed.numberPrecision !== null
+    ) {
+      numberPrecision = parseNumberPrecision(parsed.numberPrecision);
     }
 
     let firstMonthOfFiscalYear: number | undefined;
     if (
-      obj.firstMonthOfFiscalYear !== undefined &&
-      obj.firstMonthOfFiscalYear !== null
+      parsed.firstMonthOfFiscalYear !== undefined &&
+      parsed.firstMonthOfFiscalYear !== null
     ) {
-      if (typeof obj.firstMonthOfFiscalYear !== "number") {
+      if (typeof parsed.firstMonthOfFiscalYear !== "number") {
         throw new BusinessRuleError(
           GeneralSettingsErrorCode.GsInvalidConfigStructure,
           "firstMonthOfFiscalYear must be a number",
         );
       }
       if (
-        obj.firstMonthOfFiscalYear < 1 ||
-        obj.firstMonthOfFiscalYear > 12 ||
-        !Number.isInteger(obj.firstMonthOfFiscalYear)
+        parsed.firstMonthOfFiscalYear < 1 ||
+        parsed.firstMonthOfFiscalYear > 12 ||
+        !Number.isInteger(parsed.firstMonthOfFiscalYear)
       ) {
         throw new BusinessRuleError(
           GeneralSettingsErrorCode.GsInvalidConfigStructure,
-          `firstMonthOfFiscalYear must be an integer between 1 and 12, got: ${obj.firstMonthOfFiscalYear}`,
+          `firstMonthOfFiscalYear must be an integer between 1 and 12, got: ${parsed.firstMonthOfFiscalYear}`,
         );
       }
-      firstMonthOfFiscalYear = obj.firstMonthOfFiscalYear;
+      firstMonthOfFiscalYear = parsed.firstMonthOfFiscalYear;
     }
 
     const config: GeneralSettingsConfig = {

@@ -4,7 +4,7 @@ import { isBusinessRuleError } from "@/core/domain/error";
 import type { FieldRight } from "@/core/domain/fieldPermission/entity";
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
 import type {
-  EntityType,
+  FieldPermissionEntityType,
   FieldRightAccessibility,
   FieldRightEntity,
 } from "@/core/domain/fieldPermission/valueObject";
@@ -35,6 +35,8 @@ type KintoneFieldAclRight = {
   entities: KintoneFieldAclEntity[];
 };
 
+// Adapter layer: uses SystemError + `as` cast instead of domain parseEnum,
+// because external API boundary errors are system errors, not business rule violations.
 function fromKintoneEntity(raw: KintoneFieldAclEntity): FieldRightEntity {
   if (!VALID_ACCESSIBILITIES.has(raw.accessibility)) {
     throw new SystemError(
@@ -52,7 +54,7 @@ function fromKintoneEntity(raw: KintoneFieldAclEntity): FieldRightEntity {
   const result: FieldRightEntity = {
     accessibility: raw.accessibility as FieldRightAccessibility,
     entity: {
-      type: raw.entity.type as EntityType,
+      type: raw.entity.type as FieldPermissionEntityType,
       code: raw.entity.code,
     },
   };

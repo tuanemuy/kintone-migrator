@@ -1,4 +1,4 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { FieldPermissionConfig } from "../entity";
 import type { FieldRightEntity } from "../valueObject";
 
@@ -29,10 +29,6 @@ export const FieldPermissionConfigSerializer = {
       })),
     };
 
-    return stringifyYaml(serialized, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
+    return serializeToYaml(serialized);
   },
 };

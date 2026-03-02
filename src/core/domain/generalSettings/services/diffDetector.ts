@@ -69,6 +69,10 @@ function compareConfigs(
     }
   }
 
+  function formatValue(v: unknown): string {
+    return v === undefined ? "(none)" : JSON.stringify(v);
+  }
+
   function compareDeepEqual(
     field: keyof GeneralSettingsConfig & string,
     l: unknown,
@@ -78,7 +82,7 @@ function compareConfigs(
       entries.push({
         type: "modified",
         field,
-        details: `${field} changed`,
+        details: `${formatValue(r)} -> ${formatValue(l)}`,
       });
     }
   }

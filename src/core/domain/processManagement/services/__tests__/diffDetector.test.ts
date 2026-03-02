@@ -453,6 +453,49 @@ describe("ProcessManagementDiffDetector", () => {
 
       expect(result.isEmpty).toBe(true);
     });
+
+    it("should detect modified when same action name has different from/to", () => {
+      const local = makeConfig({
+        actions: [makeAction({ name: "移動", from: "state_A", to: "state_B" })],
+      });
+      const remote = makeConfig({
+        actions: [makeAction({ name: "移動", from: "state_C", to: "state_D" })],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].category).toBe("action");
+      expect(result.entries[0].name).toBe("移動");
+      expect(result.entries[0].details).toContain("from");
+      expect(result.entries[0].details).toContain("to");
+    });
+
+    it("should treat entities with undefined and missing code as equal", () => {
+      const local = makeConfig({
+        actions: [
+          makeAction({
+            executableUser: {
+              entities: [{ type: "CREATOR" }],
+            },
+          }),
+        ],
+      });
+      const remote = makeConfig({
+        actions: [
+          makeAction({
+            executableUser: {
+              entities: [{ type: "CREATOR" }],
+            },
+          }),
+        ],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.isEmpty).toBe(true);
+    });
   });
 
   describe("multiple changes", () => {

@@ -1,6 +1,10 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
-import { isRecord } from "@/core/domain/typeGuards";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import {
+  isRecord,
+  parseEnum,
+  parseStrictBoolean,
+} from "@/core/domain/typeGuards";
 import type { ProcessManagementConfig, ProcessState } from "../entity";
 import { ProcessManagementErrorCode } from "../errorCode";
 import type {
@@ -12,23 +16,19 @@ import type {
   ProcessEntityType,
 } from "../valueObject";
 
-const VALID_ASSIGNEE_TYPES: ReadonlySet<string> = new Set([
-  "ONE",
-  "ALL",
-  "ANY",
-]);
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-  "CREATOR",
-  "CUSTOM_FIELD",
-]);
-const VALID_ACTION_TYPES: ReadonlySet<string> = new Set([
-  "PRIMARY",
-  "SECONDARY",
-]);
+const VALID_ASSIGNEE_TYPES: ReadonlySet<ProcessAssigneeType> =
+  new Set<ProcessAssigneeType>(["ONE", "ALL", "ANY"]);
+const VALID_ENTITY_TYPES: ReadonlySet<ProcessEntityType> =
+  new Set<ProcessEntityType>([
+    "USER",
+    "GROUP",
+    "ORGANIZATION",
+    "FIELD_ENTITY",
+    "CREATOR",
+    "CUSTOM_FIELD",
+  ]);
+const VALID_ACTION_TYPES: ReadonlySet<ProcessActionType> =
+  new Set<ProcessActionType>(["PRIMARY", "SECONDARY"]);
 
 function parseProcessEntity(raw: unknown, index: number): ProcessEntity {
   if (!isRecord(raw)) {
@@ -38,26 +38,30 @@ function parseProcessEntity(raw: unknown, index: number): ProcessEntity {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
-    throw new BusinessRuleError(
-      ProcessManagementErrorCode.PmInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(obj.type)}. Must be USER, GROUP, ORGANIZATION, FIELD_ENTITY, CREATOR, or CUSTOM_FIELD`,
-    );
-  }
-
   const result: ProcessEntity = {
-    type: obj.type as ProcessEntityType,
+    type: parseEnum<ProcessEntityType>(
+      raw.type,
+      VALID_ENTITY_TYPES,
+      ProcessManagementErrorCode.PmInvalidEntityType,
+      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, FIELD_ENTITY, CREATOR, or CUSTOM_FIELD`,
+    ),
   };
 
   const withCode =
-    obj.code !== undefined && obj.code !== null
-      ? { ...result, code: String(obj.code) }
+    raw.code !== undefined && raw.code !== null
+      ? { ...result, code: String(raw.code) }
       : result;
 
-  if (obj.includeSubs !== undefined && obj.includeSubs !== null) {
-    return { ...withCode, includeSubs: Boolean(obj.includeSubs) };
+  if (raw.includeSubs !== undefined && raw.includeSubs !== null) {
+    return {
+      ...withCode,
+      includeSubs: parseStrictBoolean(
+        raw.includeSubs,
+        "includeSubs",
+        `Entity at index ${index}`,
+        ProcessManagementErrorCode.PmInvalidBooleanField,
+      ),
+    };
   }
 
   return withCode;
@@ -71,30 +75,25 @@ function parseAssignee(raw: unknown, stateName: string): ProcessAssignee {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !VALID_ASSIGNEE_TYPES.has(obj.type)) {
-    throw new BusinessRuleError(
-      ProcessManagementErrorCode.PmInvalidAssigneeType,
-      `Assignee for state "${stateName}" has invalid type: ${String(obj.type)}. Must be ONE, ALL, or ANY`,
-    );
-  }
-
-  if (!Array.isArray(obj.entities)) {
+  if (!Array.isArray(raw.entities)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Assignee for state "${stateName}" must have an "entities" array`,
     );
   }
 
-  const entities = obj.entities.map((item: unknown, i: number) =>
+  const type = parseEnum<ProcessAssigneeType>(
+    raw.type,
+    VALID_ASSIGNEE_TYPES,
+    ProcessManagementErrorCode.PmInvalidAssigneeType,
+    `Assignee for state "${stateName}" has invalid type: ${String(raw.type)}. Must be ONE, ALL, or ANY`,
+  );
+
+  const entities = raw.entities.map((item: unknown, i: number) =>
     parseProcessEntity(item, i),
   );
 
-  return {
-    type: obj.type as ProcessAssigneeType,
-    entities,
-  };
+  return { type, entities };
 }
 
 function parseState(raw: unknown, stateName: string): ProcessState {
@@ -105,26 +104,24 @@ function parseState(raw: unknown, stateName: string): ProcessState {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.index !== "number") {
+  if (typeof raw.index !== "number") {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `State "${stateName}" must have a numeric "index" property`,
     );
   }
 
-  if (obj.assignee === undefined || obj.assignee === null) {
+  if (raw.assignee === undefined || raw.assignee === null) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `State "${stateName}" must have an "assignee" property`,
     );
   }
 
-  const assignee = parseAssignee(obj.assignee, stateName);
+  const assignee = parseAssignee(raw.assignee, stateName);
 
   return {
-    index: obj.index,
+    index: raw.index,
     assignee,
   };
 }
@@ -140,16 +137,14 @@ function parseExecutableUser(
     );
   }
 
-  const obj = raw;
-
-  if (!Array.isArray(obj.entities)) {
+  if (!Array.isArray(raw.entities)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Action at index ${actionIndex}: executableUser must have an "entities" array`,
     );
   }
 
-  const entities = obj.entities.map((item: unknown, i: number) =>
+  const entities = raw.entities.map((item: unknown, i: number) =>
     parseProcessEntity(item, i),
   );
 
@@ -164,61 +159,53 @@ function parseAction(raw: unknown, index: number): ProcessAction {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.name !== "string") {
+  if (typeof raw.name !== "string") {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Action at index ${index} must have a "name" string property`,
     );
   }
 
-  if (typeof obj.from !== "string") {
+  if (typeof raw.from !== "string") {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Action at index ${index} must have a "from" string property`,
     );
   }
 
-  if (typeof obj.to !== "string") {
+  if (typeof raw.to !== "string") {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
       `Action at index ${index} must have a "to" string property`,
     );
   }
 
-  if (
-    obj.type !== undefined &&
-    obj.type !== null &&
-    (typeof obj.type !== "string" || !VALID_ACTION_TYPES.has(obj.type))
-  ) {
-    throw new BusinessRuleError(
-      ProcessManagementErrorCode.PmInvalidConfigStructure,
-      `Action at index ${index} has invalid type: ${String(obj.type)}. Must be PRIMARY or SECONDARY`,
-    );
-  }
-
   const actionType: ProcessActionType =
-    typeof obj.type === "string" && VALID_ACTION_TYPES.has(obj.type)
-      ? (obj.type as ProcessActionType)
-      : "PRIMARY";
+    raw.type === undefined || raw.type === null
+      ? "PRIMARY"
+      : parseEnum<ProcessActionType>(
+          raw.type,
+          VALID_ACTION_TYPES,
+          ProcessManagementErrorCode.PmInvalidConfigStructure,
+          `Action at index ${index} has invalid type: ${String(raw.type)}. Must be PRIMARY or SECONDARY`,
+        );
 
   const result: ProcessAction = {
-    name: obj.name,
-    from: obj.from,
-    to: obj.to,
-    filterCond: typeof obj.filterCond === "string" ? obj.filterCond : "",
+    name: raw.name,
+    from: raw.from,
+    to: raw.to,
+    filterCond: typeof raw.filterCond === "string" ? raw.filterCond : "",
     type: actionType,
   };
 
   if (
     actionType === "SECONDARY" &&
-    obj.executableUser !== undefined &&
-    obj.executableUser !== null
+    raw.executableUser !== undefined &&
+    raw.executableUser !== null
   ) {
     return {
       ...result,
-      executableUser: parseExecutableUser(obj.executableUser, index),
+      executableUser: parseExecutableUser(raw.executableUser, index),
     };
   }
 
@@ -227,41 +214,31 @@ function parseAction(raw: unknown, index: number): ProcessAction {
 
 export const ProcessManagementConfigParser = {
   parse: (rawText: string): ProcessManagementConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        ProcessManagementErrorCode.PmEmptyConfigText,
-        "Process management config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        ProcessManagementErrorCode.PmInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        ProcessManagementErrorCode.PmInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const parsed = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: ProcessManagementErrorCode.PmEmptyConfigText,
+        invalidConfigYaml: ProcessManagementErrorCode.PmInvalidConfigYaml,
+        invalidConfigStructure:
+          ProcessManagementErrorCode.PmInvalidConfigStructure,
+      },
+      "Process management",
+    );
 
     const enable =
-      obj.enable !== undefined && obj.enable !== null
-        ? Boolean(obj.enable)
+      parsed.enable !== undefined && parsed.enable !== null
+        ? parseStrictBoolean(
+            parsed.enable,
+            "enable",
+            "Config",
+            ProcessManagementErrorCode.PmInvalidBooleanField,
+          )
         : false;
 
     if (
-      obj.states !== undefined &&
-      obj.states !== null &&
-      !isRecord(obj.states)
+      parsed.states !== undefined &&
+      parsed.states !== null &&
+      !isRecord(parsed.states)
     ) {
       throw new BusinessRuleError(
         ProcessManagementErrorCode.PmInvalidConfigStructure,
@@ -269,24 +246,38 @@ export const ProcessManagementConfigParser = {
       );
     }
 
-    const rawStates = isRecord(obj.states) ? obj.states : {};
+    const rawStates = isRecord(parsed.states) ? parsed.states : {};
     const states: Record<string, ProcessState> = {};
 
     for (const [name, value] of Object.entries(rawStates)) {
       states[name] = parseState(value, name);
     }
 
-    if (!Array.isArray(obj.actions) && obj.actions !== undefined) {
+    if (!Array.isArray(parsed.actions) && parsed.actions !== undefined) {
       throw new BusinessRuleError(
         ProcessManagementErrorCode.PmInvalidConfigStructure,
         'Config "actions" must be an array',
       );
     }
 
-    const rawActions = (obj.actions as unknown[] | undefined) ?? [];
+    const rawActions: unknown[] = Array.isArray(parsed.actions)
+      ? parsed.actions
+      : [];
     const actions = rawActions.map((item: unknown, i: number) =>
       parseAction(item, i),
     );
+
+    // Validate duplicate action names
+    const actionNames = new Set<string>();
+    for (const action of actions) {
+      if (actionNames.has(action.name)) {
+        throw new BusinessRuleError(
+          ProcessManagementErrorCode.PmDuplicateActionName,
+          `Duplicate action name: "${action.name}"`,
+        );
+      }
+      actionNames.add(action.name);
+    }
 
     // Validate action from/to references
     const stateNames = new Set(Object.keys(states));

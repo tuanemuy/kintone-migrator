@@ -399,6 +399,62 @@ rights:
       );
     });
 
+    it("should throw RpDuplicateEntity for duplicate entity within a right", () => {
+      const yaml = `
+rights:
+  - filterCond: ""
+    entities:
+      - entity:
+          type: USER
+          code: user1
+        viewable: true
+        editable: false
+        deletable: false
+        includeSubs: false
+      - entity:
+          type: USER
+          code: user1
+        viewable: false
+        editable: true
+        deletable: false
+        includeSubs: false
+`;
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => RecordPermissionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: RecordPermissionErrorCode.RpDuplicateEntity,
+        }),
+      );
+    });
+
+    it("should allow same entity in different rights", () => {
+      const yaml = `
+rights:
+  - filterCond: "status = 1"
+    entities:
+      - entity:
+          type: USER
+          code: user1
+        viewable: true
+        editable: false
+        deletable: false
+        includeSubs: false
+  - filterCond: "status = 2"
+    entities:
+      - entity:
+          type: USER
+          code: user1
+        viewable: false
+        editable: true
+        deletable: false
+        includeSubs: false
+`;
+      const config = RecordPermissionConfigParser.parse(yaml);
+      expect(config.rights).toHaveLength(2);
+    });
+
     it("should parse filterCond as string", () => {
       const yaml = `
 rights:

@@ -3,6 +3,8 @@
  * Use these functions instead of `as` casts when working with `unknown` values.
  */
 
+import type { BusinessRuleErrorCode } from "@/core/domain/error";
+import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/lib/typeGuards";
 
 export { isRecord };
@@ -56,4 +58,97 @@ export function isKintoneSubtableRow(
 export function hasOptionalType(value: unknown): value is { type?: string } {
   if (!isRecord(value)) return false;
   return value.type === undefined || typeof value.type === "string";
+}
+
+/**
+ * Strict boolean validation — rejects non-boolean values.
+ * Returns the boolean value if valid, or `defaultValue` when the value is undefined/null.
+ * Throws `BusinessRuleError` when the value is present but not a boolean.
+ */
+export function parseStrictBoolean(
+  value: unknown,
+  fieldName: string,
+  context: string,
+  errorCode: BusinessRuleErrorCode,
+  defaultValue?: boolean,
+): boolean {
+  if (value === undefined || value === null) {
+    if (defaultValue !== undefined) return defaultValue;
+    throw new BusinessRuleError(
+      errorCode,
+      `${context} must have a boolean "${fieldName}" property`,
+    );
+  }
+  if (typeof value !== "boolean") {
+    throw new BusinessRuleError(
+      errorCode,
+      `${context} has invalid "${fieldName}" value: ${String(value)}. Must be a boolean`,
+    );
+  }
+  return value;
+}
+
+/**
+ * Validates that an unknown value is a string within an allowed set and returns a typed value.
+ * Replaces manual `typeof` + `Set.has` + `as` cast patterns.
+ */
+export function parseEnum<T extends string>(
+  value: unknown,
+  validValues: ReadonlySet<T>,
+  errorCode: BusinessRuleErrorCode,
+  message: string,
+): T {
+  if (
+    typeof value !== "string" ||
+    !(validValues as ReadonlySet<string>).has(value)
+  ) {
+    throw new BusinessRuleError(errorCode, message);
+  }
+  return value as T;
+}
+
+/**
+ * Shared entity parsing logic for domains that use `{ type, code }` entities.
+ * Handles common validation: isRecord check, type enum validation, and code non-empty check.
+ * Use `allowEmptyCode` to permit empty/missing code for specific entity types (e.g., CREATOR).
+ */
+export function parseEntityBase<T extends string>(
+  raw: unknown,
+  index: number,
+  validTypes: ReadonlySet<T>,
+  errorCodes: {
+    invalidStructure: BusinessRuleErrorCode;
+    invalidType: BusinessRuleErrorCode;
+    emptyCode: BusinessRuleErrorCode;
+  },
+  options?: {
+    allowEmptyCode?: (type: T) => boolean;
+  },
+): { type: T; code: string } {
+  if (!isRecord(raw)) {
+    throw new BusinessRuleError(
+      errorCodes.invalidStructure,
+      `Entity at index ${index} must be an object`,
+    );
+  }
+
+  const type = parseEnum<T>(
+    raw.type,
+    validTypes,
+    errorCodes.invalidType,
+    `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be ${[...validTypes].join(", ")}`,
+  );
+
+  if (options?.allowEmptyCode?.(type)) {
+    return { type, code: typeof raw.code === "string" ? raw.code : "" };
+  }
+
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
+    throw new BusinessRuleError(
+      errorCodes.emptyCode,
+      `Entity at index ${index} must have a non-empty "code" property`,
+    );
+  }
+
+  return { type, code: raw.code };
 }

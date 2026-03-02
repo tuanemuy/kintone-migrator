@@ -80,6 +80,29 @@ rights:
       });
     });
 
+    it("should parse config with CREATOR entity type and non-empty code", () => {
+      const yaml = `
+rights:
+  - entity:
+      type: CREATOR
+      code: creator_user
+    includeSubs: false
+    appEditable: false
+    recordViewable: true
+    recordAddable: false
+    recordEditable: false
+    recordDeletable: false
+    recordImportable: false
+    recordExportable: false
+`;
+      const config = AppPermissionConfigParser.parse(yaml);
+
+      expect(config.rights[0].entity).toEqual({
+        type: "CREATOR",
+        code: "creator_user",
+      });
+    });
+
     it("should parse config with ORGANIZATION and includeSubs true", () => {
       const yaml = `
 rights:

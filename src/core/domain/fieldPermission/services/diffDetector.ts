@@ -6,7 +6,7 @@ import type {
   FieldPermissionDiffEntry,
 } from "../valueObject";
 
-function areEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
+function isEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
   return deepEqual(
     a.entities.map((e) => ({
       accessibility: e.accessibility,
@@ -43,7 +43,7 @@ export const FieldPermissionDiffDetector = {
           fieldCode: code,
           details: `${localRight.entities.length} entities`,
         });
-      } else if (!areEntitiesEqual(localRight, remoteRight)) {
+      } else if (!isEntitiesEqual(localRight, remoteRight)) {
         entries.push({
           type: "modified",
           fieldCode: code,

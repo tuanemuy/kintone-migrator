@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isBusinessRuleError } from "@/core/domain/error";
 import { ProcessManagementErrorCode } from "../../errorCode";
 import { ProcessManagementConfigParser } from "../configParser";
 
 describe("ProcessManagementConfigParser", () => {
-  describe("正常系", () => {
-    it("有効なYAMLをパースする（states + actions + enable）", () => {
+  describe("parse", () => {
+    it("should parse a valid YAML with states, actions, and enable", () => {
       const yaml = `
 enable: true
 states:
@@ -44,7 +43,7 @@ actions:
       expect(config.actions[0].to).toBe("処理中");
     });
 
-    it("各種 entity type をパースする", () => {
+    it("should parse all entity types", () => {
       const yaml = `
 enable: true
 states:
@@ -78,7 +77,7 @@ actions: []
       expect(entities[5].type).toBe("CUSTOM_FIELD");
     });
 
-    it("includeSubs ありの entity をパースする", () => {
+    it("should parse entity with includeSubs", () => {
       const yaml = `
 states:
   state1:
@@ -94,7 +93,7 @@ states:
       expect(config.states.state1.assignee.entities[0].includeSubs).toBe(true);
     });
 
-    it("includeSubs なしの entity をパースする", () => {
+    it("should parse entity without includeSubs", () => {
       const yaml = `
 states:
   state1:
@@ -111,7 +110,7 @@ states:
       ).toBeUndefined();
     });
 
-    it("空の entities 配列をパースする", () => {
+    it("should parse empty entities array", () => {
       const yaml = `
 states:
   state1:
@@ -124,7 +123,7 @@ states:
       expect(config.states.state1.assignee.entities).toHaveLength(0);
     });
 
-    it("enable 省略時にデフォルトで false になる", () => {
+    it("should default enable to false when omitted", () => {
       const yaml = `
 states:
   state1:
@@ -137,7 +136,7 @@ states:
       expect(config.enable).toBe(false);
     });
 
-    it("states/actions 省略時に空になる", () => {
+    it("should default states and actions to empty when omitted", () => {
       const yaml = `
 enable: false
 `;
@@ -146,7 +145,7 @@ enable: false
       expect(config.actions).toHaveLength(0);
     });
 
-    it("SECONDARY タイプのアクションを executableUser 付きでパースする", () => {
+    it("should parse SECONDARY action with executableUser", () => {
       const yaml = `
 states:
   state1:
@@ -190,7 +189,7 @@ actions:
       );
     });
 
-    it("type 省略時にデフォルトで PRIMARY になる", () => {
+    it("should default action type to PRIMARY when omitted", () => {
       const yaml = `
 states:
   state1:
@@ -213,7 +212,7 @@ actions:
       expect(config.actions[0].executableUser).toBeUndefined();
     });
 
-    it("PRIMARY タイプのアクションでは executableUser が無視される", () => {
+    it("should ignore executableUser on PRIMARY action", () => {
       const yaml = `
 states:
   state1:
@@ -241,7 +240,7 @@ actions:
       expect(config.actions[0].executableUser).toBeUndefined();
     });
 
-    it("filterCond 省略時に空文字列になる", () => {
+    it("should default filterCond to empty string when omitted", () => {
       const yaml = `
 states:
   state1:
@@ -264,141 +263,109 @@ actions:
     });
   });
 
-  describe("エラー系", () => {
-    it("空テキストで PmEmptyConfigText エラー", () => {
-      expect(() => ProcessManagementConfigParser.parse("")).toThrow();
-      try {
-        ProcessManagementConfigParser.parse("");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(ProcessManagementErrorCode.PmEmptyConfigText);
-        }
-      }
+  describe("error cases", () => {
+    it("should throw PmEmptyConfigText for empty text", () => {
+      expect(() => ProcessManagementConfigParser.parse("")).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmEmptyConfigText,
+        }),
+      );
     });
 
-    it("空白のみのテキストで PmEmptyConfigText エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse("   \n  ");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(ProcessManagementErrorCode.PmEmptyConfigText);
-        }
-      }
+    it("should throw PmEmptyConfigText for whitespace-only text", () => {
+      expect(() => ProcessManagementConfigParser.parse("   \n  ")).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmEmptyConfigText,
+        }),
+      );
     });
 
-    it("無効なYAMLで PmInvalidConfigYaml エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse("{ invalid: yaml:");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigYaml,
-          );
-        }
-      }
+    it("should throw PmInvalidConfigYaml for invalid YAML", () => {
+      expect(() =>
+        ProcessManagementConfigParser.parse("{ invalid: yaml:"),
+      ).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigYaml,
+        }),
+      );
     });
 
-    it("非オブジェクトで PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse("just a string");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+    it("should throw PmInvalidConfigStructure for non-object YAML", () => {
+      expect(() =>
+        ProcessManagementConfigParser.parse("just a string"),
+      ).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("states が配列の場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse("states:\n  - item1");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+    it("should throw PmInvalidConfigStructure when states is an array", () => {
+      expect(() =>
+        ProcessManagementConfigParser.parse("states:\n  - item1"),
+      ).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("actions が非配列の場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse("actions: not_array");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+    it("should throw PmInvalidConfigStructure when actions is not an array", () => {
+      expect(() =>
+        ProcessManagementConfigParser.parse("actions: not_array"),
+      ).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("state に index がない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when state has no index", () => {
+      const yaml = `
 states:
   state1:
     assignee:
       type: ONE
       entities: []
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("state に assignee がない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when state has no assignee", () => {
+      const yaml = `
 states:
   state1:
     index: 0
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("無効な assignee.type で PmInvalidAssigneeType エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidAssigneeType for invalid assignee type", () => {
+      const yaml = `
 states:
   state1:
     index: 0
     assignee:
       type: INVALID
       entities: []
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidAssigneeType,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidAssigneeType,
+        }),
+      );
     });
 
-    it("無効な entity.type で PmInvalidEntityType エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidEntityType for invalid entity type", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -407,20 +374,16 @@ states:
       entities:
         - type: INVALID_TYPE
           code: user1
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidEntityType,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidEntityType,
+        }),
+      );
     });
 
-    it("action の from が存在しないステータスの場合に PmInvalidActionReference エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidActionReference when action from references nonexistent state", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -431,20 +394,16 @@ actions:
   - name: action1
     from: nonexistent
     to: state1
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidActionReference,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidActionReference,
+        }),
+      );
     });
 
-    it("action がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when action is not an object", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -453,20 +412,16 @@ states:
       entities: []
 actions:
   - not_an_object
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("action に name がない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when action has no name", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -476,20 +431,16 @@ states:
 actions:
   - from: state1
     to: state1
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("action に from がない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when action has no from", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -499,20 +450,16 @@ states:
 actions:
   - name: action1
     to: state1
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("action に to がない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when action has no to", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -522,20 +469,16 @@ states:
 actions:
   - name: action1
     from: state1
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("無効な action.type で PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure for invalid action type", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -552,57 +495,45 @@ actions:
     from: state1
     to: state2
     type: INVALID
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("assignee がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when assignee is not an object", () => {
+      const yaml = `
 states:
   state1:
     index: 0
     assignee: not_an_object
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("assignee に entities がない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when assignee has no entities", () => {
+      const yaml = `
 states:
   state1:
     index: 0
     assignee:
       type: ONE
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("entity がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when entity is not an object", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -610,36 +541,28 @@ states:
       type: ONE
       entities:
         - not_an_object
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("state がオブジェクトでない場合に PmInvalidConfigStructure エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when state is not an object", () => {
+      const yaml = `
 states:
   state1: not_an_object
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("SECONDARY アクションの executableUser がオブジェクトでない場合にエラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when SECONDARY executableUser is not an object", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -657,20 +580,16 @@ actions:
     to: state2
     type: SECONDARY
     executableUser: not_an_object
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("SECONDARY アクションの executableUser.entities が配列でない場合にエラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidConfigStructure when SECONDARY executableUser.entities is not an array", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -689,20 +608,16 @@ actions:
     type: SECONDARY
     executableUser:
       entities: not_an_array
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidConfigStructure,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("action の to が存在しないステータスの場合に PmInvalidActionReference エラー", () => {
-      try {
-        ProcessManagementConfigParser.parse(`
+    it("should throw PmInvalidActionReference when action to references nonexistent state", () => {
+      const yaml = `
 states:
   state1:
     index: 0
@@ -713,15 +628,51 @@ actions:
   - name: action1
     from: state1
     to: nonexistent
-`);
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-        if (isBusinessRuleError(error)) {
-          expect(error.code).toBe(
-            ProcessManagementErrorCode.PmInvalidActionReference,
-          );
-        }
-      }
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidActionReference,
+        }),
+      );
+    });
+
+    it("should throw PmDuplicateActionName for duplicate action names", () => {
+      const yaml = `
+states:
+  state1:
+    index: 0
+    assignee:
+      type: ONE
+      entities: []
+  state2:
+    index: 1
+    assignee:
+      type: ONE
+      entities: []
+actions:
+  - name: action1
+    from: state1
+    to: state2
+  - name: action1
+    from: state2
+    to: state1
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmDuplicateActionName,
+        }),
+      );
+    });
+
+    it("should throw PmInvalidBooleanField for non-boolean enable value", () => {
+      const yaml = `
+enable: "yes"
+`;
+      expect(() => ProcessManagementConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidBooleanField,
+        }),
+      );
     });
   });
 });
