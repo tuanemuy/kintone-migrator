@@ -4,80 +4,23 @@ import { isBusinessRuleError } from "@/core/domain/error";
 import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
 import type {
-  AggregationType,
-  ChartMode,
-  ChartType,
-  GroupPer,
   PeriodicReport,
-  PeriodicReportEvery,
-  PeriodicReportPattern,
   PeriodicReportPeriod,
   ReportAggregation,
   ReportGroup,
   ReportSort,
-  SortBy,
-  SortOrder,
 } from "@/core/domain/report/valueObject";
-
-const VALID_CHART_TYPES: ReadonlySet<string> = new Set([
-  "BAR",
-  "COLUMN",
-  "PIE",
-  "LINE",
-  "PIVOT_TABLE",
-  "TABLE",
-  "AREA",
-  "SPLINE",
-  "SPLINE_AREA",
-]);
-
-const VALID_CHART_MODES: ReadonlySet<string> = new Set([
-  "NORMAL",
-  "STACKED",
-  "PERCENTAGE",
-]);
-
-const VALID_GROUP_PERS: ReadonlySet<string> = new Set([
-  "YEAR",
-  "QUARTER",
-  "MONTH",
-  "WEEK",
-  "DAY",
-  "HOUR",
-  "MINUTE",
-]);
-
-const VALID_AGGREGATION_TYPES: ReadonlySet<string> = new Set([
-  "COUNT",
-  "SUM",
-  "AVERAGE",
-  "MAX",
-  "MIN",
-]);
-
-const VALID_SORT_BYS: ReadonlySet<string> = new Set([
-  "TOTAL",
-  "GROUP1",
-  "GROUP2",
-  "GROUP3",
-]);
-
-const VALID_SORT_ORDERS: ReadonlySet<string> = new Set(["ASC", "DESC"]);
-
-const VALID_PERIODIC_REPORT_EVERYS: ReadonlySet<string> = new Set([
-  "YEAR",
-  "QUARTER",
-  "MONTH",
-  "WEEK",
-  "DAY",
-  "HOUR",
-]);
-
-const VALID_PERIODIC_REPORT_PATTERNS: ReadonlySet<string> = new Set([
-  "JAN_APR_JUL_OCT",
-  "FEB_MAY_AUG_NOV",
-  "MAR_JUN_SEP_DEC",
-]);
+import {
+  isAggregationType,
+  isChartMode,
+  isChartType,
+  isDayOfWeek,
+  isGroupPer,
+  isPeriodicReportEvery,
+  isPeriodicReportPattern,
+  isSortBy,
+  isSortOrder,
+} from "@/core/domain/report/valueObject";
 
 type KintoneReportGroup = {
   code: string;
@@ -126,13 +69,13 @@ function fromKintoneGroup(raw: KintoneReportGroup): ReportGroup {
   const result: ReportGroup = { code: raw.code };
 
   if (raw.per !== undefined) {
-    if (!VALID_GROUP_PERS.has(raw.per)) {
+    if (!isGroupPer(raw.per)) {
       throw new SystemError(
         SystemErrorCode.ExternalApiError,
         `Unexpected group per value from kintone API: ${raw.per}`,
       );
     }
-    return { ...result, per: raw.per as GroupPer };
+    return { ...result, per: raw.per };
   }
 
   return result;
@@ -141,7 +84,7 @@ function fromKintoneGroup(raw: KintoneReportGroup): ReportGroup {
 function fromKintoneAggregation(
   raw: KintoneReportAggregation,
 ): ReportAggregation {
-  if (!VALID_AGGREGATION_TYPES.has(raw.type)) {
+  if (!isAggregationType(raw.type)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected aggregation type value from kintone API: ${raw.type}`,
@@ -149,7 +92,7 @@ function fromKintoneAggregation(
   }
 
   const result: ReportAggregation = {
-    type: raw.type as AggregationType,
+    type: raw.type,
   };
 
   if (raw.code !== undefined) {
@@ -160,13 +103,13 @@ function fromKintoneAggregation(
 }
 
 function fromKintoneSort(raw: KintoneReportSort): ReportSort {
-  if (!VALID_SORT_BYS.has(raw.by)) {
+  if (!isSortBy(raw.by)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected sort by value from kintone API: ${raw.by}`,
     );
   }
-  if (!VALID_SORT_ORDERS.has(raw.order)) {
+  if (!isSortOrder(raw.order)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected sort order value from kintone API: ${raw.order}`,
@@ -174,25 +117,22 @@ function fromKintoneSort(raw: KintoneReportSort): ReportSort {
   }
 
   return {
-    by: raw.by as SortBy,
-    order: raw.order as SortOrder,
+    by: raw.by,
+    order: raw.order,
   };
 }
 
 function fromKintonePeriodicReportPeriod(
   raw: KintonePeriodicReportPeriod,
 ): PeriodicReportPeriod {
-  if (!VALID_PERIODIC_REPORT_EVERYS.has(raw.every)) {
+  if (!isPeriodicReportEvery(raw.every)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected periodicReport every value from kintone API: ${raw.every}`,
     );
   }
 
-  if (
-    raw.pattern !== undefined &&
-    !VALID_PERIODIC_REPORT_PATTERNS.has(raw.pattern)
-  ) {
+  if (raw.pattern !== undefined && !isPeriodicReportPattern(raw.pattern)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected periodicReport pattern value from kintone API: ${raw.pattern}`,
@@ -216,14 +156,16 @@ function fromKintonePeriodicReportPeriod(
   }
 
   const period: PeriodicReportPeriod = {
-    every: raw.every as PeriodicReportEvery,
+    every: raw.every,
     ...(raw.month !== undefined ? { month: Number(raw.month) } : {}),
-    ...(raw.pattern !== undefined
-      ? { pattern: raw.pattern as PeriodicReportPattern }
+    ...(raw.pattern !== undefined && isPeriodicReportPattern(raw.pattern)
+      ? { pattern: raw.pattern }
       : {}),
     ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
     ...(raw.time !== undefined ? { time: raw.time } : {}),
-    ...(raw.dayOfWeek !== undefined ? { dayOfWeek: raw.dayOfWeek } : {}),
+    ...(raw.dayOfWeek !== undefined && isDayOfWeek(raw.dayOfWeek)
+      ? { dayOfWeek: raw.dayOfWeek }
+      : {}),
     ...(raw.minute !== undefined ? { minute: raw.minute } : {}),
   };
 
@@ -238,7 +180,7 @@ function fromKintonePeriodicReport(raw: KintonePeriodicReport): PeriodicReport {
 }
 
 function fromKintoneReportConfig(raw: KintoneReportConfig): ReportConfig {
-  if (!VALID_CHART_TYPES.has(raw.chartType)) {
+  if (!isChartType(raw.chartType)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected chartType value from kintone API: ${raw.chartType}`,
@@ -247,7 +189,7 @@ function fromKintoneReportConfig(raw: KintoneReportConfig): ReportConfig {
   if (
     raw.chartMode !== undefined &&
     raw.chartMode !== "" &&
-    !VALID_CHART_MODES.has(raw.chartMode)
+    !isChartMode(raw.chartMode)
   ) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
@@ -256,11 +198,11 @@ function fromKintoneReportConfig(raw: KintoneReportConfig): ReportConfig {
   }
 
   const result: ReportConfig = {
-    chartType: raw.chartType as ChartType,
+    chartType: raw.chartType,
     ...(raw.chartMode !== undefined &&
     raw.chartMode !== "" &&
-    VALID_CHART_MODES.has(raw.chartMode)
-      ? { chartMode: raw.chartMode as ChartMode }
+    isChartMode(raw.chartMode)
+      ? { chartMode: raw.chartMode }
       : {}),
     index: Number(raw.index),
     name: raw.name,

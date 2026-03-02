@@ -5,13 +5,11 @@ import type { ActionConfigurator } from "@/core/domain/action/ports/actionConfig
 import type {
   ActionDestApp,
   ActionEntity,
-  ActionEntityType,
   ActionMapping,
-  ActionMappingSrcType,
 } from "@/core/domain/action/valueObject";
 import {
-  VALID_ENTITY_TYPES,
-  VALID_SRC_TYPES,
+  isActionEntityType,
+  isActionMappingSrcType,
 } from "@/core/domain/action/valueObject";
 import { isBusinessRuleError } from "@/core/domain/error";
 
@@ -56,7 +54,7 @@ function fromKintoneDestApp(
 }
 
 function fromKintoneMapping(raw: KintoneActionMapping): ActionMapping {
-  if (!VALID_SRC_TYPES.has(raw.srcType)) {
+  if (!isActionMappingSrcType(raw.srcType)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected srcType value from kintone API: ${raw.srcType}`,
@@ -64,7 +62,7 @@ function fromKintoneMapping(raw: KintoneActionMapping): ActionMapping {
   }
 
   const result: ActionMapping = {
-    srcType: raw.srcType as ActionMappingSrcType,
+    srcType: raw.srcType,
     destField: raw.destField,
     ...(raw.srcField !== undefined ? { srcField: raw.srcField } : {}),
   };
@@ -73,7 +71,7 @@ function fromKintoneMapping(raw: KintoneActionMapping): ActionMapping {
 }
 
 function fromKintoneEntity(raw: KintoneActionEntity): ActionEntity {
-  if (!VALID_ENTITY_TYPES.has(raw.type)) {
+  if (!isActionEntityType(raw.type)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected entity type from kintone API: ${raw.type}`,
@@ -81,7 +79,7 @@ function fromKintoneEntity(raw: KintoneActionEntity): ActionEntity {
   }
 
   return {
-    type: raw.type as ActionEntityType,
+    type: raw.type,
     code: raw.code,
   };
 }

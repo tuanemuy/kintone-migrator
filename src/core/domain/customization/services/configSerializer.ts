@@ -1,4 +1,4 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { CustomizationConfig } from "../entity";
 import type {
   CustomizationPlatform,
@@ -54,10 +54,6 @@ export const CustomizationConfigSerializer = {
         : {}),
     };
 
-    return stringifyYaml(result, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
+    return serializeToYaml(result);
   },
 };

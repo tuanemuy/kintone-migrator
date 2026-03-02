@@ -1,93 +1,26 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import { ReportErrorCode } from "../errorCode";
 import type {
-  AggregationType,
-  ChartMode,
-  ChartType,
-  GroupPer,
   PeriodicReport,
-  PeriodicReportEvery,
-  PeriodicReportPattern,
   PeriodicReportPeriod,
   ReportAggregation,
   ReportGroup,
   ReportSort,
-  SortBy,
-  SortOrder,
 } from "../valueObject";
-
-const VALID_CHART_TYPES: ReadonlySet<string> = new Set([
-  "BAR",
-  "COLUMN",
-  "PIE",
-  "LINE",
-  "PIVOT_TABLE",
-  "TABLE",
-  "AREA",
-  "SPLINE",
-  "SPLINE_AREA",
-]);
-
-const VALID_CHART_MODES: ReadonlySet<string> = new Set([
-  "NORMAL",
-  "STACKED",
-  "PERCENTAGE",
-]);
-
-const VALID_GROUP_PER: ReadonlySet<string> = new Set([
-  "YEAR",
-  "QUARTER",
-  "MONTH",
-  "WEEK",
-  "DAY",
-  "HOUR",
-  "MINUTE",
-]);
-
-const VALID_AGGREGATION_TYPES: ReadonlySet<string> = new Set([
-  "COUNT",
-  "SUM",
-  "AVERAGE",
-  "MAX",
-  "MIN",
-]);
-
-const VALID_SORT_BY: ReadonlySet<string> = new Set([
-  "TOTAL",
-  "GROUP1",
-  "GROUP2",
-  "GROUP3",
-]);
-
-const VALID_DAY_OF_WEEK: ReadonlySet<string> = new Set([
-  "SUNDAY",
-  "MONDAY",
-  "TUESDAY",
-  "WEDNESDAY",
-  "THURSDAY",
-  "FRIDAY",
-  "SATURDAY",
-]);
-
-const VALID_PERIODIC_PATTERN: ReadonlySet<string> = new Set([
-  "JAN_APR_JUL_OCT",
-  "FEB_MAY_AUG_NOV",
-  "MAR_JUN_SEP_DEC",
-]);
-
-const VALID_SORT_ORDER: ReadonlySet<string> = new Set(["ASC", "DESC"]);
-
-const VALID_PERIODIC_EVERY: ReadonlySet<string> = new Set([
-  "YEAR",
-  "QUARTER",
-  "MONTH",
-  "WEEK",
-  "DAY",
-  "HOUR",
-]);
+import {
+  isAggregationType,
+  isChartMode,
+  isChartType,
+  isDayOfWeek,
+  isGroupPer,
+  isPeriodicReportEvery,
+  isPeriodicReportPattern,
+  isSortBy,
+  isSortOrder,
+} from "../valueObject";
 
 function parseGroup(raw: unknown, index: number): ReportGroup {
   if (!isRecord(raw)) {
@@ -109,13 +42,13 @@ function parseGroup(raw: unknown, index: number): ReportGroup {
   const result: ReportGroup = { code: obj.code };
 
   if (obj.per !== undefined && obj.per !== null) {
-    if (typeof obj.per !== "string" || !VALID_GROUP_PER.has(obj.per)) {
+    if (typeof obj.per !== "string" || !isGroupPer(obj.per)) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
         `Group at index ${index} has invalid per: ${String(obj.per)}. Must be YEAR, QUARTER, MONTH, WEEK, DAY, HOUR, or MINUTE`,
       );
     }
-    return { ...result, per: obj.per as GroupPer };
+    return { ...result, per: obj.per };
   }
 
   return result;
@@ -131,7 +64,7 @@ function parseAggregation(raw: unknown, index: number): ReportAggregation {
 
   const obj = raw;
 
-  if (typeof obj.type !== "string" || !VALID_AGGREGATION_TYPES.has(obj.type)) {
+  if (typeof obj.type !== "string" || !isAggregationType(obj.type)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Aggregation at index ${index} has invalid type: ${String(obj.type)}. Must be COUNT, SUM, AVERAGE, MAX, or MIN`,
@@ -139,7 +72,7 @@ function parseAggregation(raw: unknown, index: number): ReportAggregation {
   }
 
   const result: ReportAggregation = {
-    type: obj.type as AggregationType,
+    type: obj.type,
   };
 
   if (obj.code !== undefined && obj.code !== null) {
@@ -165,14 +98,14 @@ function parseSort(raw: unknown, index: number): ReportSort {
 
   const obj = raw;
 
-  if (typeof obj.by !== "string" || !VALID_SORT_BY.has(obj.by)) {
+  if (typeof obj.by !== "string" || !isSortBy(obj.by)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Sort at index ${index} has invalid by: ${String(obj.by)}. Must be TOTAL, GROUP1, GROUP2, or GROUP3`,
     );
   }
 
-  if (typeof obj.order !== "string" || !VALID_SORT_ORDER.has(obj.order)) {
+  if (typeof obj.order !== "string" || !isSortOrder(obj.order)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `Sort at index ${index} has invalid order: ${String(obj.order)}. Must be ASC or DESC`,
@@ -180,8 +113,8 @@ function parseSort(raw: unknown, index: number): ReportSort {
   }
 
   return {
-    by: obj.by as SortBy,
-    order: obj.order as SortOrder,
+    by: obj.by,
+    order: obj.order,
   };
 }
 
@@ -195,14 +128,14 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
 
   const obj = raw;
 
-  if (typeof obj.every !== "string" || !VALID_PERIODIC_EVERY.has(obj.every)) {
+  if (typeof obj.every !== "string" || !isPeriodicReportEvery(obj.every)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       `periodicReport.period has invalid every: ${String(obj.every)}. Must be YEAR, QUARTER, MONTH, WEEK, DAY, or HOUR`,
     );
   }
 
-  const every = obj.every as PeriodicReportEvery;
+  const every = obj.every;
 
   let month: number | undefined;
   if (obj.month !== undefined && obj.month !== null) {
@@ -213,21 +146,28 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
         `periodicReport.period has invalid month: ${String(obj.month)}. Must be a number`,
       );
     }
+    // Validate month range (kintone expects 1-12)
+    if (parsed < 1 || parsed > 12) {
+      throw new BusinessRuleError(
+        ReportErrorCode.RtInvalidConfigStructure,
+        `periodicReport.period has out-of-range month: ${parsed}. Must be 1-12`,
+      );
+    }
     month = parsed;
   }
 
-  let pattern: PeriodicReportPattern | undefined;
+  let pattern: PeriodicReportPeriod["pattern"];
   if (obj.pattern !== undefined && obj.pattern !== null) {
     if (
       typeof obj.pattern !== "string" ||
-      !VALID_PERIODIC_PATTERN.has(obj.pattern)
+      !isPeriodicReportPattern(obj.pattern)
     ) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
         `periodicReport.period has invalid pattern: ${String(obj.pattern)}. Must be JAN_APR_JUL_OCT, FEB_MAY_AUG_NOV, or MAR_JUN_SEP_DEC`,
       );
     }
-    pattern = obj.pattern as PeriodicReportPattern;
+    pattern = obj.pattern;
   }
 
   let dayOfMonth: number | string | undefined;
@@ -242,6 +182,13 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
           `periodicReport.period has invalid dayOfMonth: ${String(obj.dayOfMonth)}. Must be a number or "END_OF_MONTH"`,
         );
       }
+      // Validate dayOfMonth range (kintone expects 1-31)
+      if (parsed < 1 || parsed > 31) {
+        throw new BusinessRuleError(
+          ReportErrorCode.RtInvalidConfigStructure,
+          `periodicReport.period has out-of-range dayOfMonth: ${parsed}. Must be 1-31`,
+        );
+      }
       dayOfMonth = parsed;
     }
   }
@@ -251,10 +198,10 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
     time = String(obj.time);
   }
 
-  let dayOfWeek: string | undefined;
+  let dayOfWeek: PeriodicReportPeriod["dayOfWeek"];
   if (obj.dayOfWeek !== undefined && obj.dayOfWeek !== null) {
     const dayStr = String(obj.dayOfWeek);
-    if (!VALID_DAY_OF_WEEK.has(dayStr)) {
+    if (!isDayOfWeek(dayStr)) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
         `periodicReport.period has invalid dayOfWeek: ${dayStr}. Must be SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, or SATURDAY`,
@@ -270,6 +217,13 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
         `periodicReport.period has invalid minute: ${String(obj.minute)}. Must be a number`,
+      );
+    }
+    // Validate minute range (kintone expects 0-59)
+    if (parsed < 0 || parsed > 59) {
+      throw new BusinessRuleError(
+        ReportErrorCode.RtInvalidConfigStructure,
+        `periodicReport.period has out-of-range minute: ${parsed}. Must be 0-59`,
       );
     }
     minute = parsed;
@@ -314,6 +268,14 @@ function parsePeriodicReport(raw: unknown): PeriodicReport {
 }
 
 function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
+  // Reject empty keys early to produce a clearer error message
+  if (reportName.length === 0) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtEmptyReportName,
+      "Report name (key) must not be empty",
+    );
+  }
+
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
@@ -323,42 +285,39 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
 
   const obj = raw;
 
-  if (
-    typeof obj.chartType !== "string" ||
-    !VALID_CHART_TYPES.has(obj.chartType)
-  ) {
+  if (typeof obj.chartType !== "string" || !isChartType(obj.chartType)) {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidChartType,
       `Report "${reportName}" has invalid chartType: ${String(obj.chartType)}. Must be BAR, COLUMN, PIE, LINE, PIVOT_TABLE, TABLE, AREA, SPLINE, or SPLINE_AREA`,
     );
   }
 
-  let chartMode: ChartMode | undefined;
+  let chartMode: ReportConfig["chartMode"];
   if (obj.chartMode !== undefined && obj.chartMode !== null) {
-    if (
-      typeof obj.chartMode !== "string" ||
-      !VALID_CHART_MODES.has(obj.chartMode)
-    ) {
+    if (typeof obj.chartMode !== "string" || !isChartMode(obj.chartMode)) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidChartMode,
         `Report "${reportName}" has invalid chartMode: ${String(obj.chartMode)}. Must be NORMAL, STACKED, or PERCENTAGE`,
       );
     }
-    chartMode = obj.chartMode as ChartMode;
+    chartMode = obj.chartMode;
   }
 
   const name =
     typeof obj.name === "string" && obj.name.length > 0 ? obj.name : reportName;
 
-  if (name.length === 0) {
+  // Validate index is a number when present
+  if (
+    obj.index !== undefined &&
+    obj.index !== null &&
+    typeof obj.index !== "number"
+  ) {
     throw new BusinessRuleError(
-      ReportErrorCode.RtEmptyReportName,
-      "Report must have a non-empty name",
+      ReportErrorCode.RtInvalidConfigStructure,
+      `Report "${reportName}" has non-numeric index: ${String(obj.index)}`,
     );
   }
-
-  const index =
-    obj.index !== undefined && obj.index !== null ? Number(obj.index) : 0;
+  const index = typeof obj.index === "number" ? obj.index : 0;
 
   const groups = Array.isArray(obj.groups)
     ? obj.groups.map((item: unknown, i: number) => parseGroup(item, i))
@@ -377,7 +336,7 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
     : [];
 
   const result: ReportConfig = {
-    chartType: obj.chartType as ChartType,
+    chartType: obj.chartType,
     ...(chartMode !== undefined ? { chartMode } : {}),
     index,
     name,
@@ -399,31 +358,15 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
 
 export const ReportConfigParser = {
   parse: (rawText: string): ReportsConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtEmptyConfigText,
-        "Report config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const obj = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: ReportErrorCode.RtEmptyConfigText,
+        invalidConfigYaml: ReportErrorCode.RtInvalidConfigYaml,
+        invalidConfigStructure: ReportErrorCode.RtInvalidConfigStructure,
+      },
+      "Report",
+    );
 
     if (!isRecord(obj.reports)) {
       throw new BusinessRuleError(

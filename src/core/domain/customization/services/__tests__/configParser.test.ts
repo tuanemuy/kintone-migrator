@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { BusinessRuleError } from "@/core/domain/error";
 import { CustomizationErrorCode } from "../../errorCode";
-import { ConfigParser } from "../configParser";
+import { CustomizationConfigParser } from "../configParser";
 
-describe("ConfigParser", () => {
+describe("CustomizationConfigParser", () => {
   describe("parse", () => {
     it("全フィールドを含む有効な設定をパースできる", () => {
       const yaml = `
@@ -23,7 +23,7 @@ mobile:
       path: ./dist/mobile.js
   css: []
 `;
-      const config = ConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse(yaml);
 
       expect(config.scope).toBe("ALL");
       expect(config.desktop.js).toHaveLength(2);
@@ -57,7 +57,7 @@ mobile:
   js: []
   css: []
 `;
-      const config = ConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse(yaml);
 
       expect(config.scope).toBeUndefined();
     });
@@ -72,7 +72,7 @@ mobile:
   js: []
   css: []
 `;
-      const config = ConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse(yaml);
 
       expect(config.scope).toBe("ADMIN");
     });
@@ -87,7 +87,7 @@ mobile:
   js: []
   css: []
 `;
-      const config = ConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse(yaml);
 
       expect(config.scope).toBe("NONE");
     });
@@ -97,7 +97,7 @@ mobile:
 desktop: {}
 mobile: {}
 `;
-      const config = ConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse(yaml);
 
       expect(config.desktop.js).toHaveLength(0);
       expect(config.desktop.css).toHaveLength(0);
@@ -106,8 +106,10 @@ mobile: {}
     });
 
     it("空テキストの場合、EmptyConfigTextをスローする", () => {
-      expect(() => ConfigParser.parse("")).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse("")).toThrow(
+      expect(() => CustomizationConfigParser.parse("")).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse("")).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzEmptyConfigText,
         }),
@@ -115,8 +117,10 @@ mobile: {}
     });
 
     it("空白のみのテキストの場合、EmptyConfigTextをスローする", () => {
-      expect(() => ConfigParser.parse("   \n  ")).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse("   \n  ")).toThrow(
+      expect(() => CustomizationConfigParser.parse("   \n  ")).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse("   \n  ")).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzEmptyConfigText,
         }),
@@ -124,10 +128,10 @@ mobile: {}
     });
 
     it("不正なYAMLの場合、InvalidConfigYamlをスローする", () => {
-      expect(() => ConfigParser.parse("{ invalid: yaml:")).toThrow(
+      expect(() => CustomizationConfigParser.parse("{ invalid: yaml:")).toThrow(
         BusinessRuleError,
       );
-      expect(() => ConfigParser.parse("{ invalid: yaml:")).toThrow(
+      expect(() => CustomizationConfigParser.parse("{ invalid: yaml:")).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigYaml,
         }),
@@ -135,10 +139,10 @@ mobile: {}
     });
 
     it("YAMLがオブジェクトでない場合、InvalidConfigStructureをスローする", () => {
-      expect(() => ConfigParser.parse("just a string")).toThrow(
+      expect(() => CustomizationConfigParser.parse("just a string")).toThrow(
         BusinessRuleError,
       );
-      expect(() => ConfigParser.parse("just a string")).toThrow(
+      expect(() => CustomizationConfigParser.parse("just a string")).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
@@ -155,8 +159,10 @@ mobile:
   js: []
   css: []
 `;
-      expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse(yaml)).toThrow(
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidScope,
         }),
@@ -169,7 +175,7 @@ mobile:
   js: []
   css: []
 `;
-      const config = ConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse(yaml);
       expect(config.desktop.js).toEqual([]);
       expect(config.desktop.css).toEqual([]);
     });
@@ -180,7 +186,7 @@ desktop:
   js: []
   css: []
 `;
-      const result = ConfigParser.parse(yaml);
+      const result = CustomizationConfigParser.parse(yaml);
       expect(result.mobile).toEqual({ js: [], css: [] });
     });
 
@@ -195,8 +201,10 @@ mobile:
   js: []
   css: []
 `;
-      expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse(yaml)).toThrow(
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidResourceType,
         }),
@@ -213,8 +221,10 @@ mobile:
   js: []
   css: []
 `;
-      expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse(yaml)).toThrow(
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
@@ -231,8 +241,10 @@ mobile:
   js: []
   css: []
 `;
-      expect(() => ConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ConfigParser.parse(yaml)).toThrow(
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),

@@ -3,23 +3,13 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type {
   GeneralNotification,
+  NotificationTarget,
   PerRecordNotification,
-  PerRecordNotificationTarget,
   ReminderNotification,
-  ReminderNotificationTarget,
 } from "@/core/domain/notification/entity";
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
-import type {
-  NotificationEntity,
-  NotificationEntityType,
-} from "@/core/domain/notification/valueObject";
-
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-]);
+import type { NotificationEntity } from "@/core/domain/notification/valueObject";
+import { isNotificationEntityType } from "@/core/domain/notification/valueObject";
 
 type KintoneNotificationEntity = {
   type: string;
@@ -61,18 +51,14 @@ type KintoneReminderNotification = {
   targets: KintoneReminderTarget[];
 };
 
-function validateEntityType(type: string, context: string): void {
-  if (!VALID_ENTITY_TYPES.has(type)) {
+function fromKintoneEntity(raw: KintoneNotificationEntity): NotificationEntity {
+  if (!isNotificationEntityType(raw.type)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
-      `Unexpected entity type from kintone API (${context}): ${type}`,
+      `Unexpected entity type from kintone API (entity): ${raw.type}`,
     );
   }
-}
-
-function fromKintoneEntity(raw: KintoneNotificationEntity): NotificationEntity {
-  validateEntityType(raw.type, "entity");
-  return { type: raw.type as NotificationEntityType, code: raw.code };
+  return { type: raw.type, code: raw.code };
 }
 
 function fromKintoneGeneralNotification(
@@ -98,10 +84,10 @@ function fromKintoneGeneralNotification(
 
 function fromKintonePerRecordTarget(
   raw: KintonePerRecordTarget,
-): PerRecordNotificationTarget {
+): NotificationTarget {
   const entity = fromKintoneEntity(raw.entity);
 
-  const result: PerRecordNotificationTarget = { entity };
+  const result: NotificationTarget = { entity };
 
   if (raw.includeSubs !== undefined) {
     return { ...result, includeSubs: raw.includeSubs };
@@ -122,10 +108,10 @@ function fromKintonePerRecordNotification(
 
 function fromKintoneReminderTarget(
   raw: KintoneReminderTarget,
-): ReminderNotificationTarget {
+): NotificationTarget {
   const entity = fromKintoneEntity(raw.entity);
 
-  const result: ReminderNotificationTarget = { entity };
+  const result: NotificationTarget = { entity };
 
   if (raw.includeSubs !== undefined) {
     return { ...result, includeSubs: raw.includeSubs };
@@ -186,7 +172,7 @@ function toKintoneGeneralNotification(
 }
 
 function toKintonePerRecordTarget(
-  target: PerRecordNotificationTarget,
+  target: NotificationTarget,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {
     entity: toKintoneEntity(target.entity),
@@ -210,7 +196,7 @@ function toKintonePerRecordNotification(
 }
 
 function toKintoneReminderTarget(
-  target: ReminderNotificationTarget,
+  target: NotificationTarget,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {
     entity: toKintoneEntity(target.entity),

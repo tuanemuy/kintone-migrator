@@ -154,5 +154,32 @@ plugins:
         }),
       );
     });
+
+    it("should parse enabled: false", () => {
+      const yaml = `
+plugins:
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: テストプラグイン
+    enabled: false
+`;
+      const config = PluginConfigParser.parse(yaml);
+      expect(config.plugins[0].enabled).toBe(false);
+    });
+
+    it("should throw PlDuplicatePluginId for duplicate plugin IDs", () => {
+      const yaml = `
+plugins:
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: プラグインA
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: プラグインB
+`;
+      expect(() => PluginConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => PluginConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: PluginErrorCode.PlDuplicatePluginId,
+        }),
+      );
+    });
   });
 });

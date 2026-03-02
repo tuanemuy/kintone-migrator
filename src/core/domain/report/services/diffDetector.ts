@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import type { ReportDiff, ReportDiffEntry } from "../valueObject";
 
@@ -41,37 +42,33 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
 
 export const ReportDiffDetector = {
   detect: (local: ReportsConfig, remote: ReportsConfig): ReportDiff => {
-    const entries: ReportDiffEntry[] = [];
-
-    for (const [name, localReport] of Object.entries(local.reports)) {
-      const remoteReport = remote.reports[name];
-      if (!remoteReport) {
-        entries.push({
+    const entries = detectRecordDiff<ReportConfig, ReportDiffEntry>(
+      local.reports,
+      remote.reports,
+      {
+        onAdded: (name, localReport) => ({
           type: "added",
           reportName: name,
           details: `chartType: ${localReport.chartType}`,
-        });
-      } else {
-        const diffs = compareReports(localReport, remoteReport);
-        if (diffs.length > 0) {
-          entries.push({
-            type: "modified",
-            reportName: name,
-            details: diffs.join(", "),
-          });
-        }
-      }
-    }
-
-    for (const [name, remoteReport] of Object.entries(remote.reports)) {
-      if (!local.reports[name]) {
-        entries.push({
+        }),
+        onModified: (name, localReport, remoteReport) => {
+          const diffs = compareReports(localReport, remoteReport);
+          if (diffs.length > 0) {
+            return {
+              type: "modified",
+              reportName: name,
+              details: diffs.join(", "),
+            };
+          }
+          return undefined;
+        },
+        onDeleted: (name, remoteReport) => ({
           type: "deleted",
           reportName: name,
           details: `chartType: ${remoteReport.chartType}`,
-        });
-      }
-    }
+        }),
+      },
+    );
 
     return buildDiffResult(entries);
   },

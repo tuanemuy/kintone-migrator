@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { BusinessRuleError } from "@/core/domain/error";
 import { ViewConfigParser } from "../configParser";
 
 describe("ViewConfigParser", () => {
@@ -147,12 +147,7 @@ views:
     });
 
     it("should throw BusinessRuleError for empty text", () => {
-      expect.assertions(1);
-      try {
-        ViewConfigParser.parse("");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-      }
+      expect(() => ViewConfigParser.parse("")).toThrow(BusinessRuleError);
     });
 
     it("should throw for invalid YAML", () => {
@@ -195,6 +190,55 @@ views:
   "":
     type: LIST
     index: 0
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow();
+    });
+
+    it("should throw for non-numeric index", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: "not_a_number"
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow();
+    });
+  });
+
+  describe("device type", () => {
+    it("should parse device: ANY", () => {
+      const yaml = `
+views:
+  custom:
+    type: CUSTOM
+    index: 0
+    html: "<div>test</div>"
+    device: ANY
+`;
+      const result = ViewConfigParser.parse(yaml);
+      expect(result.views.custom.device).toBe("ANY");
+    });
+
+    it("should parse device: DESKTOP", () => {
+      const yaml = `
+views:
+  custom:
+    type: CUSTOM
+    index: 0
+    html: "<div>test</div>"
+    device: DESKTOP
+`;
+      const result = ViewConfigParser.parse(yaml);
+      expect(result.views.custom.device).toBe("DESKTOP");
+    });
+
+    it("should throw for invalid device type", () => {
+      const yaml = `
+views:
+  custom:
+    type: CUSTOM
+    index: 0
+    device: MOBILE
 `;
       expect(() => ViewConfigParser.parse(yaml)).toThrow();
     });

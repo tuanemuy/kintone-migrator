@@ -441,5 +441,20 @@ actions: {}
       const config = ActionConfigParser.parse(yaml);
       expect(Object.keys(config.actions)).toHaveLength(0);
     });
+
+    it("should parse empty destApp object (both app and code optional)", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp: {}
+    mappings: []
+    entities: []
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(config.actions.test.destApp).toEqual({});
+      expect(config.actions.test.destApp.app).toBeUndefined();
+      expect(config.actions.test.destApp.code).toBeUndefined();
+    });
   });
 });

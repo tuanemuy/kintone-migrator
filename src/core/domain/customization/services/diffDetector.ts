@@ -11,6 +11,9 @@ import {
 } from "../valueObject";
 
 // FILE resources are compared by basename only; content-level diff is not supported.
+// The trailing-slash case (e.g. "src/lib/") is safe here: split("/") produces an
+// empty last element, but such paths should never appear since CustomizationResource
+// paths always refer to files, not directories.
 function resourceName(resource: CustomizationResource): string {
   if (resource.type === "URL") return resource.url;
   const parts = resource.path.replace(/\\/g, "/").split("/");
@@ -121,6 +124,10 @@ function comparePlatform(
 }
 
 export const CustomizationDiffDetector = {
+  // local and remote use different types intentionally:
+  // - CustomizationConfig is the parsed YAML config (file paths, not yet uploaded)
+  // - RemoteCustomization is the kintone API response (file metadata with fileKey/size)
+  // The diff compares by resource name/URL, abstracting over these structural differences.
   detect: (
     local: CustomizationConfig,
     remote: RemoteCustomization,

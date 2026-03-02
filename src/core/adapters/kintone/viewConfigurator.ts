@@ -3,12 +3,7 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
-import {
-  type DeviceType,
-  VALID_DEVICE_TYPES,
-  VALID_VIEW_TYPES,
-  type ViewType,
-} from "@/core/domain/view/valueObject";
+import { isDeviceType, isViewType } from "@/core/domain/view/valueObject";
 
 type KintoneView = {
   type: string;
@@ -26,15 +21,26 @@ type KintoneView = {
 };
 
 function fromKintoneView(name: string, raw: KintoneView): ViewConfig {
-  if (!VALID_VIEW_TYPES.has(raw.type)) {
+  if (!isViewType(raw.type)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Unexpected view type from kintone API: ${raw.type}`,
     );
   }
 
+  let device: ViewConfig["device"];
+  if (raw.device !== undefined) {
+    if (!isDeviceType(raw.device)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Unexpected device type from kintone API: ${raw.device}`,
+      );
+    }
+    device = raw.device;
+  }
+
   const config: ViewConfig = {
-    type: raw.type as ViewType,
+    type: raw.type,
     index: typeof raw.index === "string" ? Number(raw.index) : raw.index,
     name,
     ...(raw.builtinType !== undefined && { builtinType: raw.builtinType }),
@@ -43,17 +49,7 @@ function fromKintoneView(name: string, raw: KintoneView): ViewConfig {
     ...(raw.title !== undefined && { title: raw.title }),
     ...(raw.html !== undefined && { html: raw.html }),
     ...(raw.pager !== undefined && { pager: raw.pager }),
-    ...(raw.device !== undefined && {
-      device: (() => {
-        if (!VALID_DEVICE_TYPES.has(raw.device)) {
-          throw new SystemError(
-            SystemErrorCode.ExternalApiError,
-            `Unexpected device type from kintone API: ${raw.device}`,
-          );
-        }
-        return raw.device as DeviceType;
-      })(),
-    }),
+    ...(device !== undefined && { device }),
     ...(raw.filterCond !== undefined && { filterCond: raw.filterCond }),
     ...(raw.sort !== undefined && { sort: raw.sort }),
   };
