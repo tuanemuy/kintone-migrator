@@ -17,7 +17,21 @@ import type {
   TitleFieldSelectionMode,
 } from "../valueObject";
 
-const VALID_THEMES: ReadonlySet<string> = new Set([
+function parseOptionalBoolean(
+  parsed: Record<string, unknown>,
+  fieldName: string,
+): boolean | undefined {
+  const value = parsed[fieldName];
+  if (value === undefined || value === null) return undefined;
+  return parseStrictBoolean(
+    value,
+    fieldName,
+    "Config",
+    GeneralSettingsErrorCode.GsInvalidBooleanField,
+  );
+}
+
+const VALID_THEMES: ReadonlySet<ThemeType> = new Set<ThemeType>([
   "WHITE",
   "RED",
   "GREEN",
@@ -30,11 +44,15 @@ const VALID_THEMES: ReadonlySet<string> = new Set([
   "CLIPS",
 ]);
 
-const VALID_ICON_TYPES: ReadonlySet<string> = new Set(["PRESET", "FILE"]);
+const VALID_ICON_TYPES: ReadonlySet<IconType> = new Set<IconType>([
+  "PRESET",
+  "FILE",
+]);
 
-const VALID_SELECTION_MODES: ReadonlySet<string> = new Set(["AUTO", "MANUAL"]);
+const VALID_SELECTION_MODES: ReadonlySet<TitleFieldSelectionMode> =
+  new Set<TitleFieldSelectionMode>(["AUTO", "MANUAL"]);
 
-const VALID_ROUNDING_MODES: ReadonlySet<string> = new Set([
+const VALID_ROUNDING_MODES: ReadonlySet<RoundingMode> = new Set<RoundingMode>([
   "HALF_EVEN",
   "UP",
   "DOWN",
@@ -45,13 +63,6 @@ function parseIcon(raw: unknown): IconConfig {
     throw new BusinessRuleError(
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
       'icon must be an object with "type" and "key" properties',
-    );
-  }
-
-  if (typeof raw.type !== "string" || !VALID_ICON_TYPES.has(raw.type)) {
-    throw new BusinessRuleError(
-      GeneralSettingsErrorCode.GsInvalidIconType,
-      `icon.type must be PRESET or FILE, got: ${String(raw.type)}`,
     );
   }
 
@@ -67,7 +78,7 @@ function parseIcon(raw: unknown): IconConfig {
       raw.type,
       VALID_ICON_TYPES,
       GeneralSettingsErrorCode.GsInvalidIconType,
-      `icon.type must be PRESET or FILE, got: ${raw.type}`,
+      `icon.type must be PRESET or FILE, got: ${String(raw.type)}`,
     ),
     key: raw.key,
   };
@@ -81,22 +92,12 @@ function parseTitleField(raw: unknown): TitleFieldConfig {
     );
   }
 
-  if (
-    typeof raw.selectionMode !== "string" ||
-    !VALID_SELECTION_MODES.has(raw.selectionMode)
-  ) {
-    throw new BusinessRuleError(
-      GeneralSettingsErrorCode.GsInvalidConfigStructure,
-      `titleField.selectionMode must be AUTO or MANUAL, got: ${String(raw.selectionMode)}`,
-    );
-  }
-
   const result: TitleFieldConfig = {
     selectionMode: parseEnum<TitleFieldSelectionMode>(
       raw.selectionMode,
       VALID_SELECTION_MODES,
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
-      `titleField.selectionMode must be AUTO or MANUAL, got: ${raw.selectionMode}`,
+      `titleField.selectionMode must be AUTO or MANUAL, got: ${String(raw.selectionMode)}`,
     ),
   };
 
@@ -149,16 +150,6 @@ function parseNumberPrecision(raw: unknown): NumberPrecisionConfig {
     );
   }
 
-  if (
-    typeof raw.roundingMode !== "string" ||
-    !VALID_ROUNDING_MODES.has(raw.roundingMode)
-  ) {
-    throw new BusinessRuleError(
-      GeneralSettingsErrorCode.GsInvalidConfigStructure,
-      `numberPrecision.roundingMode must be HALF_EVEN, UP, or DOWN, got: ${String(raw.roundingMode)}`,
-    );
-  }
-
   return {
     digits: raw.digits,
     decimalPlaces: raw.decimalPlaces,
@@ -166,7 +157,7 @@ function parseNumberPrecision(raw: unknown): NumberPrecisionConfig {
       raw.roundingMode,
       VALID_ROUNDING_MODES,
       GeneralSettingsErrorCode.GsInvalidConfigStructure,
-      `numberPrecision.roundingMode must be HALF_EVEN, UP, or DOWN, got: ${raw.roundingMode}`,
+      `numberPrecision.roundingMode must be HALF_EVEN, UP, or DOWN, got: ${String(raw.roundingMode)}`,
     ),
   };
 }
@@ -213,17 +204,11 @@ export const GeneralSettingsConfigParser = {
 
     let theme: ThemeType | undefined;
     if (parsed.theme !== undefined && parsed.theme !== null) {
-      if (typeof parsed.theme !== "string" || !VALID_THEMES.has(parsed.theme)) {
-        throw new BusinessRuleError(
-          GeneralSettingsErrorCode.GsInvalidTheme,
-          `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(parsed.theme)}`,
-        );
-      }
       theme = parseEnum<ThemeType>(
         parsed.theme,
         VALID_THEMES,
         GeneralSettingsErrorCode.GsInvalidTheme,
-        `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${parsed.theme}`,
+        `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(parsed.theme)}`,
       );
     }
 
@@ -232,67 +217,20 @@ export const GeneralSettingsConfigParser = {
       titleField = parseTitleField(parsed.titleField);
     }
 
-    let enableThumbnails: boolean | undefined;
-    if (
-      parsed.enableThumbnails !== undefined &&
-      parsed.enableThumbnails !== null
-    ) {
-      enableThumbnails = parseStrictBoolean(
-        parsed.enableThumbnails,
-        "enableThumbnails",
-        "Config",
-        GeneralSettingsErrorCode.GsInvalidBooleanField,
-      );
-    }
-
-    let enableBulkDeletion: boolean | undefined;
-    if (
-      parsed.enableBulkDeletion !== undefined &&
-      parsed.enableBulkDeletion !== null
-    ) {
-      enableBulkDeletion = parseStrictBoolean(
-        parsed.enableBulkDeletion,
-        "enableBulkDeletion",
-        "Config",
-        GeneralSettingsErrorCode.GsInvalidBooleanField,
-      );
-    }
-
-    let enableComments: boolean | undefined;
-    if (parsed.enableComments !== undefined && parsed.enableComments !== null) {
-      enableComments = parseStrictBoolean(
-        parsed.enableComments,
-        "enableComments",
-        "Config",
-        GeneralSettingsErrorCode.GsInvalidBooleanField,
-      );
-    }
-
-    let enableDuplicateRecord: boolean | undefined;
-    if (
-      parsed.enableDuplicateRecord !== undefined &&
-      parsed.enableDuplicateRecord !== null
-    ) {
-      enableDuplicateRecord = parseStrictBoolean(
-        parsed.enableDuplicateRecord,
-        "enableDuplicateRecord",
-        "Config",
-        GeneralSettingsErrorCode.GsInvalidBooleanField,
-      );
-    }
-
-    let enableInlineRecordEditing: boolean | undefined;
-    if (
-      parsed.enableInlineRecordEditing !== undefined &&
-      parsed.enableInlineRecordEditing !== null
-    ) {
-      enableInlineRecordEditing = parseStrictBoolean(
-        parsed.enableInlineRecordEditing,
-        "enableInlineRecordEditing",
-        "Config",
-        GeneralSettingsErrorCode.GsInvalidBooleanField,
-      );
-    }
+    const enableThumbnails = parseOptionalBoolean(parsed, "enableThumbnails");
+    const enableBulkDeletion = parseOptionalBoolean(
+      parsed,
+      "enableBulkDeletion",
+    );
+    const enableComments = parseOptionalBoolean(parsed, "enableComments");
+    const enableDuplicateRecord = parseOptionalBoolean(
+      parsed,
+      "enableDuplicateRecord",
+    );
+    const enableInlineRecordEditing = parseOptionalBoolean(
+      parsed,
+      "enableInlineRecordEditing",
+    );
 
     let numberPrecision: NumberPrecisionConfig | undefined;
     if (

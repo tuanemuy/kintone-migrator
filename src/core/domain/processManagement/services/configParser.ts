@@ -16,23 +16,19 @@ import type {
   ProcessEntityType,
 } from "../valueObject";
 
-const VALID_ASSIGNEE_TYPES: ReadonlySet<string> = new Set([
-  "ONE",
-  "ALL",
-  "ANY",
-]);
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-  "CREATOR",
-  "CUSTOM_FIELD",
-]);
-const VALID_ACTION_TYPES: ReadonlySet<string> = new Set([
-  "PRIMARY",
-  "SECONDARY",
-]);
+const VALID_ASSIGNEE_TYPES: ReadonlySet<ProcessAssigneeType> =
+  new Set<ProcessAssigneeType>(["ONE", "ALL", "ANY"]);
+const VALID_ENTITY_TYPES: ReadonlySet<ProcessEntityType> =
+  new Set<ProcessEntityType>([
+    "USER",
+    "GROUP",
+    "ORGANIZATION",
+    "FIELD_ENTITY",
+    "CREATOR",
+    "CUSTOM_FIELD",
+  ]);
+const VALID_ACTION_TYPES: ReadonlySet<ProcessActionType> =
+  new Set<ProcessActionType>(["PRIMARY", "SECONDARY"]);
 
 function parseProcessEntity(raw: unknown, index: number): ProcessEntity {
   if (!isRecord(raw)) {
@@ -42,19 +38,12 @@ function parseProcessEntity(raw: unknown, index: number): ProcessEntity {
     );
   }
 
-  if (typeof raw.type !== "string" || !VALID_ENTITY_TYPES.has(raw.type)) {
-    throw new BusinessRuleError(
-      ProcessManagementErrorCode.PmInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, FIELD_ENTITY, CREATOR, or CUSTOM_FIELD`,
-    );
-  }
-
   const result: ProcessEntity = {
     type: parseEnum<ProcessEntityType>(
       raw.type,
       VALID_ENTITY_TYPES,
       ProcessManagementErrorCode.PmInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${raw.type}. Must be USER, GROUP, ORGANIZATION, FIELD_ENTITY, CREATOR, or CUSTOM_FIELD`,
+      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, FIELD_ENTITY, CREATOR, or CUSTOM_FIELD`,
     ),
   };
 
@@ -86,13 +75,6 @@ function parseAssignee(raw: unknown, stateName: string): ProcessAssignee {
     );
   }
 
-  if (typeof raw.type !== "string" || !VALID_ASSIGNEE_TYPES.has(raw.type)) {
-    throw new BusinessRuleError(
-      ProcessManagementErrorCode.PmInvalidAssigneeType,
-      `Assignee for state "${stateName}" has invalid type: ${String(raw.type)}. Must be ONE, ALL, or ANY`,
-    );
-  }
-
   if (!Array.isArray(raw.entities)) {
     throw new BusinessRuleError(
       ProcessManagementErrorCode.PmInvalidConfigStructure,
@@ -100,19 +82,18 @@ function parseAssignee(raw: unknown, stateName: string): ProcessAssignee {
     );
   }
 
+  const type = parseEnum<ProcessAssigneeType>(
+    raw.type,
+    VALID_ASSIGNEE_TYPES,
+    ProcessManagementErrorCode.PmInvalidAssigneeType,
+    `Assignee for state "${stateName}" has invalid type: ${String(raw.type)}. Must be ONE, ALL, or ANY`,
+  );
+
   const entities = raw.entities.map((item: unknown, i: number) =>
     parseProcessEntity(item, i),
   );
 
-  return {
-    type: parseEnum<ProcessAssigneeType>(
-      raw.type,
-      VALID_ASSIGNEE_TYPES,
-      ProcessManagementErrorCode.PmInvalidAssigneeType,
-      `Assignee for state "${stateName}" has invalid type: ${raw.type}. Must be ONE, ALL, or ANY`,
-    ),
-    entities,
-  };
+  return { type, entities };
 }
 
 function parseState(raw: unknown, stateName: string): ProcessState {
@@ -199,26 +180,15 @@ function parseAction(raw: unknown, index: number): ProcessAction {
     );
   }
 
-  if (
-    raw.type !== undefined &&
-    raw.type !== null &&
-    (typeof raw.type !== "string" || !VALID_ACTION_TYPES.has(raw.type))
-  ) {
-    throw new BusinessRuleError(
-      ProcessManagementErrorCode.PmInvalidConfigStructure,
-      `Action at index ${index} has invalid type: ${String(raw.type)}. Must be PRIMARY or SECONDARY`,
-    );
-  }
-
   const actionType: ProcessActionType =
-    typeof raw.type === "string" && VALID_ACTION_TYPES.has(raw.type)
-      ? parseEnum<ProcessActionType>(
+    raw.type === undefined || raw.type === null
+      ? "PRIMARY"
+      : parseEnum<ProcessActionType>(
           raw.type,
           VALID_ACTION_TYPES,
           ProcessManagementErrorCode.PmInvalidConfigStructure,
-          `Action at index ${index} has invalid type: ${raw.type}. Must be PRIMARY or SECONDARY`,
-        )
-      : "PRIMARY";
+          `Action at index ${index} has invalid type: ${String(raw.type)}. Must be PRIMARY or SECONDARY`,
+        );
 
   const result: ProcessAction = {
     name: raw.name,

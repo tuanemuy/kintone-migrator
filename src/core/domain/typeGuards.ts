@@ -89,16 +89,19 @@ export function parseStrictBoolean(
 }
 
 /**
- * Validates that a string value is within an allowed set and returns a typed value.
- * Replaces `if (!SET.has(x)) throw; ... x as T` patterns.
+ * Validates that an unknown value is a string within an allowed set and returns a typed value.
+ * Replaces manual `typeof` + `Set.has` + `as` cast patterns.
  */
 export function parseEnum<T extends string>(
-  value: string,
-  validValues: ReadonlySet<string>,
+  value: unknown,
+  validValues: ReadonlySet<T>,
   errorCode: BusinessRuleErrorCode,
   message: string,
 ): T {
-  if (!validValues.has(value)) {
+  if (
+    typeof value !== "string" ||
+    !(validValues as ReadonlySet<string>).has(value)
+  ) {
     throw new BusinessRuleError(errorCode, message);
   }
   return value as T;

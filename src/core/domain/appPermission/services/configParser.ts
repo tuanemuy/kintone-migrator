@@ -12,12 +12,13 @@ import type {
   AppPermissionEntityType,
 } from "../valueObject";
 
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "CREATOR",
-]);
+const VALID_ENTITY_TYPES: ReadonlySet<AppPermissionEntityType> =
+  new Set<AppPermissionEntityType>([
+    "USER",
+    "GROUP",
+    "ORGANIZATION",
+    "CREATOR",
+  ]);
 
 function parseEntity(raw: unknown, index: number): AppPermissionEntity {
   if (!isRecord(raw)) {
@@ -27,18 +28,11 @@ function parseEntity(raw: unknown, index: number): AppPermissionEntity {
     );
   }
 
-  if (typeof raw.type !== "string" || !VALID_ENTITY_TYPES.has(raw.type)) {
-    throw new BusinessRuleError(
-      AppPermissionErrorCode.ApInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or CREATOR`,
-    );
-  }
-
   const type = parseEnum<AppPermissionEntityType>(
     raw.type,
     VALID_ENTITY_TYPES,
     AppPermissionErrorCode.ApInvalidEntityType,
-    `Entity at index ${index} has invalid type: ${raw.type}. Must be USER, GROUP, ORGANIZATION, or CREATOR`,
+    `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or CREATOR`,
   );
 
   // CREATOR type can have empty code

@@ -13,25 +13,19 @@ import type {
   RecordPermissionRightEntity,
 } from "../valueObject";
 
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-]);
+const VALID_ENTITY_TYPES: ReadonlySet<RecordPermissionEntityType> =
+  new Set<RecordPermissionEntityType>([
+    "USER",
+    "GROUP",
+    "ORGANIZATION",
+    "FIELD_ENTITY",
+  ]);
 
 function parseEntity(raw: unknown, index: number): RecordPermissionEntity {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
       RecordPermissionErrorCode.RpInvalidConfigStructure,
       `Entity at index ${index} must be an object`,
-    );
-  }
-
-  if (typeof raw.type !== "string" || !VALID_ENTITY_TYPES.has(raw.type)) {
-    throw new BusinessRuleError(
-      RecordPermissionErrorCode.RpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
     );
   }
 
@@ -47,7 +41,7 @@ function parseEntity(raw: unknown, index: number): RecordPermissionEntity {
       raw.type,
       VALID_ENTITY_TYPES,
       RecordPermissionErrorCode.RpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${raw.type}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
+      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
     ),
     code: raw.code,
   };

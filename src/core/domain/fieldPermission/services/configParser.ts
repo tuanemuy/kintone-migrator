@@ -14,30 +14,21 @@ import type {
   FieldRightEntity,
 } from "../valueObject";
 
-const VALID_ACCESSIBILITIES: ReadonlySet<string> = new Set([
-  "READ",
-  "WRITE",
-  "NONE",
-]);
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-]);
+const VALID_ACCESSIBILITIES: ReadonlySet<FieldRightAccessibility> =
+  new Set<FieldRightAccessibility>(["READ", "WRITE", "NONE"]);
+const VALID_ENTITY_TYPES: ReadonlySet<FieldPermissionEntityType> =
+  new Set<FieldPermissionEntityType>([
+    "USER",
+    "GROUP",
+    "ORGANIZATION",
+    "FIELD_ENTITY",
+  ]);
 
 function parseEntity(raw: unknown, index: number): FieldPermissionEntity {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
       FieldPermissionErrorCode.FpInvalidConfigStructure,
       `Entity at index ${index} must be an object`,
-    );
-  }
-
-  if (typeof raw.type !== "string" || !VALID_ENTITY_TYPES.has(raw.type)) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
     );
   }
 
@@ -53,7 +44,7 @@ function parseEntity(raw: unknown, index: number): FieldPermissionEntity {
       raw.type,
       VALID_ENTITY_TYPES,
       FieldPermissionErrorCode.FpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${raw.type}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
+      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
     ),
     code: raw.code,
   };
@@ -67,21 +58,11 @@ function parseFieldRightEntity(raw: unknown, index: number): FieldRightEntity {
     );
   }
 
-  if (
-    typeof raw.accessibility !== "string" ||
-    !VALID_ACCESSIBILITIES.has(raw.accessibility)
-  ) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpInvalidAccessibility,
-      `Field right entity at index ${index} has invalid accessibility: ${String(raw.accessibility)}. Must be READ, WRITE, or NONE`,
-    );
-  }
-
   const accessibility = parseEnum<FieldRightAccessibility>(
     raw.accessibility,
     VALID_ACCESSIBILITIES,
     FieldPermissionErrorCode.FpInvalidAccessibility,
-    `Field right entity at index ${index} has invalid accessibility: ${raw.accessibility}. Must be READ, WRITE, or NONE`,
+    `Field right entity at index ${index} has invalid accessibility: ${String(raw.accessibility)}. Must be READ, WRITE, or NONE`,
   );
 
   const entity = parseEntity(raw.entity, index);

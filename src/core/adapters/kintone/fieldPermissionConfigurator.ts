@@ -35,6 +35,8 @@ type KintoneFieldAclRight = {
   entities: KintoneFieldAclEntity[];
 };
 
+// Adapter layer: uses SystemError + `as` cast instead of domain parseEnum,
+// because external API boundary errors are system errors, not business rule violations.
 function fromKintoneEntity(raw: KintoneFieldAclEntity): FieldRightEntity {
   if (!VALID_ACCESSIBILITIES.has(raw.accessibility)) {
     throw new SystemError(
