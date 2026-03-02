@@ -209,6 +209,17 @@ export const ActionConfigParser = {
       actions[key] = parseActionConfig(value, key);
     }
 
+    const seenIndices = new Set<number>();
+    for (const [key, action] of Object.entries(actions)) {
+      if (seenIndices.has(action.index)) {
+        throw new BusinessRuleError(
+          ActionErrorCode.AcDuplicateIndex,
+          `Duplicate action index ${action.index} found in action "${key}"`,
+        );
+      }
+      seenIndices.add(action.index);
+    }
+
     return { actions };
   },
 };

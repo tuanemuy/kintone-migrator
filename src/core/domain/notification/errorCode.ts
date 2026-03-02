@@ -7,6 +7,7 @@ export const NotificationErrorCode = {
   NtMissingRequiredField: "NT_MISSING_REQUIRED_FIELD",
   NtConflictingTimingFields: "NT_CONFLICTING_TIMING_FIELDS",
   NtInvalidHoursLater: "NT_INVALID_HOURS_LATER",
+  NtInvalidDaysLater: "NT_INVALID_DAYS_LATER",
 } as const;
 
 export type NotificationErrorCode =

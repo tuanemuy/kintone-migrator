@@ -39,9 +39,15 @@ function fromKintoneResource(raw: KintoneCustomizeResource): RemoteResource {
       },
     };
   }
+  if (!raw.url) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "URL resource from kintone API is missing url property",
+    );
+  }
   return {
     type: "URL",
-    url: raw.url ?? "",
+    url: raw.url,
   };
 }
 

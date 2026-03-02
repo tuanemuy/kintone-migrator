@@ -197,14 +197,17 @@ function parseReminderNotification(
     parseTarget(item, i, "Reminder"),
   );
 
-  if (
-    typeof raw.daysLater !== "number" ||
-    !Number.isInteger(raw.daysLater) ||
-    raw.daysLater < 0
-  ) {
+  if (typeof raw.daysLater !== "number") {
     throw new BusinessRuleError(
       NotificationErrorCode.NtMissingRequiredField,
-      `Reminder notification at index ${index} must have a non-negative integer "daysLater" property`,
+      `Reminder notification at index ${index} must have a "daysLater" property`,
+    );
+  }
+
+  if (!Number.isInteger(raw.daysLater) || raw.daysLater < 0) {
+    throw new BusinessRuleError(
+      NotificationErrorCode.NtInvalidDaysLater,
+      `Reminder notification at index ${index} has invalid "daysLater": ${raw.daysLater}. Must be a non-negative integer`,
     );
   }
 

@@ -514,5 +514,62 @@ actions:
         }),
       );
     });
+
+    it("should throw AcDuplicateIndex for duplicate index values across actions", () => {
+      const yaml = `
+actions:
+  action1:
+    index: 0
+    destApp:
+      code: app1
+    mappings: []
+    entities: []
+  action2:
+    index: 0
+    destApp:
+      code: app2
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcDuplicateIndex,
+        }),
+      );
+    });
+
+    it("should coerce numeric destApp.app to string", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      app: 123
+    mappings: []
+    entities: []
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(config.actions.test.destApp.app).toBe("123");
+    });
+
+    it("should treat non-string srcField with srcType FIELD as missing", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: app
+    mappings:
+      - srcType: FIELD
+        srcField: 123
+        destField: field1
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
   });
 });

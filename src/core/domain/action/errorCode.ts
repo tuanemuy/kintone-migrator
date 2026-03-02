@@ -5,6 +5,7 @@ export const ActionErrorCode = {
   AcInvalidSrcType: "AC_INVALID_SRC_TYPE",
   AcInvalidEntityType: "AC_INVALID_ENTITY_TYPE",
   AcEmptyActionName: "AC_EMPTY_ACTION_NAME",
+  AcDuplicateIndex: "AC_DUPLICATE_INDEX",
 } as const;
 
 export type ActionErrorCode =

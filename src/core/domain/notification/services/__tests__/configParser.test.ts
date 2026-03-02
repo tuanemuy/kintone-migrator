@@ -761,4 +761,86 @@ reminder:
       BusinessRuleError,
     );
   });
+
+  it("should accept daysLater: 0 as valid", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 0
+      hoursLater: 9
+      filterCond: ""
+      title: Due Today
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.reminder?.notifications[0].daysLater).toBe(0);
+  });
+
+  it("should throw NtInvalidDaysLater for fractional daysLater", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1.5
+      hoursLater: 9
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidDaysLater,
+      }),
+    );
+  });
+
+  it("should throw NtInvalidDaysLater for negative daysLater", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: -1
+      hoursLater: 9
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    expect(() => NotificationConfigParser.parse(yaml)).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidDaysLater,
+      }),
+    );
+  });
+
+  it("should accept hoursLater: 0 as valid", () => {
+    const yaml = `
+reminder:
+  timezone: Asia/Tokyo
+  notifications:
+    - code: due_date
+      daysLater: 1
+      hoursLater: 0
+      filterCond: ""
+      title: Due
+      targets:
+        - entity:
+            type: USER
+            code: admin
+`;
+    const config = NotificationConfigParser.parse(yaml);
+    expect(config.reminder?.notifications[0].hoursLater).toBe(0);
+  });
 });

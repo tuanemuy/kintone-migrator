@@ -19,6 +19,17 @@ function parsePluginEntry(raw: unknown, index: number): PluginConfig {
     );
   }
 
+  if (
+    raw.enabled !== undefined &&
+    raw.enabled !== null &&
+    typeof raw.enabled !== "boolean"
+  ) {
+    throw new BusinessRuleError(
+      PluginErrorCode.PlInvalidConfigStructure,
+      `Plugin at index ${index} has invalid "enabled": must be a boolean`,
+    );
+  }
+
   return {
     id: raw.id,
     name: typeof raw.name === "string" ? raw.name : "",

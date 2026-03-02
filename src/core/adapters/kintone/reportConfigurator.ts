@@ -139,13 +139,13 @@ function fromKintonePeriodicReportPeriod(
     );
   }
 
-  let dayOfMonth: number | string | undefined;
+  let dayOfMonth: number | "END_OF_MONTH" | undefined;
   if (raw.dayOfMonth !== undefined) {
     if (String(raw.dayOfMonth) === "END_OF_MONTH") {
       dayOfMonth = "END_OF_MONTH";
     } else {
       const parsed = Number(raw.dayOfMonth);
-      if (Number.isNaN(parsed)) {
+      if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
         throw new SystemError(
           SystemErrorCode.ExternalApiError,
           `Unexpected periodicReport dayOfMonth value from kintone API: ${String(raw.dayOfMonth)}`,
@@ -176,8 +176,16 @@ function fromKintonePeriodicReportPeriod(
       : {}),
     ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
     ...(raw.time !== undefined ? { time: raw.time } : {}),
-    ...(raw.dayOfWeek !== undefined && isDayOfWeek(raw.dayOfWeek)
-      ? { dayOfWeek: raw.dayOfWeek }
+    ...(raw.dayOfWeek !== undefined
+      ? (() => {
+          if (!isDayOfWeek(raw.dayOfWeek)) {
+            throw new SystemError(
+              SystemErrorCode.ExternalApiError,
+              `Unexpected periodicReport dayOfWeek value from kintone API: ${raw.dayOfWeek}`,
+            );
+          }
+          return { dayOfWeek: raw.dayOfWeek };
+        })()
       : {}),
     ...(raw.minute !== undefined ? { minute: raw.minute } : {}),
   };

@@ -181,5 +181,33 @@ plugins:
         }),
       );
     });
+
+    it("should throw PlInvalidConfigStructure for string enabled value", () => {
+      const yaml = `
+plugins:
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: テストプラグイン
+    enabled: "false"
+`;
+      expect(() => PluginConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: PluginErrorCode.PlInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw PlInvalidConfigStructure for numeric enabled value", () => {
+      const yaml = `
+plugins:
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: テストプラグイン
+    enabled: 1
+`;
+      expect(() => PluginConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: PluginErrorCode.PlInvalidConfigStructure,
+        }),
+      );
+    });
   });
 });

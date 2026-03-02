@@ -1095,5 +1095,78 @@ reports:
 `;
       expect(() => ReportConfigParser.parse(yaml)).toThrow(BusinessRuleError);
     });
+
+    it("should throw for non-array groups", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    groups: not_an_array
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ReportErrorCode.RtInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-array aggregations", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    aggregations: not_an_array
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ReportErrorCode.RtInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for non-array sorts", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    sorts: not_an_array
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ReportErrorCode.RtInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for fractional dayOfMonth", () => {
+      const yaml = `
+reports:
+  テスト:
+    chartType: BAR
+    periodicReport:
+      active: true
+      period:
+        every: MONTH
+        dayOfMonth: 1.5
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ReportErrorCode.RtInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for empty report name", () => {
+      const yaml = `
+reports:
+  "":
+    chartType: BAR
+`;
+      expect(() => ReportConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ReportErrorCode.RtEmptyReportName,
+        }),
+      );
+    });
   });
 });

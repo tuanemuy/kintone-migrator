@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { ActionErrorCode } from "@/core/domain/action/errorCode";
+import type { BusinessRuleErrorCode } from "@/core/domain/error";
 import { BusinessRuleError } from "@/core/domain/error";
 import { parseYamlConfig } from "../yamlConfigParser";
 
 const errorCodes = {
-  emptyConfigText: ActionErrorCode.AcEmptyConfigText,
-  invalidConfigYaml: ActionErrorCode.AcInvalidConfigYaml,
-  invalidConfigStructure: ActionErrorCode.AcInvalidConfigStructure,
+  emptyConfigText: "TEST_EMPTY" as BusinessRuleErrorCode,
+  invalidConfigYaml: "TEST_INVALID_YAML" as BusinessRuleErrorCode,
+  invalidConfigStructure: "TEST_INVALID_STRUCTURE" as BusinessRuleErrorCode,
 };
 
 describe("parseYamlConfig", () => {
@@ -69,17 +69,17 @@ describe("parseYamlConfig", () => {
   it("should throw with correct error code", () => {
     expect(() => parseYamlConfig("", errorCodes, "Test")).toThrow(
       expect.objectContaining({
-        code: ActionErrorCode.AcEmptyConfigText,
+        code: errorCodes.emptyConfigText,
       }),
     );
     expect(() => parseYamlConfig("key: [unclosed", errorCodes, "Test")).toThrow(
       expect.objectContaining({
-        code: ActionErrorCode.AcInvalidConfigYaml,
+        code: errorCodes.invalidConfigYaml,
       }),
     );
     expect(() => parseYamlConfig("just a string", errorCodes, "Test")).toThrow(
       expect.objectContaining({
-        code: ActionErrorCode.AcInvalidConfigStructure,
+        code: errorCodes.invalidConfigStructure,
       }),
     );
   });

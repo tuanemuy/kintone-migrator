@@ -160,7 +160,7 @@ export type PeriodicReportPeriod = Readonly<{
   every: PeriodicReportEvery;
   month?: number;
   pattern?: PeriodicReportPattern;
-  dayOfMonth?: number | string;
+  dayOfMonth?: number | "END_OF_MONTH";
   time?: string;
   dayOfWeek?: DayOfWeek;
   minute?: number;

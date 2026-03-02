@@ -155,16 +155,16 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
     pattern = raw.pattern;
   }
 
-  let dayOfMonth: number | string | undefined;
+  let dayOfMonth: number | "END_OF_MONTH" | undefined;
   if (raw.dayOfMonth !== undefined && raw.dayOfMonth !== null) {
     if (raw.dayOfMonth === "END_OF_MONTH") {
       dayOfMonth = "END_OF_MONTH";
     } else {
       const parsed = Number(raw.dayOfMonth);
-      if (Number.isNaN(parsed)) {
+      if (!Number.isInteger(parsed)) {
         throw new BusinessRuleError(
           ReportErrorCode.RtInvalidConfigStructure,
-          `periodicReport.period has invalid dayOfMonth: ${String(raw.dayOfMonth)}. Must be a number or "END_OF_MONTH"`,
+          `periodicReport.period has invalid dayOfMonth: ${String(raw.dayOfMonth)}. Must be an integer or "END_OF_MONTH"`,
         );
       }
       if (parsed < 1 || parsed > 31) {
@@ -232,7 +232,8 @@ function parsePeriodicReport(raw: unknown): PeriodicReport {
     );
   }
 
-  if (typeof raw.active !== "boolean") {
+  const active = raw.active;
+  if (typeof active !== "boolean") {
     throw new BusinessRuleError(
       ReportErrorCode.RtInvalidConfigStructure,
       "periodicReport.active must be a boolean",
@@ -242,7 +243,7 @@ function parsePeriodicReport(raw: unknown): PeriodicReport {
   const period = parsePeriodicReportPeriod(raw.period);
 
   return {
-    active: raw.active as boolean,
+    active,
     period,
   };
 }
@@ -299,10 +300,22 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
   }
   const index = typeof raw.index === "number" ? raw.index : 0;
 
+  if (raw.groups !== undefined && !Array.isArray(raw.groups)) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `Report "${reportName}" has invalid groups: must be an array`,
+    );
+  }
   const groups = Array.isArray(raw.groups)
     ? raw.groups.map((item: unknown, i: number) => parseGroup(item, i))
     : [];
 
+  if (raw.aggregations !== undefined && !Array.isArray(raw.aggregations)) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `Report "${reportName}" has invalid aggregations: must be an array`,
+    );
+  }
   const aggregations = Array.isArray(raw.aggregations)
     ? raw.aggregations.map((item: unknown, i: number) =>
         parseAggregation(item, i),
@@ -311,6 +324,12 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
 
   const filterCond = typeof raw.filterCond === "string" ? raw.filterCond : "";
 
+  if (raw.sorts !== undefined && !Array.isArray(raw.sorts)) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `Report "${reportName}" has invalid sorts: must be an array`,
+    );
+  }
   const sorts = Array.isArray(raw.sorts)
     ? raw.sorts.map((item: unknown, i: number) => parseSort(item, i))
     : [];

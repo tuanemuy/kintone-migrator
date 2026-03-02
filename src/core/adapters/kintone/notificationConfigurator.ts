@@ -26,7 +26,7 @@ type KintoneGeneralNotification = {
   fileImported: boolean;
 };
 
-type KintonePerRecordTarget = {
+type KintoneNotificationTarget = {
   entity: KintoneNotificationEntity;
   includeSubs?: boolean;
 };
@@ -34,12 +34,7 @@ type KintonePerRecordTarget = {
 type KintonePerRecordNotification = {
   filterCond: string;
   title: string;
-  targets: KintonePerRecordTarget[];
-};
-
-type KintoneReminderTarget = {
-  entity: KintoneNotificationEntity;
-  includeSubs?: boolean;
+  targets: KintoneNotificationTarget[];
 };
 
 type KintoneReminderNotification = {
@@ -48,7 +43,7 @@ type KintoneReminderNotification = {
     | { code: string; daysLater: string; time: string };
   filterCond: string;
   title: string;
-  targets: KintoneReminderTarget[];
+  targets: KintoneNotificationTarget[];
 };
 
 function fromKintoneEntity(raw: KintoneNotificationEntity): NotificationEntity {
@@ -82,9 +77,7 @@ function fromKintoneGeneralNotification(
   return result;
 }
 
-function fromKintonePerRecordTarget(
-  raw: KintonePerRecordTarget,
-): NotificationTarget {
+function fromKintoneTarget(raw: KintoneNotificationTarget): NotificationTarget {
   const entity = fromKintoneEntity(raw.entity);
 
   const result: NotificationTarget = { entity };
@@ -102,22 +95,8 @@ function fromKintonePerRecordNotification(
   return {
     filterCond: raw.filterCond,
     title: raw.title,
-    targets: raw.targets.map(fromKintonePerRecordTarget),
+    targets: raw.targets.map(fromKintoneTarget),
   };
-}
-
-function fromKintoneReminderTarget(
-  raw: KintoneReminderTarget,
-): NotificationTarget {
-  const entity = fromKintoneEntity(raw.entity);
-
-  const result: NotificationTarget = { entity };
-
-  if (raw.includeSubs !== undefined) {
-    return { ...result, includeSubs: raw.includeSubs };
-  }
-
-  return result;
 }
 
 function fromKintoneReminderNotification(
@@ -136,7 +115,7 @@ function fromKintoneReminderNotification(
     daysLater,
     filterCond: raw.filterCond,
     title: raw.title,
-    targets: raw.targets.map(fromKintoneReminderTarget),
+    targets: raw.targets.map(fromKintoneTarget),
   };
 
   if ("hoursLater" in raw.timing) {
@@ -186,9 +165,7 @@ function toKintoneGeneralNotification(
   return result;
 }
 
-function toKintonePerRecordTarget(
-  target: NotificationTarget,
-): Record<string, unknown> {
+function toKintoneTarget(target: NotificationTarget): Record<string, unknown> {
   const result: Record<string, unknown> = {
     entity: toKintoneEntity(target.entity),
   };
@@ -206,22 +183,8 @@ function toKintonePerRecordNotification(
   return {
     filterCond: notification.filterCond,
     title: notification.title,
-    targets: notification.targets.map(toKintonePerRecordTarget),
+    targets: notification.targets.map(toKintoneTarget),
   };
-}
-
-function toKintoneReminderTarget(
-  target: NotificationTarget,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {
-    entity: toKintoneEntity(target.entity),
-  };
-
-  if (target.includeSubs !== undefined) {
-    result.includeSubs = target.includeSubs;
-  }
-
-  return result;
 }
 
 function toKintoneReminderNotification(
@@ -254,7 +217,7 @@ function toKintoneReminderNotification(
     timing,
     filterCond: notification.filterCond,
     title: notification.title,
-    targets: notification.targets.map(toKintoneReminderTarget),
+    targets: notification.targets.map(toKintoneTarget),
   };
 }
 

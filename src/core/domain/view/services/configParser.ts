@@ -69,9 +69,15 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
       builtinType: String(raw.builtinType),
     }),
     ...(Array.isArray(raw.fields) && {
-      fields: raw.fields.map((f: unknown) =>
-        typeof f === "string" ? f : String(f),
-      ),
+      fields: raw.fields.map((f: unknown, i: number) => {
+        if (typeof f !== "string") {
+          throw new BusinessRuleError(
+            ViewErrorCode.VwInvalidConfigStructure,
+            `View "${name}" has non-string field at index ${i}: ${String(f)}`,
+          );
+        }
+        return f;
+      }),
     }),
     ...(raw.date !== undefined && { date: String(raw.date) }),
     ...(raw.title !== undefined && { title: String(raw.title) }),
