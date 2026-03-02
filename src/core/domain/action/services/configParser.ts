@@ -1,16 +1,14 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import { ActionErrorCode } from "../errorCode";
 import type {
   ActionDestApp,
   ActionEntity,
-  ActionEntityType,
   ActionMapping,
-  ActionMappingSrcType,
 } from "../valueObject";
-import { VALID_ENTITY_TYPES, VALID_SRC_TYPES } from "../valueObject";
+import { isActionEntityType, isActionMappingSrcType } from "../valueObject";
 
 function parseDestApp(raw: unknown, actionName: string): ActionDestApp {
   if (!isRecord(raw)) {
@@ -20,15 +18,21 @@ function parseDestApp(raw: unknown, actionName: string): ActionDestApp {
     );
   }
 
-  const obj = raw;
   const result: { app?: string; code?: string } = {};
 
-  if (obj.app !== undefined && obj.app !== null) {
-    result.app = String(obj.app);
+  if (raw.app !== undefined && raw.app !== null) {
+    result.app = String(raw.app);
   }
 
-  if (obj.code !== undefined && obj.code !== null) {
-    result.code = String(obj.code);
+  if (raw.code !== undefined && raw.code !== null) {
+    result.code = String(raw.code);
+  }
+
+  if (result.app === undefined && result.code === undefined) {
+    throw new BusinessRuleError(
+      ActionErrorCode.AcInvalidConfigStructure,
+      `Action "${actionName}" destApp must have at least "app" or "code" property`,
+    );
   }
 
   return result;
@@ -46,16 +50,14 @@ function parseMapping(
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.srcType !== "string" || !VALID_SRC_TYPES.has(obj.srcType)) {
+  if (typeof raw.srcType !== "string" || !isActionMappingSrcType(raw.srcType)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidSrcType,
-      `Action "${actionName}" mapping at index ${index} has invalid srcType: ${String(obj.srcType)}. Must be FIELD or RECORD_URL`,
+      `Action "${actionName}" mapping at index ${index} has invalid srcType: ${String(raw.srcType)}. Must be FIELD or RECORD_URL`,
     );
   }
 
-  if (typeof obj.destField !== "string" || obj.destField.length === 0) {
+  if (typeof raw.destField !== "string" || raw.destField.length === 0) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" mapping at index ${index} must have a non-empty "destField" property`,
@@ -63,14 +65,21 @@ function parseMapping(
   }
 
   const result: ActionMapping = {
-    srcType: obj.srcType as ActionMappingSrcType,
-    destField: obj.destField,
-    ...(obj.srcField !== undefined &&
-    obj.srcField !== null &&
-    typeof obj.srcField === "string"
-      ? { srcField: obj.srcField }
+    srcType: raw.srcType,
+    destField: raw.destField,
+    ...(raw.srcField !== undefined &&
+    raw.srcField !== null &&
+    typeof raw.srcField === "string"
+      ? { srcField: raw.srcField }
       : {}),
   };
+
+  if (result.srcType === "FIELD" && result.srcField === undefined) {
+    throw new BusinessRuleError(
+      ActionErrorCode.AcInvalidConfigStructure,
+      `Action "${actionName}" mapping at index ${index} with srcType "FIELD" must have a "srcField" property`,
+    );
+  }
 
   return result;
 }
@@ -87,35 +96,25 @@ function parseEntity(
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !VALID_ENTITY_TYPES.has(obj.type)) {
+  if (typeof raw.type !== "string" || !isActionEntityType(raw.type)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidEntityType,
-      `Action "${actionName}" entity at index ${index} has invalid type: ${String(obj.type)}. Must be USER, GROUP, or ORGANIZATION`,
+      `Action "${actionName}" entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, or ORGANIZATION`,
     );
   }
 
-  if (typeof obj.code !== "string" || obj.code.length === 0) {
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" entity at index ${index} must have a non-empty "code" property`,
     );
   }
 
-  return { type: obj.type as ActionEntityType, code: obj.code };
+  return { type: raw.type, code: raw.code };
 }
 
 function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
-  if (!isRecord(raw)) {
-    throw new BusinessRuleError(
-      ActionErrorCode.AcInvalidConfigStructure,
-      `Action "${actionName}" must be an object`,
-    );
-  }
-
-  const obj = raw;
-
+  // Reject empty keys early to produce a clearer error message
   if (actionName.length === 0) {
     throw new BusinessRuleError(
       ActionErrorCode.AcEmptyActionName,
@@ -123,48 +122,59 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
     );
   }
 
-  if (typeof obj.index !== "number") {
+  if (!isRecord(raw)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
-      `Action "${actionName}" must have a numeric "index" property`,
+      `Action "${actionName}" must be an object`,
     );
   }
 
-  if (!isRecord(obj.destApp)) {
+  if (
+    typeof raw.index !== "number" ||
+    !Number.isInteger(raw.index) ||
+    raw.index < 0
+  ) {
+    throw new BusinessRuleError(
+      ActionErrorCode.AcInvalidConfigStructure,
+      `Action "${actionName}" must have a non-negative integer "index" property`,
+    );
+  }
+
+  if (!isRecord(raw.destApp)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have a "destApp" object`,
     );
   }
 
-  const destApp = parseDestApp(obj.destApp, actionName);
+  const destApp = parseDestApp(raw.destApp, actionName);
 
-  if (!Array.isArray(obj.mappings)) {
+  if (!Array.isArray(raw.mappings)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have a "mappings" array`,
     );
   }
 
-  const mappings = obj.mappings.map((item: unknown, i: number) =>
+  const mappings = raw.mappings.map((item: unknown, i: number) =>
     parseMapping(item, i, actionName),
   );
 
-  if (!Array.isArray(obj.entities)) {
+  if (!Array.isArray(raw.entities)) {
     throw new BusinessRuleError(
       ActionErrorCode.AcInvalidConfigStructure,
       `Action "${actionName}" must have an "entities" array`,
     );
   }
 
-  const entities = obj.entities.map((item: unknown, i: number) =>
+  const entities = raw.entities.map((item: unknown, i: number) =>
     parseEntity(item, i, actionName),
   );
 
-  const filterCond = typeof obj.filterCond === "string" ? obj.filterCond : "";
+  const filterCond = typeof raw.filterCond === "string" ? raw.filterCond : "";
 
   return {
-    index: obj.index,
+    index: raw.index,
     name: actionName,
     destApp,
     mappings,
@@ -175,31 +185,15 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
 
 export const ActionConfigParser = {
   parse: (rawText: string): ActionsConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        ActionErrorCode.AcEmptyConfigText,
-        "Action config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        ActionErrorCode.AcInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        ActionErrorCode.AcInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const obj = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: ActionErrorCode.AcEmptyConfigText,
+        invalidConfigYaml: ActionErrorCode.AcInvalidConfigYaml,
+        invalidConfigStructure: ActionErrorCode.AcInvalidConfigStructure,
+      },
+      "Action",
+    );
 
     if (!isRecord(obj.actions)) {
       throw new BusinessRuleError(
@@ -213,6 +207,17 @@ export const ActionConfigParser = {
 
     for (const [key, value] of Object.entries(rawActions)) {
       actions[key] = parseActionConfig(value, key);
+    }
+
+    const seenIndices = new Set<number>();
+    for (const [key, action] of Object.entries(actions)) {
+      if (seenIndices.has(action.index)) {
+        throw new BusinessRuleError(
+          ActionErrorCode.AcDuplicateIndex,
+          `Duplicate action index ${action.index} found in action "${key}"`,
+        );
+      }
+      seenIndices.add(action.index);
     }
 
     return { actions };

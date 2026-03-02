@@ -3,23 +3,13 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type {
   GeneralNotification,
+  NotificationTarget,
   PerRecordNotification,
-  PerRecordNotificationTarget,
   ReminderNotification,
-  ReminderNotificationTarget,
 } from "@/core/domain/notification/entity";
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
-import type {
-  NotificationEntity,
-  NotificationEntityType,
-} from "@/core/domain/notification/valueObject";
-
-const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
-  "USER",
-  "GROUP",
-  "ORGANIZATION",
-  "FIELD_ENTITY",
-]);
+import type { NotificationEntity } from "@/core/domain/notification/valueObject";
+import { isNotificationEntityType } from "@/core/domain/notification/valueObject";
 
 type KintoneNotificationEntity = {
   type: string;
@@ -36,7 +26,7 @@ type KintoneGeneralNotification = {
   fileImported: boolean;
 };
 
-type KintonePerRecordTarget = {
+type KintoneNotificationTarget = {
   entity: KintoneNotificationEntity;
   includeSubs?: boolean;
 };
@@ -44,12 +34,7 @@ type KintonePerRecordTarget = {
 type KintonePerRecordNotification = {
   filterCond: string;
   title: string;
-  targets: KintonePerRecordTarget[];
-};
-
-type KintoneReminderTarget = {
-  entity: KintoneNotificationEntity;
-  includeSubs?: boolean;
+  targets: KintoneNotificationTarget[];
 };
 
 type KintoneReminderNotification = {
@@ -58,21 +43,17 @@ type KintoneReminderNotification = {
     | { code: string; daysLater: string; time: string };
   filterCond: string;
   title: string;
-  targets: KintoneReminderTarget[];
+  targets: KintoneNotificationTarget[];
 };
 
-function validateEntityType(type: string, context: string): void {
-  if (!VALID_ENTITY_TYPES.has(type)) {
+function fromKintoneEntity(raw: KintoneNotificationEntity): NotificationEntity {
+  if (!isNotificationEntityType(raw.type)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
-      `Unexpected entity type from kintone API (${context}): ${type}`,
+      `Unexpected entity type from kintone API (entity): ${raw.type}`,
     );
   }
-}
-
-function fromKintoneEntity(raw: KintoneNotificationEntity): NotificationEntity {
-  validateEntityType(raw.type, "entity");
-  return { type: raw.type as NotificationEntityType, code: raw.code };
+  return { type: raw.type, code: raw.code };
 }
 
 function fromKintoneGeneralNotification(
@@ -96,12 +77,10 @@ function fromKintoneGeneralNotification(
   return result;
 }
 
-function fromKintonePerRecordTarget(
-  raw: KintonePerRecordTarget,
-): PerRecordNotificationTarget {
+function fromKintoneTarget(raw: KintoneNotificationTarget): NotificationTarget {
   const entity = fromKintoneEntity(raw.entity);
 
-  const result: PerRecordNotificationTarget = { entity };
+  const result: NotificationTarget = { entity };
 
   if (raw.includeSubs !== undefined) {
     return { ...result, includeSubs: raw.includeSubs };
@@ -116,37 +95,38 @@ function fromKintonePerRecordNotification(
   return {
     filterCond: raw.filterCond,
     title: raw.title,
-    targets: raw.targets.map(fromKintonePerRecordTarget),
+    targets: raw.targets.map(fromKintoneTarget),
   };
-}
-
-function fromKintoneReminderTarget(
-  raw: KintoneReminderTarget,
-): ReminderNotificationTarget {
-  const entity = fromKintoneEntity(raw.entity);
-
-  const result: ReminderNotificationTarget = { entity };
-
-  if (raw.includeSubs !== undefined) {
-    return { ...result, includeSubs: raw.includeSubs };
-  }
-
-  return result;
 }
 
 function fromKintoneReminderNotification(
   raw: KintoneReminderNotification,
 ): ReminderNotification {
+  const daysLater = Number(raw.timing.daysLater);
+  if (!Number.isFinite(daysLater)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected non-numeric daysLater from kintone API: ${raw.timing.daysLater}`,
+    );
+  }
+
   const result: ReminderNotification = {
     code: raw.timing.code,
-    daysLater: Number(raw.timing.daysLater),
+    daysLater,
     filterCond: raw.filterCond,
     title: raw.title,
-    targets: raw.targets.map(fromKintoneReminderTarget),
+    targets: raw.targets.map(fromKintoneTarget),
   };
 
   if ("hoursLater" in raw.timing) {
-    return { ...result, hoursLater: Number(raw.timing.hoursLater) };
+    const hoursLater = Number(raw.timing.hoursLater);
+    if (!Number.isFinite(hoursLater)) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Unexpected non-numeric hoursLater from kintone API: ${raw.timing.hoursLater}`,
+      );
+    }
+    return { ...result, hoursLater };
   }
 
   if ("time" in raw.timing) {
@@ -185,9 +165,7 @@ function toKintoneGeneralNotification(
   return result;
 }
 
-function toKintonePerRecordTarget(
-  target: PerRecordNotificationTarget,
-): Record<string, unknown> {
+function toKintoneTarget(target: NotificationTarget): Record<string, unknown> {
   const result: Record<string, unknown> = {
     entity: toKintoneEntity(target.entity),
   };
@@ -205,22 +183,8 @@ function toKintonePerRecordNotification(
   return {
     filterCond: notification.filterCond,
     title: notification.title,
-    targets: notification.targets.map(toKintonePerRecordTarget),
+    targets: notification.targets.map(toKintoneTarget),
   };
-}
-
-function toKintoneReminderTarget(
-  target: ReminderNotificationTarget,
-): Record<string, unknown> {
-  const result: Record<string, unknown> = {
-    entity: toKintoneEntity(target.entity),
-  };
-
-  if (target.includeSubs !== undefined) {
-    result.includeSubs = target.includeSubs;
-  }
-
-  return result;
 }
 
 function toKintoneReminderNotification(
@@ -253,7 +217,7 @@ function toKintoneReminderNotification(
     timing,
     filterCond: notification.filterCond,
     title: notification.title,
-    targets: notification.targets.map(toKintoneReminderTarget),
+    targets: notification.targets.map(toKintoneTarget),
   };
 }
 

@@ -77,14 +77,6 @@ describe("ActionDiffDetector", () => {
       expect(result.entries[0].details).toContain("index");
     });
 
-    it("should detect name change", () => {
-      const local = makeConfig({ a: makeAction({ name: "new" }) });
-      const remote = makeConfig({ a: makeAction({ name: "old" }) });
-      const result = ActionDiffDetector.detect(local, remote);
-      expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("name");
-    });
-
     it("should detect destApp change", () => {
       const local = makeConfig({ a: makeAction({ destApp: { app: "2" } }) });
       const remote = makeConfig({ a: makeAction({ destApp: { app: "1" } }) });

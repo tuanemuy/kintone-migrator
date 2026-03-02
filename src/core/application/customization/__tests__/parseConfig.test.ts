@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { ConfigParser } from "@/core/domain/customization/services/configParser";
+import { CustomizationConfigParser } from "@/core/domain/customization/services/configParser";
 import { isValidationError } from "../../error";
 import { parseConfigText } from "../parseConfig";
 
@@ -37,7 +37,7 @@ desktop:
   });
 
   it("BusinessRuleError以外のエラーはそのまま再スローされる", () => {
-    vi.spyOn(ConfigParser, "parse").mockImplementation(() => {
+    vi.spyOn(CustomizationConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
     expect(() => parseConfigText("dummy")).toThrow(TypeError);

@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import type { ActionDiff, ActionDiffEntry } from "../valueObject";
 
@@ -8,9 +9,6 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
 
   if (local.index !== remote.index) {
     diffs.push(`index: ${remote.index} -> ${local.index}`);
-  }
-  if (local.name !== remote.name) {
-    diffs.push(`name: "${remote.name}" -> "${local.name}"`);
   }
   if (!deepEqual(local.destApp, remote.destApp)) {
     diffs.push("destApp changed");
@@ -34,39 +32,39 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
   return diffs;
 }
 
+function destAppLabel(action: ActionConfig): string {
+  return `dest: ${action.destApp.app ?? action.destApp.code ?? "(unspecified)"}`;
+}
+
 export const ActionDiffDetector = {
   detect: (local: ActionsConfig, remote: ActionsConfig): ActionDiff => {
-    const entries: ActionDiffEntry[] = [];
-
-    for (const [name, localAction] of Object.entries(local.actions)) {
-      const remoteAction = remote.actions[name];
-      if (!remoteAction) {
-        entries.push({
+    const entries = detectRecordDiff<ActionConfig, ActionDiffEntry>(
+      local.actions,
+      remote.actions,
+      {
+        onAdded: (name, localAction) => ({
           type: "added",
           actionName: name,
-          details: `dest: ${localAction.destApp.app ?? localAction.destApp.code ?? "(unspecified)"}`,
-        });
-      } else {
-        const diffs = compareActions(localAction, remoteAction);
-        if (diffs.length > 0) {
-          entries.push({
-            type: "modified",
-            actionName: name,
-            details: diffs.join(", "),
-          });
-        }
-      }
-    }
-
-    for (const [name, remoteAction] of Object.entries(remote.actions)) {
-      if (!local.actions[name]) {
-        entries.push({
+          details: destAppLabel(localAction),
+        }),
+        onModified: (name, localAction, remoteAction) => {
+          const diffs = compareActions(localAction, remoteAction);
+          if (diffs.length > 0) {
+            return {
+              type: "modified",
+              actionName: name,
+              details: diffs.join(", "),
+            };
+          }
+          return undefined;
+        },
+        onDeleted: (name, remoteAction) => ({
           type: "deleted",
           actionName: name,
-          details: `dest: ${remoteAction.destApp.app ?? remoteAction.destApp.code ?? "(unspecified)"}`,
-        });
-      }
-    }
+          details: destAppLabel(remoteAction),
+        }),
+      },
+    );
 
     return buildDiffResult(entries);
   },

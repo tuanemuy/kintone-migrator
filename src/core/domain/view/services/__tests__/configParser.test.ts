@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { BusinessRuleError } from "@/core/domain/error";
+import { ViewErrorCode } from "../../errorCode";
 import { ViewConfigParser } from "../configParser";
 
 describe("ViewConfigParser", () => {
@@ -141,62 +142,191 @@ views:
   });
 
   describe("error cases", () => {
-    it("should throw for empty text", () => {
-      expect(() => ViewConfigParser.parse("")).toThrow();
-      expect(() => ViewConfigParser.parse("  ")).toThrow();
+    it("should throw VwEmptyConfigText for empty text", () => {
+      expect(() => ViewConfigParser.parse("")).toThrow(
+        expect.objectContaining({ code: ViewErrorCode.VwEmptyConfigText }),
+      );
+      expect(() => ViewConfigParser.parse("  ")).toThrow(
+        expect.objectContaining({ code: ViewErrorCode.VwEmptyConfigText }),
+      );
     });
 
-    it("should throw BusinessRuleError for empty text", () => {
-      expect.assertions(1);
-      try {
-        ViewConfigParser.parse("");
-      } catch (error) {
-        expect(isBusinessRuleError(error)).toBe(true);
-      }
+    it("should throw VwInvalidConfigYaml for invalid YAML", () => {
+      expect(() => ViewConfigParser.parse("{ invalid: yaml:")).toThrow(
+        expect.objectContaining({ code: ViewErrorCode.VwInvalidConfigYaml }),
+      );
     });
 
-    it("should throw for invalid YAML", () => {
-      expect(() => ViewConfigParser.parse("{ invalid: yaml:")).toThrow();
+    it("should throw VwInvalidConfigStructure for non-object config", () => {
+      expect(() => ViewConfigParser.parse("just a string")).toThrow(
+        expect.objectContaining({
+          code: ViewErrorCode.VwInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("should throw for non-object config", () => {
-      expect(() => ViewConfigParser.parse("just a string")).toThrow();
+    it("should throw VwInvalidConfigStructure for missing views key", () => {
+      expect(() => ViewConfigParser.parse("other: value")).toThrow(
+        expect.objectContaining({
+          code: ViewErrorCode.VwInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("should throw for missing views key", () => {
-      expect(() => ViewConfigParser.parse("other: value")).toThrow();
+    it("should throw VwInvalidConfigStructure for views as array", () => {
+      expect(() => ViewConfigParser.parse("views:\n  - item")).toThrow(
+        expect.objectContaining({
+          code: ViewErrorCode.VwInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("should throw for views as array", () => {
-      expect(() => ViewConfigParser.parse("views:\n  - item")).toThrow();
-    });
-
-    it("should throw for invalid view type", () => {
+    it("should throw VwInvalidViewType for invalid view type", () => {
       const yaml = `
 views:
   test:
     type: INVALID
     index: 0
 `;
-      expect(() => ViewConfigParser.parse(yaml)).toThrow();
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({ code: ViewErrorCode.VwInvalidViewType }),
+      );
     });
 
-    it("should throw for view that is not an object", () => {
+    it("should throw VwInvalidConfigStructure for view that is not an object", () => {
       const yaml = `
 views:
   test: "not an object"
 `;
-      expect(() => ViewConfigParser.parse(yaml)).toThrow();
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ViewErrorCode.VwInvalidConfigStructure,
+        }),
+      );
     });
 
-    it("should throw for empty view name", () => {
+    it("should throw VwEmptyViewName for empty view name", () => {
       const yaml = `
 views:
   "":
     type: LIST
     index: 0
 `;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({ code: ViewErrorCode.VwEmptyViewName }),
+      );
+    });
+
+    it("should throw VwInvalidIndex for non-numeric index", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: "not_a_number"
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({ code: ViewErrorCode.VwInvalidIndex }),
+      );
+    });
+  });
+
+  describe("device type", () => {
+    it("should parse device: ANY", () => {
+      const yaml = `
+views:
+  custom:
+    type: CUSTOM
+    index: 0
+    html: "<div>test</div>"
+    device: ANY
+`;
+      const result = ViewConfigParser.parse(yaml);
+      expect(result.views.custom.device).toBe("ANY");
+    });
+
+    it("should parse device: DESKTOP", () => {
+      const yaml = `
+views:
+  custom:
+    type: CUSTOM
+    index: 0
+    html: "<div>test</div>"
+    device: DESKTOP
+`;
+      const result = ViewConfigParser.parse(yaml);
+      expect(result.views.custom.device).toBe("DESKTOP");
+    });
+
+    it("should throw for invalid device type", () => {
+      const yaml = `
+views:
+  custom:
+    type: CUSTOM
+    index: 0
+    device: MOBILE
+`;
       expect(() => ViewConfigParser.parse(yaml)).toThrow();
+    });
+  });
+
+  describe("validation", () => {
+    it("should throw for non-array fields", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: 0
+    fields: not_an_array
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for string pager", () => {
+      const yaml = `
+views:
+  test:
+    type: CUSTOM
+    index: 0
+    pager: "false"
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for negative index", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: -1
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for fractional index", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: 1.5
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+    });
+
+    it("should throw for non-string field element", () => {
+      const yaml = `
+views:
+  test:
+    type: LIST
+    index: 0
+    fields:
+      - field1
+      - 123
+`;
+      expect(() => ViewConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ViewErrorCode.VwInvalidConfigStructure,
+        }),
+      );
     });
   });
 });

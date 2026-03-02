@@ -7,9 +7,8 @@ import type {
   RemoteResource,
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
+import { isCustomizationScope } from "@/core/domain/customization/valueObject";
 import { isBusinessRuleError } from "@/core/domain/error";
-
-const VALID_SCOPES: ReadonlySet<string> = new Set(["ALL", "ADMIN", "NONE"]);
 
 type KintoneCustomizeResource = {
   type: "FILE" | "URL";
@@ -23,7 +22,13 @@ type KintoneCustomizeResource = {
 };
 
 function fromKintoneResource(raw: KintoneCustomizeResource): RemoteResource {
-  if (raw.type === "FILE" && raw.file) {
+  if (raw.type === "FILE") {
+    if (!raw.file) {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "FILE resource from kintone API is missing file metadata",
+      );
+    }
     return {
       type: "FILE",
       file: {
@@ -34,9 +39,15 @@ function fromKintoneResource(raw: KintoneCustomizeResource): RemoteResource {
       },
     };
   }
+  if (!raw.url) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "URL resource from kintone API is missing url property",
+    );
+  }
   return {
     type: "URL",
-    url: raw.url ?? "",
+    url: raw.url,
   };
 }
 
@@ -92,13 +103,13 @@ export class KintoneCustomizationConfigurator
       });
 
       const rawScope = String(response.scope);
-      if (!VALID_SCOPES.has(rawScope)) {
+      if (!isCustomizationScope(rawScope)) {
         throw new SystemError(
           SystemErrorCode.ExternalApiError,
           `Unexpected scope value from kintone API: ${rawScope}`,
         );
       }
-      const scope = rawScope as CustomizationScope;
+      const scope: CustomizationScope = rawScope;
 
       const desktop: RemotePlatform = {
         js: fromKintoneResourceList(

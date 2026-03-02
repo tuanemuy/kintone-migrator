@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CustomizationConfig } from "../../entity";
-import { ConfigParser } from "../configParser";
+import { CustomizationConfigParser } from "../configParser";
 import { CustomizationConfigSerializer } from "../configSerializer";
 
 describe("CustomizationConfigSerializer", () => {
@@ -15,7 +15,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.scope).toBe("ALL");
     expect(parsed.desktop.js).toEqual([
@@ -39,7 +39,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.scope).toBeUndefined();
     expect(parsed.desktop.js).toEqual([
@@ -61,7 +61,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.scope).toBe("ADMIN");
     expect(parsed.desktop.js).toEqual([
@@ -86,7 +86,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
@@ -139,7 +139,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.scope).toBe("NONE");
   });
@@ -152,7 +152,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.scope).toBe("ALL");
     expect(parsed.desktop.js).toEqual([]);
@@ -169,7 +169,7 @@ describe("CustomizationConfigSerializer", () => {
     };
 
     const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = ConfigParser.parse(yaml);
+    const parsed = CustomizationConfigParser.parse(yaml);
 
     expect(parsed.scope).toBeUndefined();
     expect(parsed.desktop.js).toEqual([]);

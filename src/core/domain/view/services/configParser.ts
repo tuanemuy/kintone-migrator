@@ -1,14 +1,21 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ViewConfig, ViewsConfig } from "../entity";
 import { ViewErrorCode } from "../errorCode";
-import {
-  type DeviceType,
-  VALID_DEVICE_TYPES,
-  VALID_VIEW_TYPES,
-  type ViewType,
-} from "../valueObject";
+import { isDeviceType, isViewType } from "../valueObject";
+
+function parseDeviceType(name: string, raw: unknown): ViewConfig["device"] {
+  if (raw === undefined || raw === null) return undefined;
+  const deviceStr = String(raw);
+  if (!isDeviceType(deviceStr)) {
+    throw new BusinessRuleError(
+      ViewErrorCode.VwInvalidDeviceType,
+      `View "${name}" has invalid device type: ${deviceStr}. Must be DESKTOP or ANY`,
+    );
+  }
+  return deviceStr;
+}
 
 function parseViewConfig(name: string, raw: unknown): ViewConfig {
   if (!isRecord(raw)) {
@@ -18,43 +25,69 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
     );
   }
 
-  const obj = raw;
-
-  if (typeof obj.type !== "string" || !VALID_VIEW_TYPES.has(obj.type)) {
+  if (typeof raw.type !== "string" || !isViewType(raw.type)) {
     throw new BusinessRuleError(
       ViewErrorCode.VwInvalidViewType,
-      `View "${name}" has invalid type: ${String(obj.type)}. Must be LIST, CALENDAR, or CUSTOM`,
+      `View "${name}" has invalid type: ${String(raw.type)}. Must be LIST, CALENDAR, or CUSTOM`,
     );
   }
 
+  // Reject non-numeric index early to avoid silent coercion
+  if (
+    raw.index !== undefined &&
+    (typeof raw.index !== "number" ||
+      !Number.isInteger(raw.index) ||
+      raw.index < 0)
+  ) {
+    throw new BusinessRuleError(
+      ViewErrorCode.VwInvalidIndex,
+      `View "${name}" has invalid index: ${String(raw.index)}. Must be a non-negative integer`,
+    );
+  }
+
+  if (raw.fields !== undefined && !Array.isArray(raw.fields)) {
+    throw new BusinessRuleError(
+      ViewErrorCode.VwInvalidConfigStructure,
+      `View "${name}" has invalid fields: must be an array`,
+    );
+  }
+
+  if (raw.pager !== undefined && typeof raw.pager !== "boolean") {
+    throw new BusinessRuleError(
+      ViewErrorCode.VwInvalidConfigStructure,
+      `View "${name}" has invalid pager: must be a boolean`,
+    );
+  }
+
+  const device = parseDeviceType(name, raw.device);
+
   const config: ViewConfig = {
-    type: obj.type as ViewType,
-    index: typeof obj.index === "number" ? obj.index : 0,
+    type: raw.type,
+    index: typeof raw.index === "number" ? raw.index : 0,
     name,
-    ...(obj.builtinType !== undefined && {
-      builtinType: String(obj.builtinType),
+    ...(raw.builtinType !== undefined && {
+      builtinType: String(raw.builtinType),
     }),
-    ...(Array.isArray(obj.fields) && { fields: obj.fields.map(String) }),
-    ...(obj.date !== undefined && { date: String(obj.date) }),
-    ...(obj.title !== undefined && { title: String(obj.title) }),
-    ...(obj.html !== undefined && { html: String(obj.html) }),
-    ...(obj.pager !== undefined && { pager: Boolean(obj.pager) }),
-    ...(obj.device !== undefined && {
-      device: (() => {
-        const deviceStr = String(obj.device);
-        if (!VALID_DEVICE_TYPES.has(deviceStr)) {
+    ...(Array.isArray(raw.fields) && {
+      fields: raw.fields.map((f: unknown, i: number) => {
+        if (typeof f !== "string") {
           throw new BusinessRuleError(
-            ViewErrorCode.VwInvalidDeviceType,
-            `View "${name}" has invalid device type: ${deviceStr}. Must be DESKTOP or ANY`,
+            ViewErrorCode.VwInvalidConfigStructure,
+            `View "${name}" has non-string field at index ${i}: ${String(f)}`,
           );
         }
-        return deviceStr as DeviceType;
-      })(),
+        return f;
+      }),
     }),
-    ...(obj.filterCond !== undefined && {
-      filterCond: String(obj.filterCond),
+    ...(raw.date !== undefined && { date: String(raw.date) }),
+    ...(raw.title !== undefined && { title: String(raw.title) }),
+    ...(raw.html !== undefined && { html: String(raw.html) }),
+    ...(raw.pager !== undefined && { pager: raw.pager }),
+    ...(device !== undefined && { device }),
+    ...(raw.filterCond !== undefined && {
+      filterCond: String(raw.filterCond),
     }),
-    ...(obj.sort !== undefined && { sort: String(obj.sort) }),
+    ...(raw.sort !== undefined && { sort: String(raw.sort) }),
   };
 
   return config;
@@ -62,31 +95,15 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
 
 export const ViewConfigParser = {
   parse: (rawText: string): ViewsConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        ViewErrorCode.VwEmptyConfigText,
-        "View config text is empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        ViewErrorCode.VwInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        ViewErrorCode.VwInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
+    const obj = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: ViewErrorCode.VwEmptyConfigText,
+        invalidConfigYaml: ViewErrorCode.VwInvalidConfigYaml,
+        invalidConfigStructure: ViewErrorCode.VwInvalidConfigStructure,
+      },
+      "View",
+    );
 
     if (!isRecord(obj.views)) {
       throw new BusinessRuleError(

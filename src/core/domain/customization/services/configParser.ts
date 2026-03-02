@@ -1,16 +1,13 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
+import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { CustomizationConfig } from "../entity";
 import { CustomizationErrorCode } from "../errorCode";
 import type {
   CustomizationPlatform,
   CustomizationResource,
-  CustomizationScope,
 } from "../valueObject";
-
-const VALID_SCOPES: ReadonlySet<string> = new Set(["ALL", "ADMIN", "NONE"]);
-const VALID_RESOURCE_TYPES: ReadonlySet<string> = new Set(["FILE", "URL"]);
+import { isCustomizationScope, isResourceType } from "../valueObject";
 
 function parseResource(raw: unknown, index: number): CustomizationResource {
   if (!isRecord(raw)) {
@@ -20,10 +17,9 @@ function parseResource(raw: unknown, index: number): CustomizationResource {
     );
   }
 
-  const obj = raw;
-  const type = obj.type;
+  const type = raw.type;
 
-  if (typeof type !== "string" || !VALID_RESOURCE_TYPES.has(type)) {
+  if (typeof type !== "string" || !isResourceType(type)) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidResourceType,
       `Resource at index ${index} has invalid type: ${String(type)}. Must be FILE or URL`,
@@ -31,22 +27,22 @@ function parseResource(raw: unknown, index: number): CustomizationResource {
   }
 
   if (type === "FILE") {
-    if (typeof obj.path !== "string" || obj.path.length === 0) {
+    if (typeof raw.path !== "string" || raw.path.length === 0) {
       throw new BusinessRuleError(
         CustomizationErrorCode.CzInvalidConfigStructure,
         `FILE resource at index ${index} must have a non-empty "path" property`,
       );
     }
-    return { type: "FILE", path: obj.path };
+    return { type: "FILE", path: raw.path };
   }
 
-  if (typeof obj.url !== "string" || obj.url.length === 0) {
+  if (typeof raw.url !== "string" || raw.url.length === 0) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidConfigStructure,
       `URL resource at index ${index} must have a non-empty "url" property`,
     );
   }
-  return { type: "URL", url: obj.url };
+  return { type: "URL", url: raw.url };
 }
 
 function parseResourceList(raw: unknown): readonly CustomizationResource[] {
@@ -67,53 +63,35 @@ function parsePlatform(raw: unknown): CustomizationPlatform {
     );
   }
 
-  const obj = raw;
-
   const js =
-    obj.js === undefined || obj.js === null ? [] : parseResourceList(obj.js);
+    raw.js === undefined || raw.js === null ? [] : parseResourceList(raw.js);
   const css =
-    obj.css === undefined || obj.css === null ? [] : parseResourceList(obj.css);
+    raw.css === undefined || raw.css === null ? [] : parseResourceList(raw.css);
 
   return { js, css };
 }
 
-export const ConfigParser = {
+export const CustomizationConfigParser = {
   parse: (rawText: string): CustomizationConfig => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        CustomizationErrorCode.CzEmptyConfigText,
-        "Customization config text is empty",
-      );
-    }
+    const obj = parseYamlConfig(
+      rawText,
+      {
+        emptyConfigText: CustomizationErrorCode.CzEmptyConfigText,
+        invalidConfigYaml: CustomizationErrorCode.CzInvalidConfigYaml,
+        invalidConfigStructure: CustomizationErrorCode.CzInvalidConfigStructure,
+      },
+      "Customization",
+    );
 
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch (error) {
-      throw new BusinessRuleError(
-        CustomizationErrorCode.CzInvalidConfigYaml,
-        `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
-      );
-    }
-
-    if (!isRecord(parsed)) {
-      throw new BusinessRuleError(
-        CustomizationErrorCode.CzInvalidConfigStructure,
-        "Config must be a YAML object",
-      );
-    }
-
-    const obj = parsed;
-
-    let scope: CustomizationScope | undefined;
+    let scope: CustomizationConfig["scope"];
     if (obj.scope !== undefined && obj.scope !== null) {
-      if (typeof obj.scope !== "string" || !VALID_SCOPES.has(obj.scope)) {
+      if (typeof obj.scope !== "string" || !isCustomizationScope(obj.scope)) {
         throw new BusinessRuleError(
           CustomizationErrorCode.CzInvalidScope,
           `Invalid scope: ${String(obj.scope)}. Must be ALL, ADMIN, or NONE`,
         );
       }
-      scope = obj.scope as CustomizationScope;
+      scope = obj.scope;
     }
 
     const desktop: CustomizationPlatform =

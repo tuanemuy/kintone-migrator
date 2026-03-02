@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ConfigParser } from "@/core/domain/customization/services/configParser";
+import { CustomizationConfigParser } from "@/core/domain/customization/services/configParser";
 import {
   setupTestCustomizationContainer,
   type TestCustomizationContainer,
@@ -47,7 +47,7 @@ describe("captureCustomization", () => {
     expect(result.fileResourceCount).toBe(1);
     expect(result.hasExistingConfig).toBe(false);
 
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.scope).toBe("ALL");
     expect(parsed.desktop.js).toHaveLength(1);
     expect(parsed.desktop.js[0]).toEqual({
@@ -82,7 +82,7 @@ describe("captureCustomization", () => {
     });
 
     expect(result.fileResourceCount).toBe(0);
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([
       { type: "URL", url: "https://example.com/script.js" },
     ]);
@@ -131,7 +131,7 @@ describe("captureCustomization", () => {
 
     expect(result.fileResourceCount).toBe(2);
 
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([
       { type: "FILE", path: "desktop/js/desktop.js" },
     ]);
@@ -182,7 +182,7 @@ describe("captureCustomization", () => {
 
     expect(result.fileResourceCount).toBe(2);
 
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
@@ -232,7 +232,7 @@ describe("captureCustomization", () => {
     });
 
     expect(result.fileResourceCount).toBe(0);
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toEqual([]);
     expect(parsed.desktop.css).toEqual([]);
     expect(parsed.mobile.js).toEqual([]);
@@ -266,7 +266,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
       path: "desktop/js/passwd",
@@ -314,7 +314,7 @@ describe("captureCustomization", () => {
       input: { basePath, filePrefix },
     });
 
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
@@ -429,7 +429,7 @@ describe("captureCustomization", () => {
       input: { basePath: "/project/myapp", filePrefix: "" },
     });
 
-    const parsed = ConfigParser.parse(result.configText);
+    const parsed = CustomizationConfigParser.parse(result.configText);
     expect(parsed.desktop.js[0]).toEqual({
       type: "FILE",
       path: "desktop/js/app.js",

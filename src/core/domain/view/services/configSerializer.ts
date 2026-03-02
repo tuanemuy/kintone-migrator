@@ -1,4 +1,4 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { ViewConfig, ViewsConfig } from "../entity";
 
 function serializeViewConfig(config: ViewConfig): Record<string, unknown> {
@@ -28,9 +28,6 @@ export const ViewConfigSerializer = {
       serialized[name] = serializeViewConfig(viewConfig);
     }
 
-    return stringifyYaml(
-      { views: serialized },
-      { lineWidth: 0, defaultKeyType: "PLAIN", defaultStringType: "PLAIN" },
-    );
+    return serializeToYaml({ views: serialized });
   },
 };

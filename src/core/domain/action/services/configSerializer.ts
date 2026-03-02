@@ -1,4 +1,4 @@
-import { stringify as stringifyYaml } from "yaml";
+import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import type { ActionEntity, ActionMapping } from "../valueObject";
 
@@ -59,10 +59,6 @@ export const ActionConfigSerializer = {
 
     serialized.actions = actions;
 
-    return stringifyYaml(serialized, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
+    return serializeToYaml(serialized);
   },
 };

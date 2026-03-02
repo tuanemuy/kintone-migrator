@@ -1,6 +1,3 @@
-import type { StorageResult } from "@/core/domain/ports/storageResult";
+import type { ConfigStorage } from "@/core/domain/ports/configStorage";
 
-export interface ReportStorage {
-  get(): Promise<StorageResult>;
-  update(content: string): Promise<void>;
-}
+export interface ReportStorage extends ConfigStorage {}

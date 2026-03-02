@@ -441,5 +441,135 @@ actions: {}
       const config = ActionConfigParser.parse(yaml);
       expect(Object.keys(config.actions)).toHaveLength(0);
     });
+
+    it("should throw for empty destApp object (both app and code missing)", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp: {}
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for srcType FIELD without srcField", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: target-app
+    mappings:
+      - srcType: FIELD
+        destField: field1
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for negative index", () => {
+      const yaml = `
+actions:
+  test:
+    index: -1
+    destApp:
+      code: target-app
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw for fractional index", () => {
+      const yaml = `
+actions:
+  test:
+    index: 1.5
+    destApp:
+      code: target-app
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw AcDuplicateIndex for duplicate index values across actions", () => {
+      const yaml = `
+actions:
+  action1:
+    index: 0
+    destApp:
+      code: app1
+    mappings: []
+    entities: []
+  action2:
+    index: 0
+    destApp:
+      code: app2
+    mappings: []
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcDuplicateIndex,
+        }),
+      );
+    });
+
+    it("should coerce numeric destApp.app to string", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      app: 123
+    mappings: []
+    entities: []
+`;
+      const config = ActionConfigParser.parse(yaml);
+      expect(config.actions.test.destApp.app).toBe("123");
+    });
+
+    it("should treat non-string srcField with srcType FIELD as missing", () => {
+      const yaml = `
+actions:
+  test:
+    index: 0
+    destApp:
+      code: app
+    mappings:
+      - srcType: FIELD
+        srcField: 123
+        destField: field1
+    entities: []
+`;
+      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
   });
 });

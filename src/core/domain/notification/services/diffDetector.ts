@@ -10,6 +10,8 @@ import type {
 } from "../entity";
 import type { NotificationDiff, NotificationDiffEntry } from "../valueObject";
 
+// ":" is safe as a separator because kintone entity types are uppercase alpha
+// and entity codes do not contain ":", so the serialized form is unambiguous.
 function serializeEntity(entity: { type: string; code: string }): string {
   return `${entity.type}:${entity.code}`;
 }
@@ -126,6 +128,8 @@ function describePerRecordChanges(
   if (local.title !== remote.title) diffs.push("title changed");
   // filterCond is the grouping key — matched pairs always share the same value.
   if (!deepEqual(local.targets, remote.targets)) diffs.push("targets changed");
+  // Fallback "changed" covers the case where deepEqual detects a difference
+  // but no individual field check above caught it (should not happen in practice).
   return diffs.length > 0 ? diffs.join(", ") : "changed";
 }
 
