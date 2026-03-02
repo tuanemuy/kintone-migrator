@@ -183,6 +183,24 @@ describe("FieldPermissionDiffDetector", () => {
     });
   });
 
+  describe("empty entities", () => {
+    it("should report no diff when both local and remote have same field code with empty entities", () => {
+      const local = makeConfig([makeRight("field1", { entities: [] })]);
+      const remote = makeConfig([makeRight("field1", { entities: [] })]);
+      const result = FieldPermissionDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect modified when one has empty entities and other has entities", () => {
+      const local = makeConfig([makeRight("field1", { entities: [] })]);
+      const remote = makeConfig([makeRight("field1")]);
+      const result = FieldPermissionDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].fieldCode).toBe("field1");
+    });
+  });
+
   describe("multiple changes", () => {
     it("should detect added, modified, and deleted simultaneously", () => {
       const local = makeConfig([

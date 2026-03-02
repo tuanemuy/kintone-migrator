@@ -5,6 +5,7 @@ export const RecordPermissionErrorCode = {
   RpInvalidEntityType: "RP_INVALID_ENTITY_TYPE",
   RpEmptyEntityCode: "RP_EMPTY_ENTITY_CODE",
   RpInvalidPermissionValue: "RP_INVALID_PERMISSION_VALUE",
+  RpDuplicateEntity: "RP_DUPLICATE_ENTITY",
 } as const;
 
 export type RecordPermissionErrorCode =

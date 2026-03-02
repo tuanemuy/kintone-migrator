@@ -9,7 +9,7 @@ import type {
 
 // filterCond is already used as the grouping key in detect(), so it is
 // excluded from the equality check here to avoid redundant comparison.
-function areRightsEqual(a: RecordRight, b: RecordRight): boolean {
+function isRightEqual(a: RecordRight, b: RecordRight): boolean {
   return deepEqual(
     a.entities.map((e) => ({
       type: e.entity.type,
@@ -78,7 +78,7 @@ export const RecordPermissionDiffDetector = {
             details: describeRight(remoteRight),
           });
         } else if (localRight && remoteRight) {
-          if (!areRightsEqual(localRight, remoteRight)) {
+          if (!isRightEqual(localRight, remoteRight)) {
             const diffs: string[] = [];
             if (localRight.entities.length !== remoteRight.entities.length) {
               diffs.push(

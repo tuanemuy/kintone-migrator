@@ -106,3 +106,49 @@ export function parseEnum<T extends string>(
   }
   return value as T;
 }
+
+/**
+ * Shared entity parsing logic for domains that use `{ type, code }` entities.
+ * Handles common validation: isRecord check, type enum validation, and code non-empty check.
+ * Use `allowEmptyCode` to permit empty/missing code for specific entity types (e.g., CREATOR).
+ */
+export function parseEntityBase<T extends string>(
+  raw: unknown,
+  index: number,
+  validTypes: ReadonlySet<T>,
+  errorCodes: {
+    invalidStructure: BusinessRuleErrorCode;
+    invalidType: BusinessRuleErrorCode;
+    emptyCode: BusinessRuleErrorCode;
+  },
+  options?: {
+    allowEmptyCode?: (type: T) => boolean;
+  },
+): { type: T; code: string } {
+  if (!isRecord(raw)) {
+    throw new BusinessRuleError(
+      errorCodes.invalidStructure,
+      `Entity at index ${index} must be an object`,
+    );
+  }
+
+  const type = parseEnum<T>(
+    raw.type,
+    validTypes,
+    errorCodes.invalidType,
+    `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be ${[...validTypes].join(", ")}`,
+  );
+
+  if (options?.allowEmptyCode?.(type)) {
+    return { type, code: typeof raw.code === "string" ? raw.code : "" };
+  }
+
+  if (typeof raw.code !== "string" || raw.code.length === 0) {
+    throw new BusinessRuleError(
+      errorCodes.emptyCode,
+      `Entity at index ${index} must have a non-empty "code" property`,
+    );
+  }
+
+  return { type, code: raw.code };
+}

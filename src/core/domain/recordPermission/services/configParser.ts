@@ -2,7 +2,7 @@ import { BusinessRuleError } from "@/core/domain/error";
 import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import {
   isRecord,
-  parseEnum,
+  parseEntityBase,
   parseStrictBoolean,
 } from "@/core/domain/typeGuards";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
@@ -22,29 +22,16 @@ const VALID_ENTITY_TYPES: ReadonlySet<RecordPermissionEntityType> =
   ]);
 
 function parseEntity(raw: unknown, index: number): RecordPermissionEntity {
-  if (!isRecord(raw)) {
-    throw new BusinessRuleError(
-      RecordPermissionErrorCode.RpInvalidConfigStructure,
-      `Entity at index ${index} must be an object`,
-    );
-  }
-
-  if (typeof raw.code !== "string" || raw.code.length === 0) {
-    throw new BusinessRuleError(
-      RecordPermissionErrorCode.RpEmptyEntityCode,
-      `Entity at index ${index} must have a non-empty "code" property`,
-    );
-  }
-
-  return {
-    type: parseEnum<RecordPermissionEntityType>(
-      raw.type,
-      VALID_ENTITY_TYPES,
-      RecordPermissionErrorCode.RpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
-    ),
-    code: raw.code,
-  };
+  return parseEntityBase<RecordPermissionEntityType>(
+    raw,
+    index,
+    VALID_ENTITY_TYPES,
+    {
+      invalidStructure: RecordPermissionErrorCode.RpInvalidConfigStructure,
+      invalidType: RecordPermissionErrorCode.RpInvalidEntityType,
+      emptyCode: RecordPermissionErrorCode.RpEmptyEntityCode,
+    },
+  );
 }
 
 function parseRecordRightEntity(
@@ -143,6 +130,20 @@ export const RecordPermissionConfigParser = {
     const rights = parsed.rights.map((item: unknown, i: number) =>
       parseRecordRight(item, i),
     );
+
+    for (const right of rights) {
+      const seenKeys = new Set<string>();
+      for (const re of right.entities) {
+        const key = `${re.entity.type}:${re.entity.code}`;
+        if (seenKeys.has(key)) {
+          throw new BusinessRuleError(
+            RecordPermissionErrorCode.RpDuplicateEntity,
+            `Duplicate entity in filterCond "${right.filterCond}": ${re.entity.type} ${re.entity.code}`,
+          );
+        }
+        seenKeys.add(key);
+      }
+    }
 
     return { rights };
   },

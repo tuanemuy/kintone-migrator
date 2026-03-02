@@ -4,7 +4,7 @@ import { ProcessManagementConfigParser } from "../configParser";
 import { ProcessManagementConfigSerializer } from "../configSerializer";
 
 describe("ProcessManagementConfigSerializer", () => {
-  it("states と actions をシリアライズする", () => {
+  it("should serialize states and actions", () => {
     const config: ProcessManagementConfig = {
       enable: true,
       states: {
@@ -44,7 +44,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(yaml).toContain("承認");
   });
 
-  it("includeSubs ありの entity をシリアライズする", () => {
+  it("should serialize entity with includeSubs", () => {
     const config: ProcessManagementConfig = {
       enable: true,
       states: {
@@ -63,7 +63,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(yaml).toContain("includeSubs: true");
   });
 
-  it("includeSubs なしの entity をシリアライズする", () => {
+  it("should serialize entity without includeSubs", () => {
     const config: ProcessManagementConfig = {
       enable: true,
       states: {
@@ -82,7 +82,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(yaml).not.toContain("includeSubs");
   });
 
-  it("空の states/actions をシリアライズする", () => {
+  it("should serialize empty states and actions", () => {
     const config: ProcessManagementConfig = {
       enable: false,
       states: {},
@@ -95,7 +95,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(yaml).toContain("actions:");
   });
 
-  it("enable: false をシリアライズする", () => {
+  it("should serialize enable: false", () => {
     const config: ProcessManagementConfig = {
       enable: false,
       states: {},
@@ -106,7 +106,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(yaml).toContain("enable: false");
   });
 
-  it("SECONDARY タイプのアクションを executableUser 付きでシリアライズする", () => {
+  it("should serialize SECONDARY action with executableUser", () => {
     const config: ProcessManagementConfig = {
       enable: true,
       states: {
@@ -151,7 +151,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(yaml).toContain("includeSubs: true");
   });
 
-  it("SECONDARY アクションのラウンドトリップ", () => {
+  it("should roundtrip SECONDARY action", () => {
     const original: ProcessManagementConfig = {
       enable: true,
       states: {
@@ -203,7 +203,7 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(parsed.actions[1].executableUser?.entities).toHaveLength(2);
   });
 
-  it("ラウンドトリップ（serialize → parse → serialize で一致確認）", () => {
+  it("should roundtrip serialize -> parse -> serialize", () => {
     const original: ProcessManagementConfig = {
       enable: true,
       states: {

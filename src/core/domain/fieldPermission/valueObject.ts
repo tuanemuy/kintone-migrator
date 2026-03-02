@@ -16,6 +16,7 @@ export type FieldPermissionEntity = Readonly<{
 export type FieldRightEntity = Readonly<{
   accessibility: FieldRightAccessibility;
   entity: FieldPermissionEntity;
+  /** Optional because kintone API omits includeSubs for field permissions when it is false, unlike recordPermission where it is always present. */
   includeSubs?: boolean;
 }>;
 

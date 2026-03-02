@@ -2,7 +2,7 @@ import { BusinessRuleError } from "@/core/domain/error";
 import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import {
   isRecord,
-  parseEnum,
+  parseEntityBase,
   parseStrictBoolean,
 } from "@/core/domain/typeGuards";
 import type { AppPermissionConfig, AppRight } from "../entity";
@@ -21,33 +21,19 @@ const VALID_ENTITY_TYPES: ReadonlySet<AppPermissionEntityType> =
   ]);
 
 function parseEntity(raw: unknown, index: number): AppPermissionEntity {
-  if (!isRecord(raw)) {
-    throw new BusinessRuleError(
-      AppPermissionErrorCode.ApInvalidConfigStructure,
-      `Entity at index ${index} must be an object`,
-    );
-  }
-
-  const type = parseEnum<AppPermissionEntityType>(
-    raw.type,
+  return parseEntityBase<AppPermissionEntityType>(
+    raw,
+    index,
     VALID_ENTITY_TYPES,
-    AppPermissionErrorCode.ApInvalidEntityType,
-    `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or CREATOR`,
+    {
+      invalidStructure: AppPermissionErrorCode.ApInvalidConfigStructure,
+      invalidType: AppPermissionErrorCode.ApInvalidEntityType,
+      emptyCode: AppPermissionErrorCode.ApEmptyEntityCode,
+    },
+    {
+      allowEmptyCode: (type) => type === "CREATOR",
+    },
   );
-
-  // CREATOR type can have empty code
-  if (type === "CREATOR") {
-    return { type, code: typeof raw.code === "string" ? raw.code : "" };
-  }
-
-  if (typeof raw.code !== "string" || raw.code.length === 0) {
-    throw new BusinessRuleError(
-      AppPermissionErrorCode.ApEmptyEntityCode,
-      `Entity at index ${index} must have a non-empty "code" property`,
-    );
-  }
-
-  return { type, code: raw.code };
 }
 
 function parseAppRight(raw: unknown, index: number): AppRight {

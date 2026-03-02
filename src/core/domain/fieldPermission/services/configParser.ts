@@ -2,6 +2,7 @@ import { BusinessRuleError } from "@/core/domain/error";
 import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
 import {
   isRecord,
+  parseEntityBase,
   parseEnum,
   parseStrictBoolean,
 } from "@/core/domain/typeGuards";
@@ -25,29 +26,16 @@ const VALID_ENTITY_TYPES: ReadonlySet<FieldPermissionEntityType> =
   ]);
 
 function parseEntity(raw: unknown, index: number): FieldPermissionEntity {
-  if (!isRecord(raw)) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpInvalidConfigStructure,
-      `Entity at index ${index} must be an object`,
-    );
-  }
-
-  if (typeof raw.code !== "string" || raw.code.length === 0) {
-    throw new BusinessRuleError(
-      FieldPermissionErrorCode.FpEmptyEntityCode,
-      `Entity at index ${index} must have a non-empty "code" property`,
-    );
-  }
-
-  return {
-    type: parseEnum<FieldPermissionEntityType>(
-      raw.type,
-      VALID_ENTITY_TYPES,
-      FieldPermissionErrorCode.FpInvalidEntityType,
-      `Entity at index ${index} has invalid type: ${String(raw.type)}. Must be USER, GROUP, ORGANIZATION, or FIELD_ENTITY`,
-    ),
-    code: raw.code,
-  };
+  return parseEntityBase<FieldPermissionEntityType>(
+    raw,
+    index,
+    VALID_ENTITY_TYPES,
+    {
+      invalidStructure: FieldPermissionErrorCode.FpInvalidConfigStructure,
+      invalidType: FieldPermissionErrorCode.FpInvalidEntityType,
+      emptyCode: FieldPermissionErrorCode.FpEmptyEntityCode,
+    },
+  );
 }
 
 function parseFieldRightEntity(raw: unknown, index: number): FieldRightEntity {
