@@ -12,7 +12,7 @@ export const ENTITY_TYPES = [
 
 export type NotificationEntityType = (typeof ENTITY_TYPES)[number];
 
-export const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set(ENTITY_TYPES);
+const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set(ENTITY_TYPES);
 
 export function isNotificationEntityType(
   value: string,

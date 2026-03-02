@@ -1,4 +1,4 @@
-type RecordDiffCallbacks<V, E> = {
+export type RecordDiffCallbacks<V, E> = {
   onAdded: (key: string, local: V) => E;
   onModified: (key: string, local: V, remote: V) => E | undefined;
   onDeleted: (key: string, remote: V) => E;

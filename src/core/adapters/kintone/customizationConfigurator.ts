@@ -7,9 +7,8 @@ import type {
   RemoteResource,
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
+import { isCustomizationScope } from "@/core/domain/customization/valueObject";
 import { isBusinessRuleError } from "@/core/domain/error";
-
-const VALID_SCOPES: ReadonlySet<string> = new Set(["ALL", "ADMIN", "NONE"]);
 
 type KintoneCustomizeResource = {
   type: "FILE" | "URL";
@@ -92,13 +91,13 @@ export class KintoneCustomizationConfigurator
       });
 
       const rawScope = String(response.scope);
-      if (!VALID_SCOPES.has(rawScope)) {
+      if (!isCustomizationScope(rawScope)) {
         throw new SystemError(
           SystemErrorCode.ExternalApiError,
           `Unexpected scope value from kintone API: ${rawScope}`,
         );
       }
-      const scope = rawScope as CustomizationScope;
+      const scope: CustomizationScope = rawScope;
 
       const desktop: RemotePlatform = {
         js: fromKintoneResourceList(

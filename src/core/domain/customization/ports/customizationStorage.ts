@@ -1,3 +1,3 @@
 import type { ConfigStorage } from "@/core/domain/ports/configStorage";
 
-export type CustomizationStorage = ConfigStorage;
+export interface CustomizationStorage extends ConfigStorage {}

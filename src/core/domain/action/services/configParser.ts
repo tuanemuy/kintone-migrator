@@ -105,7 +105,7 @@ function parseEntity(
 }
 
 function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
-  // Issue 2.1: Check empty action name before isRecord check
+  // Reject empty keys early to produce a clearer error message
   if (actionName.length === 0) {
     throw new BusinessRuleError(
       ActionErrorCode.AcEmptyActionName,

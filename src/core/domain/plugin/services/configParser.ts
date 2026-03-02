@@ -52,7 +52,7 @@ export const PluginConfigParser = {
       parsePluginEntry(item, i),
     );
 
-    // Issue 7.1: Validate no duplicate plugin IDs
+    // Detect duplicate plugin IDs to prevent silent overwrites
     const seenIds = new Set<string>();
     for (const plugin of plugins) {
       if (seenIds.has(plugin.id)) {

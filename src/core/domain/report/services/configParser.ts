@@ -146,7 +146,7 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
         `periodicReport.period has invalid month: ${String(obj.month)}. Must be a number`,
       );
     }
-    // Issue 6.4: Validate month range (1-12)
+    // Validate month range (kintone expects 1-12)
     if (parsed < 1 || parsed > 12) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
@@ -182,7 +182,7 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
           `periodicReport.period has invalid dayOfMonth: ${String(obj.dayOfMonth)}. Must be a number or "END_OF_MONTH"`,
         );
       }
-      // Issue 6.4: Validate dayOfMonth range (1-31)
+      // Validate dayOfMonth range (kintone expects 1-31)
       if (parsed < 1 || parsed > 31) {
         throw new BusinessRuleError(
           ReportErrorCode.RtInvalidConfigStructure,
@@ -219,7 +219,7 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
         `periodicReport.period has invalid minute: ${String(obj.minute)}. Must be a number`,
       );
     }
-    // Issue 6.4: Validate minute range (0-59)
+    // Validate minute range (kintone expects 0-59)
     if (parsed < 0 || parsed > 59) {
       throw new BusinessRuleError(
         ReportErrorCode.RtInvalidConfigStructure,
@@ -268,7 +268,7 @@ function parsePeriodicReport(raw: unknown): PeriodicReport {
 }
 
 function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
-  // Issue 6.2: Check empty report name before isRecord check
+  // Reject empty keys early to produce a clearer error message
   if (reportName.length === 0) {
     throw new BusinessRuleError(
       ReportErrorCode.RtEmptyReportName,
@@ -306,19 +306,18 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
   const name =
     typeof obj.name === "string" && obj.name.length > 0 ? obj.name : reportName;
 
-  // Issue 6.1: Validate index is a number when present
-  const index =
-    obj.index !== undefined && obj.index !== null
-      ? (() => {
-          if (typeof obj.index !== "number") {
-            throw new BusinessRuleError(
-              ReportErrorCode.RtInvalidConfigStructure,
-              `Report "${reportName}" has non-numeric index: ${String(obj.index)}`,
-            );
-          }
-          return obj.index;
-        })()
-      : 0;
+  // Validate index is a number when present
+  if (
+    obj.index !== undefined &&
+    obj.index !== null &&
+    typeof obj.index !== "number"
+  ) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `Report "${reportName}" has non-numeric index: ${String(obj.index)}`,
+    );
+  }
+  const index = typeof obj.index === "number" ? obj.index : 0;
 
   const groups = Array.isArray(obj.groups)
     ? obj.groups.map((item: unknown, i: number) => parseGroup(item, i))

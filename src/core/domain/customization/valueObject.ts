@@ -4,7 +4,7 @@ export const SCOPES = ["ALL", "ADMIN", "NONE"] as const;
 
 export type CustomizationScope = (typeof SCOPES)[number];
 
-export const VALID_SCOPES: ReadonlySet<string> = new Set(SCOPES);
+const VALID_SCOPES: ReadonlySet<string> = new Set(SCOPES);
 
 export function isCustomizationScope(
   value: string,
@@ -16,9 +16,7 @@ export const RESOURCE_TYPES = ["FILE", "URL"] as const;
 
 export type ResourceType = (typeof RESOURCE_TYPES)[number];
 
-export const VALID_RESOURCE_TYPES: ReadonlySet<string> = new Set(
-  RESOURCE_TYPES,
-);
+const VALID_RESOURCE_TYPES: ReadonlySet<string> = new Set(RESOURCE_TYPES);
 
 export function isResourceType(value: string): value is ResourceType {
   return VALID_RESOURCE_TYPES.has(value);

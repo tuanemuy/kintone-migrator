@@ -20,15 +20,11 @@ export type NotificationTarget = Readonly<{
   includeSubs?: boolean;
 }>;
 
-export type PerRecordNotificationTarget = NotificationTarget;
-
 export type PerRecordNotification = Readonly<{
   filterCond: string;
   title: string;
   targets: readonly NotificationTarget[];
 }>;
-
-export type ReminderNotificationTarget = NotificationTarget;
 
 export type ReminderNotification = Readonly<{
   code: string;

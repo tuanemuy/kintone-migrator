@@ -9,7 +9,7 @@ export const SRC_TYPES = ["FIELD", "RECORD_URL"] as const;
 
 export type ActionMappingSrcType = (typeof SRC_TYPES)[number];
 
-export const VALID_SRC_TYPES: ReadonlySet<string> = new Set(SRC_TYPES);
+const VALID_SRC_TYPES: ReadonlySet<string> = new Set(SRC_TYPES);
 
 export function isActionMappingSrcType(
   value: string,
@@ -27,7 +27,7 @@ export const ENTITY_TYPES = ["USER", "GROUP", "ORGANIZATION"] as const;
 
 export type ActionEntityType = (typeof ENTITY_TYPES)[number];
 
-export const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set(ENTITY_TYPES);
+const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set(ENTITY_TYPES);
 
 export function isActionEntityType(value: string): value is ActionEntityType {
   return VALID_ENTITY_TYPES.has(value);

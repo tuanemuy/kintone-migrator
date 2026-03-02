@@ -27,14 +27,14 @@ export function parseYamlConfig(
   } catch (error) {
     throw new BusinessRuleError(
       errorCodes.invalidConfigYaml,
-      `Failed to parse YAML: ${error instanceof Error ? error.message : String(error)}`,
+      `Failed to parse ${domainLabel} YAML: ${error instanceof Error ? error.message : String(error)}`,
     );
   }
 
   if (!isRecord(parsed)) {
     throw new BusinessRuleError(
       errorCodes.invalidConfigStructure,
-      "Config must be a YAML object",
+      `${domainLabel} config must be a YAML object`,
     );
   }
 

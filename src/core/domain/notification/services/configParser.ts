@@ -224,7 +224,7 @@ function parseReminderNotification(
     );
   }
 
-  // Issue 3.5: Validate that hoursLater is a number when present
+  // Validate that hoursLater is a number when present
   if (hasHoursLater && typeof obj.hoursLater !== "number") {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidHoursLater,
@@ -240,10 +240,10 @@ function parseReminderNotification(
     targets,
   };
 
-  if (hasHoursLater) {
+  if (hasHoursLater && typeof obj.hoursLater === "number") {
     return {
       ...result,
-      hoursLater: obj.hoursLater as number,
+      hoursLater: obj.hoursLater,
     };
   }
 

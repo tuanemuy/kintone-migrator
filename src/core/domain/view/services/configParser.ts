@@ -6,7 +6,7 @@ import { ViewErrorCode } from "../errorCode";
 import { isDeviceType, isViewType } from "../valueObject";
 
 function parseDeviceType(name: string, raw: unknown): ViewConfig["device"] {
-  if (raw === undefined) return undefined;
+  if (raw === undefined || raw === null) return undefined;
   const deviceStr = String(raw);
   if (!isDeviceType(deviceStr)) {
     throw new BusinessRuleError(
@@ -34,7 +34,7 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
     );
   }
 
-  // Issue 5.2: Validate index is a number when present
+  // Reject non-numeric index early to avoid silent coercion
   if (obj.index !== undefined && typeof obj.index !== "number") {
     throw new BusinessRuleError(
       ViewErrorCode.VwInvalidIndex,
@@ -51,7 +51,7 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
     ...(obj.builtinType !== undefined && {
       builtinType: String(obj.builtinType),
     }),
-    // Issue 5.3: Validate fields array elements are strings
+    // Non-string values are coerced to strings for safety
     ...(Array.isArray(obj.fields) && {
       fields: obj.fields.map((f: unknown) =>
         typeof f === "string" ? f : String(f),
