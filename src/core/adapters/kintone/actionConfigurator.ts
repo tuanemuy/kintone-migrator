@@ -11,7 +11,7 @@ import {
   isActionEntityType,
   isActionMappingSrcType,
 } from "@/core/domain/action/valueObject";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneActionMapping = {
   srcType: string;
@@ -178,13 +178,7 @@ export class KintoneActionConfigurator implements ActionConfigurator {
         revision: response.revision,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get app actions",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get app actions");
     }
   }
 
@@ -213,13 +207,7 @@ export class KintoneActionConfigurator implements ActionConfigurator {
 
       return { revision: response.revision };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update app actions",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update app actions");
     }
   }
 }

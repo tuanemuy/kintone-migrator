@@ -1,6 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { GeneralSettingsConfig } from "@/core/domain/generalSettings/entity";
 import type { GeneralSettingsConfigurator } from "@/core/domain/generalSettings/ports/generalSettingsConfigurator";
 import type {
@@ -12,6 +11,7 @@ import type {
   TitleFieldConfig,
   TitleFieldSelectionMode,
 } from "@/core/domain/generalSettings/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_THEMES: ReadonlySet<string> = new Set([
   "WHITE",
@@ -119,9 +119,23 @@ function fromKintoneNumberPrecision(raw: {
       `Unexpected roundingMode from kintone API: ${raw.roundingMode}`,
     );
   }
+  const digits = Number(raw.digits);
+  const decimalPlaces = Number(raw.decimalPlaces);
+  if (!Number.isFinite(digits)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected non-numeric digits from kintone API: ${raw.digits}`,
+    );
+  }
+  if (!Number.isFinite(decimalPlaces)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Unexpected non-numeric decimalPlaces from kintone API: ${raw.decimalPlaces}`,
+    );
+  }
   return {
-    digits: Number(raw.digits),
-    decimalPlaces: Number(raw.decimalPlaces),
+    digits,
+    decimalPlaces,
     roundingMode: raw.roundingMode as RoundingMode,
   };
 }
@@ -163,7 +177,18 @@ function fromKintoneSettings(
       ? { numberPrecision: fromKintoneNumberPrecision(raw.numberPrecision) }
       : {}),
     ...(raw.firstMonthOfFiscalYear !== undefined
-      ? { firstMonthOfFiscalYear: Number(raw.firstMonthOfFiscalYear) }
+      ? {
+          firstMonthOfFiscalYear: (() => {
+            const n = Number(raw.firstMonthOfFiscalYear);
+            if (!Number.isFinite(n)) {
+              throw new SystemError(
+                SystemErrorCode.ExternalApiError,
+                `Unexpected non-numeric firstMonthOfFiscalYear from kintone API: ${raw.firstMonthOfFiscalYear}`,
+              );
+            }
+            return n;
+          })(),
+        }
       : {}),
   };
 
@@ -282,13 +307,7 @@ export class KintoneGeneralSettingsConfigurator
         revision: raw.revision ?? "-1",
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get general settings",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get general settings");
     }
   }
 
@@ -314,13 +333,7 @@ export class KintoneGeneralSettingsConfigurator
 
       return { revision: response.revision };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update general settings",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update general settings");
     }
   }
 }

@@ -1,6 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type {
   GeneralNotification,
   NotificationTarget,
@@ -10,6 +9,7 @@ import type {
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
 import type { NotificationEntity } from "@/core/domain/notification/valueObject";
 import { isNotificationEntityType } from "@/core/domain/notification/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneNotificationEntity = {
   type: string;
@@ -250,13 +250,7 @@ export class KintoneNotificationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get general notifications",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get general notifications");
     }
   }
 
@@ -284,13 +278,7 @@ export class KintoneNotificationConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update general notifications",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update general notifications");
     }
   }
 
@@ -313,13 +301,7 @@ export class KintoneNotificationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get per-record notifications",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get per-record notifications");
     }
   }
 
@@ -345,13 +327,7 @@ export class KintoneNotificationConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update per-record notifications",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update per-record notifications");
     }
   }
 
@@ -380,13 +356,7 @@ export class KintoneNotificationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get reminder notifications",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get reminder notifications");
     }
   }
 
@@ -414,13 +384,7 @@ export class KintoneNotificationConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update reminder notifications",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update reminder notifications");
     }
   }
 }

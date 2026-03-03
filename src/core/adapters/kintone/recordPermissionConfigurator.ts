@@ -1,12 +1,12 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { RecordRight } from "@/core/domain/recordPermission/entity";
 import type { RecordPermissionConfigurator } from "@/core/domain/recordPermission/ports/recordPermissionConfigurator";
 import type {
   RecordPermissionEntityType,
   RecordPermissionRightEntity,
 } from "@/core/domain/recordPermission/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
   "USER",
@@ -109,13 +109,7 @@ export class KintoneRecordPermissionConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get record ACL",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get record ACL");
     }
   }
 
@@ -139,13 +133,7 @@ export class KintoneRecordPermissionConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update record ACL",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update record ACL");
     }
   }
 }

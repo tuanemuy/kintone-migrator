@@ -1,10 +1,10 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
 import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
 import type { SeedRecord } from "@/core/domain/seedData/valueObject";
 import { fromKintoneRecord, toKintoneRecord } from "./recordConverter";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 function extractId(record: Record<string, unknown>): string {
   const $id = record.$id as { value: string } | undefined;
@@ -40,13 +40,7 @@ export class KintoneRecordManager implements RecordManager {
         return { id, record };
       });
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get records",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get records");
     }
   }
 
@@ -58,13 +52,7 @@ export class KintoneRecordManager implements RecordManager {
         records: records.map(toKintoneRecord),
       });
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to add records",
-        error,
-      );
+      wrapKintoneError(error, "Failed to add records");
     }
   }
 
@@ -79,13 +67,7 @@ export class KintoneRecordManager implements RecordManager {
         })),
       });
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update records",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update records");
     }
   }
 
@@ -106,13 +88,7 @@ export class KintoneRecordManager implements RecordManager {
       });
       return { deletedCount: records.length };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to delete all records",
-        error,
-      );
+      wrapKintoneError(error, "Failed to delete all records");
     }
   }
 }

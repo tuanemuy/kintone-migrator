@@ -1,10 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type {
   FormDumpReader,
   RawFormDump,
 } from "@/core/domain/formSchema/ports/formDumpReader";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFormDumpReader implements FormDumpReader {
   constructor(
@@ -15,22 +14,18 @@ export class KintoneFormDumpReader implements FormDumpReader {
   async getRawFormData(): Promise<RawFormDump> {
     try {
       const [fields, layout] = await Promise.all([
-        this.client.app.getFormFields({ app: this.appId }),
-        this.client.app.getFormLayout({ app: this.appId }),
+        this.client.app.getFormFields({ app: this.appId, preview: true }),
+        this.client.app.getFormLayout({ app: this.appId, preview: true }),
       ]);
 
+      // Double cast through `unknown` is required because the SDK return types
+      // do not match our RawFormDump shape (which is intentionally untyped for dump).
       return {
         fields: fields as unknown as Record<string, unknown>,
         layout: layout as unknown,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to fetch raw form data for dump",
-        error,
-      );
+      wrapKintoneError(error, "Failed to fetch raw form data for dump");
     }
   }
 }

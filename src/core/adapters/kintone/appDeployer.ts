@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type DeployStatus = "PROCESSING" | "SUCCESS" | "FAIL" | "CANCEL";
 
@@ -34,13 +35,7 @@ export class KintoneAppDeployer implements AppDeployer {
 
       await this.waitForDeployment();
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to deploy app",
-        error,
-      );
+      wrapKintoneError(error, "Failed to deploy app");
     }
   }
 
@@ -75,6 +70,13 @@ export class KintoneAppDeployer implements AppDeployer {
           );
         }
         continue;
+      }
+
+      if (apps.length === 0) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          "Deploy status response contained no apps",
+        );
       }
 
       const status = apps[0]?.status as DeployStatus | undefined;

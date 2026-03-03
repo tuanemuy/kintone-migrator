@@ -1,9 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import { isDeviceType, isViewType } from "@/core/domain/view/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneView = {
   type: string;
@@ -52,15 +52,15 @@ function fromKintoneView(name: string, raw: KintoneView): ViewConfig {
       return idx;
     })(),
     name,
-    ...(raw.builtinType !== undefined && { builtinType: raw.builtinType }),
-    ...(raw.fields !== undefined && { fields: raw.fields }),
-    ...(raw.date !== undefined && { date: raw.date }),
-    ...(raw.title !== undefined && { title: raw.title }),
-    ...(raw.html !== undefined && { html: raw.html }),
-    ...(raw.pager !== undefined && { pager: raw.pager }),
-    ...(device !== undefined && { device }),
-    ...(raw.filterCond !== undefined && { filterCond: raw.filterCond }),
-    ...(raw.sort !== undefined && { sort: raw.sort }),
+    ...(raw.builtinType !== undefined ? { builtinType: raw.builtinType } : {}),
+    ...(raw.fields !== undefined ? { fields: raw.fields } : {}),
+    ...(raw.date !== undefined ? { date: raw.date } : {}),
+    ...(raw.title !== undefined ? { title: raw.title } : {}),
+    ...(raw.html !== undefined ? { html: raw.html } : {}),
+    ...(raw.pager !== undefined ? { pager: raw.pager } : {}),
+    ...(device !== undefined ? { device } : {}),
+    ...(raw.filterCond !== undefined ? { filterCond: raw.filterCond } : {}),
+    ...(raw.sort !== undefined ? { sort: raw.sort } : {}),
   };
 
   return config;
@@ -115,13 +115,7 @@ export class KintoneViewConfigurator implements ViewConfigurator {
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get views",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get views");
     }
   }
 
@@ -151,13 +145,7 @@ export class KintoneViewConfigurator implements ViewConfigurator {
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update views",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update views");
     }
   }
 }

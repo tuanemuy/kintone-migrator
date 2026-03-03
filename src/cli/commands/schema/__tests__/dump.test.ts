@@ -45,14 +45,19 @@ vi.mock("@/cli/projectConfig", () => ({
   runMultiAppWithFailCheck: vi.fn(),
 }));
 
-vi.mock("@kintone/rest-api-client", () => ({
-  KintoneRestAPIClient: class {
-    app = {
-      getFormFields: mocks.getFormFields,
-      getFormLayout: mocks.getFormLayout,
-    };
-  },
-}));
+vi.mock("@kintone/rest-api-client", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@kintone/rest-api-client")>();
+  return {
+    ...actual,
+    KintoneRestAPIClient: class {
+      app = {
+        getFormFields: mocks.getFormFields,
+        getFormLayout: mocks.getFormLayout,
+      };
+    },
+  };
+});
 
 vi.mock("node:fs/promises", () => ({
   writeFile: mocks.writeFile,

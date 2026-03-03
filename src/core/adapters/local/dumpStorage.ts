@@ -1,10 +1,16 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { DumpStorage } from "@/core/domain/formSchema/ports/dumpStorage";
+import { assertSafePath } from "@/lib/assertSafePath";
 
 export class LocalFileDumpStorage implements DumpStorage {
-  constructor(private readonly filePrefix: string) {}
+  constructor(private readonly filePrefix: string) {
+    // Validate that the file prefix does not escape its parent directory
+    const baseDir = dirname(resolve(this.filePrefix));
+    assertSafePath(`${this.filePrefix}fields.json`, baseDir);
+    assertSafePath(`${this.filePrefix}layout.json`, baseDir);
+  }
 
   async saveFields(content: string): Promise<void> {
     const filePath = `${this.filePrefix}fields.json`;

@@ -3,7 +3,7 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AppRight } from "@/core/domain/appPermission/entity";
 import type { AppPermissionConfigurator } from "@/core/domain/appPermission/ports/appPermissionConfigurator";
 import type { AppPermissionEntityType } from "@/core/domain/appPermission/valueObject";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_ENTITY_TYPES: ReadonlySet<string> = new Set([
   "USER",
@@ -109,13 +109,7 @@ export class KintoneAppPermissionConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get app ACL",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get app ACL");
     }
   }
 
@@ -139,13 +133,7 @@ export class KintoneAppPermissionConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update app ACL",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update app ACL");
     }
   }
 }

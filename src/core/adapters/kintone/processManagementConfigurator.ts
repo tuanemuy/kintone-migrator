@@ -1,6 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type {
   ProcessManagementConfig,
   ProcessState,
@@ -14,6 +13,7 @@ import type {
   ProcessEntity,
   ProcessEntityType,
 } from "@/core/domain/processManagement/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_ASSIGNEE_TYPES: ReadonlySet<string> = new Set([
   "ONE",
@@ -225,13 +225,7 @@ export class KintoneProcessManagementConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get process management settings",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get process management settings");
     }
   }
 
@@ -264,13 +258,7 @@ export class KintoneProcessManagementConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update process management settings",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update process management settings");
     }
   }
 }

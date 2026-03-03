@@ -1,12 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { KintoneRestAPIError } from "@kintone/rest-api-client";
-import {
-  ConflictError,
-  ConflictErrorCode,
-  SystemError,
-  SystemErrorCode,
-} from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type {
   FormLayout,
   GroupLayoutItem,
@@ -24,6 +17,7 @@ import type {
   LayoutElement,
 } from "@/core/domain/formSchema/valueObject";
 import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const KNOWN_FIELD_TYPES: ReadonlySet<string> = new Set<FieldType>([
   "SINGLE_LINE_TEXT",
@@ -65,15 +59,6 @@ const DECORATION_TYPES: ReadonlySet<string> = new Set([
   "HR",
 ]);
 
-const KINTONE_REVISION_CONFLICT_CODE = "GAIA_CO02";
-
-function isRevisionConflict(error: unknown): boolean {
-  return (
-    error instanceof KintoneRestAPIError &&
-    error.code === KINTONE_REVISION_CONFLICT_CODE
-  );
-}
-
 /**
  * Tracks the latest known kintone form revision for optimistic concurrency control.
  *
@@ -87,10 +72,9 @@ export class RevisionTracker {
   private revision: string | undefined = undefined;
 
   track(revision: string): void {
-    if (
-      this.revision === undefined ||
-      Number(revision) > Number(this.revision)
-    ) {
+    const revisionNum = Number(revision);
+    if (!Number.isFinite(revisionNum)) return;
+    if (this.revision === undefined || revisionNum > Number(this.revision)) {
       this.revision = revision;
     }
   }
@@ -555,13 +539,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
 
       return fields;
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get form fields",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get form fields");
     }
   }
 
@@ -582,20 +560,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      if (isRevisionConflict(error)) {
-        throw new ConflictError(
-          ConflictErrorCode.Conflict,
-          "Form configuration was modified by another process. Please retry the operation.",
-          error,
-        );
-      }
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to add form fields",
-        error,
-      );
+      wrapKintoneError(error, "Failed to add form fields");
     }
   }
 
@@ -616,20 +581,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      if (isRevisionConflict(error)) {
-        throw new ConflictError(
-          ConflictErrorCode.Conflict,
-          "Form configuration was modified by another process. Please retry the operation.",
-          error,
-        );
-      }
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update form fields",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update form fields");
     }
   }
 
@@ -649,20 +601,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      if (isRevisionConflict(error)) {
-        throw new ConflictError(
-          ConflictErrorCode.Conflict,
-          "Form configuration was modified by another process. Please retry the operation.",
-          error,
-        );
-      }
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to delete form fields",
-        error,
-      );
+      wrapKintoneError(error, "Failed to delete form fields");
     }
   }
 
@@ -678,13 +617,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         fromKintoneLayoutItem,
       );
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get form layout",
-        error,
-      );
+      wrapKintoneError(error, "Failed to get form layout");
     }
   }
 
@@ -696,6 +629,8 @@ export class KintoneFormConfigurator implements FormConfigurator {
         layout: kintoneLayout as Parameters<
           typeof this.client.app.updateFormLayout
         >[0]["layout"],
+        // kintone API treats revision=-1 as "skip revision check", used as
+        // fallback when no prior revision is tracked (e.g. first layout update).
         revision:
           this.revisionTracker.current !== undefined
             ? Number(this.revisionTracker.current)
@@ -705,20 +640,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      if (isRevisionConflict(error)) {
-        throw new ConflictError(
-          ConflictErrorCode.Conflict,
-          "Form configuration was modified by another process. Please retry the operation.",
-          error,
-        );
-      }
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update form layout",
-        error,
-      );
+      wrapKintoneError(error, "Failed to update form layout");
     }
   }
 }

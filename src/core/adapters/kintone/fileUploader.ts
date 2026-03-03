@@ -1,10 +1,14 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { assertSafePath } from "@/lib/assertSafePath";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFileUploader implements FileUploader {
-  constructor(private readonly client: KintoneRestAPIClient) {}
+  constructor(
+    private readonly client: KintoneRestAPIClient,
+    private readonly baseDir: string = process.cwd(),
+  ) {}
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
     if (!filePath) {
@@ -13,19 +17,14 @@ export class KintoneFileUploader implements FileUploader {
         "filePath must not be empty",
       );
     }
+    assertSafePath(filePath, this.baseDir);
     try {
       const response = await this.client.file.uploadFile({
         file: { path: filePath },
       });
       return { fileKey: response.fileKey };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `Failed to upload file: ${filePath}`,
-        error,
-      );
+      wrapKintoneError(error, `Failed to upload file: ${filePath}`);
     }
   }
 }
