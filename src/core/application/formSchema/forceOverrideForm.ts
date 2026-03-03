@@ -29,6 +29,7 @@ export async function forceOverrideForm({
   const toAdd: FieldDefinition[] = [];
   const toUpdate: FieldDefinition[] = [];
   const toDelete: FieldCode[] = [];
+  const innerFieldsToDelete: FieldCode[] = [];
 
   for (const [fieldCode, schemaDef] of schema.fields) {
     if (subtableInnerCodes.has(fieldCode)) continue;
@@ -36,21 +37,24 @@ export async function forceOverrideForm({
       if (schemaDef.type === "SUBTABLE") {
         const currentDef = currentFields.get(fieldCode);
         if (currentDef !== undefined && currentDef.type === "SUBTABLE") {
-          const { newInnerFields, existingInnerFields } =
-            splitSubtableInnerFields(schemaDef, currentDef);
+          const {
+            newInnerFields,
+            existingInnerFields,
+            deletedInnerFieldCodes,
+          } = splitSubtableInnerFields(schemaDef, currentDef);
 
           if (newInnerFields.size > 0) {
-            toAdd.push({
-              ...schemaDef,
-              properties: { fields: newInnerFields },
-            });
-          }
-
-          if (existingInnerFields.size > 0) {
+            toDelete.push(fieldCode);
+            toAdd.push(schemaDef);
+          } else if (existingInnerFields.size > 0) {
             toUpdate.push({
               ...schemaDef,
               properties: { fields: existingInnerFields },
             });
+          }
+
+          for (const code of deletedInnerFieldCodes) {
+            innerFieldsToDelete.push(code);
           }
         } else {
           toUpdate.push(schemaDef);
@@ -73,16 +77,19 @@ export async function forceOverrideForm({
     }
   }
 
+  if (toDelete.length > 0 || innerFieldsToDelete.length > 0) {
+    const fieldCodes = [...toDelete, ...innerFieldsToDelete];
+    if (fieldCodes.length > 0) {
+      await container.formConfigurator.deleteFields(fieldCodes);
+    }
+  }
+
   if (toAdd.length > 0) {
     await container.formConfigurator.addFields(toAdd);
   }
 
   if (toUpdate.length > 0) {
     await container.formConfigurator.updateFields(toUpdate);
-  }
-
-  if (toDelete.length > 0) {
-    await container.formConfigurator.deleteFields(toDelete);
   }
 
   await container.formConfigurator.updateLayout(schema.layout);

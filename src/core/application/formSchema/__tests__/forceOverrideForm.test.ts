@@ -138,10 +138,18 @@ describe("forceOverrideForm", () => {
 
     const allCalls = container.formConfigurator.callLog;
     const addIdx = allCalls.indexOf("addFields");
+    const updateIdx = allCalls.indexOf("updateFields");
+    const deleteIdx = allCalls.indexOf("deleteFields");
     const layoutIdx = allCalls.indexOf("updateLayout");
     expect(layoutIdx).toBeGreaterThan(-1);
     if (addIdx >= 0) {
       expect(addIdx).toBeLessThan(layoutIdx);
+    }
+    if (updateIdx >= 0) {
+      expect(updateIdx).toBeLessThan(layoutIdx);
+    }
+    if (deleteIdx >= 0) {
+      expect(deleteIdx).toBeLessThan(layoutIdx);
     }
   });
 
@@ -170,7 +178,7 @@ layout:
     // (InMemoryではサブテーブルのproperties.fieldsに含まれる)
   });
 
-  it("現在のフォームのサブテーブル内部フィールドは直接削除しない", async () => {
+  it("サブテーブル削除時に内部フィールドもカスケード削除される", async () => {
     const container = getContainer();
     const keep = textField("keep", "残す");
     const schemaWithKeep = `
@@ -204,10 +212,8 @@ layout:
     await forceOverrideForm({ container });
 
     const fields = await container.formConfigurator.getFields();
-    // items自体は削除される(スキーマにない)
     expect(fields.has(FieldCode.create("items"))).toBe(false);
-    // item_nameはサブテーブル内部フィールドなので直接deleteFieldsされない
-    expect(fields.has(FieldCode.create("item_name"))).toBe(true);
+    expect(fields.has(FieldCode.create("item_name"))).toBe(false);
   });
 
   it("追加・更新・削除が同時に発生する上書きを実行できる", async () => {
@@ -314,7 +320,7 @@ layout:
     expect(fields.has(FieldCode.create("inner"))).toBe(true);
   });
 
-  it("追加・更新・削除が必要な場合、追加→更新→削除の順でポートメソッドが呼ばれる", async () => {
+  it("追加・更新・削除が必要な場合、削除→追加→更新の順でポートメソッドが呼ばれる", async () => {
     const container = getContainer();
     const schema = `
 layout:
@@ -345,9 +351,9 @@ layout:
       (c) => c === "addFields" || c === "updateFields" || c === "deleteFields",
     );
     expect(mutationCalls).toEqual([
+      "deleteFields",
       "addFields",
       "updateFields",
-      "deleteFields",
     ]);
   });
 
@@ -451,16 +457,12 @@ layout:
     expect(container.formConfigurator.callLog).not.toContain("updateLayout");
   });
 
-  it("updateFieldsの通信に失敗した場合、SystemErrorがスローされ後続の削除操作は実行されない", async () => {
+  it("updateFieldsの通信に失敗した場合、SystemErrorがスローされ後続のupdateLayoutは実行されない", async () => {
     const container = getContainer();
     container.schemaStorage.setContent(singleFieldSchema);
     const existing = textField("name", "旧名前");
-    const toDelete = textField("old_field", "削除対象");
     container.formConfigurator.setFields(
-      new Map([
-        [FieldCode.create("name"), existing],
-        [FieldCode.create("old_field"), toDelete],
-      ]),
+      new Map([[FieldCode.create("name"), existing]]),
     );
     container.formConfigurator.setLayout([]);
     container.formConfigurator.setFailOn("updateFields");
@@ -468,7 +470,6 @@ layout:
 
     await expect(forceOverrideForm({ container })).rejects.toThrow(SystemError);
 
-    expect(container.formConfigurator.callLog).not.toContain("deleteFields");
     expect(container.formConfigurator.callLog).not.toContain("updateLayout");
   });
 
@@ -560,7 +561,7 @@ layout:
     expect(ref?.type).toBe("REFERENCE_TABLE");
   });
 
-  it("既存の SUBTABLE を新しい内部フィールド構成で上書きする", async () => {
+  it("既存の SUBTABLE に新規内部フィールドがある場合、削除→再作成される", async () => {
     const container = getContainer();
     const schema = `
 layout:
@@ -597,11 +598,15 @@ layout:
 
     await forceOverrideForm({ container });
 
-    // 新規内部フィールドはaddFieldsで追加される
+    // サブテーブルが削除→再作成される
     const mutationCalls = container.formConfigurator.callLog.filter(
       (c) => c === "addFields" || c === "updateFields" || c === "deleteFields",
     );
+    expect(mutationCalls).toContain("deleteFields");
     expect(mutationCalls).toContain("addFields");
+    const deleteIdx = mutationCalls.indexOf("deleteFields");
+    const addIdx = mutationCalls.indexOf("addFields");
+    expect(deleteIdx).toBeLessThan(addIdx);
 
     const fields = await container.formConfigurator.getFields();
     const items = fields.get(FieldCode.create("items"));
@@ -613,6 +618,49 @@ layout:
         true,
       );
     }
+  });
+
+  it("既存の SUBTABLE の内部フィールドが減った場合、削除される", async () => {
+    const container = getContainer();
+    const schema = `
+layout:
+  - type: SUBTABLE
+    code: items
+    label: 明細
+    fields:
+      - code: col1
+        type: SINGLE_LINE_TEXT
+        label: 列1
+`;
+    container.schemaStorage.setContent(schema);
+
+    const col1 = textField("col1", "列1");
+    const col2 = textField("col2", "列2");
+    const currentSub: SubtableFieldDefinition = {
+      code: FieldCode.create("items"),
+      type: "SUBTABLE",
+      label: "明細",
+      properties: {
+        fields: new Map([
+          [FieldCode.create("col1"), col1],
+          [FieldCode.create("col2"), col2],
+        ]),
+      },
+    };
+    container.formConfigurator.setFields(
+      new Map([
+        [FieldCode.create("items"), currentSub],
+        [FieldCode.create("col1"), col1],
+        [FieldCode.create("col2"), col2],
+      ]),
+    );
+    container.formConfigurator.setLayout([]);
+
+    await forceOverrideForm({ container });
+
+    const fields = await container.formConfigurator.getFields();
+    expect(fields.has(FieldCode.create("items"))).toBe(true);
+    expect(fields.has(FieldCode.create("col2"))).toBe(false);
   });
 
   it("updateLayout の通信に失敗した場合、SystemErrorがスローされる", async () => {
