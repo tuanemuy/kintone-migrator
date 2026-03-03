@@ -1,12 +1,15 @@
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { Schema } from "@/core/domain/formSchema/entity";
-import { SchemaParser } from "@/core/domain/formSchema/services/schemaParser";
 import {
   SchemaValidator,
   type ValidationResult,
 } from "@/core/domain/formSchema/services/schemaValidator";
 import type { ValidateServiceArgs } from "../container/validate";
-import { ValidationError, ValidationErrorCode } from "../error";
+import {
+  isValidationError,
+  ValidationError,
+  ValidationErrorCode,
+} from "../error";
+import { parseSchemaText } from "./parseSchema";
 
 export type ValidateSchemaOutput = Readonly<{
   parseError?: string;
@@ -25,11 +28,14 @@ export async function validateSchema({
     );
   }
 
+  // try-catch is intentional here: parse errors are returned as a value
+  // (parseError field) instead of being thrown, so the caller can display
+  // both parse errors and validation results in a unified report.
   let schema: Schema;
   try {
-    schema = SchemaParser.parse(result.content);
+    schema = parseSchemaText(result.content);
   } catch (error) {
-    if (isBusinessRuleError(error)) {
+    if (isValidationError(error)) {
       return {
         parseError: error.message,
         fieldCount: 0,

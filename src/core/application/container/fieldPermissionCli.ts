@@ -1,10 +1,10 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneFieldPermissionConfigurator } from "@/core/adapters/kintone/fieldPermissionConfigurator";
 import { createLocalFileFieldPermissionStorage } from "@/core/adapters/local/fieldPermissionStorage";
 import type { KintoneAuth } from "@/core/application/container/cli";
-import { buildKintoneAuth } from "@/core/application/container/cli";
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
+import { createKintoneClient } from "./kintoneClient";
 
 export type FieldPermissionCliContainerConfig = {
   baseUrl: string;
@@ -12,16 +12,13 @@ export type FieldPermissionCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   fieldAclFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createFieldPermissionCliContainer(
   config: FieldPermissionCliContainerConfig,
 ): FieldPermissionContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     fieldPermissionConfigurator: new KintoneFieldPermissionConfigurator(

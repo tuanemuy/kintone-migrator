@@ -15,6 +15,7 @@ import {
 } from "./cli";
 import { createFieldPermissionCliContainer } from "./fieldPermissionCli";
 import { createGeneralSettingsCliContainer } from "./generalSettingsCli";
+import { createKintoneClient } from "./kintoneClient";
 import { createNotificationCliContainer } from "./notificationCli";
 import { createPluginCliContainer } from "./pluginCli";
 import { createProcessManagementCliContainer } from "./processManagementCli";
@@ -39,11 +40,13 @@ export type CreateCaptureContainersResult = Readonly<{
 export function createCliCaptureContainers(
   input: CreateCaptureContainersInput,
 ): CreateCaptureContainersResult {
+  const client = createKintoneClient(input);
   const base = {
     baseUrl: input.baseUrl,
     auth: input.auth,
     appId: input.appId,
     guestSpaceId: input.guestSpaceId,
+    client,
   };
   const paths = buildAppFilePaths(input.appName, input.baseDir);
 

@@ -9,12 +9,28 @@ import type { FormSchemaDiffServiceArgs } from "../container/formSchema";
 import type { DetectDiffOutput, DiffEntryDto, SchemaFieldDto } from "./dto";
 import { parseSchemaText } from "./parseSchema";
 
+function fieldPropertiesToDto(field: FieldDefinition): Record<string, unknown> {
+  if (field.type === "SUBTABLE") {
+    const innerFields: Record<string, unknown> = {};
+    for (const [code, def] of field.properties.fields) {
+      innerFields[code] = {
+        code: def.code,
+        type: def.type,
+        label: def.label,
+        properties: def.properties,
+      };
+    }
+    return { fields: innerFields };
+  }
+  return { ...field.properties };
+}
+
 function toFieldDto(field: FieldDefinition): DiffEntryDto["before"] {
   return {
     code: field.code,
     type: field.type,
     label: field.label,
-    properties: field.properties as Record<string, unknown>,
+    properties: fieldPropertiesToDto(field),
   };
 }
 

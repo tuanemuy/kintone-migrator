@@ -1,4 +1,4 @@
-import { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneCustomizationConfigurator } from "@/core/adapters/kintone/customizationConfigurator";
 import { KintoneFileDownloader } from "@/core/adapters/kintone/fileDownloader";
@@ -12,6 +12,7 @@ import { createLocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { SeedContainer } from "@/core/application/container/seed";
+import { createKintoneClient } from "./kintoneClient";
 
 export type KintoneAuth =
   | { type: "apiToken"; apiToken: string | string[] }
@@ -37,6 +38,7 @@ export type CliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   schemaFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export type SeedCliContainerConfig = {
@@ -45,16 +47,13 @@ export type SeedCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   seedFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createCliContainer(
   config: CliContainerConfig,
 ): FormSchemaContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     formConfigurator: new KintoneFormConfigurator(client, config.appId),
@@ -66,11 +65,7 @@ export function createCliContainer(
 export function createSeedCliContainer(
   config: SeedCliContainerConfig,
 ): SeedContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     recordManager: new KintoneRecordManager(client, config.appId),
@@ -84,16 +79,13 @@ export type CustomizationCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   customizeFilePath: string;
+  client?: KintoneRestAPIClient;
 };
 
 export function createCustomizationCliContainer(
   config: CustomizationCliContainerConfig,
 ): CustomizationContainer {
-  const client = new KintoneRestAPIClient({
-    baseUrl: config.baseUrl,
-    auth: buildKintoneAuth(config.auth),
-    guestSpaceId: config.guestSpaceId,
-  });
+  const client = config.client ?? createKintoneClient(config);
 
   return {
     customizationConfigurator: new KintoneCustomizationConfigurator(
