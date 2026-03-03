@@ -1,6 +1,5 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
-import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 
 /**
  * Returns `true` if {@link targetPath} resolves to a location within
@@ -46,23 +45,4 @@ export function isSafePath(targetPath: string, baseDir: string): boolean {
     resolvedTarget.startsWith(`${resolvedBase}/`) ||
     resolvedTarget === resolvedBase
   );
-}
-
-/**
- * Asserts that {@link targetPath} resolves to a location within
- * {@link baseDir}. Throws a {@link ValidationError} if the resolved
- * path escapes the allowed directory (e.g. via `..` segments or symlinks).
- *
- * **Architecture note**: This function intentionally depends on
- * {@link ValidationError} from the application layer for convenience —
- * callers in the adapter layer can use it directly without mapping.
- * {@link isSafePath} is a pure predicate with no such dependency.
- */
-export function assertSafePath(targetPath: string, baseDir: string): void {
-  if (!isSafePath(targetPath, baseDir)) {
-    throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
-      `Path traversal detected: "${targetPath}" escapes base directory "${baseDir}"`,
-    );
-  }
 }

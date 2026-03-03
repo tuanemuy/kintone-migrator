@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
-import { assertSafePath } from "@/lib/assertSafePath";
+import { isSafePath } from "@/lib/assertSafePath";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFileUploader implements FileUploader {
@@ -19,7 +19,12 @@ export class KintoneFileUploader implements FileUploader {
       );
     }
     const resolvedPath = resolve(this.baseDir, filePath);
-    assertSafePath(resolvedPath, this.baseDir);
+    if (!isSafePath(resolvedPath, this.baseDir)) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Path traversal detected: "${resolvedPath}" escapes base directory "${this.baseDir}"`,
+      );
+    }
     try {
       const response = await this.client.file.uploadFile({
         file: { path: resolvedPath },

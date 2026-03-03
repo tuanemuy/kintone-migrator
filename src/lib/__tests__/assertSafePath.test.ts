@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ValidationError } from "@/core/application/error";
-import { assertSafePath, isSafePath } from "../assertSafePath";
+import { isSafePath } from "../assertSafePath";
 
 describe("isSafePath", () => {
   const baseDir = "/home/user/project";
@@ -47,25 +46,5 @@ describe("isSafePath", () => {
     it("空文字列パスを baseDir 自体として扱う", () => {
       expect(isSafePath("", baseDir)).toBe(true);
     });
-  });
-});
-
-describe("assertSafePath", () => {
-  const baseDir = "/home/user/project";
-
-  it("安全なパスでは例外をスローしない", () => {
-    expect(() => assertSafePath("file.json", baseDir)).not.toThrow();
-  });
-
-  it("パストラバーサルを検出した場合 ValidationError をスローする", () => {
-    expect(() => assertSafePath("../etc/passwd", baseDir)).toThrow(
-      ValidationError,
-    );
-  });
-
-  it("エラーメッセージにパス情報が含まれる", () => {
-    expect(() => assertSafePath("../../etc/passwd", baseDir)).toThrow(
-      /Path traversal detected/,
-    );
   });
 });
