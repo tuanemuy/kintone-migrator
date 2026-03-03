@@ -5,7 +5,10 @@ import {
   enrichLayoutWithFields,
 } from "@/core/domain/formSchema/services/layoutEnricher";
 import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subtableFieldSplitter";
-import type { FieldDefinition } from "@/core/domain/formSchema/valueObject";
+import type {
+  FieldCode,
+  FieldDefinition,
+} from "@/core/domain/formSchema/valueObject";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
@@ -50,6 +53,7 @@ export async function executeMigration({
 
   const fieldsToAdd: FieldDefinition[] = [];
   const fieldsToUpdate: FieldDefinition[] = [];
+  const innerFieldsToDelete: FieldCode[] = [];
 
   for (const entry of added) {
     if (entry.after === undefined) continue;
@@ -68,16 +72,14 @@ export async function executeMigration({
       before !== undefined &&
       before.type === "SUBTABLE"
     ) {
-      const { newInnerFields, existingInnerFields } = splitSubtableInnerFields(
-        after,
-        before,
-      );
+      const { newInnerFields, existingInnerFields, deletedInnerFieldCodes } =
+        splitSubtableInnerFields(after, before);
 
       if (newInnerFields.size > 0) {
-        fieldsToAdd.push({
-          ...after,
-          properties: { fields: newInnerFields },
-        });
+        throw new ValidationError(
+          ValidationErrorCode.InvalidInput,
+          `kintone REST API does not support adding fields to an existing subtable. Use the schema override command instead. Subtable: ${after.code}`,
+        );
       }
 
       if (existingInnerFields.size > 0) {
@@ -85,6 +87,10 @@ export async function executeMigration({
           ...after,
           properties: { fields: existingInnerFields },
         });
+      }
+
+      for (const code of deletedInnerFieldCodes) {
+        innerFieldsToDelete.push(code);
       }
     } else {
       fieldsToUpdate.push(after);
@@ -99,12 +105,15 @@ export async function executeMigration({
     await container.formConfigurator.updateFields(fieldsToUpdate);
   }
 
-  if (deleted.length > 0) {
+  if (deleted.length > 0 || innerFieldsToDelete.length > 0) {
     const currentSubtableInnerCodes =
       collectSubtableInnerFieldCodes(currentFields);
-    const fieldCodes = deleted
-      .filter((e) => !currentSubtableInnerCodes.has(e.fieldCode))
-      .map((e) => e.fieldCode);
+    const fieldCodes = [
+      ...deleted
+        .filter((e) => !currentSubtableInnerCodes.has(e.fieldCode))
+        .map((e) => e.fieldCode),
+      ...innerFieldsToDelete,
+    ];
     if (fieldCodes.length > 0) {
       await container.formConfigurator.deleteFields(fieldCodes);
     }

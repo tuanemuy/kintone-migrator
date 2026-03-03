@@ -205,7 +205,7 @@ layout:
     expect(fields.has(FieldCode.create("items"))).toBe(true);
   });
 
-  it("サブテーブル内部フィールドは直接削除しない", async () => {
+  it("サブテーブル削除時に内部フィールドもカスケード削除される", async () => {
     const container = getContainer();
     const keep = textField("keep", "残す");
     const schemaWithKeep = `
@@ -240,9 +240,8 @@ layout:
     await executeMigration({ container });
 
     const fields = await container.formConfigurator.getFields();
-    // items (SUBTABLE) は削除されるが、item_nameは直接deleteFieldsされない
-    // InMemoryでは items削除時にitem_nameは残る（実際のkintoneではサブテーブル削除で内部フィールドも消える）
     expect(fields.has(FieldCode.create("items"))).toBe(false);
+    expect(fields.has(FieldCode.create("item_name"))).toBe(false);
   });
 
   it("追加・更新・削除が同時に発生するマイグレーションを実行できる", async () => {
@@ -370,7 +369,7 @@ layout:
     expect(layoutAfter).toHaveLength(layoutBefore.length);
   });
 
-  it("サブテーブルに新規内部フィールドがある場合、addFieldsでサブテーブルごと追加する", async () => {
+  it("サブテーブルに新規内部フィールドがある場合、ValidationErrorがスローされる", async () => {
     const container = getContainer();
     const existingInner = textField("item_name", "品名");
     const existingSub: SubtableFieldDefinition = {
@@ -411,28 +410,13 @@ layout:
         fields: [{ kind: "field", field: existingInner }],
       },
     ]);
-    container.formConfigurator.resetCallLog();
 
-    await executeMigration({ container });
-
-    // 新規内部フィールドはaddFieldsでサブテーブルごと追加される
-    const mutationCalls = container.formConfigurator.callLog.filter(
-      (c) => c === "addFields" || c === "updateFields" || c === "deleteFields",
+    await expect(executeMigration({ container })).rejects.toThrow(
+      ValidationError,
     );
-    expect(mutationCalls).toContain("addFields");
-
-    const fields = await container.formConfigurator.getFields();
-    expect(fields.has(FieldCode.create("items"))).toBe(true);
-    const items = fields.get(FieldCode.create("items"));
-    if (items?.type === "SUBTABLE") {
-      expect(items.properties.fields.size).toBe(2);
-      expect(items.properties.fields.has(FieldCode.create("item_qty"))).toBe(
-        true,
-      );
-    }
   });
 
-  it("サブテーブルの内部フィールドが減った場合、減ったフィールドは直接削除されない", async () => {
+  it("サブテーブルの内部フィールドが減った場合、deleteFieldsで削除される", async () => {
     const container = getContainer();
     // スキーマ: items の中に col1 のみ
     const schema = `
@@ -482,12 +466,9 @@ layout:
 
     await executeMigration({ container });
 
-    // col2 はサブテーブル内部フィールドなので直接 deleteFields されない
-    // items は更新される（内部フィールド構成が変わったので）
     const fields = await container.formConfigurator.getFields();
     expect(fields.has(FieldCode.create("items"))).toBe(true);
-    // col2 は直接削除されないが、InMemory では残る（実際のkintoneではサブテーブル更新時に反映される）
-    expect(fields.has(FieldCode.create("col2"))).toBe(true);
+    expect(fields.has(FieldCode.create("col2"))).toBe(false);
   });
 
   it("修正フィールドがサブテーブル内部フィールドのみの場合、updateFieldsを呼ばない", async () => {
