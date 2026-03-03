@@ -73,9 +73,16 @@ export class RevisionTracker {
 
   track(revision: string): void {
     const revisionNum = Number(revision);
-    if (!Number.isFinite(revisionNum)) return;
+    // Intentionally ignore non-numeric revision values (e.g. empty strings
+    // or malformed API responses) to avoid corrupting the tracked state.
+    if (!Number.isFinite(revisionNum)) {
+      console.warn(
+        `RevisionTracker: ignoring non-numeric revision value: "${revision}"`,
+      );
+      return;
+    }
     if (this.revision === undefined || revisionNum > Number(this.revision)) {
-      this.revision = revision;
+      this.revision = String(revisionNum);
     }
   }
 

@@ -7,6 +7,8 @@ import {
   SystemError,
   SystemErrorCode,
   UnauthenticatedError,
+  ValidationError,
+  ValidationErrorCode,
 } from "@/core/application/error";
 import { BusinessRuleError } from "@/core/domain/error";
 import { FormSchemaErrorCode } from "@/core/domain/formSchema/errorCode";
@@ -43,6 +45,37 @@ describe("wrapKintoneError", () => {
       );
       expect(() => wrapKintoneError(error, message)).toThrow(error);
     });
+
+    it("ValidationError をそのまま再スローする", () => {
+      const error = new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        "validation error",
+      );
+      expect(() => wrapKintoneError(error, message)).toThrow(error);
+    });
+
+    it("NotFoundError をそのまま再スローする", () => {
+      const error = new NotFoundError("NOT_FOUND", "not found");
+      expect(() => wrapKintoneError(error, message)).toThrow(error);
+    });
+
+    it("ConflictError をそのまま再スローする", () => {
+      const error = new ConflictError("CONFLICT", "conflict");
+      expect(() => wrapKintoneError(error, message)).toThrow(error);
+    });
+
+    it("ForbiddenError をそのまま再スローする", () => {
+      const error = new ForbiddenError("INSUFFICIENT_PERMISSIONS", "forbidden");
+      expect(() => wrapKintoneError(error, message)).toThrow(error);
+    });
+
+    it("UnauthenticatedError をそのまま再スローする", () => {
+      const error = new UnauthenticatedError(
+        "INVALID_CREDENTIALS",
+        "unauthenticated",
+      );
+      expect(() => wrapKintoneError(error, message)).toThrow(error);
+    });
   });
 
   describe("KintoneRestAPIError のHTTPステータスマッピング", () => {
@@ -73,6 +106,18 @@ describe("wrapKintoneError", () => {
       expect(() => wrapKintoneError(error, message)).toThrow(ConflictError);
     });
 
+    it("GAIA_CO02 のメッセージにリビジョンコンフリクト情報が付加される", () => {
+      const error = createKintoneAPIError(400, "GAIA_CO02");
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        /revision conflict/,
+      );
+    });
+
+    it("400 (非GAIA_CO02) → ValidationError", () => {
+      const error = createKintoneAPIError(400, "CB_VA01");
+      expect(() => wrapKintoneError(error, message)).toThrow(ValidationError);
+    });
+
     it("その他のHTTPステータス → SystemError", () => {
       const error = createKintoneAPIError(500);
       expect(() => wrapKintoneError(error, message)).toThrow(SystemError);
@@ -94,6 +139,7 @@ describe("wrapKintoneError", () => {
 
   describe("エラーメッセージの伝搬", () => {
     it("指定されたメッセージがエラーに設定される", () => {
+      expect.assertions(3);
       const error = createKintoneAPIError(401);
       try {
         wrapKintoneError(error, message);

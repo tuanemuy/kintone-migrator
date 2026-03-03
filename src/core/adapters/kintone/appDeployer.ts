@@ -1,5 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import {
+  ApplicationError,
+  SystemError,
+  SystemErrorCode,
+} from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
 import { wrapKintoneError } from "./wrapKintoneError";
@@ -55,9 +59,12 @@ export class KintoneAppDeployer implements AppDeployer {
         apps = response.apps;
         consecutivePollFailures = 0;
       } catch (error) {
-        // Rethrow known application/domain errors immediately
+        // NOTE: This duplicates the pass-through logic of wrapKintoneError,
+        // but we cannot use that helper here because polling requires
+        // retry-on-transient-failure semantics that wrapKintoneError does
+        // not support (it always throws).
         if (isBusinessRuleError(error)) throw error;
-        if (error instanceof SystemError) throw error;
+        if (error instanceof ApplicationError) throw error;
         // Transient network errors during polling should retry, but give up
         // after too many consecutive failures to avoid masking permanent errors.
         lastPollError = error;

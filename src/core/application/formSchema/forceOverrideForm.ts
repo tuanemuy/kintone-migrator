@@ -43,21 +43,30 @@ export async function forceOverrideForm({
             deletedInnerFieldCodes,
           } = splitSubtableInnerFields(schemaDef, currentDef);
 
-          if (newInnerFields.size > 0) {
+          if (newInnerFields.size > 0 || existingInnerFields.size === 0) {
+            // Subtable must be deleted and re-created when:
+            //  - new inner fields are being added (kintone REST API does not
+            //    support adding fields to an existing subtable), OR
+            //  - all inner fields would be removed (kintone rejects an empty
+            //    subtable, so we must cascade-delete via the subtable itself).
+            // Inner field deletions are handled by the cascade — do NOT push
+            // deletedInnerFieldCodes here to avoid a double-delete API error.
             toDelete.push(fieldCode);
             toAdd.push(schemaDef);
-          } else if (existingInnerFields.size > 0) {
+          } else {
             toUpdate.push({
               ...schemaDef,
               properties: { fields: existingInnerFields },
             });
-          }
 
-          for (const code of deletedInnerFieldCodes) {
-            innerFieldsToDelete.push(code);
+            for (const code of deletedInnerFieldCodes) {
+              innerFieldsToDelete.push(code);
+            }
           }
         } else {
-          toUpdate.push(schemaDef);
+          // Type changed from non-subtable to subtable — must delete and re-create
+          toDelete.push(fieldCode);
+          toAdd.push(schemaDef);
         }
       } else {
         toUpdate.push(schemaDef);
@@ -78,10 +87,10 @@ export async function forceOverrideForm({
   }
 
   if (toDelete.length > 0 || innerFieldsToDelete.length > 0) {
-    const fieldCodes = [...toDelete, ...innerFieldsToDelete];
-    if (fieldCodes.length > 0) {
-      await container.formConfigurator.deleteFields(fieldCodes);
-    }
+    await container.formConfigurator.deleteFields([
+      ...toDelete,
+      ...innerFieldsToDelete,
+    ]);
   }
 
   if (toAdd.length > 0) {

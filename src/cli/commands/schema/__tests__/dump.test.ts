@@ -46,10 +46,10 @@ vi.mock("@/cli/projectConfig", () => ({
 }));
 
 vi.mock("@kintone/rest-api-client", async (importOriginal) => {
-  const actual =
+  const { KintoneRestAPIError } =
     await importOriginal<typeof import("@kintone/rest-api-client")>();
   return {
-    ...actual,
+    KintoneRestAPIError,
     KintoneRestAPIClient: class {
       app = {
         getFormFields: mocks.getFormFields,
@@ -73,6 +73,7 @@ vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
 
+import { resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
 import { SystemError } from "@/core/application/error";
@@ -96,12 +97,12 @@ describe("dump コマンド", () => {
     expect(mocks.getFormFields).toHaveBeenCalled();
     expect(mocks.getFormLayout).toHaveBeenCalled();
     expect(mocks.writeFile).toHaveBeenCalledWith(
-      "fields.json",
+      resolve(process.cwd(), "fields.json"),
       JSON.stringify(fieldsData, null, 2),
       "utf-8",
     );
     expect(mocks.writeFile).toHaveBeenCalledWith(
-      "layout.json",
+      resolve(process.cwd(), "layout.json"),
       JSON.stringify(layoutData, null, 2),
       "utf-8",
     );

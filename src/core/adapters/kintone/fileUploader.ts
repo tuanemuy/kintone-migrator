@@ -1,5 +1,6 @@
+import { resolve } from "node:path";
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
 import { assertSafePath } from "@/lib/assertSafePath";
 import { wrapKintoneError } from "./wrapKintoneError";
@@ -12,15 +13,16 @@ export class KintoneFileUploader implements FileUploader {
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
     if (!filePath) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
         "filePath must not be empty",
       );
     }
-    assertSafePath(filePath, this.baseDir);
+    const resolvedPath = resolve(this.baseDir, filePath);
+    assertSafePath(resolvedPath, this.baseDir);
     try {
       const response = await this.client.file.uploadFile({
-        file: { path: filePath },
+        file: { path: resolvedPath },
       });
       return { fileKey: response.fileKey };
     } catch (error) {
