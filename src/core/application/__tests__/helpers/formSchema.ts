@@ -28,20 +28,6 @@ export class InMemoryFormConfigurator
   async addFields(fields: readonly FieldDefinition[]): Promise<void> {
     this.trackCall("addFields");
     for (const field of fields) {
-      if (field.type === "SUBTABLE") {
-        const existing = this.fields.get(field.code);
-        if (existing !== undefined && existing.type === "SUBTABLE") {
-          const mergedInner = new Map(existing.properties.fields);
-          for (const [code, def] of field.properties.fields) {
-            mergedInner.set(code, def);
-          }
-          this.fields.set(field.code, {
-            ...existing,
-            properties: { fields: mergedInner },
-          });
-          continue;
-        }
-      }
       this.fields.set(field.code, field);
     }
   }
@@ -70,6 +56,12 @@ export class InMemoryFormConfigurator
   async deleteFields(fieldCodes: readonly FieldCode[]): Promise<void> {
     this.trackCall("deleteFields");
     for (const code of fieldCodes) {
+      const field = this.fields.get(code);
+      if (field?.type === "SUBTABLE") {
+        for (const innerCode of field.properties.fields.keys()) {
+          this.fields.delete(innerCode);
+        }
+      }
       this.fields.delete(code);
     }
   }
