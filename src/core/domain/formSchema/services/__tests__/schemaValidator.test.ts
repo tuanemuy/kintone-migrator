@@ -489,6 +489,38 @@ describe("SchemaValidator", () => {
     });
   });
 
+  describe("validateSubtableHasInnerFields", () => {
+    it("SUBTABLE に内部フィールドが0個の場合エラーになる", () => {
+      const subtable: SubtableFieldDefinition = {
+        code: "table" as FieldCode,
+        type: "SUBTABLE",
+        label: "テーブル",
+        properties: {
+          fields: new Map(),
+        },
+      };
+      const result = SchemaValidator.validate(createSchema([subtable]));
+      expect(result.isValid).toBe(false);
+      expect(result.issues.some((i) => i.rule === "EMPTY_SUBTABLE")).toBe(true);
+    });
+
+    it("SUBTABLE に内部フィールドがある場合エラーにならない", () => {
+      const inner = textField("col1", "列1");
+      const subtable: SubtableFieldDefinition = {
+        code: "table" as FieldCode,
+        type: "SUBTABLE",
+        label: "テーブル",
+        properties: {
+          fields: new Map([["col1" as FieldCode, inner]]),
+        },
+      };
+      const result = SchemaValidator.validate(createSchema([subtable]));
+      expect(
+        result.issues.filter((i) => i.rule === "EMPTY_SUBTABLE"),
+      ).toHaveLength(0);
+    });
+  });
+
   describe("SUBTABLE 内フィールドの検証", () => {
     it("SUBTABLE 内フィールドも検証対象になる", () => {
       const innerField = textField("inner", "");

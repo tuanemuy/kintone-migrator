@@ -7,6 +7,7 @@ import type {
 export type SubtableSplitResult = Readonly<{
   newInnerFields: ReadonlyMap<FieldCode, FieldDefinition>;
   existingInnerFields: ReadonlyMap<FieldCode, FieldDefinition>;
+  deletedInnerFieldCodes: readonly FieldCode[];
 }>;
 
 export function splitSubtableInnerFields(
@@ -15,6 +16,7 @@ export function splitSubtableInnerFields(
 ): SubtableSplitResult {
   const newInnerFields = new Map<FieldCode, FieldDefinition>();
   const existingInnerFields = new Map<FieldCode, FieldDefinition>();
+  const deletedInnerFieldCodes: FieldCode[] = [];
 
   for (const [code, def] of desired.properties.fields) {
     if (current.properties.fields.has(code)) {
@@ -24,5 +26,11 @@ export function splitSubtableInnerFields(
     }
   }
 
-  return { newInnerFields, existingInnerFields };
+  for (const code of current.properties.fields.keys()) {
+    if (!desired.properties.fields.has(code)) {
+      deletedInnerFieldCodes.push(code);
+    }
+  }
+
+  return { newInnerFields, existingInnerFields, deletedInnerFieldCodes };
 }

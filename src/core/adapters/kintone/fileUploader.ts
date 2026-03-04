@@ -1,31 +1,37 @@
+import { resolve } from "node:path";
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { isSafePath } from "@/lib/safePath";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFileUploader implements FileUploader {
-  constructor(private readonly client: KintoneRestAPIClient) {}
+  constructor(
+    private readonly client: KintoneRestAPIClient,
+    private readonly baseDir: string,
+  ) {}
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
     if (!filePath) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
         "filePath must not be empty",
+      );
+    }
+    const resolvedPath = resolve(this.baseDir, filePath);
+    if (!isSafePath(resolvedPath, this.baseDir)) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Path traversal detected: "${resolvedPath}" escapes base directory "${this.baseDir}"`,
       );
     }
     try {
       const response = await this.client.file.uploadFile({
-        file: { path: filePath },
+        file: { path: resolvedPath },
       });
       return { fileKey: response.fileKey };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `Failed to upload file: ${filePath}`,
-        error,
-      );
+      throw wrapKintoneError(error, `Failed to upload file: ${filePath}`);
     }
   }
 }

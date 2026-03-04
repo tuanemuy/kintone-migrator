@@ -1,9 +1,25 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import {
+  ApplicationError,
+  SystemError,
+  SystemErrorCode,
+} from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type DeployStatus = "PROCESSING" | "SUCCESS" | "FAIL" | "CANCEL";
+
+const VALID_DEPLOY_STATUSES: ReadonlySet<string> = new Set<DeployStatus>([
+  "PROCESSING",
+  "SUCCESS",
+  "FAIL",
+  "CANCEL",
+]);
+
+function isDeployStatus(value: string): value is DeployStatus {
+  return VALID_DEPLOY_STATUSES.has(value);
+}
 
 type KintoneAppDeployerConfig = {
   pollIntervalMs?: number;
@@ -31,17 +47,11 @@ export class KintoneAppDeployer implements AppDeployer {
       await this.client.app.deployApp({
         apps: [{ app: this.appId }],
       });
-
-      await this.waitForDeployment();
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to deploy app",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to deploy app");
     }
+
+    await this.waitForDeployment();
   }
 
   private async waitForDeployment(): Promise<void> {
@@ -60,9 +70,9 @@ export class KintoneAppDeployer implements AppDeployer {
         apps = response.apps;
         consecutivePollFailures = 0;
       } catch (error) {
-        // Rethrow known application/domain errors immediately
+        // wrapKintoneError always throws — polling needs retry semantics.
         if (isBusinessRuleError(error)) throw error;
-        if (error instanceof SystemError) throw error;
+        if (error instanceof ApplicationError) throw error;
         // Transient network errors during polling should retry, but give up
         // after too many consecutive failures to avoid masking permanent errors.
         lastPollError = error;
@@ -77,9 +87,28 @@ export class KintoneAppDeployer implements AppDeployer {
         continue;
       }
 
-      const status = apps[0]?.status as DeployStatus | undefined;
+      if (apps.length === 0) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          "Deploy status response contained no apps",
+        );
+      }
 
-      switch (status) {
+      const rawStatus = apps[0].status;
+      if (rawStatus === undefined) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          "Deploy status unavailable",
+        );
+      }
+      if (!isDeployStatus(rawStatus)) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected deploy status: ${rawStatus}`,
+        );
+      }
+
+      switch (rawStatus) {
         case "SUCCESS":
           return;
         case "FAIL":
@@ -94,16 +123,6 @@ export class KintoneAppDeployer implements AppDeployer {
           );
         case "PROCESSING":
           continue;
-        case undefined:
-          throw new SystemError(
-            SystemErrorCode.ExternalApiError,
-            "Deploy status unavailable",
-          );
-        default:
-          throw new SystemError(
-            SystemErrorCode.ExternalApiError,
-            `Unexpected deploy status: ${status satisfies never}`,
-          );
       }
     }
 

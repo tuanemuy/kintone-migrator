@@ -43,6 +43,7 @@ describe("splitSubtableInnerFields", () => {
 
     expect(result.newInnerFields.size).toBe(2);
     expect(result.existingInnerFields.size).toBe(0);
+    expect(result.deletedInnerFieldCodes).toHaveLength(0);
     expect(result.newInnerFields.has(FC.create("a"))).toBe(true);
     expect(result.newInnerFields.has(FC.create("b"))).toBe(true);
   });
@@ -67,6 +68,7 @@ describe("splitSubtableInnerFields", () => {
 
     expect(result.newInnerFields.size).toBe(0);
     expect(result.existingInnerFields.size).toBe(2);
+    expect(result.deletedInnerFieldCodes).toHaveLength(0);
   });
 
   it("新規と既存が混在する場合、正しく分割される", () => {
@@ -86,11 +88,12 @@ describe("splitSubtableInnerFields", () => {
 
     expect(result.newInnerFields.size).toBe(1);
     expect(result.existingInnerFields.size).toBe(1);
+    expect(result.deletedInnerFieldCodes).toHaveLength(0);
     expect(result.newInnerFields.has(FC.create("new_field"))).toBe(true);
     expect(result.existingInnerFields.has(FC.create("existing"))).toBe(true);
   });
 
-  it("desiredが空の場合、両方とも空になる", () => {
+  it("desiredが空の場合、currentの全フィールドがdeletedInnerFieldCodesに入る", () => {
     const desired = makeSubtable("table", new Map());
     const current = makeSubtable(
       "table",
@@ -101,5 +104,29 @@ describe("splitSubtableInnerFields", () => {
 
     expect(result.newInnerFields.size).toBe(0);
     expect(result.existingInnerFields.size).toBe(0);
+    expect(result.deletedInnerFieldCodes).toEqual([FC.create("a")]);
+  });
+
+  it("currentにあってdesiredにないフィールドがdeletedInnerFieldCodesに入る", () => {
+    const desired = makeSubtable(
+      "table",
+      new Map([[FC.create("keep"), textField("keep")]]),
+    );
+    const current = makeSubtable(
+      "table",
+      new Map([
+        [FC.create("keep"), textField("keep")],
+        [FC.create("remove1"), textField("remove1")],
+        [FC.create("remove2"), textField("remove2")],
+      ]),
+    );
+
+    const result = splitSubtableInnerFields(desired, current);
+
+    expect(result.newInnerFields.size).toBe(0);
+    expect(result.existingInnerFields.size).toBe(1);
+    expect(result.deletedInnerFieldCodes).toHaveLength(2);
+    expect(result.deletedInnerFieldCodes).toContain(FC.create("remove1"));
+    expect(result.deletedInnerFieldCodes).toContain(FC.create("remove2"));
   });
 });

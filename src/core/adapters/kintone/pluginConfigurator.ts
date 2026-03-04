@@ -1,8 +1,7 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { PluginConfig } from "@/core/domain/plugin/entity";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintonePluginConfigurator implements PluginConfigurator {
   constructor(
@@ -33,13 +32,7 @@ export class KintonePluginConfigurator implements PluginConfigurator {
         revision: response.revision,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get plugins",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to get plugins");
     }
   }
 
@@ -50,18 +43,12 @@ export class KintonePluginConfigurator implements PluginConfigurator {
     try {
       const result = await this.client.app.addPlugins({
         app: this.appId,
-        ids: params.ids as string[],
+        ids: [...params.ids],
         revision: params.revision,
       });
       return { revision: result.revision };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to add plugins",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to add plugins");
     }
   }
 }

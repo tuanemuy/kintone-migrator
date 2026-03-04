@@ -1,8 +1,7 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AdminNotesConfig } from "@/core/domain/adminNotes/entity";
 import type { AdminNotesConfigurator } from "@/core/domain/adminNotes/ports/adminNotesConfigurator";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneAdminNotesConfigurator implements AdminNotesConfigurator {
   constructor(
@@ -29,13 +28,7 @@ export class KintoneAdminNotesConfigurator implements AdminNotesConfigurator {
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get admin notes",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to get admin notes");
     }
   }
 
@@ -61,13 +54,7 @@ export class KintoneAdminNotesConfigurator implements AdminNotesConfigurator {
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update admin notes",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to update admin notes");
     }
   }
 }

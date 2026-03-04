@@ -1,15 +1,15 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFileDownloader implements FileDownloader {
   constructor(private readonly client: KintoneRestAPIClient) {}
 
   async download(fileKey: string): Promise<ArrayBuffer> {
     if (!fileKey) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
         "fileKey must not be empty",
       );
     }
@@ -17,13 +17,7 @@ export class KintoneFileDownloader implements FileDownloader {
       const response = await this.client.file.downloadFile({ fileKey });
       return response;
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `Failed to download file: ${fileKey}`,
-        error,
-      );
+      throw wrapKintoneError(error, `Failed to download file: ${fileKey}`);
     }
   }
 }

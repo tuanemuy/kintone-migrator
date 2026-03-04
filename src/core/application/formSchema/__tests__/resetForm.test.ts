@@ -42,7 +42,7 @@ describe("resetForm", () => {
     expect(fields.size).toBe(0);
   });
 
-  it("サブテーブル内部フィールドは deleteFields の対象に含まれない", async () => {
+  it("サブテーブル削除時に内部フィールドもカスケード削除される", async () => {
     const container = getContainer();
     const innerField = textField("item_name", "品名");
     const subField: SubtableFieldDefinition = {
@@ -65,10 +65,8 @@ describe("resetForm", () => {
     await resetForm({ container });
 
     const fields = await container.formConfigurator.getFields();
-    // items（サブテーブル本体）は削除される
     expect(fields.has(FieldCode.create("items"))).toBe(false);
-    // item_name はサブテーブル内部フィールドなので直接 deleteFields されない
-    expect(fields.has(FieldCode.create("item_name"))).toBe(true);
+    expect(fields.has(FieldCode.create("item_name"))).toBe(false);
   });
 
   it("フィールド削除後に updateLayout が空のレイアウトで呼ばれる", async () => {

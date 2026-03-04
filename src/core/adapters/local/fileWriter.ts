@@ -1,13 +1,28 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { dirname, resolve } from "node:path";
+import {
+  SystemError,
+  SystemErrorCode,
+  ValidationError,
+  ValidationErrorCode,
+} from "@/core/application/error";
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
+import { isSafePath } from "@/lib/safePath";
 
 export class LocalFileWriter implements FileWriter {
+  constructor(private readonly baseDir: string = process.cwd()) {}
+
   async write(filePath: string, data: ArrayBuffer): Promise<void> {
+    const resolvedPath = resolve(this.baseDir, filePath);
+    if (!isSafePath(resolvedPath, this.baseDir)) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Path traversal detected: "${resolvedPath}" escapes base directory "${this.baseDir}"`,
+      );
+    }
     try {
-      await mkdir(dirname(filePath), { recursive: true });
-      await writeFile(filePath, Buffer.from(new Uint8Array(data)));
+      await mkdir(dirname(resolvedPath), { recursive: true });
+      await writeFile(resolvedPath, Buffer.from(new Uint8Array(data)));
     } catch (error) {
       throw new SystemError(
         SystemErrorCode.StorageError,

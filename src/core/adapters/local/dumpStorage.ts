@@ -1,13 +1,37 @@
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
+import { dirname, resolve } from "node:path";
+import {
+  SystemError,
+  SystemErrorCode,
+  ValidationError,
+  ValidationErrorCode,
+} from "@/core/application/error";
 import type { DumpStorage } from "@/core/domain/formSchema/ports/dumpStorage";
+import { isSafePath } from "@/lib/safePath";
 
 export class LocalFileDumpStorage implements DumpStorage {
-  constructor(private readonly filePrefix: string) {}
+  constructor(
+    private readonly filePrefix: string,
+    private readonly baseDir: string = process.cwd(),
+  ) {
+    const fieldsPath = resolve(this.baseDir, `${this.filePrefix}fields.json`);
+    if (!isSafePath(fieldsPath, this.baseDir)) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Path traversal detected: "${fieldsPath}" escapes base directory "${this.baseDir}"`,
+      );
+    }
+    const layoutPath = resolve(this.baseDir, `${this.filePrefix}layout.json`);
+    if (!isSafePath(layoutPath, this.baseDir)) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Path traversal detected: "${layoutPath}" escapes base directory "${this.baseDir}"`,
+      );
+    }
+  }
 
   async saveFields(content: string): Promise<void> {
-    const filePath = `${this.filePrefix}fields.json`;
+    const filePath = resolve(this.baseDir, `${this.filePrefix}fields.json`);
     try {
       await mkdir(dirname(filePath), { recursive: true });
       await writeFile(filePath, content, "utf-8");
@@ -21,7 +45,7 @@ export class LocalFileDumpStorage implements DumpStorage {
   }
 
   async saveLayout(content: string): Promise<void> {
-    const filePath = `${this.filePrefix}layout.json`;
+    const filePath = resolve(this.baseDir, `${this.filePrefix}layout.json`);
     try {
       await mkdir(dirname(filePath), { recursive: true });
       await writeFile(filePath, content, "utf-8");

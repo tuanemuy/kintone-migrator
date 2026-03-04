@@ -1,6 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
 import type {
@@ -21,6 +20,7 @@ import {
   isSortBy,
   isSortOrder,
 } from "@/core/domain/report/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneReportGroup = {
   code: string;
@@ -375,13 +375,7 @@ export class KintoneReportConfigurator implements ReportConfigurator {
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get reports",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to get reports");
     }
   }
 
@@ -411,13 +405,7 @@ export class KintoneReportConfigurator implements ReportConfigurator {
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update reports",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to update reports");
     }
   }
 }

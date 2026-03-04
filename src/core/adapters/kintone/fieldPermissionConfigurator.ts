@@ -1,6 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { FieldRight } from "@/core/domain/fieldPermission/entity";
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
 import type {
@@ -8,6 +7,7 @@ import type {
   FieldRightAccessibility,
   FieldRightEntity,
 } from "@/core/domain/fieldPermission/valueObject";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_ACCESSIBILITIES: ReadonlySet<string> = new Set([
   "READ",
@@ -123,13 +123,7 @@ export class KintoneFieldPermissionConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get field ACL",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to get field ACL");
     }
   }
 
@@ -153,13 +147,7 @@ export class KintoneFieldPermissionConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update field ACL",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to update field ACL");
     }
   }
 }

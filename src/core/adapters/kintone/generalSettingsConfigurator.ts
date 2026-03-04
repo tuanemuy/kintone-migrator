@@ -1,6 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
 import type { GeneralSettingsConfig } from "@/core/domain/generalSettings/entity";
 import type { GeneralSettingsConfigurator } from "@/core/domain/generalSettings/ports/generalSettingsConfigurator";
 import type {
@@ -12,6 +11,8 @@ import type {
   TitleFieldConfig,
   TitleFieldSelectionMode,
 } from "@/core/domain/generalSettings/valueObject";
+import { parseKintoneIntegerField } from "./parseKintoneIntegerField";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_THEMES: ReadonlySet<string> = new Set([
   "WHITE",
@@ -120,8 +121,8 @@ function fromKintoneNumberPrecision(raw: {
     );
   }
   return {
-    digits: Number(raw.digits),
-    decimalPlaces: Number(raw.decimalPlaces),
+    digits: parseKintoneIntegerField(raw.digits, "digits"),
+    decimalPlaces: parseKintoneIntegerField(raw.decimalPlaces, "decimalPlaces"),
     roundingMode: raw.roundingMode as RoundingMode,
   };
 }
@@ -163,7 +164,12 @@ function fromKintoneSettings(
       ? { numberPrecision: fromKintoneNumberPrecision(raw.numberPrecision) }
       : {}),
     ...(raw.firstMonthOfFiscalYear !== undefined
-      ? { firstMonthOfFiscalYear: Number(raw.firstMonthOfFiscalYear) }
+      ? {
+          firstMonthOfFiscalYear: parseKintoneIntegerField(
+            raw.firstMonthOfFiscalYear,
+            "firstMonthOfFiscalYear",
+          ),
+        }
       : {}),
   };
 
@@ -282,13 +288,7 @@ export class KintoneGeneralSettingsConfigurator
         revision: raw.revision ?? "-1",
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get general settings",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to get general settings");
     }
   }
 
@@ -314,13 +314,7 @@ export class KintoneGeneralSettingsConfigurator
 
       return { revision: response.revision };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update general settings",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to update general settings");
     }
   }
 }

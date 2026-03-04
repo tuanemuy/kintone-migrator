@@ -8,7 +8,7 @@ import type {
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
 import { isCustomizationScope } from "@/core/domain/customization/valueObject";
-import { isBusinessRuleError } from "@/core/domain/error";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneCustomizeResource = {
   type: "FILE" | "URL";
@@ -136,13 +136,7 @@ export class KintoneCustomizationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to get app customization",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to get app customization");
     }
   }
 
@@ -197,13 +191,7 @@ export class KintoneCustomizationConfigurator
 
       return { revision: String(response.revision) };
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        "Failed to update app customization",
-        error,
-      );
+      throw wrapKintoneError(error, "Failed to update app customization");
     }
   }
 }

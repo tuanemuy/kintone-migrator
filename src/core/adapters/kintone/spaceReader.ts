@@ -1,8 +1,13 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { SystemError, SystemErrorCode } from "@/core/application/error";
-import { isBusinessRuleError } from "@/core/domain/error";
+import {
+  SystemError,
+  SystemErrorCode,
+  ValidationError,
+  ValidationErrorCode,
+} from "@/core/application/error";
 import type { SpaceApp } from "@/core/domain/space/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
+import { wrapKintoneError } from "./wrapKintoneError";
 
 /**
  * Reads space information from the kintone REST API.
@@ -21,8 +26,8 @@ export class KintoneSpaceReader implements SpaceReader {
 
   async getSpaceApps(spaceId: string): Promise<readonly SpaceApp[]> {
     if (!spaceId) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
         "spaceId must not be empty",
       );
     }
@@ -85,12 +90,9 @@ export class KintoneSpaceReader implements SpaceReader {
 
       return result;
     } catch (error) {
-      if (isBusinessRuleError(error)) throw error;
-      if (error instanceof SystemError) throw error;
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `Failed to get space info for space ID: ${spaceId}`,
+      throw wrapKintoneError(
         error,
+        `Failed to get space info for space ID: ${spaceId}`,
       );
     }
   }
