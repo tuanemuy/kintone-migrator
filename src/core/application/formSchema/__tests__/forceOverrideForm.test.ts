@@ -434,7 +434,7 @@ layout:
     await expect(forceOverrideForm({ container })).rejects.toThrow(SystemError);
   });
 
-  it("addFieldsの通信に失敗した場合、SystemErrorがスローされ後続の更新・削除操作は実行されない", async () => {
+  it("addFieldsの通信に失敗した場合、SystemErrorがスローされ後続のupdateFields・updateLayoutは実行されない", async () => {
     const container = getContainer();
     const schema = `
 layout:
@@ -452,8 +452,9 @@ layout:
 
     await expect(forceOverrideForm({ container })).rejects.toThrow(SystemError);
 
+    // Operation order is delete → add → update, so deleteFields may run before
+    // addFields. Here we verify that operations after addFields do not run.
     expect(container.formConfigurator.callLog).not.toContain("updateFields");
-    expect(container.formConfigurator.callLog).not.toContain("deleteFields");
     expect(container.formConfigurator.callLog).not.toContain("updateLayout");
   });
 
@@ -722,6 +723,83 @@ layout:
       expect(items.properties.fields.has(FieldCode.create("col3"))).toBe(true);
       expect(items.properties.fields.has(FieldCode.create("col2"))).toBe(false);
     }
+  });
+
+  it("SUBTABLE から非 SUBTABLE への型変更は削除→再作成される", async () => {
+    const container = getContainer();
+    // desired: name is now a SINGLE_LINE_TEXT
+    const schema = `
+layout:
+  - type: ROW
+    fields:
+      - code: items
+        type: SINGLE_LINE_TEXT
+        label: 元サブテーブル
+`;
+    container.schemaStorage.setContent(schema);
+
+    const innerField = textField("item_name", "品名");
+    const subField: SubtableFieldDefinition = {
+      code: FieldCode.create("items"),
+      type: "SUBTABLE",
+      label: "明細",
+      properties: {
+        fields: new Map([[FieldCode.create("item_name"), innerField]]),
+      },
+    };
+    container.formConfigurator.setFields(
+      new Map([
+        [FieldCode.create("items"), subField],
+        [FieldCode.create("item_name"), innerField],
+      ]),
+    );
+    container.formConfigurator.setLayout([]);
+    container.formConfigurator.resetCallLog();
+
+    await forceOverrideForm({ container });
+
+    const fields = await container.formConfigurator.getFields();
+    const items = fields.get(FieldCode.create("items"));
+    expect(items?.type).toBe("SINGLE_LINE_TEXT");
+
+    // Should delete then add (not update) because type changed
+    const mutationCalls = container.formConfigurator.callLog.filter(
+      (c) => c === "addFields" || c === "deleteFields",
+    );
+    expect(mutationCalls).toContain("deleteFields");
+    expect(mutationCalls).toContain("addFields");
+  });
+
+  it("非 SUBTABLE から SUBTABLE 以外の型変更も削除→再作成される", async () => {
+    const container = getContainer();
+    const schema = `
+layout:
+  - type: ROW
+    fields:
+      - code: field1
+        type: NUMBER
+        label: 数値フィールド
+`;
+    container.schemaStorage.setContent(schema);
+
+    const existing = textField("field1", "テキストフィールド");
+    container.formConfigurator.setFields(
+      new Map([[FieldCode.create("field1"), existing]]),
+    );
+    container.formConfigurator.setLayout([]);
+    container.formConfigurator.resetCallLog();
+
+    await forceOverrideForm({ container });
+
+    const fields = await container.formConfigurator.getFields();
+    const field = fields.get(FieldCode.create("field1"));
+    expect(field?.type).toBe("NUMBER");
+
+    const mutationCalls = container.formConfigurator.callLog.filter(
+      (c) => c === "addFields" || c === "deleteFields",
+    );
+    expect(mutationCalls).toContain("deleteFields");
+    expect(mutationCalls).toContain("addFields");
   });
 
   it("updateLayout の通信に失敗した場合、SystemErrorがスローされる", async () => {

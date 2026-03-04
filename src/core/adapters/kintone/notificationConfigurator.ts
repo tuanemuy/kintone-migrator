@@ -9,6 +9,7 @@ import type {
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
 import type { NotificationEntity } from "@/core/domain/notification/valueObject";
 import { isNotificationEntityType } from "@/core/domain/notification/valueObject";
+import { parseKintoneIntegerField } from "./parseKintoneIntegerField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneNotificationEntity = {
@@ -102,13 +103,7 @@ function fromKintonePerRecordNotification(
 function fromKintoneReminderNotification(
   raw: KintoneReminderNotification,
 ): ReminderNotification {
-  const daysLater = Number(raw.timing.daysLater);
-  if (!Number.isFinite(daysLater)) {
-    throw new SystemError(
-      SystemErrorCode.ExternalApiError,
-      `Unexpected non-numeric daysLater from kintone API: ${raw.timing.daysLater}`,
-    );
-  }
+  const daysLater = parseKintoneIntegerField(raw.timing.daysLater, "daysLater");
 
   const result: ReminderNotification = {
     code: raw.timing.code,
@@ -119,13 +114,10 @@ function fromKintoneReminderNotification(
   };
 
   if ("hoursLater" in raw.timing) {
-    const hoursLater = Number(raw.timing.hoursLater);
-    if (!Number.isFinite(hoursLater)) {
-      throw new SystemError(
-        SystemErrorCode.ExternalApiError,
-        `Unexpected non-numeric hoursLater from kintone API: ${raw.timing.hoursLater}`,
-      );
-    }
+    const hoursLater = parseKintoneIntegerField(
+      raw.timing.hoursLater,
+      "hoursLater",
+    );
     return { ...result, hoursLater };
   }
 

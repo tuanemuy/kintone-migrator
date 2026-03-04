@@ -72,6 +72,12 @@ export class RevisionTracker {
   private revision: number | undefined = undefined;
 
   track(revision: string): void {
+    if (revision === "") {
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        "Unexpected empty revision from kintone API",
+      );
+    }
     const revisionNum = Number(revision);
     if (!Number.isFinite(revisionNum)) {
       throw new SystemError(

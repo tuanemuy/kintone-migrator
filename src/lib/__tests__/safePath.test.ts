@@ -42,8 +42,12 @@ describe("isSafePath", () => {
       expect(isSafePath("/home/user/project-evil/file", baseDir)).toBe(false);
     });
 
-    it("null byte を含むパスを拒否する", () => {
+    it("targetPath に null byte を含むパスを拒否する", () => {
       expect(isSafePath("file\x00/../etc/passwd", baseDir)).toBe(false);
+    });
+
+    it("baseDir に null byte を含むパスを拒否する", () => {
+      expect(isSafePath("file.json", "/home/user\x00/evil")).toBe(false);
     });
 
     it("空文字列パスを baseDir 自体として扱う", () => {

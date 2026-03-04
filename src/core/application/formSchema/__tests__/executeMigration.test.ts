@@ -1201,6 +1201,79 @@ layout:
     expect(fields.get(FieldCode.create("details"))?.type).toBe("SUBTABLE");
   });
 
+  it("フィールドの型が変更された場合、ValidationErrorがスローされる", async () => {
+    const container = getContainer();
+    const schema = `
+layout:
+  - type: ROW
+    fields:
+      - code: field1
+        type: NUMBER
+        label: 数値フィールド
+`;
+    container.schemaStorage.setContent(schema);
+
+    // 現在は SINGLE_LINE_TEXT だがスキーマでは NUMBER に変更
+    const existing = textField("field1", "数値フィールド");
+    container.formConfigurator.setFields(
+      new Map([[FieldCode.create("field1"), existing]]),
+    );
+    container.formConfigurator.setLayout([
+      { type: "ROW", fields: [{ kind: "field", field: existing }] },
+    ]);
+
+    await expect(executeMigration({ container })).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(executeMigration({ container })).rejects.toThrow(
+      /Field type change detected/,
+    );
+  });
+
+  it("SUBTABLE から非 SUBTABLE への型変更は ValidationError がスローされる", async () => {
+    const container = getContainer();
+    const schema = `
+layout:
+  - type: ROW
+    fields:
+      - code: items
+        type: SINGLE_LINE_TEXT
+        label: 元サブテーブル
+`;
+    container.schemaStorage.setContent(schema);
+
+    const innerField = textField("item_name", "品名");
+    const subField: SubtableFieldDefinition = {
+      code: FieldCode.create("items"),
+      type: "SUBTABLE",
+      label: "明細",
+      properties: {
+        fields: new Map([[FieldCode.create("item_name"), innerField]]),
+      },
+    };
+    container.formConfigurator.setFields(
+      new Map([
+        [FieldCode.create("items"), subField],
+        [FieldCode.create("item_name"), innerField],
+      ]),
+    );
+    container.formConfigurator.setLayout([
+      {
+        type: "SUBTABLE",
+        code: FieldCode.create("items"),
+        label: "明細",
+        fields: [{ kind: "field", field: innerField }],
+      },
+    ]);
+
+    await expect(executeMigration({ container })).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(executeMigration({ container })).rejects.toThrow(
+      /schema override/,
+    );
+  });
+
   it("updateLayout の通信に失敗した場合、SystemErrorがスローされる", async () => {
     const container = getContainer();
     const field = textField("name", "名前");

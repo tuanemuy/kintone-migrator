@@ -92,6 +92,11 @@ export async function executeMigration({
       for (const code of deletedInnerFieldCodes) {
         innerFieldsToDelete.push(code);
       }
+    } else if (before !== undefined && before.type !== after.type) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `Field type change detected for "${after.code}" (${before.type} → ${after.type}). Use the schema override command instead.`,
+      );
     } else {
       fieldsToUpdate.push(after);
     }

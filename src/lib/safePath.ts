@@ -26,12 +26,11 @@ import { resolve } from "node:path";
  *
  * **Note**: This function performs synchronous I/O (`realpathSync`).
  *
- * This is a pure predicate with no side effects — callers decide how
- * to handle the result.
+ * Callers decide how to handle the result.
  */
 export function isSafePath(targetPath: string, baseDir: string): boolean {
   // Reject null bytes which can cause path truncation at the OS level.
-  if (targetPath.includes("\0")) return false;
+  if (targetPath.includes("\0") || baseDir.includes("\0")) return false;
 
   let resolvedBase: string;
   try {

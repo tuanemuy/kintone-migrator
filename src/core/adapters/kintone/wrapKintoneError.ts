@@ -23,6 +23,9 @@ function formatMessage(message: string, error: unknown): string {
   if (error instanceof KintoneRestAPIError && error.message) {
     return `${message}: ${error.message}`;
   }
+  if (error instanceof Error && error.message) {
+    return `${message}: ${error.message}`;
+  }
   return message;
 }
 

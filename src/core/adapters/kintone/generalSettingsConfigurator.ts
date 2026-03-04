@@ -11,7 +11,7 @@ import type {
   TitleFieldConfig,
   TitleFieldSelectionMode,
 } from "@/core/domain/generalSettings/valueObject";
-import { parseKintoneNumericField } from "./parseKintoneNumericField";
+import { parseKintoneIntegerField } from "./parseKintoneIntegerField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_THEMES: ReadonlySet<string> = new Set([
@@ -121,8 +121,8 @@ function fromKintoneNumberPrecision(raw: {
     );
   }
   return {
-    digits: parseKintoneNumericField(raw.digits, "digits"),
-    decimalPlaces: parseKintoneNumericField(raw.decimalPlaces, "decimalPlaces"),
+    digits: parseKintoneIntegerField(raw.digits, "digits"),
+    decimalPlaces: parseKintoneIntegerField(raw.decimalPlaces, "decimalPlaces"),
     roundingMode: raw.roundingMode as RoundingMode,
   };
 }
@@ -165,7 +165,7 @@ function fromKintoneSettings(
       : {}),
     ...(raw.firstMonthOfFiscalYear !== undefined
       ? {
-          firstMonthOfFiscalYear: parseKintoneNumericField(
+          firstMonthOfFiscalYear: parseKintoneIntegerField(
             raw.firstMonthOfFiscalYear,
             "firstMonthOfFiscalYear",
           ),

@@ -3,7 +3,7 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import { isDeviceType, isViewType } from "@/core/domain/view/valueObject";
-import { parseKintoneNumericField } from "./parseKintoneNumericField";
+import { parseKintoneIntegerField } from "./parseKintoneIntegerField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneView = {
@@ -42,7 +42,7 @@ function fromKintoneView(name: string, raw: KintoneView): ViewConfig {
 
   const config: ViewConfig = {
     type: raw.type,
-    index: parseKintoneNumericField(raw.index, "index"),
+    index: parseKintoneIntegerField(raw.index, "index"),
     name,
     ...(raw.builtinType !== undefined ? { builtinType: raw.builtinType } : {}),
     ...(raw.fields !== undefined ? { fields: raw.fields } : {}),

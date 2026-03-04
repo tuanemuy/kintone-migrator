@@ -72,7 +72,15 @@ export async function forceOverrideForm({
           toAdd.push(schemaDef);
         }
       } else {
-        toUpdate.push(schemaDef);
+        const currentDef = currentFields.get(fieldCode);
+        if (currentDef !== undefined && currentDef.type !== schemaDef.type) {
+          // Type changed (e.g. SUBTABLE → SINGLE_LINE_TEXT) — kintone API does not
+          // support type changes via updateFields, so delete and re-create.
+          toDelete.push(fieldCode);
+          toAdd.push(schemaDef);
+        } else {
+          toUpdate.push(schemaDef);
+        }
       }
     } else {
       toAdd.push(schemaDef);

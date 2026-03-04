@@ -1,6 +1,6 @@
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 
-export function parseKintoneNumericField(
+export function parseKintoneIntegerField(
   raw: string,
   fieldName: string,
 ): number {

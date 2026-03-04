@@ -96,11 +96,12 @@ describe("wrapKintoneError", () => {
       expect(() => wrapKintoneError(error, message)).toThrow(SystemError);
     });
 
-    it("403 GAIA_NO02 のメッセージにメンテナンスモード情報が付加される", () => {
+    it("403 GAIA_NO02 のメッセージにメンテナンスモード情報と元エラーメッセージが付加される", () => {
       const error = createKintoneAPIError(403, "GAIA_NO02");
       expect(() => wrapKintoneError(error, message)).toThrow(
         /maintenance mode/,
       );
+      expect(() => wrapKintoneError(error, message)).toThrow(/test error/);
     });
 
     it("404 → NotFoundError", () => {
@@ -164,9 +165,11 @@ describe("wrapKintoneError", () => {
       );
     });
 
-    it("KintoneRestAPIError 以外のエラーはメッセージのみ", () => {
-      const error = new Error("generic");
-      expect(() => wrapKintoneError(error, message)).toThrow(message);
+    it("一般的な Error のメッセージも付加される", () => {
+      const error = new Error("network timeout");
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        /Failed to do something: network timeout/,
+      );
     });
 
     it("一般的な Error の cause が保持される", () => {
