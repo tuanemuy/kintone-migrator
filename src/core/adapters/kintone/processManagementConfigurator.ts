@@ -225,7 +225,10 @@ export class KintoneProcessManagementConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get process management settings");
+      throw wrapKintoneError(
+        error,
+        "Failed to get process management settings",
+      );
     }
   }
 
@@ -258,7 +261,10 @@ export class KintoneProcessManagementConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update process management settings");
+      throw wrapKintoneError(
+        error,
+        "Failed to update process management settings",
+      );
     }
   }
 }

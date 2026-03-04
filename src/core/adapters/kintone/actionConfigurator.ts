@@ -178,7 +178,7 @@ export class KintoneActionConfigurator implements ActionConfigurator {
         revision: response.revision,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get app actions");
+      throw wrapKintoneError(error, "Failed to get app actions");
     }
   }
 
@@ -207,7 +207,7 @@ export class KintoneActionConfigurator implements ActionConfigurator {
 
       return { revision: response.revision };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update app actions");
+      throw wrapKintoneError(error, "Failed to update app actions");
     }
   }
 }

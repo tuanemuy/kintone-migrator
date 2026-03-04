@@ -11,6 +11,7 @@ import type {
   TitleFieldConfig,
   TitleFieldSelectionMode,
 } from "@/core/domain/generalSettings/valueObject";
+import { parseKintoneNumericField } from "./parseKintoneNumericField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 const VALID_THEMES: ReadonlySet<string> = new Set([
@@ -119,23 +120,9 @@ function fromKintoneNumberPrecision(raw: {
       `Unexpected roundingMode from kintone API: ${raw.roundingMode}`,
     );
   }
-  const digits = Number(raw.digits);
-  const decimalPlaces = Number(raw.decimalPlaces);
-  if (!Number.isFinite(digits)) {
-    throw new SystemError(
-      SystemErrorCode.ExternalApiError,
-      `Unexpected non-numeric digits from kintone API: ${raw.digits}`,
-    );
-  }
-  if (!Number.isFinite(decimalPlaces)) {
-    throw new SystemError(
-      SystemErrorCode.ExternalApiError,
-      `Unexpected non-numeric decimalPlaces from kintone API: ${raw.decimalPlaces}`,
-    );
-  }
   return {
-    digits,
-    decimalPlaces,
+    digits: parseKintoneNumericField(raw.digits, "digits"),
+    decimalPlaces: parseKintoneNumericField(raw.decimalPlaces, "decimalPlaces"),
     roundingMode: raw.roundingMode as RoundingMode,
   };
 }
@@ -178,16 +165,10 @@ function fromKintoneSettings(
       : {}),
     ...(raw.firstMonthOfFiscalYear !== undefined
       ? {
-          firstMonthOfFiscalYear: (() => {
-            const n = Number(raw.firstMonthOfFiscalYear);
-            if (!Number.isFinite(n)) {
-              throw new SystemError(
-                SystemErrorCode.ExternalApiError,
-                `Unexpected non-numeric firstMonthOfFiscalYear from kintone API: ${raw.firstMonthOfFiscalYear}`,
-              );
-            }
-            return n;
-          })(),
+          firstMonthOfFiscalYear: parseKintoneNumericField(
+            raw.firstMonthOfFiscalYear,
+            "firstMonthOfFiscalYear",
+          ),
         }
       : {}),
   };
@@ -307,7 +288,7 @@ export class KintoneGeneralSettingsConfigurator
         revision: raw.revision ?? "-1",
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get general settings");
+      throw wrapKintoneError(error, "Failed to get general settings");
     }
   }
 
@@ -333,7 +314,7 @@ export class KintoneGeneralSettingsConfigurator
 
       return { revision: response.revision };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update general settings");
+      throw wrapKintoneError(error, "Failed to update general settings");
     }
   }
 }

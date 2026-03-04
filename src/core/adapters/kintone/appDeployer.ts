@@ -10,6 +10,17 @@ import { wrapKintoneError } from "./wrapKintoneError";
 
 type DeployStatus = "PROCESSING" | "SUCCESS" | "FAIL" | "CANCEL";
 
+const VALID_DEPLOY_STATUSES: ReadonlySet<string> = new Set<DeployStatus>([
+  "PROCESSING",
+  "SUCCESS",
+  "FAIL",
+  "CANCEL",
+]);
+
+function isDeployStatus(value: string): value is DeployStatus {
+  return VALID_DEPLOY_STATUSES.has(value);
+}
+
 type KintoneAppDeployerConfig = {
   pollIntervalMs?: number;
   maxRetries?: number;
@@ -36,11 +47,11 @@ export class KintoneAppDeployer implements AppDeployer {
       await this.client.app.deployApp({
         apps: [{ app: this.appId }],
       });
-
-      await this.waitForDeployment();
     } catch (error) {
-      wrapKintoneError(error, "Failed to deploy app");
+      throw wrapKintoneError(error, "Failed to deploy app");
     }
+
+    await this.waitForDeployment();
   }
 
   private async waitForDeployment(): Promise<void> {
@@ -59,10 +70,7 @@ export class KintoneAppDeployer implements AppDeployer {
         apps = response.apps;
         consecutivePollFailures = 0;
       } catch (error) {
-        // NOTE: This duplicates the pass-through logic of wrapKintoneError,
-        // but we cannot use that helper here because polling requires
-        // retry-on-transient-failure semantics that wrapKintoneError does
-        // not support (it always throws).
+        // wrapKintoneError always throws — polling needs retry semantics.
         if (isBusinessRuleError(error)) throw error;
         if (error instanceof ApplicationError) throw error;
         // Transient network errors during polling should retry, but give up
@@ -86,9 +94,21 @@ export class KintoneAppDeployer implements AppDeployer {
         );
       }
 
-      const status = apps[0]?.status as DeployStatus | undefined;
+      const rawStatus = apps[0].status;
+      if (rawStatus === undefined) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          "Deploy status unavailable",
+        );
+      }
+      if (!isDeployStatus(rawStatus)) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected deploy status: ${rawStatus}`,
+        );
+      }
 
-      switch (status) {
+      switch (rawStatus) {
         case "SUCCESS":
           return;
         case "FAIL":
@@ -103,16 +123,6 @@ export class KintoneAppDeployer implements AppDeployer {
           );
         case "PROCESSING":
           continue;
-        case undefined:
-          throw new SystemError(
-            SystemErrorCode.ExternalApiError,
-            "Deploy status unavailable",
-          );
-        default:
-          throw new SystemError(
-            SystemErrorCode.ExternalApiError,
-            `Unexpected deploy status: ${status satisfies never}`,
-          );
       }
     }
 

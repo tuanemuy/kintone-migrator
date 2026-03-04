@@ -109,7 +109,7 @@ export class KintoneRecordPermissionConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get record ACL");
+      throw wrapKintoneError(error, "Failed to get record ACL");
     }
   }
 
@@ -133,7 +133,7 @@ export class KintoneRecordPermissionConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update record ACL");
+      throw wrapKintoneError(error, "Failed to update record ACL");
     }
   }
 }

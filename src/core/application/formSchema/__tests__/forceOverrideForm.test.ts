@@ -663,6 +663,67 @@ layout:
     expect(fields.has(FieldCode.create("col2"))).toBe(false);
   });
 
+  it("既存の SUBTABLE に新規内部フィールド追加と既存内部フィールド削除が同時に発生する場合、二重削除せずに削除→再作成される", async () => {
+    const container = getContainer();
+    // desired: col1 (existing) + col3 (new) — col2 is removed
+    const schema = `
+layout:
+  - type: SUBTABLE
+    code: items
+    label: 明細
+    fields:
+      - code: col1
+        type: SINGLE_LINE_TEXT
+        label: 列1
+      - code: col3
+        type: NUMBER
+        label: 列3
+`;
+    container.schemaStorage.setContent(schema);
+
+    const col1 = textField("col1", "列1");
+    const col2 = textField("col2", "列2");
+    const currentSub: SubtableFieldDefinition = {
+      code: FieldCode.create("items"),
+      type: "SUBTABLE",
+      label: "明細",
+      properties: {
+        fields: new Map([
+          [FieldCode.create("col1"), col1],
+          [FieldCode.create("col2"), col2],
+        ]),
+      },
+    };
+    container.formConfigurator.setFields(
+      new Map([
+        [FieldCode.create("items"), currentSub],
+        [FieldCode.create("col1"), col1],
+        [FieldCode.create("col2"), col2],
+      ]),
+    );
+    container.formConfigurator.setLayout([]);
+    container.formConfigurator.resetCallLog();
+
+    await forceOverrideForm({ container });
+
+    // Subtable is deleted and re-created (not double-deleted with inner fields)
+    const mutationCalls = container.formConfigurator.callLog.filter(
+      (c) => c === "addFields" || c === "deleteFields",
+    );
+    expect(mutationCalls).toContain("deleteFields");
+    expect(mutationCalls).toContain("addFields");
+
+    const fields = await container.formConfigurator.getFields();
+    const items = fields.get(FieldCode.create("items"));
+    expect(items?.type).toBe("SUBTABLE");
+    if (items?.type === "SUBTABLE") {
+      expect(items.properties.fields.size).toBe(2);
+      expect(items.properties.fields.has(FieldCode.create("col1"))).toBe(true);
+      expect(items.properties.fields.has(FieldCode.create("col3"))).toBe(true);
+      expect(items.properties.fields.has(FieldCode.create("col2"))).toBe(false);
+    }
+  });
+
   it("updateLayout の通信に失敗した場合、SystemErrorがスローされる", async () => {
     const container = getContainer();
     container.schemaStorage.setContent(singleFieldSchema);

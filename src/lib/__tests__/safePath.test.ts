@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { isSafePath } from "../assertSafePath";
+import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { isSafePath } from "../safePath";
 
 describe("isSafePath", () => {
   const baseDir = "/home/user/project";
@@ -45,6 +48,35 @@ describe("isSafePath", () => {
 
     it("空文字列パスを baseDir 自体として扱う", () => {
       expect(isSafePath("", baseDir)).toBe(true);
+    });
+  });
+
+  describe("実ファイルシステム統合テスト", () => {
+    const testDir = join(tmpdir(), `safePath-test-${process.pid}`);
+    const innerDir = join(testDir, "inner");
+    const outsideDir = join(tmpdir(), `safePath-outside-${process.pid}`);
+
+    beforeAll(() => {
+      mkdirSync(innerDir, { recursive: true });
+      mkdirSync(outsideDir, { recursive: true });
+      writeFileSync(join(innerDir, "ok.txt"), "ok");
+      writeFileSync(join(outsideDir, "secret.txt"), "secret");
+      symlinkSync(outsideDir, join(testDir, "escape-link"));
+    });
+
+    afterAll(() => {
+      rmSync(testDir, { recursive: true, force: true });
+      rmSync(outsideDir, { recursive: true, force: true });
+    });
+
+    it("実ディレクトリ内のファイルを許可する", () => {
+      expect(isSafePath(join(innerDir, "ok.txt"), testDir)).toBe(true);
+    });
+
+    it("シンボリックリンク経由のディレクトリ脱出を拒否する", () => {
+      expect(
+        isSafePath(join(testDir, "escape-link", "secret.txt"), testDir),
+      ).toBe(false);
     });
   });
 });

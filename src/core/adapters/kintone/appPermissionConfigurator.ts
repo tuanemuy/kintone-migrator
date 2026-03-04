@@ -109,7 +109,7 @@ export class KintoneAppPermissionConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get app ACL");
+      throw wrapKintoneError(error, "Failed to get app ACL");
     }
   }
 
@@ -133,7 +133,7 @@ export class KintoneAppPermissionConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update app ACL");
+      throw wrapKintoneError(error, "Failed to update app ACL");
     }
   }
 }

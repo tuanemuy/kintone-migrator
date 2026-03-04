@@ -136,7 +136,7 @@ export class KintoneCustomizationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get app customization");
+      throw wrapKintoneError(error, "Failed to get app customization");
     }
   }
 
@@ -191,7 +191,7 @@ export class KintoneCustomizationConfigurator
 
       return { revision: String(response.revision) };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update app customization");
+      throw wrapKintoneError(error, "Failed to update app customization");
     }
   }
 }

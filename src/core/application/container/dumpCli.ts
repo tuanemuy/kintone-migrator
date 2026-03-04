@@ -21,6 +21,6 @@ export function createDumpCliContainer(
 
   return {
     formDumpReader: new KintoneFormDumpReader(client, config.appId),
-    dumpStorage: new LocalFileDumpStorage(config.filePrefix),
+    dumpStorage: new LocalFileDumpStorage(config.filePrefix, process.cwd()),
   };
 }

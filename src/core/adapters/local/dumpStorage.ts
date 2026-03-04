@@ -7,7 +7,7 @@ import {
   ValidationErrorCode,
 } from "@/core/application/error";
 import type { DumpStorage } from "@/core/domain/formSchema/ports/dumpStorage";
-import { isSafePath } from "@/lib/assertSafePath";
+import { isSafePath } from "@/lib/safePath";
 
 export class LocalFileDumpStorage implements DumpStorage {
   constructor(

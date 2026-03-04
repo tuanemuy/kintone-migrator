@@ -28,7 +28,7 @@ export class KintoneAdminNotesConfigurator implements AdminNotesConfigurator {
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get admin notes");
+      throw wrapKintoneError(error, "Failed to get admin notes");
     }
   }
 
@@ -54,7 +54,7 @@ export class KintoneAdminNotesConfigurator implements AdminNotesConfigurator {
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update admin notes");
+      throw wrapKintoneError(error, "Failed to update admin notes");
     }
   }
 }

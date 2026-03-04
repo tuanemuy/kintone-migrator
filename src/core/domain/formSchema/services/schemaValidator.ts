@@ -285,6 +285,25 @@ function validateReferenceTableRelatedApp(
   return [];
 }
 
+function validateSubtableHasInnerFields(
+  field: FieldDefinition,
+): ValidationIssue[] {
+  if (field.type !== "SUBTABLE") return [];
+
+  if (field.properties.fields.size === 0) {
+    return [
+      issue(
+        "error",
+        field.code,
+        field.type,
+        "EMPTY_SUBTABLE",
+        `Subtable "${field.code}" must have at least one inner field`,
+      ),
+    ];
+  }
+  return [];
+}
+
 const FIELD_VALIDATORS: readonly ((
   field: FieldDefinition,
 ) => ValidationIssue[])[] = [
@@ -297,6 +316,7 @@ const FIELD_VALIDATORS: readonly ((
   validateReferenceTableSize,
   validateLookupStructure,
   validateReferenceTableRelatedApp,
+  validateSubtableHasInnerFields,
 ];
 
 function validateField(field: FieldDefinition): readonly ValidationIssue[] {

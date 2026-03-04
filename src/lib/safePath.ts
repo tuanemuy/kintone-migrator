@@ -8,10 +8,23 @@ import { resolve } from "node:path";
  * textual `resolve` otherwise (e.g. in tests with virtual paths or when
  * the target does not yet exist).
  *
- * **Limitation**: If the target path does not exist on disk, symlink
- * components within it cannot be resolved. The check falls back to a
- * textual prefix comparison, which still catches `..` traversal but
+ * {@link targetPath} may be either a relative path (resolved against
+ * {@link baseDir}) or an absolute path (used as-is by `path.resolve`).
+ * When callers have already resolved the path via `path.resolve(baseDir, x)`,
+ * passing the result as an absolute path is safe — `resolve(base, absPath)`
+ * returns `absPath` unchanged.
+ *
+ * **Limitation — symlinks**: If the target path does not exist on disk,
+ * symlink components within it cannot be resolved. The check falls back
+ * to a textual prefix comparison, which still catches `..` traversal but
  * cannot detect symlink-based escapes for non-existent paths.
+ *
+ * **Limitation — TOCTOU**: This check is inherently subject to a
+ * time-of-check-to-time-of-use race: the filesystem may change between
+ * this call and the subsequent file operation. This is acceptable for a
+ * CLI tool where the user controls the local environment.
+ *
+ * **Note**: This function performs synchronous I/O (`realpathSync`).
  *
  * This is a pure predicate with no side effects — callers decide how
  * to handle the result.

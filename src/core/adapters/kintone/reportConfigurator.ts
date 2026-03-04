@@ -375,7 +375,7 @@ export class KintoneReportConfigurator implements ReportConfigurator {
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get reports");
+      throw wrapKintoneError(error, "Failed to get reports");
     }
   }
 
@@ -405,7 +405,7 @@ export class KintoneReportConfigurator implements ReportConfigurator {
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update reports");
+      throw wrapKintoneError(error, "Failed to update reports");
     }
   }
 }

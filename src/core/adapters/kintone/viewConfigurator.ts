@@ -3,6 +3,7 @@ import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import { isDeviceType, isViewType } from "@/core/domain/view/valueObject";
+import { parseKintoneNumericField } from "./parseKintoneNumericField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 type KintoneView = {
@@ -41,16 +42,7 @@ function fromKintoneView(name: string, raw: KintoneView): ViewConfig {
 
   const config: ViewConfig = {
     type: raw.type,
-    index: (() => {
-      const idx = typeof raw.index === "string" ? Number(raw.index) : raw.index;
-      if (!Number.isFinite(idx)) {
-        throw new SystemError(
-          SystemErrorCode.ExternalApiError,
-          `Unexpected non-numeric index from kintone API: ${raw.index}`,
-        );
-      }
-      return idx;
-    })(),
+    index: parseKintoneNumericField(raw.index, "index"),
     name,
     ...(raw.builtinType !== undefined ? { builtinType: raw.builtinType } : {}),
     ...(raw.fields !== undefined ? { fields: raw.fields } : {}),
@@ -115,7 +107,7 @@ export class KintoneViewConfigurator implements ViewConfigurator {
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get views");
+      throw wrapKintoneError(error, "Failed to get views");
     }
   }
 
@@ -145,7 +137,7 @@ export class KintoneViewConfigurator implements ViewConfigurator {
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update views");
+      throw wrapKintoneError(error, "Failed to update views");
     }
   }
 }

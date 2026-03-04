@@ -40,7 +40,7 @@ export class KintoneRecordManager implements RecordManager {
         return { id, record };
       });
     } catch (error) {
-      wrapKintoneError(error, "Failed to get records");
+      throw wrapKintoneError(error, "Failed to get records");
     }
   }
 
@@ -52,7 +52,7 @@ export class KintoneRecordManager implements RecordManager {
         records: records.map(toKintoneRecord),
       });
     } catch (error) {
-      wrapKintoneError(error, "Failed to add records");
+      throw wrapKintoneError(error, "Failed to add records");
     }
   }
 
@@ -67,7 +67,7 @@ export class KintoneRecordManager implements RecordManager {
         })),
       });
     } catch (error) {
-      wrapKintoneError(error, "Failed to update records");
+      throw wrapKintoneError(error, "Failed to update records");
     }
   }
 
@@ -88,7 +88,7 @@ export class KintoneRecordManager implements RecordManager {
       });
       return { deletedCount: records.length };
     } catch (error) {
-      wrapKintoneError(error, "Failed to delete all records");
+      throw wrapKintoneError(error, "Failed to delete all records");
     }
   }
 }

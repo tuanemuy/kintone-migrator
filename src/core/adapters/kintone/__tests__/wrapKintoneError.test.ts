@@ -91,6 +91,18 @@ describe("wrapKintoneError", () => {
       expect(() => wrapKintoneError(error, message)).toThrow(ForbiddenError);
     });
 
+    it("403 GAIA_NO02 → SystemError (メンテナンスモード)", () => {
+      const error = createKintoneAPIError(403, "GAIA_NO02");
+      expect(() => wrapKintoneError(error, message)).toThrow(SystemError);
+    });
+
+    it("403 GAIA_NO02 のメッセージにメンテナンスモード情報が付加される", () => {
+      const error = createKintoneAPIError(403, "GAIA_NO02");
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        /maintenance mode/,
+      );
+    });
+
     it("404 → NotFoundError", () => {
       const error = createKintoneAPIError(404);
       expect(() => wrapKintoneError(error, message)).toThrow(NotFoundError);
@@ -138,16 +150,37 @@ describe("wrapKintoneError", () => {
   });
 
   describe("エラーメッセージの伝搬", () => {
-    it("指定されたメッセージがエラーに設定される", () => {
-      expect.assertions(3);
+    it("KintoneRestAPIError のメッセージが付加される", () => {
       const error = createKintoneAPIError(401);
-      try {
-        wrapKintoneError(error, message);
-      } catch (e) {
-        expect(e).toBeInstanceOf(UnauthenticatedError);
-        expect((e as UnauthenticatedError).message).toBe(message);
-        expect((e as UnauthenticatedError).cause).toBe(error);
-      }
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        /Failed to do something: .+test error/,
+      );
+    });
+
+    it("cause に元のエラーが設定される", () => {
+      const error = createKintoneAPIError(401);
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        expect.objectContaining({ cause: error }),
+      );
+    });
+
+    it("KintoneRestAPIError 以外のエラーはメッセージのみ", () => {
+      const error = new Error("generic");
+      expect(() => wrapKintoneError(error, message)).toThrow(message);
+    });
+
+    it("一般的な Error の cause が保持される", () => {
+      const error = new Error("generic");
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        expect.objectContaining({ cause: error }),
+      );
+    });
+
+    it("GAIA_CO02 にリトライ案内が含まれる", () => {
+      const error = createKintoneAPIError(400, "GAIA_CO02");
+      expect(() => wrapKintoneError(error, message)).toThrow(
+        /Please retry the operation/,
+      );
     });
   });
 });

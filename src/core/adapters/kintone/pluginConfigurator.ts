@@ -32,7 +32,7 @@ export class KintonePluginConfigurator implements PluginConfigurator {
         revision: response.revision,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get plugins");
+      throw wrapKintoneError(error, "Failed to get plugins");
     }
   }
 
@@ -48,7 +48,7 @@ export class KintonePluginConfigurator implements PluginConfigurator {
       });
       return { revision: result.revision };
     } catch (error) {
-      wrapKintoneError(error, "Failed to add plugins");
+      throw wrapKintoneError(error, "Failed to add plugins");
     }
   }
 }

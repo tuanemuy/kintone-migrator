@@ -7,7 +7,7 @@ import {
   ValidationErrorCode,
 } from "@/core/application/error";
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
-import { isSafePath } from "@/lib/assertSafePath";
+import { isSafePath } from "@/lib/safePath";
 
 export class LocalFileWriter implements FileWriter {
   constructor(private readonly baseDir: string = process.cwd()) {}

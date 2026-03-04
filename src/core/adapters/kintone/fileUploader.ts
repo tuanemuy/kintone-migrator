@@ -2,13 +2,13 @@ import { resolve } from "node:path";
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
-import { isSafePath } from "@/lib/assertSafePath";
+import { isSafePath } from "@/lib/safePath";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFileUploader implements FileUploader {
   constructor(
     private readonly client: KintoneRestAPIClient,
-    private readonly baseDir: string = process.cwd(),
+    private readonly baseDir: string,
   ) {}
 
   async upload(filePath: string): Promise<{ fileKey: string }> {
@@ -31,7 +31,7 @@ export class KintoneFileUploader implements FileUploader {
       });
       return { fileKey: response.fileKey };
     } catch (error) {
-      wrapKintoneError(error, `Failed to upload file: ${filePath}`);
+      throw wrapKintoneError(error, `Failed to upload file: ${filePath}`);
     }
   }
 }

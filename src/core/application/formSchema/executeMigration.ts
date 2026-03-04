@@ -97,6 +97,10 @@ export async function executeMigration({
     }
   }
 
+  // Operation order: add → update → delete.
+  // Unlike forceOverrideForm (delete → add → update), subtable re-creation
+  // is not needed here because new inner fields on existing subtables are
+  // rejected with a ValidationError above.
   if (fieldsToAdd.length > 0) {
     await container.formConfigurator.addFields(fieldsToAdd);
   }

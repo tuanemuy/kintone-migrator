@@ -123,7 +123,7 @@ export class KintoneFieldPermissionConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get field ACL");
+      throw wrapKintoneError(error, "Failed to get field ACL");
     }
   }
 
@@ -147,7 +147,7 @@ export class KintoneFieldPermissionConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update field ACL");
+      throw wrapKintoneError(error, "Failed to update field ACL");
     }
   }
 }

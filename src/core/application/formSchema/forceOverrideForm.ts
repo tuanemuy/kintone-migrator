@@ -43,12 +43,15 @@ export async function forceOverrideForm({
             deletedInnerFieldCodes,
           } = splitSubtableInnerFields(schemaDef, currentDef);
 
-          if (newInnerFields.size > 0 || existingInnerFields.size === 0) {
+          const allInnerFieldsRemoved =
+            existingInnerFields.size === 0 && deletedInnerFieldCodes.length > 0;
+
+          if (newInnerFields.size > 0 || allInnerFieldsRemoved) {
             // Subtable must be deleted and re-created when:
             //  - new inner fields are being added (kintone REST API does not
             //    support adding fields to an existing subtable), OR
-            //  - all inner fields would be removed (kintone rejects an empty
-            //    subtable, so we must cascade-delete via the subtable itself).
+            //  - all existing inner fields would be removed (kintone rejects an
+            //    empty subtable, so we must cascade-delete via the subtable itself).
             // Inner field deletions are handled by the cascade — do NOT push
             // deletedInnerFieldCodes here to avoid a double-delete API error.
             toDelete.push(fieldCode);

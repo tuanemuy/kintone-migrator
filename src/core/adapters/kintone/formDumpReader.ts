@@ -25,7 +25,7 @@ export class KintoneFormDumpReader implements FormDumpReader {
         layout: layout as unknown,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to fetch raw form data for dump");
+      throw wrapKintoneError(error, "Failed to fetch raw form data for dump");
     }
   }
 }

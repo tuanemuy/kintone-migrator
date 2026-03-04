@@ -69,25 +69,23 @@ const DECORATION_TYPES: ReadonlySet<string> = new Set([
  * The tracker is designed to be created per-request scope in the DI container.
  */
 export class RevisionTracker {
-  private revision: string | undefined = undefined;
+  private revision: number | undefined = undefined;
 
   track(revision: string): void {
     const revisionNum = Number(revision);
-    // Intentionally ignore non-numeric revision values (e.g. empty strings
-    // or malformed API responses) to avoid corrupting the tracked state.
     if (!Number.isFinite(revisionNum)) {
-      console.warn(
-        `RevisionTracker: ignoring non-numeric revision value: "${revision}"`,
+      throw new SystemError(
+        SystemErrorCode.ExternalApiError,
+        `Unexpected non-numeric revision from kintone API: "${revision}"`,
       );
-      return;
     }
-    if (this.revision === undefined || revisionNum > Number(this.revision)) {
-      this.revision = String(revisionNum);
+    if (this.revision === undefined || revisionNum > this.revision) {
+      this.revision = revisionNum;
     }
   }
 
   get current(): string | undefined {
-    return this.revision;
+    return this.revision !== undefined ? String(this.revision) : undefined;
   }
 }
 
@@ -525,7 +523,9 @@ export class KintoneFormConfigurator implements FormConfigurator {
         app: this.appId,
         preview: true,
       });
-      this.revisionTracker.track(revision);
+      if (revision) {
+        this.revisionTracker.track(revision);
+      }
 
       const fields = new Map<FieldCode, FieldDefinition>();
       for (const [code, prop] of Object.entries(properties)) {
@@ -546,7 +546,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
 
       return fields;
     } catch (error) {
-      wrapKintoneError(error, "Failed to get form fields");
+      throw wrapKintoneError(error, "Failed to get form fields");
     }
   }
 
@@ -567,7 +567,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      wrapKintoneError(error, "Failed to add form fields");
+      throw wrapKintoneError(error, "Failed to add form fields");
     }
   }
 
@@ -588,7 +588,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      wrapKintoneError(error, "Failed to update form fields");
+      throw wrapKintoneError(error, "Failed to update form fields");
     }
   }
 
@@ -608,7 +608,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      wrapKintoneError(error, "Failed to delete form fields");
+      throw wrapKintoneError(error, "Failed to delete form fields");
     }
   }
 
@@ -618,13 +618,15 @@ export class KintoneFormConfigurator implements FormConfigurator {
         app: this.appId,
         preview: true,
       });
-      this.revisionTracker.track(response.revision);
+      if (response.revision) {
+        this.revisionTracker.track(response.revision);
+      }
 
       return (response.layout as KintoneLayoutItem[]).map(
         fromKintoneLayoutItem,
       );
     } catch (error) {
-      wrapKintoneError(error, "Failed to get form layout");
+      throw wrapKintoneError(error, "Failed to get form layout");
     }
   }
 
@@ -647,7 +649,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(response.revision);
       }
     } catch (error) {
-      wrapKintoneError(error, "Failed to update form layout");
+      throw wrapKintoneError(error, "Failed to update form layout");
     }
   }
 }

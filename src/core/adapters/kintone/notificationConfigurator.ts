@@ -250,7 +250,7 @@ export class KintoneNotificationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get general notifications");
+      throw wrapKintoneError(error, "Failed to get general notifications");
     }
   }
 
@@ -278,7 +278,7 @@ export class KintoneNotificationConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update general notifications");
+      throw wrapKintoneError(error, "Failed to update general notifications");
     }
   }
 
@@ -301,7 +301,7 @@ export class KintoneNotificationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get per-record notifications");
+      throw wrapKintoneError(error, "Failed to get per-record notifications");
     }
   }
 
@@ -327,7 +327,10 @@ export class KintoneNotificationConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update per-record notifications");
+      throw wrapKintoneError(
+        error,
+        "Failed to update per-record notifications",
+      );
     }
   }
 
@@ -356,7 +359,7 @@ export class KintoneNotificationConfigurator
         revision: response.revision as string,
       };
     } catch (error) {
-      wrapKintoneError(error, "Failed to get reminder notifications");
+      throw wrapKintoneError(error, "Failed to get reminder notifications");
     }
   }
 
@@ -384,7 +387,7 @@ export class KintoneNotificationConfigurator
 
       return { revision: response.revision as string };
     } catch (error) {
-      wrapKintoneError(error, "Failed to update reminder notifications");
+      throw wrapKintoneError(error, "Failed to update reminder notifications");
     }
   }
 }

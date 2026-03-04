@@ -95,9 +95,9 @@ export function createCustomizationCliContainer(
     customizationStorage: createLocalFileCustomizationStorage(
       config.customizeFilePath,
     ),
-    fileUploader: new KintoneFileUploader(client),
+    fileUploader: new KintoneFileUploader(client, process.cwd()),
     fileDownloader: new KintoneFileDownloader(client),
-    fileWriter: new LocalFileWriter(),
+    fileWriter: new LocalFileWriter(process.cwd()),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }
