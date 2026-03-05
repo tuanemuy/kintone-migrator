@@ -6,7 +6,7 @@ import {
   type FieldPermissionCliContainerConfig,
 } from "@/core/application/container/fieldPermissionCli";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import {
   type FieldAclCliValues,
   fieldAclArgs,
@@ -38,7 +38,7 @@ export default define({
   args: { ...fieldAclArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as FieldAclCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<FieldAclCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

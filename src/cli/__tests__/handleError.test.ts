@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ConflictError,
   ConflictErrorCode,
@@ -31,10 +31,21 @@ const mockExit = vi
   .mockImplementation((_code?) => undefined as never);
 
 import * as p from "@clack/prompts";
-import { handleCliError } from "../handleError";
+import { handleCliError, logError } from "../handleError";
+
+const originalVerbose = process.env.VERBOSE;
+
+beforeEach(() => {
+  delete process.env.VERBOSE;
+});
 
 afterEach(() => {
   vi.clearAllMocks();
+  if (originalVerbose !== undefined) {
+    process.env.VERBOSE = originalVerbose;
+  } else {
+    delete process.env.VERBOSE;
+  }
 });
 
 describe("handleCliError", () => {
@@ -272,11 +283,96 @@ describe("handleCliError", () => {
     );
   });
 
-  it("stack トレースがある場合、Stack 情報が warn でログ出力される", () => {
+  it("VERBOSE=1 の場合、stack トレースが warn でログ出力される", () => {
+    process.env.VERBOSE = "1";
     const error = new Error("テストエラー");
 
     handleCliError(error);
 
     expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Stack:"));
+  });
+
+  it("VERBOSE 未設定の場合、Stack 情報は出力されない", () => {
+    delete process.env.VERBOSE;
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasStack = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("Stack:"),
+    );
+    expect(hasStack).toBe(false);
+  });
+
+  it("ValidationError のヒントメッセージが出力される", () => {
+    const error = new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "入力値が不正です",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: Please check your input values"),
+    );
+  });
+
+  it("SystemError(NetworkError) のヒントメッセージが出力される", () => {
+    const error = new SystemError(
+      SystemErrorCode.NetworkError,
+      "ネットワーク接続失敗",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: Please check your network connection"),
+    );
+  });
+
+  it("SystemError(ExternalApiError) のヒントメッセージが出力される", () => {
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "API エラー",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Hint: The kintone API returned an unexpected error",
+      ),
+    );
+  });
+
+  it("cause にセンシティブ情報が含まれる場合、[REDACTED] で出力される", () => {
+    const cause = {
+      errors: [
+        {
+          message: "auth failed",
+          authorization: "Basic abc123",
+          password: "secret123",
+        },
+      ],
+    };
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "APIエラー",
+      cause,
+    );
+
+    logError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasRedacted = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("[REDACTED]"),
+    );
+    expect(hasRedacted).toBe(true);
+
+    const hasPlainPassword = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("secret123"),
+    );
+    expect(hasPlainPassword).toBe(false);
   });
 });

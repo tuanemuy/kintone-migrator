@@ -12,7 +12,7 @@ import {
   resolveAdminNotesAppContainerConfig,
   resolveAdminNotesContainerConfig,
 } from "../../adminNotesConfig";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -38,7 +38,7 @@ export default define({
   args: { ...adminNotesArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as AdminNotesCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<AdminNotesCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

@@ -41,7 +41,6 @@ vi.mock("@/cli/output", async (importOriginal) => ({
   printDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),
-  promptDeploy: vi.fn(),
 }));
 
 vi.mock("@/cli/handleError", () => ({

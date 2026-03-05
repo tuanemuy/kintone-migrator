@@ -4,7 +4,7 @@ import type { RecordPermissionContainer } from "@/core/application/container/rec
 import type { RecordPermissionCliContainerConfig } from "@/core/application/container/recordPermissionCli";
 import { createRecordPermissionCliContainer } from "@/core/application/container/recordPermissionCli";
 import { applyRecordPermission } from "@/core/application/recordPermission/applyRecordPermission";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -36,7 +36,7 @@ export default define({
   args: { ...recordAclArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as RecordAclCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<RecordAclCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

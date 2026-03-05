@@ -6,7 +6,7 @@ import {
   type ViewCliContainerConfig,
 } from "@/core/application/container/viewCli";
 import { applyView } from "@/core/application/view/applyView";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -42,7 +42,7 @@ export default define({
   args: { ...viewArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as ViewCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<ViewCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

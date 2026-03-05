@@ -6,7 +6,7 @@ import {
   type NotificationCliContainerConfig,
 } from "@/core/application/container/notificationCli";
 import { applyNotification } from "@/core/application/notification/applyNotification";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import {
   type NotificationCliValues,
@@ -38,7 +38,7 @@ export default define({
   args: { ...notificationArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as NotificationCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<NotificationCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

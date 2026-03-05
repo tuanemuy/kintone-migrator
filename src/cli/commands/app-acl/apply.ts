@@ -12,7 +12,7 @@ import {
   resolveAppAclAppContainerConfig,
   resolveAppAclContainerConfig,
 } from "../../appAclConfig";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -38,7 +38,7 @@ export default define({
   args: { ...appAclArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as AppAclCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<AppAclCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

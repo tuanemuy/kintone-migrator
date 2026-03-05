@@ -7,6 +7,7 @@ import {
   isSystemError,
   isUnauthenticatedError,
   isValidationError,
+  type SystemErrorCode,
 } from "@/core/application/error";
 import { isBusinessRuleError } from "@/core/domain/error";
 
@@ -19,12 +20,17 @@ export function logError(error: unknown): void {
 
   if (isValidationError(error)) {
     p.log.error(`[ValidationError] ${error.code}: ${error.message}`);
+    p.log.warn("Hint: Please check your input values and configuration.");
     logErrorDetails(error);
     return;
   }
 
   if (isSystemError(error)) {
     p.log.error(`[SystemError] ${error.code}: ${error.message}`);
+    const hint = systemErrorHints[error.code];
+    if (hint) {
+      p.log.warn(`Hint: ${hint}`);
+    }
     logErrorDetails(error);
     return;
   }
@@ -91,9 +97,44 @@ export function formatErrorForDisplay(error: unknown): string {
     return error.message;
   }
   if (typeof error === "object" && error !== null) {
-    return JSON.stringify(error, null, 2);
+    return JSON.stringify(sanitizeForDisplay(error), null, 2);
   }
   return String(error);
+}
+
+const systemErrorHints: Partial<Record<SystemErrorCode, string>> = {
+  NETWORK_ERROR: "Please check your network connection and kintone domain.",
+  EXTERNAL_API_ERROR:
+    "The kintone API returned an unexpected error. Please retry or check the API status.",
+  STORAGE_ERROR:
+    "Failed to read/write a local file. Please check file permissions.",
+};
+
+const SENSITIVE_KEYS =
+  /^(authorization|apitoken|api-token|password|secret|token|x-cybozu-authorization)$/i;
+
+function sanitizeForDisplay(obj: unknown): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeForDisplay);
+  }
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (SENSITIVE_KEYS.test(key)) {
+      result[key] = "[REDACTED]";
+    } else if (typeof value === "object" && value !== null) {
+      result[key] = sanitizeForDisplay(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
+function isVerbose(): boolean {
+  return process.env.VERBOSE === "1" || process.env.VERBOSE === "true";
 }
 
 function logErrorDetails(error: Error): void {
@@ -101,7 +142,7 @@ function logErrorDetails(error: Error): void {
     p.log.warn(`Cause: ${formatErrorForDisplay(error.cause)}`);
     logNestedErrorProperties(error.cause);
   }
-  if (error.stack) {
+  if (isVerbose() && error.stack) {
     p.log.warn(`Stack: ${error.stack}`);
   }
 }
@@ -118,7 +159,9 @@ function logNestedErrorProperties(target: unknown): void {
     p.log.warn(`  Error: ${record.error.message}`);
     const innerRecord = record.error as unknown as Record<string, unknown>;
     if (innerRecord.errors && typeof innerRecord.errors === "object") {
-      p.log.warn(`  Details: ${JSON.stringify(innerRecord.errors, null, 2)}`);
+      p.log.warn(
+        `  Details: ${JSON.stringify(sanitizeForDisplay(innerRecord.errors), null, 2)}`,
+      );
     }
   }
 
@@ -129,10 +172,12 @@ function logNestedErrorProperties(target: unknown): void {
         p.log.warn(`  - ${e.message}`);
         const inner = e as unknown as Record<string, unknown>;
         if (inner.errors && typeof inner.errors === "object") {
-          p.log.warn(`    ${JSON.stringify(inner.errors, null, 2)}`);
+          p.log.warn(
+            `    ${JSON.stringify(sanitizeForDisplay(inner.errors), null, 2)}`,
+          );
         }
       } else {
-        p.log.warn(`  - ${JSON.stringify(e, null, 2)}`);
+        p.log.warn(`  - ${JSON.stringify(sanitizeForDisplay(e), null, 2)}`);
       }
     }
   } else if (
@@ -142,7 +187,9 @@ function logNestedErrorProperties(target: unknown): void {
   ) {
     // Handle `.errors` (plural) object - e.g. KintoneRestAPIError field-level details
     // Skip if `.error` was already handled above to avoid duplicate output
-    p.log.warn(`Details: ${JSON.stringify(record.errors, null, 2)}`);
+    p.log.warn(
+      `Details: ${JSON.stringify(sanitizeForDisplay(record.errors), null, 2)}`,
+    );
   }
 
   // Recursively follow the cause chain

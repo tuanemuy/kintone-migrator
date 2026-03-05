@@ -3,10 +3,8 @@ import pc from "picocolors";
 import type { ActionDiffEntry } from "@/core/application/action/detectActionDiff";
 import type { AdminNotesDiffEntry } from "@/core/application/adminNotes/detectAdminNotesDiff";
 import type { AppPermissionDiffEntry } from "@/core/application/appPermission/detectAppPermissionDiff";
-import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { CustomizationDiffEntry } from "@/core/application/customization/detectCustomizationDiff";
 import type { FieldPermissionDiffEntry } from "@/core/application/fieldPermission/detectFieldPermissionDiff";
-import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { GeneralSettingsDiffEntry } from "@/core/application/generalSettings/detectGeneralSettingsDiff";
 import type { NotificationDiffEntry } from "@/core/application/notification/detectNotificationDiff";
@@ -299,32 +297,4 @@ export async function confirmAndDeploy(
   }
 
   p.log.success(successMessage);
-}
-
-export async function promptDeploy(
-  container: FormSchemaContainer,
-  skipConfirm: boolean,
-): Promise<void> {
-  if (!skipConfirm) {
-    const shouldDeploy = await p.confirm({
-      message: "Deploy to production?",
-    });
-
-    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn("Applied to preview, but not deployed to production.");
-      return;
-    }
-  }
-
-  const ds = p.spinner();
-  ds.start("Deploying to production...");
-  try {
-    await deployApp({ container });
-    ds.stop("Deployment complete.");
-  } catch (error) {
-    ds.stop("Deployment failed.");
-    throw error;
-  }
-
-  p.log.success("Deployed to production.");
 }

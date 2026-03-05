@@ -6,7 +6,7 @@ import {
   type GeneralSettingsCliContainerConfig,
 } from "@/core/application/container/generalSettingsCli";
 import { applyGeneralSettings } from "@/core/application/generalSettings/applyGeneralSettings";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -38,7 +38,7 @@ export default define({
   args: { ...settingsArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as SettingsCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<SettingsCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -70,7 +70,7 @@ export default define({
               const container = await runSettings(config);
               containers.push(container);
             },
-            "All general settings applied successfully.",
+            undefined,
           );
           await confirmAndDeploy(containers, skipConfirm);
         },

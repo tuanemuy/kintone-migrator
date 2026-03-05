@@ -10,7 +10,7 @@ import {
   resolveActionAppContainerConfig,
   resolveActionContainerConfig,
 } from "../../actionConfig";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -36,7 +36,7 @@ export default define({
   args: { ...actionArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as ActionCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<ActionCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

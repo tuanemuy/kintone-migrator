@@ -4,7 +4,7 @@ import type { PluginContainer } from "@/core/application/container/plugin";
 import type { PluginCliContainerConfig } from "@/core/application/container/pluginCli";
 import { createPluginCliContainer } from "@/core/application/container/pluginCli";
 import { applyPlugin } from "@/core/application/plugin/applyPlugin";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import {
@@ -36,7 +36,7 @@ export default define({
   args: { ...pluginArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as PluginCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<PluginCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

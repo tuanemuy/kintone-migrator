@@ -7,7 +7,7 @@ import {
 } from "@/core/application/container/cli";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import { applyCustomization } from "@/core/application/customization/applyCustomization";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import {
   type CustomizeCliValues,
   customizeArgs,
@@ -43,7 +43,7 @@ export default define({
   args: { ...customizeArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as CustomizeCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<CustomizeCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {

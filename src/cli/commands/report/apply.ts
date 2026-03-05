@@ -6,7 +6,7 @@ import {
   type ReportCliContainerConfig,
 } from "@/core/application/container/reportCli";
 import { applyReport } from "@/core/application/report/applyReport";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import { confirmAndDeploy, printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -38,7 +38,7 @@ export default define({
   args: { ...reportArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as ReportCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<ReportCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
