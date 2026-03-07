@@ -266,6 +266,7 @@ export function printMultiAppResult(result: MultiAppResult): void {
 
 export type Deployable = {
   readonly appDeployer: { deploy: () => Promise<void> };
+  readonly appName?: string;
 };
 
 export async function confirmAndDeploy(
@@ -279,20 +280,45 @@ export async function confirmAndDeploy(
     });
 
     if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn("Applied to preview, but not deployed to production.");
+      const appNames = containers
+        .map((c) => c.appName)
+        .filter((n): n is string => n != null);
+      if (appNames.length > 0) {
+        p.log.warn(
+          `Applied to preview, but not deployed to production: ${appNames.join(", ")}`,
+        );
+      } else {
+        p.log.warn("Applied to preview, but not deployed to production.");
+      }
       return;
     }
   }
 
   const ds = p.spinner();
   ds.start("Deploying to production...");
+  const deployedNames: string[] = [];
   try {
     for (const container of containers) {
       await container.appDeployer.deploy();
+      if (container.appName) {
+        deployedNames.push(container.appName);
+      }
     }
     ds.stop("Deployed to production.");
   } catch (error) {
     ds.stop("Deployment failed.");
+    if (deployedNames.length > 0) {
+      p.log.warn(
+        `${deployedNames.length}/${containers.length} app(s) were deployed before the failure: ${deployedNames.join(", ")}`,
+      );
+    }
+    const notDeployed = containers
+      .map((c) => c.appName)
+      .filter((n): n is string => n != null)
+      .filter((n) => !deployedNames.includes(n));
+    if (notDeployed.length > 0) {
+      p.log.warn(`Not deployed: ${notDeployed.join(", ")}`);
+    }
     throw error;
   }
 

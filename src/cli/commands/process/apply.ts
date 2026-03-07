@@ -8,14 +8,14 @@ import {
 import { applyProcessManagement } from "@/core/application/processManagement/applyProcessManagement";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
+import { confirmAndDeploy } from "../../output";
 import {
   type ProcessCliValues,
   processArgs,
   resolveProcessAppContainerConfig,
   resolveProcessContainerConfig,
 } from "../../processConfig";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runProcessApply(
   config: ProcessManagementCliContainerConfig,
@@ -66,20 +66,15 @@ export default define({
         },
         multiApp: async (plan, projectConfig) => {
           const containers: ProcessManagementContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveProcessAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runProcessApply(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveProcessAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runProcessApply(config);
+            containers.push(container);
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

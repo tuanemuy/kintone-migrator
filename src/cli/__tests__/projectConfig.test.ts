@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SystemError, ValidationError } from "@/core/application/error";
+import { ValidationError } from "@/core/application/error";
 import type {
   AppEntry,
   ExecutionPlan,
@@ -31,6 +31,7 @@ vi.mock("@/core/application/projectConfig/executeMultiApp", () => ({
   executeMultiApp: vi.fn(),
 }));
 
+import * as p from "@clack/prompts";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
 import {
   runMultiAppWithFailCheck,
@@ -71,6 +72,16 @@ describe("validateExclusiveArgs", () => {
   it("何も指定しない場合、エラーにならない", () => {
     expect(() => validateExclusiveArgs({})).not.toThrow();
   });
+
+  it("--app-id のみ指定した場合、エラーにならない", () => {
+    expect(() => validateExclusiveArgs({ "app-id": "1" })).not.toThrow();
+  });
+
+  it("--app-id, --app, --all を全て指定した場合、ValidationError をスローする", () => {
+    expect(() =>
+      validateExclusiveArgs({ "app-id": "1", app: "myApp", all: true }),
+    ).toThrow(ValidationError);
+  });
 });
 
 function makeApp(name: string): AppEntry {
@@ -98,11 +109,10 @@ describe("runMultiAppWithFailCheck", () => {
 
     await runMultiAppWithFailCheck(plan, vi.fn(), "All done!");
 
-    const p = await import("@clack/prompts");
     expect(p.log.success).toHaveBeenCalledWith("All done!");
   });
 
-  it("失敗がある場合、SystemError をスローする", async () => {
+  it("失敗がある場合、EXECUTION_ERROR コードの SystemError をスローする", async () => {
     const plan = makePlan([makeApp("App1")]);
     vi.mocked(executeMultiApp).mockResolvedValue({
       results: [
@@ -116,7 +126,9 @@ describe("runMultiAppWithFailCheck", () => {
     });
 
     await expect(runMultiAppWithFailCheck(plan, vi.fn())).rejects.toThrow(
-      SystemError,
+      expect.objectContaining({
+        code: "EXECUTION_ERROR",
+      }),
     );
   });
 
@@ -129,7 +141,6 @@ describe("runMultiAppWithFailCheck", () => {
 
     await runMultiAppWithFailCheck(plan, vi.fn());
 
-    const p = await import("@clack/prompts");
     expect(p.log.success).not.toHaveBeenCalled();
   });
 });

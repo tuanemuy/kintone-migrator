@@ -6,14 +6,14 @@ import { createPluginCliContainer } from "@/core/application/container/pluginCli
 import { applyPlugin } from "@/core/application/plugin/applyPlugin";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
+import { confirmAndDeploy } from "../../output";
 import {
   type PluginCliValues,
   pluginArgs,
   resolvePluginAppContainerConfig,
   resolvePluginContainerConfig,
 } from "../../pluginConfig";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runPlugin(
   config: PluginCliContainerConfig,
@@ -56,20 +56,15 @@ export default define({
         },
         multiApp: async (plan, projectConfig) => {
           const containers: PluginContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolvePluginAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runPlugin(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolvePluginAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runPlugin(config);
+            containers.push(container);
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

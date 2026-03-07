@@ -8,8 +8,8 @@ import {
 import { applyReport } from "@/core/application/report/applyReport";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { confirmAndDeploy } from "../../output";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import {
   type ReportCliValues,
   reportArgs,
@@ -58,20 +58,15 @@ export default define({
         },
         multiApp: async (plan, projectConfig) => {
           const containers: ReportContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveReportAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runReport(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveReportAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runReport(config);
+            containers.push(container);
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

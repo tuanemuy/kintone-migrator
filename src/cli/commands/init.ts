@@ -87,7 +87,7 @@ export default define({
       if (!/^[1-9]\d*$/.test(spaceId)) {
         throw new ValidationError(
           ValidationErrorCode.InvalidInput,
-          `Invalid space ID: "${spaceId}" (must be a positive integer without leading zeros)`,
+          `Invalid space ID: "${spaceId}" (must be a positive integer, e.g. 1, 42, 100)`,
         );
       }
 

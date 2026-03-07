@@ -8,8 +8,8 @@ import {
 import { applyGeneralSettings } from "@/core/application/generalSettings/applyGeneralSettings";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { confirmAndDeploy } from "../../output";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import {
   resolveSettingsAppContainerConfig,
   resolveSettingsContainerConfig,
@@ -58,20 +58,15 @@ export default define({
         },
         multiApp: async (plan, projectConfig) => {
           const containers: GeneralSettingsContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveSettingsAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runSettings(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveSettingsAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runSettings(config);
+            containers.push(container);
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });
