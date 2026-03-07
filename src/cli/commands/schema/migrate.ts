@@ -2,6 +2,7 @@ import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import { createCliContainer } from "@/core/application/container/cli";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import { deployApp } from "@/core/application/formSchema/deployApp";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { executeMigration } from "@/core/application/formSchema/executeMigration";
@@ -13,7 +14,11 @@ import {
   resolveConfig,
 } from "../../config";
 import { handleCliError } from "../../handleError";
-import { printAppHeader, printDiffResult, promptDeploy } from "../../output";
+import {
+  confirmAndDeploy,
+  printAppHeader,
+  printDiffResult,
+} from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
@@ -54,7 +59,7 @@ async function runSingleMigrate(
 
   p.log.success("Migration completed successfully.");
 
-  await promptDeploy(container, skipConfirm);
+  await confirmAndDeploy([container], skipConfirm);
 }
 
 export default define({
@@ -126,7 +131,12 @@ export default define({
             plan,
             async (app) => {
               const entry = appContainers.find((a) => a.app.name === app.name);
-              if (!entry) return;
+              if (!entry) {
+                throw new SystemError(
+                  SystemErrorCode.InternalServerError,
+                  `App container not found for "${app.name}"`,
+                );
+              }
 
               const { container, hasChanges } = entry;
 

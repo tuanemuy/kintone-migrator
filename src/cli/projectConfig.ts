@@ -248,6 +248,21 @@ export async function routeMultiApp(
   await handlers.multiApp(target.plan, target.config);
 }
 
+export async function runMultiAppWithHeaders(
+  plan: ExecutionPlan,
+  executor: MultiAppExecutor,
+  successMessage?: string,
+): Promise<void> {
+  await runMultiAppWithFailCheck(
+    plan,
+    async (app) => {
+      printAppHeader(app.name, app.appId);
+      await executor(app);
+    },
+    successMessage,
+  );
+}
+
 export async function runMultiAppWithFailCheck(
   plan: ExecutionPlan,
   executor: MultiAppExecutor,
@@ -257,8 +272,16 @@ export async function runMultiAppWithFailCheck(
   printMultiAppResult(multiResult);
 
   if (multiResult.hasFailure) {
+    const succeededCount = multiResult.results.filter(
+      (r) => r.status === "succeeded",
+    ).length;
+    if (succeededCount > 0) {
+      p.log.warn(
+        `${succeededCount} app(s) were applied to preview but may not have been deployed. Check their status in kintone.`,
+      );
+    }
     throw new SystemError(
-      SystemErrorCode.ExternalApiError,
+      SystemErrorCode.ExecutionError,
       "Execution stopped due to failure.",
     );
   }

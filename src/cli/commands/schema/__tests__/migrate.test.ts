@@ -55,7 +55,7 @@ vi.mock("@/cli/output", () => ({
   printDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),
-  promptDeploy: vi.fn(),
+  confirmAndDeploy: vi.fn(),
 }));
 
 vi.mock("@/cli/handleError", () => ({
@@ -64,7 +64,7 @@ vi.mock("@/cli/handleError", () => ({
 
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
-import { printDiffResult, promptDeploy } from "@/cli/output";
+import { confirmAndDeploy, printDiffResult } from "@/cli/output";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { executeMigration } from "@/core/application/formSchema/executeMigration";
 import command from "../migrate";
@@ -132,7 +132,7 @@ describe("migrate コマンド", () => {
     vi.mocked(detectDiff).mockResolvedValue(result);
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(executeMigration).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: {} } as never);
 
@@ -146,7 +146,7 @@ describe("migrate コマンド", () => {
     vi.mocked(detectDiff).mockResolvedValue(hasDiffResult());
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(executeMigration).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: {} } as never);
 
@@ -160,11 +160,11 @@ describe("migrate コマンド", () => {
     vi.mocked(detectDiff).mockResolvedValue(hasDiffResult());
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(executeMigration).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: {} } as never);
 
-    expect(promptDeploy).toHaveBeenCalled();
+    expect(confirmAndDeploy).toHaveBeenCalled();
   });
 
   it("ユーザーがキャンセルした場合、マイグレーションは実行されない", async () => {
@@ -207,6 +207,6 @@ describe("migrate コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
-    expect(promptDeploy).not.toHaveBeenCalled();
+    expect(confirmAndDeploy).not.toHaveBeenCalled();
   });
 });

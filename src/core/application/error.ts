@@ -158,6 +158,7 @@ export const SystemErrorCode = {
   StorageError: "STORAGE_ERROR",
   DocumentGenerationError: "DOCUMENT_GENERATION_ERROR",
   ExternalApiError: "EXTERNAL_API_ERROR",
+  ExecutionError: "EXECUTION_ERROR",
 } as const;
 export type SystemErrorCode =
   (typeof SystemErrorCode)[keyof typeof SystemErrorCode];

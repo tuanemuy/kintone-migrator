@@ -6,7 +6,7 @@ import {
   type NotificationCliContainerConfig,
 } from "@/core/application/container/notificationCli";
 import { applyNotification } from "@/core/application/notification/applyNotification";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
 import {
   type NotificationCliValues,
@@ -14,8 +14,8 @@ import {
   resolveNotificationAppContainerConfig,
   resolveNotificationContainerConfig,
 } from "../../notificationConfig";
-import { confirmAndDeploy, printAppHeader } from "../../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { confirmAndDeploy } from "../../output";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runNotification(
   config: NotificationCliContainerConfig,
@@ -38,7 +38,7 @@ export default define({
   args: { ...notificationArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as NotificationCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<NotificationCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -58,20 +58,15 @@ export default define({
         },
         multiApp: async (plan, projectConfig) => {
           const containers: NotificationContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveNotificationAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runNotification(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveNotificationAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runNotification(config);
+            containers.push(container);
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });
