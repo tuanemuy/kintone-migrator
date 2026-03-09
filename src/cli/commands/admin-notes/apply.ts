@@ -12,10 +12,10 @@ import {
   resolveAdminNotesAppContainerConfig,
   resolveAdminNotesContainerConfig,
 } from "../../adminNotesConfig";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { confirmAndDeploy, type Deployable } from "../../output";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runAdminNotes(
   config: AdminNotesCliContainerConfig,
@@ -38,7 +38,7 @@ export default define({
   args: { ...adminNotesArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as AdminNotesCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<AdminNotesCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -57,21 +57,19 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: AdminNotesContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveAdminNotesAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runAdminNotes(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          const containers: Deployable[] = [];
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveAdminNotesAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runAdminNotes(config);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

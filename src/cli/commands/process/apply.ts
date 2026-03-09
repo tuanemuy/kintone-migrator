@@ -6,16 +6,16 @@ import {
   type ProcessManagementCliContainerConfig,
 } from "@/core/application/container/processManagementCli";
 import { applyProcessManagement } from "@/core/application/processManagement/applyProcessManagement";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import {
   type ProcessCliValues,
   processArgs,
   resolveProcessAppContainerConfig,
   resolveProcessContainerConfig,
 } from "../../processConfig";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runProcessApply(
   config: ProcessManagementCliContainerConfig,
@@ -46,7 +46,7 @@ export default define({
   args: { ...processArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as ProcessCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<ProcessCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -65,21 +65,19 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: ProcessManagementContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveProcessAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runProcessApply(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          const containers: Deployable[] = [];
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveProcessAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runProcessApply(config);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

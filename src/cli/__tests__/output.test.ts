@@ -54,7 +54,6 @@ import {
   printRecordPermissionDiffResult,
   printReportDiffResult,
   printViewDiffResult,
-  promptDeploy,
 } from "../output";
 
 afterEach(() => {
@@ -523,78 +522,6 @@ describe("printMultiAppResult", () => {
     expect(p.log.error).toHaveBeenCalled();
     expect(p.log.warn).toHaveBeenCalled();
     expect(logError).toHaveBeenCalled();
-  });
-});
-
-describe("promptDeploy", () => {
-  it("ユーザーが確認を承認した場合、deployApp が呼ばれて成功メッセージが表示される", async () => {
-    vi.mocked(p.confirm).mockResolvedValueOnce(true);
-    vi.mocked(p.isCancel).mockReturnValueOnce(false);
-
-    const container = {
-      formConfigurator: {} as never,
-      schemaStorage: {} as never,
-      appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) },
-    };
-
-    await promptDeploy(container, false);
-
-    expect(container.appDeployer.deploy).toHaveBeenCalled();
-    expect(p.log.success).toHaveBeenCalledWith(
-      expect.stringContaining("Deployed to production"),
-    );
-  });
-
-  it("ユーザーがキャンセルした場合、deployApp は呼ばれず警告が表示される", async () => {
-    vi.mocked(p.confirm).mockResolvedValueOnce(false);
-    vi.mocked(p.isCancel).mockReturnValueOnce(false);
-
-    const container = {
-      formConfigurator: {} as never,
-      schemaStorage: {} as never,
-      appDeployer: { deploy: vi.fn() },
-    };
-
-    await promptDeploy(container, false);
-
-    expect(container.appDeployer.deploy).not.toHaveBeenCalled();
-    expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("not deployed to production"),
-    );
-  });
-
-  it("ユーザーが Ctrl+C でキャンセルした場合、deployApp は呼ばれない", async () => {
-    vi.mocked(p.confirm).mockResolvedValueOnce(Symbol("cancel") as never);
-    vi.mocked(p.isCancel).mockReturnValueOnce(true);
-
-    const container = {
-      formConfigurator: {} as never,
-      schemaStorage: {} as never,
-      appDeployer: { deploy: vi.fn() },
-    };
-
-    await promptDeploy(container, false);
-
-    expect(container.appDeployer.deploy).not.toHaveBeenCalled();
-    expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("not deployed to production"),
-    );
-  });
-
-  it("skipConfirm が true の場合、確認なしで deployApp が呼ばれる", async () => {
-    const container = {
-      formConfigurator: {} as never,
-      schemaStorage: {} as never,
-      appDeployer: { deploy: vi.fn().mockResolvedValue(undefined) },
-    };
-
-    await promptDeploy(container, true);
-
-    expect(p.confirm).not.toHaveBeenCalled();
-    expect(container.appDeployer.deploy).toHaveBeenCalled();
-    expect(p.log.success).toHaveBeenCalledWith(
-      expect.stringContaining("Deployed to production"),
-    );
   });
 });
 

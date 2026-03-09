@@ -10,10 +10,10 @@ import {
   resolveActionAppContainerConfig,
   resolveActionContainerConfig,
 } from "../../actionConfig";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { confirmAndDeploy, type Deployable } from "../../output";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runAction(
   config: ActionCliContainerConfig,
@@ -36,7 +36,7 @@ export default define({
   args: { ...actionArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as ActionCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<ActionCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -55,21 +55,19 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: ActionContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveActionAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runAction(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          const containers: Deployable[] = [];
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveActionAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runAction(config);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

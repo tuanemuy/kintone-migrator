@@ -14,7 +14,7 @@ import {
 
 async function runDiff(container: FormSchemaContainer): Promise<void> {
   const s = p.spinner();
-  s.start("Fetching form schema...");
+  s.start("Comparing schema...");
   let result: Awaited<ReturnType<typeof detectDiff>>;
   try {
     result = await detectDiff({ container });
@@ -22,7 +22,7 @@ async function runDiff(container: FormSchemaContainer): Promise<void> {
     s.stop("Comparison failed.");
     throw error;
   }
-  s.stop("Form schema fetched.");
+  s.stop("Comparison complete.");
 
   printDiffResult(result);
 }

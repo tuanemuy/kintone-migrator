@@ -6,10 +6,10 @@ import {
   type ViewCliContainerConfig,
 } from "@/core/application/container/viewCli";
 import { applyView } from "@/core/application/view/applyView";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { confirmAndDeploy, type Deployable } from "../../output";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import {
   resolveViewAppContainerConfig,
   resolveViewContainerConfig,
@@ -42,7 +42,7 @@ export default define({
   args: { ...viewArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as ViewCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<ViewCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -61,21 +61,19 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: ViewContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolveViewAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runView(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          const containers: Deployable[] = [];
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolveViewAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runView(config);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });

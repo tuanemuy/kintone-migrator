@@ -14,7 +14,7 @@ import {
   resolveConfig,
 } from "../../config";
 import { handleCliError } from "../../handleError";
-import { printAppHeader, promptDeploy } from "../../output";
+import { confirmAndDeploy, printAppHeader } from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
@@ -48,7 +48,7 @@ async function runSingleOverride(
 
   p.log.success("Force override completed successfully.");
 
-  await promptDeploy(container, skipConfirm);
+  await confirmAndDeploy([container], skipConfirm);
 }
 
 async function runSingleReset(
@@ -77,7 +77,7 @@ async function runSingleReset(
 
   p.log.success("Reset completed successfully.");
 
-  await promptDeploy(container, skipConfirm);
+  await confirmAndDeploy([container], skipConfirm);
 }
 
 export default define({

@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ConflictError,
   ConflictErrorCode,
@@ -21,6 +21,7 @@ vi.mock("@clack/prompts", () => ({
   log: {
     error: vi.fn(),
     warn: vi.fn(),
+    info: vi.fn(),
   },
   outro: vi.fn(),
 }));
@@ -31,7 +32,15 @@ const mockExit = vi
   .mockImplementation((_code?) => undefined as never);
 
 import * as p from "@clack/prompts";
-import { handleCliError } from "../handleError";
+import {
+  formatErrorForDisplay,
+  handleCliError,
+  logError,
+} from "../handleError";
+
+beforeEach(() => {
+  delete process.env.VERBOSE;
+});
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -272,11 +281,351 @@ describe("handleCliError", () => {
     );
   });
 
-  it("stack トレースがある場合、Stack 情報が warn でログ出力される", () => {
+  it("VERBOSE=1 の場合、stack トレースが warn でログ出力される", () => {
+    process.env.VERBOSE = "1";
     const error = new Error("テストエラー");
 
     handleCliError(error);
 
     expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Stack:"));
+  });
+
+  it("VERBOSE=true の場合、stack トレースが warn でログ出力される", () => {
+    process.env.VERBOSE = "true";
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Stack:"));
+  });
+
+  it("VERBOSE 未設定の場合、Stack 情報は出力されない", () => {
+    delete process.env.VERBOSE;
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasStack = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("Stack:"),
+    );
+    expect(hasStack).toBe(false);
+  });
+
+  it("VERBOSE=yes の場合、stack トレースが warn でログ出力される", () => {
+    process.env.VERBOSE = "yes";
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Stack:"));
+  });
+
+  it("VERBOSE=invalid など無効な値の場合、Stack 情報は出力されない", () => {
+    process.env.VERBOSE = "invalid";
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasStack = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("Stack:"),
+    );
+    expect(hasStack).toBe(false);
+  });
+
+  it("ValidationError のヒントメッセージが出力される", () => {
+    const error = new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      "入力値が不正です",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: Please check your input values"),
+    );
+  });
+
+  it("SystemError(NetworkError) のヒントメッセージが出力される", () => {
+    const error = new SystemError(
+      SystemErrorCode.NetworkError,
+      "ネットワーク接続失敗",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Hint: Please check your network connection"),
+    );
+  });
+
+  it("SystemError(ExternalApiError) のヒントメッセージが出力される", () => {
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "API エラー",
+    );
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "Hint: The kintone API returned an unexpected error",
+      ),
+    );
+  });
+
+  it("cause にセンシティブ情報が含まれる場合、[REDACTED] で出力される", () => {
+    const cause = {
+      errors: [
+        {
+          message: "auth failed",
+          authorization: "Basic abc123",
+          password: "secret123",
+        },
+      ],
+    };
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "APIエラー",
+      cause,
+    );
+
+    logError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasRedacted = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("[REDACTED]"),
+    );
+    expect(hasRedacted).toBe(true);
+
+    const hasPlainPassword = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("secret123"),
+    );
+    expect(hasPlainPassword).toBe(false);
+  });
+
+  it("VERBOSE 未設定の場合、VERBOSE ヒントが表示される", () => {
+    delete process.env.VERBOSE;
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Set VERBOSE=1 for full stack traces.",
+    );
+  });
+
+  it("VERBOSE=1 の場合、VERBOSE ヒントは表示されない", () => {
+    process.env.VERBOSE = "1";
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    expect(p.log.info).not.toHaveBeenCalledWith(
+      "Set VERBOSE=1 for full stack traces.",
+    );
+  });
+
+  it("非 Error 型の場合でも、VERBOSE ヒントが表示される", () => {
+    delete process.env.VERBOSE;
+
+    handleCliError("文字列エラー");
+
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Set VERBOSE=1 for full stack traces.",
+    );
+  });
+});
+
+describe("logError", () => {
+  it("process.exit を呼ばずにエラーログだけ出力する", () => {
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "APIエラー",
+    );
+
+    logError(error);
+
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining("[SystemError]"),
+    );
+    expect(mockExit).not.toHaveBeenCalled();
+    expect(p.outro).not.toHaveBeenCalled();
+  });
+
+  it("通常の Error を受け取ると [Error] で出力する", () => {
+    logError(new Error("一般エラー"));
+
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining("[Error] 一般エラー"),
+    );
+  });
+
+  it("Error でない値を受け取ると文字列化して出力する", () => {
+    logError({ code: 500, message: "unknown" });
+
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining("Unexpected error"),
+    );
+  });
+
+  it("cause に .error (非 Error) と .errors (object) がある場合、.errors が出力される", () => {
+    const cause = {
+      error: "not-an-error-instance",
+      errors: { field1: { messages: ["必須です"] } },
+    };
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "APIエラー",
+      cause,
+    );
+
+    logError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasDetails = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("必須です"),
+    );
+    expect(hasDetails).toBe(true);
+  });
+});
+
+describe("formatErrorForDisplay", () => {
+  it("Error メッセージ内のセンシティブ値をマスクする", () => {
+    const result = formatErrorForDisplay(
+      new Error("Failed: apiToken=abc123xyz"),
+    );
+    expect(result).not.toContain("abc123xyz");
+    expect(result).toContain("[REDACTED]");
+  });
+
+  it("authorization=Bearer <token> パターンでトークンがリークしない", () => {
+    const result = formatErrorForDisplay(
+      new Error("Failed: authorization=Bearer token123secret"),
+    );
+    expect(result).not.toContain("Bearer");
+    expect(result).not.toContain("token123secret");
+    expect(result).toContain("[REDACTED]");
+  });
+
+  it("authorization: <value> パターンでもマスクされる", () => {
+    const result = formatErrorForDisplay(
+      new Error("authorization: Basic dXNlcjpwYXNz"),
+    );
+    expect(result).not.toContain("dXNlcjpwYXNz");
+    expect(result).toContain("[REDACTED]");
+  });
+
+  it("password=value パターンでメッセージ内の値がマスクされる", () => {
+    const result = formatErrorForDisplay(
+      new Error("Login failed: password=mysecretpass"),
+    );
+    expect(result).not.toContain("mysecretpass");
+    expect(result).toContain("[REDACTED]");
+  });
+
+  it("プレーンオブジェクトのセンシティブキーをマスクする", () => {
+    const result = formatErrorForDisplay({
+      password: "my-secret",
+      user: "admin",
+    });
+    expect(result).toContain("[REDACTED]");
+    expect(result).not.toContain("my-secret");
+    expect(result).toContain("admin");
+  });
+
+  it("api_token キーがマスクされる", () => {
+    const result = formatErrorForDisplay({
+      api_token: "secret-token-value",
+      app_id: "123",
+    });
+    expect(result).toContain("[REDACTED]");
+    expect(result).not.toContain("secret-token-value");
+    expect(result).toContain("123");
+  });
+
+  it("credentials キーがマスクされる", () => {
+    const result = formatErrorForDisplay({
+      credentials: "user:pass",
+      domain: "example.com",
+    });
+    expect(result).toContain("[REDACTED]");
+    expect(result).not.toContain("user:pass");
+    expect(result).toContain("example.com");
+  });
+
+  it("循環参照を含むオブジェクトでもスタックオーバーフローしない", () => {
+    const obj: Record<string, unknown> = { name: "test" };
+    obj.self = obj;
+
+    const result = formatErrorForDisplay(obj);
+    expect(result).toContain("[Circular]");
+    expect(result).toContain("test");
+  });
+});
+
+describe("cause chain sanitization", () => {
+  it("循環 cause チェーンでもスタックオーバーフローしない", () => {
+    const errorA = new Error("Error A");
+    const errorB = new Error("Error B", { cause: errorA });
+    // Create circular cause chain: A -> B -> A
+    (errorA as unknown as Record<string, unknown>).cause = errorB;
+    const error = new SystemError(
+      SystemErrorCode.NetworkError,
+      "ネットワークエラー",
+      errorA,
+    );
+
+    // Should not throw (no infinite recursion)
+    expect(() => logError(error)).not.toThrow();
+  });
+
+  it("cause 内の inner error message に含まれるセンシティブ値がサニタイズされる", () => {
+    const innerError = new Error("request failed: apiToken=secret123");
+    Object.assign(innerError, {
+      errors: { field1: { messages: ["invalid"] } },
+    });
+    const cause = Object.assign(new Error("bulk operation failed"), {
+      error: innerError,
+    });
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "API failed",
+      cause,
+    );
+
+    logError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasPlainSecret = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("secret123"),
+    );
+    expect(hasPlainSecret).toBe(false);
+
+    const hasRedacted = warnCalls.some(
+      (call) => typeof call[0] === "string" && call[0].includes("[REDACTED]"),
+    );
+    expect(hasRedacted).toBe(true);
+  });
+
+  it("cause の errors 配列内の Error message もサニタイズされる", () => {
+    const cause = {
+      errors: [new Error("authorization=Bearer leaked-token-value")],
+    };
+    const error = new SystemError(
+      SystemErrorCode.ExternalApiError,
+      "API failed",
+      cause,
+    );
+
+    logError(error);
+
+    const warnCalls = vi.mocked(p.log.warn).mock.calls;
+    const hasLeakedToken = warnCalls.some(
+      (call) =>
+        typeof call[0] === "string" && call[0].includes("leaked-token-value"),
+    );
+    expect(hasLeakedToken).toBe(false);
   });
 });

@@ -3,10 +3,8 @@ import pc from "picocolors";
 import type { ActionDiffEntry } from "@/core/application/action/detectActionDiff";
 import type { AdminNotesDiffEntry } from "@/core/application/adminNotes/detectAdminNotesDiff";
 import type { AppPermissionDiffEntry } from "@/core/application/appPermission/detectAppPermissionDiff";
-import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { CustomizationDiffEntry } from "@/core/application/customization/detectCustomizationDiff";
 import type { FieldPermissionDiffEntry } from "@/core/application/fieldPermission/detectFieldPermissionDiff";
-import { deployApp } from "@/core/application/formSchema/deployApp";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { GeneralSettingsDiffEntry } from "@/core/application/generalSettings/detectGeneralSettingsDiff";
 import type { NotificationDiffEntry } from "@/core/application/notification/detectNotificationDiff";
@@ -268,6 +266,7 @@ export function printMultiAppResult(result: MultiAppResult): void {
 
 export type Deployable = {
   readonly appDeployer: { deploy: () => Promise<void> };
+  readonly appName?: string;
 };
 
 export async function confirmAndDeploy(
@@ -281,50 +280,47 @@ export async function confirmAndDeploy(
     });
 
     if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn("Applied to preview, but not deployed to production.");
+      const appNames = containers
+        .map((c) => c.appName)
+        .filter((n): n is string => n != null);
+      if (appNames.length > 0) {
+        p.log.warn(
+          `Applied to preview, but not deployed to production: ${appNames.join(", ")}`,
+        );
+      } else {
+        p.log.warn("Applied to preview, but not deployed to production.");
+      }
       return;
     }
   }
 
   const ds = p.spinner();
   ds.start("Deploying to production...");
+  const deployedNames: string[] = [];
   try {
     for (const container of containers) {
       await container.appDeployer.deploy();
+      if (container.appName) {
+        deployedNames.push(container.appName);
+      }
     }
     ds.stop("Deployed to production.");
   } catch (error) {
     ds.stop("Deployment failed.");
+    if (deployedNames.length > 0) {
+      p.log.warn(
+        `${deployedNames.length}/${containers.length} app(s) were deployed before the failure: ${deployedNames.join(", ")}`,
+      );
+    }
+    const notDeployed = containers
+      .map((c) => c.appName)
+      .filter((n): n is string => n != null)
+      .filter((n) => !deployedNames.includes(n));
+    if (notDeployed.length > 0) {
+      p.log.warn(`Not deployed: ${notDeployed.join(", ")}`);
+    }
     throw error;
   }
 
   p.log.success(successMessage);
-}
-
-export async function promptDeploy(
-  container: FormSchemaContainer,
-  skipConfirm: boolean,
-): Promise<void> {
-  if (!skipConfirm) {
-    const shouldDeploy = await p.confirm({
-      message: "Deploy to production?",
-    });
-
-    if (p.isCancel(shouldDeploy) || !shouldDeploy) {
-      p.log.warn("Applied to preview, but not deployed to production.");
-      return;
-    }
-  }
-
-  const ds = p.spinner();
-  ds.start("Deploying to production...");
-  try {
-    await deployApp({ container });
-    ds.stop("Deployment complete.");
-  } catch (error) {
-    ds.stop("Deployment failed.");
-    throw error;
-  }
-
-  p.log.success("Deployed to production.");
 }

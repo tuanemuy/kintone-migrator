@@ -248,6 +248,31 @@ export async function routeMultiApp(
   await handlers.multiApp(target.plan, target.config);
 }
 
+/**
+ * High-level multi-app executor that prints app headers before each executor call.
+ * Use this when the executor does not print its own headers (most apply commands).
+ * Delegates to `runMultiAppWithFailCheck` for execution and failure handling.
+ */
+export async function runMultiAppWithHeaders(
+  plan: ExecutionPlan,
+  executor: MultiAppExecutor,
+  successMessage?: string,
+): Promise<void> {
+  await runMultiAppWithFailCheck(
+    plan,
+    async (app) => {
+      printAppHeader(app.name, app.appId);
+      await executor(app);
+    },
+    successMessage,
+  );
+}
+
+/**
+ * Low-level multi-app executor that runs apps, prints results, and throws on failure.
+ * Use this directly when the executor needs full control over output (e.g. schema migrate
+ * prints its own headers and performs per-app deploy inside the executor callback).
+ */
 export async function runMultiAppWithFailCheck(
   plan: ExecutionPlan,
   executor: MultiAppExecutor,
@@ -257,8 +282,16 @@ export async function runMultiAppWithFailCheck(
   printMultiAppResult(multiResult);
 
   if (multiResult.hasFailure) {
+    const succeededCount = multiResult.results.filter(
+      (r) => r.status === "succeeded",
+    ).length;
+    if (succeededCount > 0) {
+      p.log.warn(
+        `${succeededCount} app(s) were applied to preview but may not have been deployed. Check their status in kintone.`,
+      );
+    }
     throw new SystemError(
-      SystemErrorCode.ExternalApiError,
+      SystemErrorCode.ExecutionError,
       "Execution stopped due to failure.",
     );
   }

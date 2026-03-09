@@ -53,7 +53,7 @@ vi.mock("@/cli/output", () => ({
   printDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),
-  promptDeploy: vi.fn(),
+  confirmAndDeploy: vi.fn(),
 }));
 
 vi.mock("@/cli/handleError", () => ({
@@ -62,7 +62,7 @@ vi.mock("@/cli/handleError", () => ({
 
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
-import { promptDeploy } from "@/cli/output";
+import { confirmAndDeploy } from "@/cli/output";
 import { forceOverrideForm } from "@/core/application/formSchema/forceOverrideForm";
 import { resetForm } from "@/core/application/formSchema/resetForm";
 import command from "../override";
@@ -77,7 +77,7 @@ describe("override コマンド", () => {
   it("強制上書き前に警告メッセージが表示される", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(forceOverrideForm).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: {} } as never);
 
@@ -88,7 +88,7 @@ describe("override コマンド", () => {
   it("ユーザーが確認した場合、強制上書きが実行される", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(forceOverrideForm).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: {} } as never);
 
@@ -101,11 +101,11 @@ describe("override コマンド", () => {
   it("強制上書き成功後、デプロイの確認が行われる", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(forceOverrideForm).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: {} } as never);
 
-    expect(promptDeploy).toHaveBeenCalled();
+    expect(confirmAndDeploy).toHaveBeenCalled();
   });
 
   it("ユーザーがキャンセルした場合、強制上書きは実行されない", async () => {
@@ -135,7 +135,7 @@ describe("override コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
-    expect(promptDeploy).not.toHaveBeenCalled();
+    expect(confirmAndDeploy).not.toHaveBeenCalled();
   });
 });
 
@@ -143,7 +143,7 @@ describe("override --reset コマンド", () => {
   it("--reset 指定時にリセット専用の警告メッセージが表示される", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(resetForm).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: { reset: true } } as never);
 
@@ -156,7 +156,7 @@ describe("override --reset コマンド", () => {
   it("--reset 指定時に resetForm が呼ばれ forceOverrideForm は呼ばれない", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(resetForm).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: { reset: true } } as never);
 
@@ -176,11 +176,11 @@ describe("override --reset コマンド", () => {
   it("--reset 指定時にデプロイの確認が行われる", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     vi.mocked(resetForm).mockResolvedValue(undefined);
-    vi.mocked(promptDeploy).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
 
     await command.run({ values: { reset: true } } as never);
 
-    expect(promptDeploy).toHaveBeenCalled();
+    expect(confirmAndDeploy).toHaveBeenCalled();
   });
 
   it("--reset と --schema-file の同時指定で handleCliError が呼ばれる", async () => {

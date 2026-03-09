@@ -84,10 +84,10 @@ export default define({
       const values = ctx.values as InitCliValues;
 
       const spaceId = values["space-id"];
-      if (!/^\d+$/.test(spaceId)) {
+      if (!/^[1-9]\d*$/.test(spaceId)) {
         throw new ValidationError(
           ValidationErrorCode.InvalidInput,
-          `Invalid space ID: "${spaceId}" (must be a numeric value)`,
+          `Invalid space ID: "${spaceId}" (must be a positive integer, e.g. 1, 42, 100)`,
         );
       }
 

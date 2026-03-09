@@ -4,16 +4,16 @@ import type { PluginContainer } from "@/core/application/container/plugin";
 import type { PluginCliContainerConfig } from "@/core/application/container/pluginCli";
 import { createPluginCliContainer } from "@/core/application/container/pluginCli";
 import { applyPlugin } from "@/core/application/plugin/applyPlugin";
-import { confirmArgs } from "../../config";
+import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, printAppHeader } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import {
   type PluginCliValues,
   pluginArgs,
   resolvePluginAppContainerConfig,
   resolvePluginContainerConfig,
 } from "../../pluginConfig";
-import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runPlugin(
   config: PluginCliContainerConfig,
@@ -36,7 +36,7 @@ export default define({
   args: { ...pluginArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
-      const values = ctx.values as PluginCliValues & { yes?: boolean };
+      const values = ctx.values as WithConfirm<PluginCliValues>;
       const skipConfirm = values.yes === true;
 
       await routeMultiApp(values, {
@@ -55,21 +55,19 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: PluginContainer[] = [];
-          await runMultiAppWithFailCheck(
-            plan,
-            async (app) => {
-              const config = resolvePluginAppContainerConfig(
-                app,
-                projectConfig,
-                values,
-              );
-              printAppHeader(app.name, app.appId);
-              const container = await runPlugin(config);
-              containers.push(container);
-            },
-            undefined,
-          );
+          const containers: Deployable[] = [];
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const config = resolvePluginAppContainerConfig(
+              app,
+              projectConfig,
+              values,
+            );
+            const container = await runPlugin(config);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
+          });
           await confirmAndDeploy(containers, skipConfirm);
         },
       });
