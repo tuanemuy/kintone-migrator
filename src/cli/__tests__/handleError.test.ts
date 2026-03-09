@@ -44,7 +44,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
-  vi.unstubAllEnvs();
 });
 
 describe("handleCliError", () => {
@@ -313,8 +312,17 @@ describe("handleCliError", () => {
     expect(hasStack).toBe(false);
   });
 
-  it("VERBOSE=yes など無効な値の場合、Stack 情報は出力されない", () => {
+  it("VERBOSE=yes の場合、stack トレースが warn でログ出力される", () => {
     process.env.VERBOSE = "yes";
+    const error = new Error("テストエラー");
+
+    handleCliError(error);
+
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("Stack:"));
+  });
+
+  it("VERBOSE=invalid など無効な値の場合、Stack 情報は出力されない", () => {
+    process.env.VERBOSE = "invalid";
     const error = new Error("テストエラー");
 
     handleCliError(error);

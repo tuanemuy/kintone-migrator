@@ -6,7 +6,7 @@ import { createRecordPermissionCliContainer } from "@/core/application/container
 import { applyRecordPermission } from "@/core/application/recordPermission/applyRecordPermission";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import {
   type RecordAclCliValues,
@@ -55,7 +55,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: RecordPermissionContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveRecordAclAppContainerConfig(
               app,
@@ -63,7 +63,10 @@ export default define({
               values,
             );
             const container = await runRecordAcl(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

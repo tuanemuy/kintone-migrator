@@ -15,7 +15,7 @@ import {
   resolveCustomizeConfig,
 } from "../../customizeConfig";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import { deriveFilePrefix } from "./capture";
 
@@ -66,7 +66,7 @@ export default define({
           );
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: CustomizationContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveCustomizeAppConfig(
               app,
@@ -74,7 +74,10 @@ export default define({
               values,
             );
             const container = await applyCustomizationForApp(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(
             containers,

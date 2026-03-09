@@ -14,7 +14,7 @@ import {
   resolveFieldAclContainerConfig,
 } from "../../fieldAclConfig";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runFieldAcl(
@@ -57,7 +57,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: FieldPermissionContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveFieldAclAppContainerConfig(
               app,
@@ -65,7 +65,10 @@ export default define({
               values,
             );
             const container = await runFieldAcl(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

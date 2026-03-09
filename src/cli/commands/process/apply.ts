@@ -8,7 +8,7 @@ import {
 import { applyProcessManagement } from "@/core/application/processManagement/applyProcessManagement";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import {
   type ProcessCliValues,
   processArgs,
@@ -65,7 +65,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: ProcessManagementContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveProcessAppContainerConfig(
               app,
@@ -73,7 +73,10 @@ export default define({
               values,
             );
             const container = await runProcessApply(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

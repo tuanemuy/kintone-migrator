@@ -12,7 +12,7 @@ import {
 } from "../../actionConfig";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runAction(
@@ -55,7 +55,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: ActionContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveActionAppContainerConfig(
               app,
@@ -63,7 +63,10 @@ export default define({
               values,
             );
             const container = await runAction(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

@@ -14,7 +14,7 @@ import {
 } from "../../adminNotesConfig";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 
 async function runAdminNotes(
@@ -57,7 +57,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: AdminNotesContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveAdminNotesAppContainerConfig(
               app,
@@ -65,7 +65,10 @@ export default define({
               values,
             );
             const container = await runAdminNotes(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

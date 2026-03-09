@@ -64,7 +64,7 @@ export const kintoneArgs = {
   },
 };
 
-export type WithConfirm<T> = T & { yes?: boolean };
+export type WithConfirm<T> = Omit<T, "yes"> & { yes?: boolean };
 
 export const confirmArgs = {
   yes: {

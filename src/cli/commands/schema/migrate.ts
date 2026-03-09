@@ -127,6 +127,10 @@ export default define({
             }
           }
 
+          // Note: Unlike other apply commands, schema migrate does NOT use `confirmAndDeploy`
+          // for the multi-app path. Schema changes must be deployed per-app in dependency order
+          // (e.g. lookup fields require the referenced app to be deployed first).
+          // Batching deploys at the end would break cross-app field references.
           await runMultiAppWithFailCheck(
             plan,
             async (app) => {

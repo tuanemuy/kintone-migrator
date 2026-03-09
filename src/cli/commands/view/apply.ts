@@ -8,7 +8,7 @@ import {
 import { applyView } from "@/core/application/view/applyView";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import {
   resolveViewAppContainerConfig,
@@ -61,7 +61,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: ViewContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolveViewAppContainerConfig(
               app,
@@ -69,7 +69,10 @@ export default define({
               values,
             );
             const container = await runView(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

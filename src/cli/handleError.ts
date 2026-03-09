@@ -14,6 +14,11 @@ import { isBusinessRuleError } from "@/core/domain/error";
 /**
  * Log error details without terminating the process.
  * Use this in contexts where multiple errors may be reported (e.g. multi-app results).
+ *
+ * Note: This function intentionally does NOT show the "Set VERBOSE=1 ..." hint.
+ * The hint is only shown by `handleCliError`, which is the top-level CLI handler.
+ * `logError` is used for per-app error reporting within multi-app runs where the
+ * hint would be noisy if repeated for each failure.
  */
 export function logError(error: unknown): void {
   if (isBusinessRuleError(error)) {
@@ -132,6 +137,9 @@ const SENSITIVE_VALUE_PATTERNS =
 const AUTHORIZATION_VALUE_PATTERN = /(?<=authorization[=:]\s*)\S+(?:\s+\S+)?/gi;
 
 function sanitizeString(value: string): string {
+  // Order is safe: AUTHORIZATION_VALUE_PATTERN uses a lookbehind for "authorization"
+  // and SENSITIVE_VALUE_PATTERNS uses lookbehinds for other keys (password, apiToken, etc.).
+  // The two patterns target disjoint keyword sets, so replacement order does not matter.
   return value
     .replace(AUTHORIZATION_VALUE_PATTERN, "[REDACTED]")
     .replace(SENSITIVE_VALUE_PATTERNS, "[REDACTED]");
@@ -152,6 +160,14 @@ function sanitizeForDisplay(
     return obj.map((item) => sanitizeForDisplay(item, seen));
   }
   const result: Record<string, unknown> = {};
+  // Error's `message` and `stack` are non-enumerable, so Object.entries() won't include them.
+  // Extract them explicitly to ensure they are sanitized and included in the output.
+  if (obj instanceof Error) {
+    result.message = sanitizeString(obj.message);
+    if (obj.stack) {
+      result.stack = sanitizeString(obj.stack);
+    }
+  }
   for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
     if (SENSITIVE_KEYS.test(key)) {
       result[key] = "[REDACTED]";
@@ -167,15 +183,21 @@ function sanitizeForDisplay(
 }
 
 function isVerbose(): boolean {
-  return process.env.VERBOSE === "1" || process.env.VERBOSE === "true";
+  return (
+    process.env.VERBOSE === "1" ||
+    process.env.VERBOSE === "true" ||
+    process.env.VERBOSE === "yes"
+  );
 }
 
 // Logs first-level cause and stack trace.
 // logNestedErrorProperties handles deeper cause chains (2nd level and beyond).
 function logErrorDetails(error: Error): void {
   if (error.cause) {
+    const seen = new WeakSet<object>();
+    seen.add(error);
     p.log.warn(`Cause: ${formatErrorForDisplay(error.cause)}`);
-    logNestedErrorProperties(error.cause);
+    logNestedErrorProperties(error.cause, seen);
   }
   if (isVerbose() && error.stack) {
     p.log.warn(`Stack: ${error.stack}`);
@@ -244,7 +266,9 @@ function hasObjectProperty<K extends string>(
   key: K,
 ): obj is object & Record<K, unknown> {
   return (
-    key in obj && typeof (obj as Record<string, unknown>)[key] === "object"
+    key in obj &&
+    typeof (obj as Record<string, unknown>)[key] === "object" &&
+    (obj as Record<string, unknown>)[key] !== null
   );
 }
 

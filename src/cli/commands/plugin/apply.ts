@@ -6,7 +6,7 @@ import { createPluginCliContainer } from "@/core/application/container/pluginCli
 import { applyPlugin } from "@/core/application/plugin/applyPlugin";
 import { confirmArgs, type WithConfirm } from "../../config";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy } from "../../output";
+import { confirmAndDeploy, type Deployable } from "../../output";
 import {
   type PluginCliValues,
   pluginArgs,
@@ -55,7 +55,7 @@ export default define({
           await confirmAndDeploy([container], skipConfirm);
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: PluginContainer[] = [];
+          const containers: Deployable[] = [];
           await runMultiAppWithHeaders(plan, async (app) => {
             const config = resolvePluginAppContainerConfig(
               app,
@@ -63,7 +63,10 @@ export default define({
               values,
             );
             const container = await runPlugin(config);
-            containers.push(container);
+            containers.push({
+              appDeployer: container.appDeployer,
+              appName: app.name,
+            });
           });
           await confirmAndDeploy(containers, skipConfirm);
         },

@@ -248,6 +248,11 @@ export async function routeMultiApp(
   await handlers.multiApp(target.plan, target.config);
 }
 
+/**
+ * High-level multi-app executor that prints app headers before each executor call.
+ * Use this when the executor does not print its own headers (most apply commands).
+ * Delegates to `runMultiAppWithFailCheck` for execution and failure handling.
+ */
 export async function runMultiAppWithHeaders(
   plan: ExecutionPlan,
   executor: MultiAppExecutor,
@@ -263,6 +268,11 @@ export async function runMultiAppWithHeaders(
   );
 }
 
+/**
+ * Low-level multi-app executor that runs apps, prints results, and throws on failure.
+ * Use this directly when the executor needs full control over output (e.g. schema migrate
+ * prints its own headers and performs per-app deploy inside the executor callback).
+ */
 export async function runMultiAppWithFailCheck(
   plan: ExecutionPlan,
   executor: MultiAppExecutor,
