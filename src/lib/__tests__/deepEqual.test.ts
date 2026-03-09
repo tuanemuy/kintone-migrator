@@ -210,6 +210,34 @@ describe("deepEqual", () => {
     expect(deepEqual(a, b)).toBe(true);
   });
 
+  it("should return true for structurally identical mutual circular references", () => {
+    const a1: Record<string, unknown> = { val: 1 };
+    const a2: Record<string, unknown> = { val: 2 };
+    a1.ref = a2;
+    a2.ref = a1;
+
+    const b1: Record<string, unknown> = { val: 1 };
+    const b2: Record<string, unknown> = { val: 2 };
+    b1.ref = b2;
+    b2.ref = b1;
+
+    expect(deepEqual(a1, b1)).toBe(true);
+  });
+
+  it("should return false for mutual circular references with different values", () => {
+    const a1: Record<string, unknown> = { val: 1 };
+    const a2: Record<string, unknown> = { val: 2 };
+    a1.ref = a2;
+    a2.ref = a1;
+
+    const b1: Record<string, unknown> = { val: 1 };
+    const b2: Record<string, unknown> = { val: 999 };
+    b1.ref = b2;
+    b2.ref = b1;
+
+    expect(deepEqual(a1, b1)).toBe(false);
+  });
+
   it("should return false when only the second argument has a circular reference", () => {
     const a = { x: 1, self: { y: 2 } };
     const b: Record<string, unknown> = { x: 1 };
@@ -240,5 +268,17 @@ describe("deepEqual", () => {
   it("should treat -0 and 0 as equal", () => {
     expect(deepEqual(-0, 0)).toBe(true);
     expect(deepEqual({ a: -0 }, { a: 0 })).toBe(true);
+  });
+
+  it("should return true for invalid Date objects", () => {
+    expect(deepEqual(new Date("invalid"), new Date("invalid"))).toBe(true);
+  });
+
+  it("should return false for invalid Date vs valid Date", () => {
+    expect(deepEqual(new Date("invalid"), new Date("2024-01-01"))).toBe(false);
+  });
+
+  it("should treat Error objects with different messages as equal (known limitation: message is non-enumerable)", () => {
+    expect(deepEqual(new Error("foo"), new Error("bar"))).toBe(true);
   });
 });

@@ -5,8 +5,8 @@
  *
  * Note: Custom class instances (e.g. `new Foo()`, `new Error()`) and
  * prototype-less objects (`Object.create(null)`) also pass this guard.
- * This function checks own enumerable string-keyed properties only;
- * inherited enumerable properties are not considered.
+ * When combined with `Object.keys()`, only own enumerable string-keyed
+ * properties are visible; inherited enumerable properties are not included.
  */
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return (

@@ -2,7 +2,7 @@
  * Groups items by a key function into a Map where each key maps to an array of items.
  * Multiple items can share the same key, producing a multimap structure.
  */
-export function groupByKey<T, K = string>(
+export function groupByKey<T, K extends PropertyKey = string>(
   items: readonly T[],
   keyFn: (item: T) => K,
 ): Map<K, T[]> {

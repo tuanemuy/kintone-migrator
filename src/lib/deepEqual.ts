@@ -12,8 +12,12 @@ function isArrayEqual(a: unknown[], b: unknown, stack: SeenStack): boolean {
 }
 
 /**
- * Compare two plain objects by own enumerable string keys.
- * Only supports plain objects (no class instances with inherited enumerable properties).
+ * Compare two objects by own enumerable string keys (via `Object.keys`).
+ *
+ * Note: Custom class instances (e.g. `new Error()`) that pass `isRecord` are
+ * accepted. Because `Error.prototype.message` is non-enumerable, two Error
+ * objects with different messages will compare as equal. Callers should not
+ * rely on this function for types with non-enumerable significant state.
  */
 function isRecordEqual(
   a: Record<string, unknown>,
@@ -31,6 +35,11 @@ function isRecordEqual(
   return true;
 }
 
+/**
+ * Map keys are compared by reference (SameValueZero), not by deep equality.
+ * Two Maps with structurally equal but referentially different object keys
+ * will be considered unequal.
+ */
 function isMapEqual(
   a: ReadonlyMap<unknown, unknown>,
   b: unknown,
@@ -45,6 +54,8 @@ function isMapEqual(
   return true;
 }
 
+// NaN is typeof "number" so it falls into the primitive fast path.
+// Set.has uses SameValueZero which treats NaN as equal to NaN.
 function isPrimitiveSet(s: ReadonlySet<unknown>): boolean {
   for (const val of s) {
     if (val !== null && typeof val === "object") return false;
@@ -102,8 +113,11 @@ function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
 
   // Date and RegExp are compared by value and don't recurse,
   // so they don't need circular reference tracking.
-  if (objA instanceof Date && objB instanceof Date)
-    return objA.getTime() === objB.getTime();
+  if (objA instanceof Date && objB instanceof Date) {
+    const ta = objA.getTime();
+    const tb = objB.getTime();
+    return ta === tb || (Number.isNaN(ta) && Number.isNaN(tb));
+  }
   if (objA instanceof Date || objB instanceof Date) return false;
   if (objA instanceof RegExp && objB instanceof RegExp)
     return String(objA) === String(objB);
@@ -118,25 +132,29 @@ function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
 
   stack.push([objA, objB]);
 
-  let result: boolean;
-  if (Array.isArray(objA)) {
-    result = isArrayEqual(objA, objB, stack);
-  } else if (objA instanceof Map) {
-    result = isMapEqual(objA, objB, stack);
-  } else if (objB instanceof Map) {
-    result = false;
-  } else if (objA instanceof Set) {
-    result = isSetEqual(objA, objB, stack);
-  } else if (objB instanceof Set) {
-    result = false;
-  } else if (isRecord(objA)) {
-    result = isRecordEqual(objA, objB, stack);
-  } else {
-    result = false;
+  try {
+    if (Array.isArray(objA)) {
+      return isArrayEqual(objA, objB, stack);
+    }
+    if (objA instanceof Map) {
+      return isMapEqual(objA, objB, stack);
+    }
+    if (objB instanceof Map) {
+      return false;
+    }
+    if (objA instanceof Set) {
+      return isSetEqual(objA, objB, stack);
+    }
+    if (objB instanceof Set) {
+      return false;
+    }
+    if (isRecord(objA)) {
+      return isRecordEqual(objA, objB, stack);
+    }
+    return false;
+  } finally {
+    stack.pop();
   }
-
-  stack.pop();
-  return result;
 }
 
 /**
@@ -151,7 +169,14 @@ function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
  * element in the other using deep equality (O(n²) for non-primitive elements,
  * O(n) fast path for primitive-only sets).
  *
- * NaN handling: `deepEqual(NaN, NaN)` returns `true`.
+ * Map keys are compared by reference (SameValueZero), not by deep equality.
+ * Two Maps with structurally equal but referentially different object keys
+ * will be considered unequal.
+ *
+ * NaN handling: `deepEqual(NaN, NaN)` returns `true`. Invalid Date objects
+ * (whose `getTime()` returns NaN) are also considered equal to each other.
+ *
+ * Signed zero: `-0` and `0` are considered equal (`-0 === 0` is `true`).
  *
  * Circular reference handling: uses a stack-based pair tracker. When the same
  * `(objA, objB)` pair is encountered again on the current comparison path,
