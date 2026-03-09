@@ -5,6 +5,11 @@ const DEFAULT_MAX_COUNTER = 10_000;
  *
  * NOTE: This function mutates `usedNames` by adding the returned name to the set.
  * This is intentional to allow sequential calls to track used names efficiently.
+ *
+ * Caveat: If `baseName` already ends with `separator + number` (e.g. "app_1" with
+ * separator "_"), the generated suffix may collide with names produced by a different
+ * baseName (e.g. baseName="app" generating "app_1"). Callers should be aware of this
+ * when working with names that may contain the separator.
  */
 export function deduplicateName(
   baseName: string,
@@ -23,6 +28,12 @@ export function deduplicateName(
   }
   if (options.startCounter < 1) {
     throw new Error("startCounter must be >= 1");
+  }
+  if (
+    options.maxCounter !== undefined &&
+    options.maxCounter < options.startCounter
+  ) {
+    throw new Error("maxCounter must be >= startCounter");
   }
 
   if (!usedNames.has(baseName)) {

@@ -63,5 +63,21 @@ describe("deduplicateName", () => {
         deduplicateName("app", used, { separator: "_", startCounter: -5 }),
       ).toThrow("startCounter must be >= 1");
     });
+
+    it("throws when maxCounter is less than startCounter", () => {
+      const used = new Set<string>(["app"]);
+      expect(() =>
+        deduplicateName("app", used, {
+          separator: "_",
+          startCounter: 5,
+          maxCounter: 2,
+        }),
+      ).toThrow("maxCounter must be >= startCounter");
+    });
+  });
+
+  it("handles baseName containing separator", () => {
+    const used = new Set<string>(["app_1"]);
+    expect(deduplicateName("app_1", used, defaultOptions)).toBe("app_1_1");
   });
 });

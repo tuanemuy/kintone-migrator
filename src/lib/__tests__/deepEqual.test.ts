@@ -168,21 +168,6 @@ describe("deepEqual", () => {
     expect(deepEqual(s1, s2)).toBe(true);
   });
 
-  it("should return false for circular references (documented limitation: conservative false negative)", () => {
-    const a: Record<string, unknown> = { x: 1 };
-    a.self = a;
-    const b: Record<string, unknown> = { x: 1 };
-    b.self = b;
-    expect(deepEqual(a, b)).toBe(false);
-  });
-
-  it("should return false when only the second argument has a circular reference (documented limitation)", () => {
-    const a = { x: 1, self: { y: 2 } };
-    const b: Record<string, unknown> = { x: 1 };
-    b.self = b;
-    expect(deepEqual(a, b)).toBe(false);
-  });
-
   it("should handle undefined vs empty object", () => {
     expect(deepEqual(undefined, {})).toBe(false);
     expect(deepEqual(undefined, [])).toBe(false);
@@ -193,8 +178,67 @@ describe("deepEqual", () => {
     expect(deepEqual({ a: undefined }, { a: null })).toBe(false);
   });
 
-  it("should return false for NaN comparisons", () => {
-    expect(deepEqual(Number.NaN, Number.NaN)).toBe(false);
-    expect(deepEqual({ a: Number.NaN }, { a: Number.NaN })).toBe(false);
+  it("should return true for NaN comparisons", () => {
+    expect(deepEqual(Number.NaN, Number.NaN)).toBe(true);
+    expect(deepEqual({ a: Number.NaN }, { a: Number.NaN })).toBe(true);
+  });
+
+  it("should return false for NaN vs non-NaN", () => {
+    expect(deepEqual(Number.NaN, 0)).toBe(false);
+    expect(deepEqual(Number.NaN, undefined)).toBe(false);
+  });
+
+  it("should handle shared references (DAG structure) correctly", () => {
+    const shared = { x: 1 };
+    const a = { p: shared, q: shared };
+    const b = { p: { x: 1 }, q: { x: 1 } };
+    expect(deepEqual(a, b)).toBe(true);
+  });
+
+  it("should handle shared references where both sides share the same object", () => {
+    const shared = { x: 1 };
+    const a = { p: shared, q: shared };
+    const b = { p: shared, q: shared };
+    expect(deepEqual(a, b)).toBe(true);
+  });
+
+  it("should return true for structurally identical circular references", () => {
+    const a: Record<string, unknown> = { x: 1 };
+    a.self = a;
+    const b: Record<string, unknown> = { x: 1 };
+    b.self = b;
+    expect(deepEqual(a, b)).toBe(true);
+  });
+
+  it("should return false when only the second argument has a circular reference", () => {
+    const a = { x: 1, self: { y: 2 } };
+    const b: Record<string, unknown> = { x: 1 };
+    b.self = b;
+    expect(deepEqual(a, b)).toBe(false);
+  });
+
+  it("should handle Set elements with circular references without infinite recursion", () => {
+    const a: Record<string, unknown> = { x: 1 };
+    a.self = a;
+    const b: Record<string, unknown> = { x: 1 };
+    b.self = b;
+    expect(deepEqual(new Set([a]), new Set([b]))).toBe(true);
+  });
+
+  it("should use primitive fast path for Sets", () => {
+    const s1 = new Set([1, "a", true, null, undefined]);
+    const s2 = new Set([1, "a", true, null, undefined]);
+    expect(deepEqual(s1, s2)).toBe(true);
+  });
+
+  it("should handle NaN in Sets", () => {
+    const s1 = new Set([Number.NaN, 1]);
+    const s2 = new Set([Number.NaN, 1]);
+    expect(deepEqual(s1, s2)).toBe(true);
+  });
+
+  it("should treat -0 and 0 as equal", () => {
+    expect(deepEqual(-0, 0)).toBe(true);
+    expect(deepEqual({ a: -0 }, { a: 0 })).toBe(true);
   });
 });

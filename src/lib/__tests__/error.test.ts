@@ -22,6 +22,32 @@ describe("AnyError", () => {
     const error = new AnyError("test");
     expect(error).toBeInstanceOf(Error);
   });
+
+  it("nameが'AnyError'である", () => {
+    const error = new AnyError("test");
+    expect(error.name).toBe("AnyError");
+  });
+
+  it("causeに文字列を保持できる", () => {
+    const error = new AnyError("wrapper", "string cause");
+    expect(error.cause).toBe("string cause");
+  });
+
+  it("causeに数値を保持できる", () => {
+    const error = new AnyError("wrapper", 42);
+    expect(error.cause).toBe(42);
+  });
+
+  it("causeにnullを保持できる", () => {
+    const error = new AnyError("wrapper", null);
+    expect(error.cause).toBeNull();
+  });
+
+  it("causeにオブジェクトを保持できる", () => {
+    const cause = { code: "ERR_001", detail: "something" };
+    const error = new AnyError("wrapper", cause);
+    expect(error.cause).toEqual(cause);
+  });
 });
 
 describe("isError", () => {
