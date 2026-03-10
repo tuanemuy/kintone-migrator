@@ -34,4 +34,19 @@ describe("isNodeError", () => {
   it("codeプロパティを持つプレーンオブジェクトに対してfalseを返す", () => {
     expect(isNodeError({ code: "ENOENT", message: "not found" })).toBe(false);
   });
+
+  it("codeが数値のErrorに対してfalseを返す", () => {
+    const error = Object.assign(new Error("test"), { code: 123 });
+    expect(isNodeError(error)).toBe(false);
+  });
+
+  it("codeがbooleanのErrorに対してfalseを返す", () => {
+    const error = Object.assign(new Error("test"), { code: true });
+    expect(isNodeError(error)).toBe(false);
+  });
+
+  it("codeがobjectのErrorに対してfalseを返す", () => {
+    const error = Object.assign(new Error("test"), { code: { type: "err" } });
+    expect(isNodeError(error)).toBe(false);
+  });
 });
