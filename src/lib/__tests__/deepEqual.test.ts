@@ -245,6 +245,42 @@ describe("deepEqual", () => {
     expect(deepEqual(a, b)).toBe(false);
   });
 
+  it("should return true for structurally identical 3-node cycles", () => {
+    const a1: Record<string, unknown> = { val: 1 };
+    const a2: Record<string, unknown> = { val: 2 };
+    const a3: Record<string, unknown> = { val: 3 };
+    a1.next = a2;
+    a2.next = a3;
+    a3.next = a1;
+
+    const b1: Record<string, unknown> = { val: 1 };
+    const b2: Record<string, unknown> = { val: 2 };
+    const b3: Record<string, unknown> = { val: 3 };
+    b1.next = b2;
+    b2.next = b3;
+    b3.next = b1;
+
+    expect(deepEqual(a1, b1)).toBe(true);
+  });
+
+  it("should return false for 3-node cycles with different values", () => {
+    const a1: Record<string, unknown> = { val: 1 };
+    const a2: Record<string, unknown> = { val: 2 };
+    const a3: Record<string, unknown> = { val: 3 };
+    a1.next = a2;
+    a2.next = a3;
+    a3.next = a1;
+
+    const b1: Record<string, unknown> = { val: 1 };
+    const b2: Record<string, unknown> = { val: 2 };
+    const b3: Record<string, unknown> = { val: 999 };
+    b1.next = b2;
+    b2.next = b3;
+    b3.next = b1;
+
+    expect(deepEqual(a1, b1)).toBe(false);
+  });
+
   it("should handle Set elements with circular references without infinite recursion", () => {
     const a: Record<string, unknown> = { x: 1 };
     a.self = a;

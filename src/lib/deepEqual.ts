@@ -54,8 +54,13 @@ function isMapEqual(
   return true;
 }
 
-// NaN is typeof "number" so it falls into the primitive fast path.
-// Set.has uses SameValueZero which treats NaN as equal to NaN.
+// Returns true when every element is a primitive (not object or function).
+// Primitive-only sets can use Set.has (SameValueZero) for O(n) comparison
+// instead of the O(n²) deep-equality fallback. Functions are excluded
+// because they are reference types that require identity comparison, not
+// structural comparison.
+// NaN is typeof "number" so it is treated as primitive here; Set.has uses
+// SameValueZero which correctly treats NaN as equal to NaN.
 function isPrimitiveSet(s: ReadonlySet<unknown>): boolean {
   for (const val of s) {
     if (val !== null && typeof val === "object") return false;
@@ -81,14 +86,17 @@ function isSetEqual(
   }
   // Order-independent comparison: for each element in a, find a matching
   // element in b using deep equality. O(n²) but sets are typically small.
-  // Each element comparison uses a cloned stack to prevent failed match
-  // attempts from polluting the circular reference tracker, while still
-  // preserving circular reference protection from the parent context.
+  // Failed match attempts may push entries onto the stack; we save the
+  // current length and truncate on failure so that only the successful
+  // match path's entries persist.
   const remaining = [...b];
   for (const valA of a) {
-    const idx = remaining.findIndex((valB) =>
-      deepEqualInner(valA, valB, [...stack]),
-    );
+    const stackLen = stack.length;
+    const idx = remaining.findIndex((valB) => {
+      const result = deepEqualInner(valA, valB, stack);
+      if (!result) stack.length = stackLen;
+      return result;
+    });
     if (idx === -1) return false;
     remaining.splice(idx, 1);
   }
@@ -123,9 +131,16 @@ function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
     return String(objA) === String(objB);
   if (objA instanceof RegExp || objB instanceof RegExp) return false;
 
-  // Circular reference detection: if this (objA, objB) pair is already
-  // on the comparison stack, we're in a cycle. Assume structural equality
-  // to break the cycle.
+  // Circular reference detection (bisimilarity / observational equivalence):
+  // If the exact pair (objA, objB) is already on the comparison stack, we
+  // are in a cycle. We assume structural equality to break the cycle —
+  // this is correct because the ancestor frame that first pushed this pair
+  // will still check every remaining property exhaustively.
+  //
+  // The check is direction-sensitive: (a, b) and (b, a) are distinct pairs.
+  // For mutual cross-references (a.ref = b, b.ref = a), the path becomes
+  // (a,b) → (b,a) → (a,b) [cycle hit]. The intermediate (b,a) frame still
+  // compares all of b's properties against a's, so differences are caught.
   for (const [sa, sb] of stack) {
     if (sa === objA && sb === objB) return true;
   }
