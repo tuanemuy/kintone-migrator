@@ -1,4 +1,3 @@
-import { stringify as stringifyYaml } from "yaml";
 import type { FormLayout, LayoutItem, LayoutRow } from "../entity";
 import type {
   ElementSize,
@@ -139,15 +138,9 @@ export const SchemaSerializer = {
   serialize: (
     layout: FormLayout,
     fields?: ReadonlyMap<FieldCode, FieldDefinition>,
-  ): string => {
-    const serialized = {
+  ): Record<string, unknown> => {
+    return {
       layout: layout.map((item) => serializeLayoutItem(item, fields)),
     };
-
-    return stringifyYaml(serialized, {
-      lineWidth: 0,
-      defaultKeyType: "PLAIN",
-      defaultStringType: "PLAIN",
-    });
   },
 };

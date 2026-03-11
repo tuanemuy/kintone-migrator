@@ -27,7 +27,7 @@ apps:
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
       if (isValidationError(error)) {
-        expect(error.message).toContain("Invalid YAML syntax");
+        expect(error.message).toContain("Failed to parse Project config YAML");
       }
     }
   });

@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { AdminNotesServiceArgs } from "../container/adminNotes";
+import { stringifyToYaml } from "../stringifyToYaml";
 
 export type CaptureAdminNotesOutput = CaptureOutput;
 
@@ -12,7 +13,8 @@ export async function captureAdminNotes({
 }: AdminNotesServiceArgs): Promise<CaptureAdminNotesOutput> {
   return captureFromConfig({
     fetchRemote: () => container.adminNotesConfigurator.getAdminNotes(),
-    serialize: ({ config }) => AdminNotesConfigSerializer.serialize(config),
+    serialize: ({ config }) =>
+      stringifyToYaml(AdminNotesConfigSerializer.serialize(config)),
     getStorage: () => container.adminNotesStorage.get(),
   });
 }

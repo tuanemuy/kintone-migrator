@@ -6,28 +6,34 @@ import { FieldPermissionConfigParser } from "../configParser";
 describe("FieldPermissionConfigParser", () => {
   describe("parse", () => {
     it("should parse a valid config with multiple rights", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: WRITE
-        entity:
-          type: USER
-          code: user1
-      - accessibility: READ
-        entity:
-          type: GROUP
-          code: group1
-        includeSubs: true
-  - code: field_code_2
-    entities:
-      - accessibility: NONE
-        entity:
-          type: ORGANIZATION
-          code: org1
-        includeSubs: true
-`;
-      const config = FieldPermissionConfigParser.parse(yaml);
+      const config = FieldPermissionConfigParser.parse({
+        rights: [
+          {
+            code: "field_code_1",
+            entities: [
+              {
+                accessibility: "WRITE",
+                entity: { type: "USER", code: "user1" },
+              },
+              {
+                accessibility: "READ",
+                entity: { type: "GROUP", code: "group1" },
+                includeSubs: true,
+              },
+            ],
+          },
+          {
+            code: "field_code_2",
+            entities: [
+              {
+                accessibility: "NONE",
+                entity: { type: "ORGANIZATION", code: "org1" },
+                includeSubs: true,
+              },
+            ],
+          },
+        ],
+      });
 
       expect(config.rights).toHaveLength(2);
       expect(config.rights[0].code).toBe("field_code_1");
@@ -50,16 +56,19 @@ rights:
     });
 
     it("should parse config with FIELD_ENTITY type", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: READ
-        entity:
-          type: FIELD_ENTITY
-          code: creator_field
-`;
-      const config = FieldPermissionConfigParser.parse(yaml);
+      const config = FieldPermissionConfigParser.parse({
+        rights: [
+          {
+            code: "field_code_1",
+            entities: [
+              {
+                accessibility: "READ",
+                entity: { type: "FIELD_ENTITY", code: "creator_field" },
+              },
+            ],
+          },
+        ],
+      });
 
       expect(config.rights[0].entities[0]).toEqual({
         accessibility: "READ",
@@ -68,71 +77,63 @@ rights:
     });
 
     it("should parse config without includeSubs", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: WRITE
-        entity:
-          type: USER
-          code: user1
-`;
-      const config = FieldPermissionConfigParser.parse(yaml);
+      const config = FieldPermissionConfigParser.parse({
+        rights: [
+          {
+            code: "field_code_1",
+            entities: [
+              {
+                accessibility: "WRITE",
+                entity: { type: "USER", code: "user1" },
+              },
+            ],
+          },
+        ],
+      });
 
       expect(config.rights[0].entities[0].includeSubs).toBeUndefined();
     });
 
     it("should parse config with empty entities array", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities: []
-`;
-      const config = FieldPermissionConfigParser.parse(yaml);
+      const config = FieldPermissionConfigParser.parse({
+        rights: [
+          {
+            code: "field_code_1",
+            entities: [],
+          },
+        ],
+      });
 
       expect(config.rights[0].entities).toHaveLength(0);
     });
 
-    it("should throw EmptyConfigText for empty text", () => {
-      expect(() => FieldPermissionConfigParser.parse("")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse("")).toThrow(
-        expect.objectContaining({
-          code: FieldPermissionErrorCode.FpEmptyConfigText,
-        }),
-      );
-    });
-
-    it("should throw EmptyConfigText for whitespace-only text", () => {
-      expect(() => FieldPermissionConfigParser.parse("   \n  ")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse("   \n  ")).toThrow(
-        expect.objectContaining({
-          code: FieldPermissionErrorCode.FpEmptyConfigText,
-        }),
-      );
-    });
-
-    it("should throw InvalidConfigYaml for invalid YAML", () => {
-      expect(() =>
-        FieldPermissionConfigParser.parse("{ invalid: yaml:"),
-      ).toThrow(BusinessRuleError);
-      expect(() =>
-        FieldPermissionConfigParser.parse("{ invalid: yaml:"),
-      ).toThrow(
-        expect.objectContaining({
-          code: FieldPermissionErrorCode.FpInvalidConfigYaml,
-        }),
-      );
-    });
-
-    it("should throw InvalidConfigStructure for non-object YAML", () => {
+    it("should throw InvalidConfigStructure for non-object input", () => {
       expect(() => FieldPermissionConfigParser.parse("just a string")).toThrow(
         BusinessRuleError,
       );
       expect(() => FieldPermissionConfigParser.parse("just a string")).toThrow(
+        expect.objectContaining({
+          code: FieldPermissionErrorCode.FpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw InvalidConfigStructure for array input", () => {
+      expect(() => FieldPermissionConfigParser.parse(["item1"])).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => FieldPermissionConfigParser.parse(["item1"])).toThrow(
+        expect.objectContaining({
+          code: FieldPermissionErrorCode.FpInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw InvalidConfigStructure for null input", () => {
+      expect(() => FieldPermissionConfigParser.parse(null)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => FieldPermissionConfigParser.parse(null)).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidConfigStructure,
         }),
@@ -140,13 +141,12 @@ rights:
     });
 
     it("should throw InvalidConfigStructure when rights is missing", () => {
-      const yaml = `
-someOtherKey: value
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({ someOtherKey: "value" }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({ someOtherKey: "value" }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidConfigStructure,
         }),
@@ -154,19 +154,36 @@ someOtherKey: value
     });
 
     it("should throw InvalidAccessibility for invalid accessibility value", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: INVALID
-        entity:
-          type: USER
-          code: user1
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "INVALID",
+                  entity: { type: "USER", code: "user1" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "INVALID",
+                  entity: { type: "USER", code: "user1" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidAccessibility,
         }),
@@ -174,19 +191,36 @@ rights:
     });
 
     it("should throw InvalidEntityType for invalid entity type", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: READ
-        entity:
-          type: INVALID
-          code: user1
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: { type: "INVALID", code: "user1" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: { type: "INVALID", code: "user1" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidEntityType,
         }),
@@ -194,15 +228,16 @@ rights:
     });
 
     it("should throw EmptyFieldCode for empty field code", () => {
-      const yaml = `
-rights:
-  - code: ""
-    entities: []
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [{ code: "", entities: [] }],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [{ code: "", entities: [] }],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpEmptyFieldCode,
         }),
@@ -210,19 +245,36 @@ rights:
     });
 
     it("should throw EmptyEntityCode for empty entity code", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: READ
-        entity:
-          type: USER
-          code: ""
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: { type: "USER", code: "" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: { type: "USER", code: "" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpEmptyEntityCode,
         }),
@@ -230,14 +282,16 @@ rights:
     });
 
     it("should throw for non-object field right", () => {
-      const yaml = `
-rights:
-  - not_an_object
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: ["not_an_object"],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: ["not_an_object"],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidConfigStructure,
         }),
@@ -245,15 +299,16 @@ rights:
     });
 
     it("should throw for non-array entities in field right", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities: not_an_array
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [{ code: "field_code_1", entities: "not_an_array" }],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [{ code: "field_code_1", entities: "not_an_array" }],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidConfigStructure,
         }),
@@ -261,16 +316,26 @@ rights:
     });
 
     it("should throw for non-object field right entity", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - not_an_object
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: ["not_an_object"],
+            },
+          ],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: ["not_an_object"],
+            },
+          ],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidConfigStructure,
         }),
@@ -278,17 +343,36 @@ rights:
     });
 
     it("should throw for non-object entity in field right entity", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: READ
-        entity: not_an_object
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: "not_an_object",
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: "not_an_object",
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpInvalidConfigStructure,
         }),
@@ -296,40 +380,72 @@ rights:
     });
 
     it("should parse includeSubs as false", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: READ
-        entity:
-          type: GROUP
-          code: group1
-        includeSubs: false
-`;
-      const config = FieldPermissionConfigParser.parse(yaml);
+      const config = FieldPermissionConfigParser.parse({
+        rights: [
+          {
+            code: "field_code_1",
+            entities: [
+              {
+                accessibility: "READ",
+                entity: { type: "GROUP", code: "group1" },
+                includeSubs: false,
+              },
+            ],
+          },
+        ],
+      });
       expect(config.rights[0].entities[0].includeSubs).toBe(false);
     });
 
     it("should throw DuplicateFieldCode for duplicate field codes", () => {
-      const yaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: READ
-        entity:
-          type: USER
-          code: user1
-  - code: field_code_1
-    entities:
-      - accessibility: WRITE
-        entity:
-          type: USER
-          code: user2
-`;
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => FieldPermissionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: { type: "USER", code: "user1" },
+                },
+              ],
+            },
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "WRITE",
+                  entity: { type: "USER", code: "user2" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        FieldPermissionConfigParser.parse({
+          rights: [
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "READ",
+                  entity: { type: "USER", code: "user1" },
+                },
+              ],
+            },
+            {
+              code: "field_code_1",
+              entities: [
+                {
+                  accessibility: "WRITE",
+                  entity: { type: "USER", code: "user2" },
+                },
+              ],
+            },
+          ],
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: FieldPermissionErrorCode.FpDuplicateFieldCode,
         }),

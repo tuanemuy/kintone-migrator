@@ -34,14 +34,26 @@ describe("ProcessManagementConfigSerializer", () => {
       ],
     };
 
-    const yaml = ProcessManagementConfigSerializer.serialize(config);
+    const result = ProcessManagementConfigSerializer.serialize(config);
 
-    expect(yaml).toContain("enable: true");
-    expect(yaml).toContain("未処理");
-    expect(yaml).toContain("処理中");
-    expect(yaml).toContain("user1");
-    expect(yaml).toContain("group1");
-    expect(yaml).toContain("承認");
+    expect(result.enable).toBe(true);
+
+    const states = result.states as Record<string, Record<string, unknown>>;
+    expect(states).toHaveProperty("未処理");
+    expect(states).toHaveProperty("処理中");
+
+    const state1 = states["未処理"];
+    const assignee1 = state1.assignee as Record<string, unknown>;
+    const entities1 = assignee1.entities as Record<string, unknown>[];
+    expect(entities1[0].code).toBe("user1");
+
+    const state2 = states["処理中"];
+    const assignee2 = state2.assignee as Record<string, unknown>;
+    const entities2 = assignee2.entities as Record<string, unknown>[];
+    expect(entities2[0].code).toBe("group1");
+
+    const actions = result.actions as Record<string, unknown>[];
+    expect(actions[0].name).toBe("承認");
   });
 
   it("should serialize entity with includeSubs", () => {
@@ -59,8 +71,12 @@ describe("ProcessManagementConfigSerializer", () => {
       actions: [],
     };
 
-    const yaml = ProcessManagementConfigSerializer.serialize(config);
-    expect(yaml).toContain("includeSubs: true");
+    const result = ProcessManagementConfigSerializer.serialize(config);
+    const states = result.states as Record<string, Record<string, unknown>>;
+    const assignee = states.state1.assignee as Record<string, unknown>;
+    const entities = assignee.entities as Record<string, unknown>[];
+
+    expect(entities[0].includeSubs).toBe(true);
   });
 
   it("should serialize entity without includeSubs", () => {
@@ -78,8 +94,12 @@ describe("ProcessManagementConfigSerializer", () => {
       actions: [],
     };
 
-    const yaml = ProcessManagementConfigSerializer.serialize(config);
-    expect(yaml).not.toContain("includeSubs");
+    const result = ProcessManagementConfigSerializer.serialize(config);
+    const states = result.states as Record<string, Record<string, unknown>>;
+    const assignee = states.state1.assignee as Record<string, unknown>;
+    const entities = assignee.entities as Record<string, unknown>[];
+
+    expect(entities[0]).not.toHaveProperty("includeSubs");
   });
 
   it("should serialize empty states and actions", () => {
@@ -89,10 +109,11 @@ describe("ProcessManagementConfigSerializer", () => {
       actions: [],
     };
 
-    const yaml = ProcessManagementConfigSerializer.serialize(config);
-    expect(yaml).toContain("enable: false");
-    expect(yaml).toContain("states:");
-    expect(yaml).toContain("actions:");
+    const result = ProcessManagementConfigSerializer.serialize(config);
+
+    expect(result.enable).toBe(false);
+    expect(result).toHaveProperty("states");
+    expect(result).toHaveProperty("actions");
   });
 
   it("should serialize enable: false", () => {
@@ -102,8 +123,8 @@ describe("ProcessManagementConfigSerializer", () => {
       actions: [],
     };
 
-    const yaml = ProcessManagementConfigSerializer.serialize(config);
-    expect(yaml).toContain("enable: false");
+    const result = ProcessManagementConfigSerializer.serialize(config);
+    expect(result.enable).toBe(false);
   });
 
   it("should serialize SECONDARY action with executableUser", () => {
@@ -142,13 +163,18 @@ describe("ProcessManagementConfigSerializer", () => {
       ],
     };
 
-    const yaml = ProcessManagementConfigSerializer.serialize(config);
+    const result = ProcessManagementConfigSerializer.serialize(config);
+    const actions = result.actions as Record<string, unknown>[];
+    const action = actions[0];
 
-    expect(yaml).toContain("type: SECONDARY");
-    expect(yaml).toContain("executableUser");
-    expect(yaml).toContain("admin1");
-    expect(yaml).toContain("managers");
-    expect(yaml).toContain("includeSubs: true");
+    expect(action.type).toBe("SECONDARY");
+    expect(action).toHaveProperty("executableUser");
+
+    const executableUser = action.executableUser as Record<string, unknown>;
+    const entities = executableUser.entities as Record<string, unknown>[];
+    expect(entities[0].code).toBe("admin1");
+    expect(entities[1].code).toBe("managers");
+    expect(entities[1].includeSubs).toBe(true);
   });
 
   it("should roundtrip SECONDARY action", () => {
@@ -194,11 +220,11 @@ describe("ProcessManagementConfigSerializer", () => {
       ],
     };
 
-    const yaml1 = ProcessManagementConfigSerializer.serialize(original);
-    const parsed = ProcessManagementConfigParser.parse(yaml1);
-    const yaml2 = ProcessManagementConfigSerializer.serialize(parsed);
+    const result1 = ProcessManagementConfigSerializer.serialize(original);
+    const parsed = ProcessManagementConfigParser.parse(result1);
+    const result2 = ProcessManagementConfigSerializer.serialize(parsed);
 
-    expect(yaml1).toBe(yaml2);
+    expect(result1).toEqual(result2);
     expect(parsed.actions[1].type).toBe("SECONDARY");
     expect(parsed.actions[1].executableUser?.entities).toHaveLength(2);
   });
@@ -236,10 +262,10 @@ describe("ProcessManagementConfigSerializer", () => {
       ],
     };
 
-    const yaml1 = ProcessManagementConfigSerializer.serialize(original);
-    const parsed = ProcessManagementConfigParser.parse(yaml1);
-    const yaml2 = ProcessManagementConfigSerializer.serialize(parsed);
+    const result1 = ProcessManagementConfigSerializer.serialize(original);
+    const parsed = ProcessManagementConfigParser.parse(result1);
+    const result2 = ProcessManagementConfigSerializer.serialize(parsed);
 
-    expect(yaml1).toBe(yaml2);
+    expect(result1).toEqual(result2);
   });
 });

@@ -12,6 +12,7 @@ import type {
   CustomizationCaptureContainer,
   CustomizationCaptureServiceArgs,
 } from "../container/customization";
+import { stringifyToYaml } from "../stringifyToYaml";
 
 export type CaptureCustomizationInput = {
   readonly basePath: string;
@@ -211,7 +212,9 @@ export async function captureCustomization({
     mobile: mobilePlan.platform,
   };
 
-  const configText = CustomizationConfigSerializer.serialize(config);
+  const configText = stringifyToYaml(
+    CustomizationConfigSerializer.serialize(config),
+  );
 
   // Phase 2: Download and write files
   const allFiles = [

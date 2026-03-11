@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { GeneralSettingsConfig } from "../entity";
 
 function serializeConfig(
@@ -71,9 +70,9 @@ function serializeConfig(
 }
 
 export const GeneralSettingsConfigSerializer = {
-  serialize: (config: GeneralSettingsConfig): string => {
+  serialize: (config: GeneralSettingsConfig): Record<string, unknown> => {
     const serialized = serializeConfig(config);
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };

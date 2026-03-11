@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import type {
   PeriodicReport,
@@ -97,7 +96,7 @@ function serializeReportConfig(config: ReportConfig): Record<string, unknown> {
 }
 
 export const ReportConfigSerializer = {
-  serialize: (config: ReportsConfig): string => {
+  serialize: (config: ReportsConfig): Record<string, unknown> => {
     const serialized: Record<string, unknown> = {};
     const reports: Record<string, unknown> = {};
 
@@ -107,6 +106,6 @@ export const ReportConfigSerializer = {
 
     serialized.reports = reports;
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };

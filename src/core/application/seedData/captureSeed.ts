@@ -2,6 +2,7 @@ import { SeedSerializer } from "@/core/domain/seedData/services/seedSerializer";
 import type { UpsertKey } from "@/core/domain/seedData/valueObject";
 import { UpsertKey as UpsertKeyVO } from "@/core/domain/seedData/valueObject";
 import type { SeedServiceArgs } from "../container/seed";
+import { stringifyToYaml } from "../stringifyToYaml";
 import type { CaptureSeedOutput } from "./dto";
 
 export type CaptureSeedInput = {
@@ -20,7 +21,7 @@ export async function captureSeed({
 
   const records = existingRecords.map(({ record }) => record);
 
-  const seedText = SeedSerializer.serialize({ key, records });
+  const seedText = stringifyToYaml(SeedSerializer.serialize({ key, records }));
 
   const existing = await container.seedStorage.get();
 

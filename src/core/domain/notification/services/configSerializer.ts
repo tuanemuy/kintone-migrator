@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type {
   GeneralNotification,
   NotificationConfig,
@@ -79,7 +78,7 @@ function serializeReminderNotification(
 }
 
 export const NotificationConfigSerializer = {
-  serialize: (config: NotificationConfig): string => {
+  serialize: (config: NotificationConfig): Record<string, unknown> => {
     const serialized: Record<string, unknown> = {};
 
     if (config.general !== undefined) {
@@ -106,6 +105,6 @@ export const NotificationConfigSerializer = {
       };
     }
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };

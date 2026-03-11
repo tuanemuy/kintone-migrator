@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { ViewServiceArgs } from "../container/view";
+import { stringifyToYaml } from "../stringifyToYaml";
 
 export type CaptureViewOutput = CaptureOutput;
 
@@ -12,7 +13,8 @@ export async function captureView({
 }: ViewServiceArgs): Promise<CaptureViewOutput> {
   return captureFromConfig({
     fetchRemote: () => container.viewConfigurator.getViews(),
-    serialize: ({ views }) => ViewConfigSerializer.serialize({ views }),
+    serialize: ({ views }) =>
+      stringifyToYaml(ViewConfigSerializer.serialize({ views })),
     getStorage: () => container.viewStorage.get(),
   });
 }

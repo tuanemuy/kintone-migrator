@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { CustomizationConfig } from "../entity";
 import type {
   CustomizationPlatform,
@@ -43,7 +42,7 @@ function serializePlatform(platform: CustomizationPlatform): {
 }
 
 export const CustomizationConfigSerializer = {
-  serialize: (config: CustomizationConfig): string => {
+  serialize: (config: CustomizationConfig): Record<string, unknown> => {
     const result: Record<string, unknown> = {
       ...(config.scope !== undefined ? { scope: config.scope } : {}),
       ...(hasPlatformResources(config.desktop)
@@ -54,6 +53,6 @@ export const CustomizationConfigSerializer = {
         : {}),
     };
 
-    return serializeToYaml(result);
+    return result;
   },
 };

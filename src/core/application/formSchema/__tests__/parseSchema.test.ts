@@ -63,8 +63,9 @@ layout:
   });
 
   it("causeプロパティに元のBusinessRuleErrorが保持される", () => {
+    const invalidSchemaYaml = "not_layout: true";
     try {
-      parseSchemaText("");
+      parseSchemaText(invalidSchemaYaml);
       expect.fail("エラーが発生するはず");
     } catch (error) {
       expect(error).toBeInstanceOf(ValidationError);

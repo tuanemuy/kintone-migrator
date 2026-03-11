@@ -6,39 +6,59 @@ import { ActionConfigParser } from "../configParser";
 describe("ActionConfigParser", () => {
   describe("parse", () => {
     it("should parse a valid config with multiple actions", () => {
-      const yaml = `
-actions:
-  見積書を作成:
-    index: 0
-    destApp:
-      code: estimate-app
-    mappings:
-      - srcType: FIELD
-        srcField: 顧客名
-        destField: 顧客名
-      - srcType: RECORD_URL
-        destField: 元レコード
-    entities:
-      - type: GROUP
-        code: everyone
-    filterCond: ""
-  請求書を作成:
-    index: 1
-    destApp:
-      app: "42"
-      code: invoice-app
-    mappings:
-      - srcType: FIELD
-        srcField: 金額
-        destField: 請求金額
-    entities:
-      - type: USER
-        code: admin
-      - type: ORGANIZATION
-        code: sales
-    filterCond: "status = \\"完了\\""
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          見積書を作成: {
+            index: 0,
+            destApp: {
+              code: "estimate-app",
+            },
+            mappings: [
+              {
+                srcType: "FIELD",
+                srcField: "顧客名",
+                destField: "顧客名",
+              },
+              {
+                srcType: "RECORD_URL",
+                destField: "元レコード",
+              },
+            ],
+            entities: [
+              {
+                type: "GROUP",
+                code: "everyone",
+              },
+            ],
+            filterCond: "",
+          },
+          請求書を作成: {
+            index: 1,
+            destApp: {
+              app: "42",
+              code: "invoice-app",
+            },
+            mappings: [
+              {
+                srcType: "FIELD",
+                srcField: "金額",
+                destField: "請求金額",
+              },
+            ],
+            entities: [
+              {
+                type: "USER",
+                code: "admin",
+              },
+              {
+                type: "ORGANIZATION",
+                code: "sales",
+              },
+            ],
+            filterCond: 'status = "完了"',
+          },
+        },
+      });
 
       expect(Object.keys(config.actions)).toHaveLength(2);
 
@@ -67,88 +87,83 @@ actions:
       expect(action2.entities).toHaveLength(2);
     });
 
-    it("should derive name from YAML key", () => {
-      const yaml = `
-actions:
-  テストアクション:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+    it("should derive name from key", () => {
+      const config = ActionConfigParser.parse({
+        actions: {
+          テストアクション: {
+            index: 0,
+            destApp: {
+              code: "target-app",
+            },
+            mappings: [],
+            entities: [],
+          },
+        },
+      });
 
       expect(config.actions.テストアクション.name).toBe("テストアクション");
     });
 
     it("should parse config with empty mappings and entities", () => {
-      const yaml = `
-actions:
-  empty-action:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          "empty-action": {
+            index: 0,
+            destApp: {
+              code: "target-app",
+            },
+            mappings: [],
+            entities: [],
+          },
+        },
+      });
 
       expect(config.actions["empty-action"].mappings).toHaveLength(0);
       expect(config.actions["empty-action"].entities).toHaveLength(0);
     });
 
     it("should default filterCond to empty string when missing", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          test: {
+            index: 0,
+            destApp: {
+              code: "target-app",
+            },
+            mappings: [],
+            entities: [],
+          },
+        },
+      });
 
       expect(config.actions.test.filterCond).toBe("");
     });
 
-    it("should throw AcEmptyConfigText for empty text", () => {
-      expect(() => ActionConfigParser.parse("")).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse("")).toThrow(
-        expect.objectContaining({
-          code: ActionErrorCode.AcEmptyConfigText,
-        }),
-      );
-    });
-
-    it("should throw AcEmptyConfigText for whitespace-only text", () => {
-      expect(() => ActionConfigParser.parse("   \n  ")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => ActionConfigParser.parse("   \n  ")).toThrow(
-        expect.objectContaining({
-          code: ActionErrorCode.AcEmptyConfigText,
-        }),
-      );
-    });
-
-    it("should throw AcInvalidConfigYaml for invalid YAML", () => {
-      expect(() => ActionConfigParser.parse("{ invalid: yaml:")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => ActionConfigParser.parse("{ invalid: yaml:")).toThrow(
-        expect.objectContaining({
-          code: ActionErrorCode.AcInvalidConfigYaml,
-        }),
-      );
-    });
-
-    it("should throw AcInvalidConfigStructure for non-object YAML", () => {
+    it("should throw AcInvalidConfigStructure for non-object input", () => {
       expect(() => ActionConfigParser.parse("just a string")).toThrow(
         BusinessRuleError,
       );
       expect(() => ActionConfigParser.parse("just a string")).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw AcInvalidConfigStructure for array input", () => {
+      expect(() => ActionConfigParser.parse(["item1"])).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => ActionConfigParser.parse(["item1"])).toThrow(
+        expect.objectContaining({
+          code: ActionErrorCode.AcInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("should throw AcInvalidConfigStructure for null input", () => {
+      expect(() => ActionConfigParser.parse(null)).toThrow(BusinessRuleError);
+      expect(() => ActionConfigParser.parse(null)).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -156,11 +171,10 @@ actions:
     });
 
     it("should throw AcInvalidConfigStructure when actions is missing", () => {
-      const yaml = `
-someOtherKey: value
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() => ActionConfigParser.parse({ someOtherKey: "value" })).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => ActionConfigParser.parse({ someOtherKey: "value" })).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -168,19 +182,30 @@ someOtherKey: value
     });
 
     it("should throw AcInvalidSrcType for invalid srcType", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings:
-      - srcType: INVALID
-        destField: field1
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [{ srcType: "INVALID", destField: "field1" }],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [{ srcType: "INVALID", destField: "field1" }],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidSrcType,
         }),
@@ -188,19 +213,30 @@ actions:
     });
 
     it("should throw AcInvalidEntityType for invalid entity type", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities:
-      - type: INVALID
-        code: user1
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [{ type: "INVALID", code: "user1" }],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [{ type: "INVALID", code: "user1" }],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidEntityType,
         }),
@@ -208,15 +244,28 @@ actions:
     });
 
     it("should throw AcInvalidConfigStructure for missing destApp", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -224,16 +273,28 @@ actions:
     });
 
     it("should throw AcInvalidConfigStructure for missing index", () => {
-      const yaml = `
-actions:
-  test:
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -241,20 +302,30 @@ actions:
     });
 
     it("should throw AcInvalidConfigStructure for empty destField in mapping", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings:
-      - srcType: FIELD
-        srcField: src
-        destField: ""
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [{ srcType: "FIELD", srcField: "src", destField: "" }],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [{ srcType: "FIELD", srcField: "src", destField: "" }],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -262,19 +333,30 @@ actions:
     });
 
     it("should throw AcInvalidConfigStructure for empty entity code", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities:
-      - type: USER
-        code: ""
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [{ type: "USER", code: "" }],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [{ type: "USER", code: "" }],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -282,12 +364,20 @@ actions:
     });
 
     it("should throw for non-object action value", () => {
-      const yaml = `
-actions:
-  test: not_an_object
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: "not_an_object",
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: "not_an_object",
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -295,17 +385,30 @@ actions:
     });
 
     it("should throw for non-array mappings", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: not_an_array
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: "not_an_array",
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: "not_an_array",
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -313,17 +416,30 @@ actions:
     });
 
     it("should throw for non-array entities", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities: not_an_array
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: "not_an_array",
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: "not_an_array",
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -331,18 +447,30 @@ actions:
     });
 
     it("should throw for non-object mapping", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings:
-      - not_an_object
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: ["not_an_object"],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: ["not_an_object"],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -350,18 +478,30 @@ actions:
     });
 
     it("should throw for non-object entity", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities:
-      - not_an_object
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: ["not_an_object"],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: ["not_an_object"],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -369,31 +509,30 @@ actions:
     });
 
     it("should parse destApp with app only", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      app: "123"
-    mappings: []
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          test: {
+            index: 0,
+            destApp: { app: "123" },
+            mappings: [],
+            entities: [],
+          },
+        },
+      });
       expect(config.actions.test.destApp).toEqual({ app: "123" });
     });
 
     it("should parse destApp with both app and code", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      app: "123"
-      code: my-app
-    mappings: []
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          test: {
+            index: 0,
+            destApp: { app: "123", code: "my-app" },
+            mappings: [],
+            entities: [],
+          },
+        },
+      });
       expect(config.actions.test.destApp).toEqual({
         app: "123",
         code: "my-app",
@@ -401,33 +540,44 @@ actions:
     });
 
     it("should parse mapping with srcField omitted for RECORD_URL", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings:
-      - srcType: RECORD_URL
-        destField: url_field
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          test: {
+            index: 0,
+            destApp: { code: "target-app" },
+            mappings: [{ srcType: "RECORD_URL", destField: "url_field" }],
+            entities: [],
+          },
+        },
+      });
       expect(config.actions.test.mappings[0].srcField).toBeUndefined();
     });
 
     it("should throw AcEmptyActionName for empty action key", () => {
-      const yaml = `
-actions:
-  "":
-    index: 0
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            "": {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            "": {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcEmptyActionName,
         }),
@@ -435,24 +585,37 @@ actions:
     });
 
     it("should parse empty actions object", () => {
-      const yaml = `
-actions: {}
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {},
+      });
       expect(Object.keys(config.actions)).toHaveLength(0);
     });
 
     it("should throw for empty destApp object (both app and code missing)", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp: {}
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: {},
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: {},
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -460,19 +623,30 @@ actions:
     });
 
     it("should throw for srcType FIELD without srcField", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: target-app
-    mappings:
-      - srcType: FIELD
-        destField: field1
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [{ srcType: "FIELD", destField: "field1" }],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "target-app" },
+              mappings: [{ srcType: "FIELD", destField: "field1" }],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -480,17 +654,30 @@ actions:
     });
 
     it("should throw for negative index", () => {
-      const yaml = `
-actions:
-  test:
-    index: -1
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: -1,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: -1,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -498,17 +685,30 @@ actions:
     });
 
     it("should throw for fractional index", () => {
-      const yaml = `
-actions:
-  test:
-    index: 1.5
-    destApp:
-      code: target-app
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(BusinessRuleError);
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 1.5,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 1.5,
+              destApp: { code: "target-app" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),
@@ -516,22 +716,24 @@ actions:
     });
 
     it("should throw AcDuplicateIndex for duplicate index values across actions", () => {
-      const yaml = `
-actions:
-  action1:
-    index: 0
-    destApp:
-      code: app1
-    mappings: []
-    entities: []
-  action2:
-    index: 0
-    destApp:
-      code: app2
-    mappings: []
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            action1: {
+              index: 0,
+              destApp: { code: "app1" },
+              mappings: [],
+              entities: [],
+            },
+            action2: {
+              index: 0,
+              destApp: { code: "app2" },
+              mappings: [],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcDuplicateIndex,
         }),
@@ -539,33 +741,34 @@ actions:
     });
 
     it("should coerce numeric destApp.app to string", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      app: 123
-    mappings: []
-    entities: []
-`;
-      const config = ActionConfigParser.parse(yaml);
+      const config = ActionConfigParser.parse({
+        actions: {
+          test: {
+            index: 0,
+            destApp: { app: 123 },
+            mappings: [],
+            entities: [],
+          },
+        },
+      });
       expect(config.actions.test.destApp.app).toBe("123");
     });
 
     it("should treat non-string srcField with srcType FIELD as missing", () => {
-      const yaml = `
-actions:
-  test:
-    index: 0
-    destApp:
-      code: app
-    mappings:
-      - srcType: FIELD
-        srcField: 123
-        destField: field1
-    entities: []
-`;
-      expect(() => ActionConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        ActionConfigParser.parse({
+          actions: {
+            test: {
+              index: 0,
+              destApp: { code: "app" },
+              mappings: [
+                { srcType: "FIELD", srcField: 123, destField: "field1" },
+              ],
+              entities: [],
+            },
+          },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: ActionErrorCode.AcInvalidConfigStructure,
         }),

@@ -1,4 +1,3 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/core/domain/typeGuards";
 import type {
@@ -705,24 +704,7 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
 }
 
 export const SchemaParser = {
-  parse: (rawText: string): Schema => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        FormSchemaErrorCode.FsEmptySchemaText,
-        "Schema text cannot be empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch {
-      throw new BusinessRuleError(
-        FormSchemaErrorCode.FsInvalidSchemaFormat,
-        "Schema text is not valid YAML/JSON",
-      );
-    }
-
+  parse: (parsed: unknown): Schema => {
     if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.FsInvalidSchemaStructure,

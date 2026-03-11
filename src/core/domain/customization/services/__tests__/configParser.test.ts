@@ -6,24 +6,20 @@ import { CustomizationConfigParser } from "../configParser";
 describe("CustomizationConfigParser", () => {
   describe("parse", () => {
     it("全フィールドを含む有効な設定をパースできる", () => {
-      const yaml = `
-scope: ALL
-desktop:
-  js:
-    - type: FILE
-      path: ./dist/desktop.js
-    - type: URL
-      url: https://cdn.example.com/lib.js
-  css:
-    - type: FILE
-      path: ./styles/desktop.css
-mobile:
-  js:
-    - type: FILE
-      path: ./dist/mobile.js
-  css: []
-`;
-      const config = CustomizationConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse({
+        scope: "ALL",
+        desktop: {
+          js: [
+            { type: "FILE", path: "./dist/desktop.js" },
+            { type: "URL", url: "https://cdn.example.com/lib.js" },
+          ],
+          css: [{ type: "FILE", path: "./styles/desktop.css" }],
+        },
+        mobile: {
+          js: [{ type: "FILE", path: "./dist/mobile.js" }],
+          css: [],
+        },
+      });
 
       expect(config.scope).toBe("ALL");
       expect(config.desktop.js).toHaveLength(2);
@@ -49,55 +45,39 @@ mobile:
     });
 
     it("scopeなしの設定をパースするとscopeがundefinedになる", () => {
-      const yaml = `
-desktop:
-  js: []
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      const config = CustomizationConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse({
+        desktop: { js: [], css: [] },
+        mobile: { js: [], css: [] },
+      });
 
       expect(config.scope).toBeUndefined();
     });
 
     it("ADMINスコープをパースできる", () => {
-      const yaml = `
-scope: ADMIN
-desktop:
-  js: []
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      const config = CustomizationConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse({
+        scope: "ADMIN",
+        desktop: { js: [], css: [] },
+        mobile: { js: [], css: [] },
+      });
 
       expect(config.scope).toBe("ADMIN");
     });
 
     it("NONEスコープをパースできる", () => {
-      const yaml = `
-scope: NONE
-desktop:
-  js: []
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      const config = CustomizationConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse({
+        scope: "NONE",
+        desktop: { js: [], css: [] },
+        mobile: { js: [], css: [] },
+      });
 
       expect(config.scope).toBe("NONE");
     });
 
     it("js/cssが省略された場合、空配列として扱う", () => {
-      const yaml = `
-desktop: {}
-mobile: {}
-`;
-      const config = CustomizationConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse({
+        desktop: {},
+        mobile: {},
+      });
 
       expect(config.desktop.js).toHaveLength(0);
       expect(config.desktop.css).toHaveLength(0);
@@ -105,44 +85,33 @@ mobile: {}
       expect(config.mobile.css).toHaveLength(0);
     });
 
-    it("空テキストの場合、EmptyConfigTextをスローする", () => {
-      expect(() => CustomizationConfigParser.parse("")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse("")).toThrow(
-        expect.objectContaining({
-          code: CustomizationErrorCode.CzEmptyConfigText,
-        }),
-      );
-    });
-
-    it("空白のみのテキストの場合、EmptyConfigTextをスローする", () => {
-      expect(() => CustomizationConfigParser.parse("   \n  ")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse("   \n  ")).toThrow(
-        expect.objectContaining({
-          code: CustomizationErrorCode.CzEmptyConfigText,
-        }),
-      );
-    });
-
-    it("不正なYAMLの場合、InvalidConfigYamlをスローする", () => {
-      expect(() => CustomizationConfigParser.parse("{ invalid: yaml:")).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse("{ invalid: yaml:")).toThrow(
-        expect.objectContaining({
-          code: CustomizationErrorCode.CzInvalidConfigYaml,
-        }),
-      );
-    });
-
-    it("YAMLがオブジェクトでない場合、InvalidConfigStructureをスローする", () => {
+    it("入力がオブジェクトでない場合、InvalidConfigStructureをスローする", () => {
       expect(() => CustomizationConfigParser.parse("just a string")).toThrow(
         BusinessRuleError,
       );
       expect(() => CustomizationConfigParser.parse("just a string")).toThrow(
+        expect.objectContaining({
+          code: CustomizationErrorCode.CzInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("配列の場合、InvalidConfigStructureをスローする", () => {
+      expect(() => CustomizationConfigParser.parse(["item1"])).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse(["item1"])).toThrow(
+        expect.objectContaining({
+          code: CustomizationErrorCode.CzInvalidConfigStructure,
+        }),
+      );
+    });
+
+    it("nullの場合、InvalidConfigStructureをスローする", () => {
+      expect(() => CustomizationConfigParser.parse(null)).toThrow(
+        BusinessRuleError,
+      );
+      expect(() => CustomizationConfigParser.parse(null)).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
@@ -150,19 +119,20 @@ mobile: {}
     });
 
     it("不正なスコープ値の場合、InvalidScopeをスローする", () => {
-      const yaml = `
-scope: INVALID
-desktop:
-  js: []
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        CustomizationConfigParser.parse({
+          scope: "INVALID",
+          desktop: { js: [], css: [] },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        CustomizationConfigParser.parse({
+          scope: "INVALID",
+          desktop: { js: [], css: [] },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidScope,
         }),
@@ -170,41 +140,39 @@ mobile:
     });
 
     it("desktopが未定義の場合、空のdesktopとしてパースする", () => {
-      const yaml = `
-mobile:
-  js: []
-  css: []
-`;
-      const config = CustomizationConfigParser.parse(yaml);
+      const config = CustomizationConfigParser.parse({
+        mobile: { js: [], css: [] },
+      });
       expect(config.desktop.js).toEqual([]);
       expect(config.desktop.css).toEqual([]);
     });
 
     it("mobileが未定義の場合、デフォルトの空プラットフォームが設定される", () => {
-      const yaml = `
-desktop:
-  js: []
-  css: []
-`;
-      const result = CustomizationConfigParser.parse(yaml);
+      const result = CustomizationConfigParser.parse({
+        desktop: { js: [], css: [] },
+      });
       expect(result.mobile).toEqual({ js: [], css: [] });
     });
 
     it("不正なリソースタイプの場合、InvalidResourceTypeをスローする", () => {
-      const yaml = `
-desktop:
-  js:
-    - type: INVALID
-      path: ./test.js
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        CustomizationConfigParser.parse({
+          desktop: {
+            js: [{ type: "INVALID", path: "./test.js" }],
+            css: [],
+          },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        CustomizationConfigParser.parse({
+          desktop: {
+            js: [{ type: "INVALID", path: "./test.js" }],
+            css: [],
+          },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidResourceType,
         }),
@@ -212,19 +180,24 @@ mobile:
     });
 
     it("FILEリソースにpathがない場合、InvalidConfigStructureをスローする", () => {
-      const yaml = `
-desktop:
-  js:
-    - type: FILE
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        CustomizationConfigParser.parse({
+          desktop: {
+            js: [{ type: "FILE" }],
+            css: [],
+          },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        CustomizationConfigParser.parse({
+          desktop: {
+            js: [{ type: "FILE" }],
+            css: [],
+          },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),
@@ -232,19 +205,24 @@ mobile:
     });
 
     it("URLリソースにurlがない場合、InvalidConfigStructureをスローする", () => {
-      const yaml = `
-desktop:
-  js:
-    - type: URL
-  css: []
-mobile:
-  js: []
-  css: []
-`;
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
-        BusinessRuleError,
-      );
-      expect(() => CustomizationConfigParser.parse(yaml)).toThrow(
+      expect(() =>
+        CustomizationConfigParser.parse({
+          desktop: {
+            js: [{ type: "URL" }],
+            css: [],
+          },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(BusinessRuleError);
+      expect(() =>
+        CustomizationConfigParser.parse({
+          desktop: {
+            js: [{ type: "URL" }],
+            css: [],
+          },
+          mobile: { js: [], css: [] },
+        }),
+      ).toThrow(
         expect.objectContaining({
           code: CustomizationErrorCode.CzInvalidConfigStructure,
         }),

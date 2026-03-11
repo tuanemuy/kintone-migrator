@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import { ActionErrorCode } from "../errorCode";
@@ -184,14 +184,10 @@ function parseActionConfig(raw: unknown, actionName: string): ActionConfig {
 }
 
 export const ActionConfigParser = {
-  parse: (rawText: string): ActionsConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: ActionErrorCode.AcEmptyConfigText,
-        invalidConfigYaml: ActionErrorCode.AcInvalidConfigYaml,
-        invalidConfigStructure: ActionErrorCode.AcInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): ActionsConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      ActionErrorCode.AcInvalidConfigStructure,
       "Action",
     );
 

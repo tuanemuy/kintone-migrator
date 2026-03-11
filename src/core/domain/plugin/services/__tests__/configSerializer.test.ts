@@ -21,12 +21,14 @@ describe("PluginConfigSerializer", () => {
         ],
       };
 
-      const yaml = PluginConfigSerializer.serialize(config);
+      const result = PluginConfigSerializer.serialize(config);
+      const plugins = result.plugins as Record<string, unknown>[];
 
-      expect(yaml).toContain("djmhffjlbkikgmepoociabnpfcfjhdge");
-      expect(yaml).toContain("条件分岐プラグイン");
-      expect(yaml).toContain("abcdefghijklmnopqrstuvwxyz012345");
-      expect(yaml).toContain("ルックアッププラグイン");
+      expect(plugins).toHaveLength(2);
+      expect(plugins[0].id).toBe("djmhffjlbkikgmepoociabnpfcfjhdge");
+      expect(plugins[0].name).toBe("条件分岐プラグイン");
+      expect(plugins[1].id).toBe("abcdefghijklmnopqrstuvwxyz012345");
+      expect(plugins[1].name).toBe("ルックアッププラグイン");
     });
 
     it("should serialize config with empty name", () => {
@@ -40,9 +42,10 @@ describe("PluginConfigSerializer", () => {
         ],
       };
 
-      const yaml = PluginConfigSerializer.serialize(config);
+      const result = PluginConfigSerializer.serialize(config);
+      const plugins = result.plugins as Record<string, unknown>[];
 
-      expect(yaml).toContain("djmhffjlbkikgmepoociabnpfcfjhdge");
+      expect(plugins[0].id).toBe("djmhffjlbkikgmepoociabnpfcfjhdge");
     });
 
     it("should serialize config with empty plugins", () => {
@@ -50,20 +53,25 @@ describe("PluginConfigSerializer", () => {
         plugins: [],
       };
 
-      const yaml = PluginConfigSerializer.serialize(config);
+      const result = PluginConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("plugins: []");
+      expect(result.plugins).toEqual([]);
     });
 
     it("should roundtrip parse and serialize", () => {
-      const originalYaml = `
-plugins:
-  - id: djmhffjlbkikgmepoociabnpfcfjhdge
-    name: 条件分岐プラグイン
-  - id: abcdefghijklmnopqrstuvwxyz012345
-    name: ルックアッププラグイン
-`;
-      const parsed = PluginConfigParser.parse(originalYaml);
+      const input = {
+        plugins: [
+          {
+            id: "djmhffjlbkikgmepoociabnpfcfjhdge",
+            name: "条件分岐プラグイン",
+          },
+          {
+            id: "abcdefghijklmnopqrstuvwxyz012345",
+            name: "ルックアッププラグイン",
+          },
+        ],
+      };
+      const parsed = PluginConfigParser.parse(input);
       const serialized = PluginConfigSerializer.serialize(parsed);
       const reparsed = PluginConfigParser.parse(serialized);
 

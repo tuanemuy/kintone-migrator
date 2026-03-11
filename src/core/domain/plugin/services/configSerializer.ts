@@ -1,8 +1,7 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { PluginsConfig } from "../entity";
 
 export const PluginConfigSerializer = {
-  serialize: (config: PluginsConfig): string => {
+  serialize: (config: PluginsConfig): Record<string, unknown> => {
     const serialized = {
       plugins: config.plugins.map((plugin) => ({
         id: plugin.id,
@@ -11,6 +10,6 @@ export const PluginConfigSerializer = {
       })),
     };
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };

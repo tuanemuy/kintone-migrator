@@ -11,10 +11,10 @@ describe("AdminNotesConfigSerializer", () => {
         includeInTemplateAndDuplicates: true,
       };
 
-      const yaml = AdminNotesConfigSerializer.serialize(config);
+      const result = AdminNotesConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("<p>This is a test memo.</p>");
-      expect(yaml).toContain("includeInTemplateAndDuplicates: true");
+      expect(result.content).toBe("<p>This is a test memo.</p>");
+      expect(result.includeInTemplateAndDuplicates).toBe(true);
     });
 
     it("should serialize config with includeInTemplateAndDuplicates false", () => {
@@ -23,9 +23,9 @@ describe("AdminNotesConfigSerializer", () => {
         includeInTemplateAndDuplicates: false,
       };
 
-      const yaml = AdminNotesConfigSerializer.serialize(config);
+      const result = AdminNotesConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("includeInTemplateAndDuplicates: false");
+      expect(result.includeInTemplateAndDuplicates).toBe(false);
     });
 
     it("should serialize config with empty content", () => {
@@ -34,10 +34,11 @@ describe("AdminNotesConfigSerializer", () => {
         includeInTemplateAndDuplicates: true,
       };
 
-      const yaml = AdminNotesConfigSerializer.serialize(config);
+      const result = AdminNotesConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("content:");
-      expect(yaml).toContain("includeInTemplateAndDuplicates: true");
+      expect(result).toHaveProperty("content");
+      expect(result.content).toBe("");
+      expect(result.includeInTemplateAndDuplicates).toBe(true);
     });
 
     it("should serialize content with YAML-special characters (colon, hash, ampersand)", () => {
@@ -47,8 +48,8 @@ describe("AdminNotesConfigSerializer", () => {
         includeInTemplateAndDuplicates: false,
       };
 
-      const yaml = AdminNotesConfigSerializer.serialize(config);
-      const reparsed = AdminNotesConfigParser.parse(yaml);
+      const result = AdminNotesConfigSerializer.serialize(config);
+      const reparsed = AdminNotesConfigParser.parse(result);
 
       expect(reparsed.content).toBe(config.content);
     });
@@ -59,8 +60,8 @@ describe("AdminNotesConfigSerializer", () => {
         includeInTemplateAndDuplicates: true,
       };
 
-      const yaml = AdminNotesConfigSerializer.serialize(config);
-      const reparsed = AdminNotesConfigParser.parse(yaml);
+      const result = AdminNotesConfigSerializer.serialize(config);
+      const reparsed = AdminNotesConfigParser.parse(result);
 
       expect(reparsed.content).toBe(config.content);
     });
@@ -72,20 +73,19 @@ describe("AdminNotesConfigSerializer", () => {
         includeInTemplateAndDuplicates: true,
       };
 
-      const yaml = AdminNotesConfigSerializer.serialize(config);
-      const reparsed = AdminNotesConfigParser.parse(yaml);
+      const result = AdminNotesConfigSerializer.serialize(config);
+      const reparsed = AdminNotesConfigParser.parse(result);
 
       expect(reparsed.content).toBe(config.content);
     });
 
     it("should roundtrip parse and serialize", () => {
-      const originalYaml = `
-content: |
-  <p>This app is managed by kintone-migrator.</p>
-  <p>Do not change settings manually.</p>
-includeInTemplateAndDuplicates: true
-`;
-      const parsed = AdminNotesConfigParser.parse(originalYaml);
+      const input = {
+        content:
+          "<p>This app is managed by kintone-migrator.</p>\n<p>Do not change settings manually.</p>",
+        includeInTemplateAndDuplicates: true,
+      };
+      const parsed = AdminNotesConfigParser.parse(input);
       const serialized = AdminNotesConfigSerializer.serialize(parsed);
       const reparsed = AdminNotesConfigParser.parse(serialized);
 

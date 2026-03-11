@@ -1,4 +1,3 @@
-import { parse as parseYaml } from "yaml";
 import { BusinessRuleError } from "@/core/domain/error";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { SeedData } from "../entity";
@@ -73,24 +72,7 @@ function parseRecord(raw: unknown, index: number): SeedRecord {
 }
 
 export const SeedParser = {
-  parse: (rawText: string): SeedData => {
-    if (rawText.trim().length === 0) {
-      throw new BusinessRuleError(
-        SeedDataErrorCode.SdEmptySeedText,
-        "Seed text cannot be empty",
-      );
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = parseYaml(rawText);
-    } catch {
-      throw new BusinessRuleError(
-        SeedDataErrorCode.SdInvalidSeedYaml,
-        "Seed text is not valid YAML",
-      );
-    }
-
+  parse: (parsed: unknown): SeedData => {
     if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         SeedDataErrorCode.SdInvalidSeedStructure,

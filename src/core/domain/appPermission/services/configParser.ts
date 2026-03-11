@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import {
   isRecord,
   parseEntityBase,
@@ -100,25 +100,21 @@ function parseAppRight(raw: unknown, index: number): AppRight {
 }
 
 export const AppPermissionConfigParser = {
-  parse: (rawText: string): AppPermissionConfig => {
-    const parsed = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: AppPermissionErrorCode.ApEmptyConfigText,
-        invalidConfigYaml: AppPermissionErrorCode.ApInvalidConfigYaml,
-        invalidConfigStructure: AppPermissionErrorCode.ApInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): AppPermissionConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      AppPermissionErrorCode.ApInvalidConfigStructure,
       "App permission",
     );
 
-    if (!Array.isArray(parsed.rights)) {
+    if (!Array.isArray(obj.rights)) {
       throw new BusinessRuleError(
         AppPermissionErrorCode.ApInvalidConfigStructure,
         'Config must have a "rights" array',
       );
     }
 
-    const rights = parsed.rights.map((item: unknown, i: number) =>
+    const rights = obj.rights.map((item: unknown, i: number) =>
       parseAppRight(item, i),
     );
 

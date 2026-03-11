@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { CustomizationConfig } from "../entity";
 import { CustomizationErrorCode } from "../errorCode";
@@ -72,14 +72,10 @@ function parsePlatform(raw: unknown): CustomizationPlatform {
 }
 
 export const CustomizationConfigParser = {
-  parse: (rawText: string): CustomizationConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: CustomizationErrorCode.CzEmptyConfigText,
-        invalidConfigYaml: CustomizationErrorCode.CzInvalidConfigYaml,
-        invalidConfigStructure: CustomizationErrorCode.CzInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): CustomizationConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      CustomizationErrorCode.CzInvalidConfigStructure,
       "Customization",
     );
 

@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ViewConfig, ViewsConfig } from "../entity";
 import { ViewErrorCode } from "../errorCode";
@@ -94,14 +94,10 @@ function parseViewConfig(name: string, raw: unknown): ViewConfig {
 }
 
 export const ViewConfigParser = {
-  parse: (rawText: string): ViewsConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: ViewErrorCode.VwEmptyConfigText,
-        invalidConfigYaml: ViewErrorCode.VwInvalidConfigYaml,
-        invalidConfigStructure: ViewErrorCode.VwInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): ViewsConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      ViewErrorCode.VwInvalidConfigStructure,
       "View",
     );
 

@@ -1,9 +1,11 @@
 import type { NotificationConfig } from "@/core/domain/notification/entity";
 import { NotificationConfigParser } from "@/core/domain/notification/services/configParser";
 import { wrapBusinessRuleError } from "../error";
+import { parseYamlText } from "../parseYamlText";
 
 export function parseNotificationConfigText(
   rawText: string,
 ): NotificationConfig {
-  return wrapBusinessRuleError(() => NotificationConfigParser.parse(rawText));
+  const parsed = parseYamlText(rawText, "Notification");
+  return wrapBusinessRuleError(() => NotificationConfigParser.parse(parsed));
 }

@@ -1,6 +1,7 @@
 import type { NotificationConfig } from "@/core/domain/notification/entity";
 import { NotificationConfigSerializer } from "@/core/domain/notification/services/configSerializer";
 import type { NotificationServiceArgs } from "../container/notification";
+import { stringifyToYaml } from "../stringifyToYaml";
 
 export type CaptureNotificationOutput = {
   readonly configText: string;
@@ -28,7 +29,9 @@ export async function captureNotification({
     },
   };
 
-  const configText = NotificationConfigSerializer.serialize(config);
+  const configText = stringifyToYaml(
+    NotificationConfigSerializer.serialize(config),
+  );
   const existing = await container.notificationStorage.get();
 
   return {

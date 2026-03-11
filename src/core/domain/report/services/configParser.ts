@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import { ReportErrorCode } from "../errorCode";
@@ -356,14 +356,10 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
 }
 
 export const ReportConfigParser = {
-  parse: (rawText: string): ReportsConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: ReportErrorCode.RtEmptyConfigText,
-        invalidConfigYaml: ReportErrorCode.RtInvalidConfigYaml,
-        invalidConfigStructure: ReportErrorCode.RtInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): ReportsConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      ReportErrorCode.RtInvalidConfigStructure,
       "Report",
     );
 

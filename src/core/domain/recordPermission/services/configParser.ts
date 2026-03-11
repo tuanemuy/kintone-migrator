@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import {
   isRecord,
   parseEntityBase,
@@ -108,26 +108,21 @@ function parseRecordRight(raw: unknown, index: number): RecordRight {
 }
 
 export const RecordPermissionConfigParser = {
-  parse: (rawText: string): RecordPermissionConfig => {
-    const parsed = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: RecordPermissionErrorCode.RpEmptyConfigText,
-        invalidConfigYaml: RecordPermissionErrorCode.RpInvalidConfigYaml,
-        invalidConfigStructure:
-          RecordPermissionErrorCode.RpInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): RecordPermissionConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      RecordPermissionErrorCode.RpInvalidConfigStructure,
       "Record permission",
     );
 
-    if (!Array.isArray(parsed.rights)) {
+    if (!Array.isArray(obj.rights)) {
       throw new BusinessRuleError(
         RecordPermissionErrorCode.RpInvalidConfigStructure,
         'Config must have a "rights" array',
       );
     }
 
-    const rights = parsed.rights.map((item: unknown, i: number) =>
+    const rights = obj.rights.map((item: unknown, i: number) =>
       parseRecordRight(item, i),
     );
 

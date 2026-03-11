@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
 import { isRecord } from "@/core/domain/typeGuards";
 import type {
   GeneralNotification,
@@ -293,14 +293,10 @@ function parseReminderConfig(raw: unknown): ReminderNotificationConfig {
 }
 
 export const NotificationConfigParser = {
-  parse: (rawText: string): NotificationConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: NotificationErrorCode.NtEmptyConfigText,
-        invalidConfigYaml: NotificationErrorCode.NtInvalidConfigYaml,
-        invalidConfigStructure: NotificationErrorCode.NtInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): NotificationConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      NotificationErrorCode.NtInvalidConfigStructure,
       "Notification",
     );
 

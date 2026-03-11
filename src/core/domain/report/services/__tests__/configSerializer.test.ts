@@ -31,14 +31,20 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
 
-      expect(yaml).toContain("月次タスク集計");
-      expect(yaml).toContain("COLUMN");
-      expect(yaml).toContain("作成日時");
-      expect(yaml).toContain("MONTH");
-      expect(yaml).toContain("担当者別タスク数");
-      expect(yaml).toContain("PIE");
+      expect(reports).toHaveProperty("月次タスク集計");
+      expect(reports["月次タスク集計"].chartType).toBe("COLUMN");
+      const groups0 = reports["月次タスク集計"].groups as Record<
+        string,
+        unknown
+      >[];
+      expect(groups0[0].code).toBe("作成日時");
+      expect(groups0[0].per).toBe("MONTH");
+
+      expect(reports).toHaveProperty("担当者別タスク数");
+      expect(reports["担当者別タスク数"].chartType).toBe("PIE");
     });
 
     it("should serialize config with periodicReport", () => {
@@ -65,13 +71,18 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const report = reports["定期レポート"];
 
-      expect(yaml).toContain("periodicReport");
-      expect(yaml).toContain("active: true");
-      expect(yaml).toContain("every: MONTH");
-      expect(yaml).toContain("dayOfMonth: 1");
-      expect(yaml).toContain("time: 08:00");
+      expect(report).toHaveProperty("periodicReport");
+      const periodicReport = report.periodicReport as Record<string, unknown>;
+      expect(periodicReport.active).toBe(true);
+
+      const period = periodicReport.period as Record<string, unknown>;
+      expect(period.every).toBe("MONTH");
+      expect(period.dayOfMonth).toBe(1);
+      expect(period.time).toBe("08:00");
     });
 
     it("should not include name property in serialized output", () => {
@@ -90,9 +101,11 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
-      const lines = yaml.split("\n").map((l) => l.trim());
-      expect(lines.filter((l) => l.startsWith("name:"))).toHaveLength(0);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const report = reports["テスト"];
+
+      expect(report).not.toHaveProperty("name");
     });
 
     it("should serialize config with aggregation code", () => {
@@ -111,10 +124,15 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const aggregations = reports["テスト"].aggregations as Record<
+        string,
+        unknown
+      >[];
 
-      expect(yaml).toContain("type: SUM");
-      expect(yaml).toContain("code: 金額");
+      expect(aggregations[0].type).toBe("SUM");
+      expect(aggregations[0].code).toBe("金額");
     });
 
     it("should serialize config with group per", () => {
@@ -133,9 +151,11 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const groups = reports["テスト"].groups as Record<string, unknown>[];
 
-      expect(yaml).toContain("per: MONTH");
+      expect(groups[0].per).toBe("MONTH");
     });
 
     it("should serialize empty reports", () => {
@@ -143,9 +163,9 @@ describe("ReportConfigSerializer", () => {
         reports: {},
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("reports: {}");
+      expect(result.reports).toEqual({});
     });
 
     it("should serialize config with periodicReport month and pattern", () => {
@@ -192,10 +212,19 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
 
-      expect(yaml).toContain("month: 4");
-      expect(yaml).toContain("pattern: JAN_APR_JUL_OCT");
+      const yearReport = reports["年次レポート"];
+      const yearPeriod = (yearReport.periodicReport as Record<string, unknown>)
+        .period as Record<string, unknown>;
+      expect(yearPeriod.month).toBe(4);
+
+      const quarterReport = reports["四半期レポート"];
+      const quarterPeriod = (
+        quarterReport.periodicReport as Record<string, unknown>
+      ).period as Record<string, unknown>;
+      expect(quarterPeriod.pattern).toBe("JAN_APR_JUL_OCT");
     });
 
     it("should serialize dayOfMonth with END_OF_MONTH", () => {
@@ -222,9 +251,13 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const period = (
+        reports["月末レポート"].periodicReport as Record<string, unknown>
+      ).period as Record<string, unknown>;
 
-      expect(yaml).toContain("dayOfMonth: END_OF_MONTH");
+      expect(period.dayOfMonth).toBe("END_OF_MONTH");
     });
 
     it("should serialize config without chartMode", () => {
@@ -242,10 +275,12 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const report = reports["テスト"];
 
-      expect(yaml).toContain("chartType: PIE");
-      expect(yaml).not.toContain("chartMode");
+      expect(report.chartType).toBe("PIE");
+      expect(report).not.toHaveProperty("chartMode");
     });
 
     it("should serialize periodicReport with dayOfWeek", () => {
@@ -272,8 +307,13 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
-      expect(yaml).toContain("dayOfWeek: MONDAY");
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const period = (
+        reports["週次レポート"].periodicReport as Record<string, unknown>
+      ).period as Record<string, unknown>;
+
+      expect(period.dayOfWeek).toBe("MONDAY");
     });
 
     it("should serialize periodicReport with minute", () => {
@@ -299,47 +339,47 @@ describe("ReportConfigSerializer", () => {
         },
       };
 
-      const yaml = ReportConfigSerializer.serialize(config);
-      expect(yaml).toContain("minute: 30");
+      const result = ReportConfigSerializer.serialize(config);
+      const reports = result.reports as Record<string, Record<string, unknown>>;
+      const period = (
+        reports["時間レポート"].periodicReport as Record<string, unknown>
+      ).period as Record<string, unknown>;
+
+      expect(period.minute).toBe(30);
     });
 
     it("should roundtrip parse and serialize", () => {
-      const originalYaml = `
-reports:
-  月次タスク集計:
-    chartType: COLUMN
-    chartMode: NORMAL
-    index: 0
-    groups:
-      - code: 作成日時
-        per: MONTH
-    aggregations:
-      - type: COUNT
-    filterCond: ""
-    sorts:
-      - by: GROUP1
-        order: ASC
-    periodicReport:
-      active: true
-      period:
-        every: MONTH
-        dayOfMonth: 1
-        time: "08:00"
-  担当者別タスク数:
-    chartType: PIE
-    chartMode: NORMAL
-    index: 1
-    groups:
-      - code: 担当者
-    aggregations:
-      - type: SUM
-        code: 工数
-    filterCond: ""
-    sorts:
-      - by: TOTAL
-        order: DESC
-`;
-      const parsed = ReportConfigParser.parse(originalYaml);
+      const input = {
+        reports: {
+          月次タスク集計: {
+            chartType: "COLUMN",
+            chartMode: "NORMAL",
+            index: 0,
+            groups: [{ code: "作成日時", per: "MONTH" }],
+            aggregations: [{ type: "COUNT" }],
+            filterCond: "",
+            sorts: [{ by: "GROUP1", order: "ASC" }],
+            periodicReport: {
+              active: true,
+              period: {
+                every: "MONTH",
+                dayOfMonth: 1,
+                time: "08:00",
+              },
+            },
+          },
+          担当者別タスク数: {
+            chartType: "PIE",
+            chartMode: "NORMAL",
+            index: 1,
+            groups: [{ code: "担当者" }],
+            aggregations: [{ type: "SUM", code: "工数" }],
+            filterCond: "",
+            sorts: [{ by: "TOTAL", order: "DESC" }],
+          },
+        },
+      };
+      const parsed = ReportConfigParser.parse(input);
       const serialized = ReportConfigSerializer.serialize(parsed);
       const reparsed = ReportConfigParser.parse(serialized);
 

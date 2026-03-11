@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { RecordPermissionConfig } from "../entity";
 import type { RecordPermissionRightEntity } from "../valueObject";
 
@@ -18,7 +17,7 @@ function serializeRecordRightEntity(
 }
 
 export const RecordPermissionConfigSerializer = {
-  serialize: (config: RecordPermissionConfig): string => {
+  serialize: (config: RecordPermissionConfig): Record<string, unknown> => {
     const serialized = {
       rights: config.rights.map((right) => ({
         filterCond: right.filterCond,
@@ -26,6 +25,6 @@ export const RecordPermissionConfigSerializer = {
       })),
     };
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };

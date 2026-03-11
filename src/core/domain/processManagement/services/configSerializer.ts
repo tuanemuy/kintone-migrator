@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { ProcessManagementConfig } from "../entity";
 import type { ProcessEntity } from "../valueObject";
 
@@ -21,7 +20,7 @@ function serializeProcessEntity(
 }
 
 export const ProcessManagementConfigSerializer = {
-  serialize: (config: ProcessManagementConfig): string => {
+  serialize: (config: ProcessManagementConfig): Record<string, unknown> => {
     const serializedStates: Record<string, unknown> = {};
 
     for (const [name, state] of Object.entries(config.states)) {
@@ -58,6 +57,6 @@ export const ProcessManagementConfigSerializer = {
       }),
     };
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };
