@@ -49,13 +49,13 @@ Hexagonal architecture with domain-driven design principles:
     - `src/core/domain/${domain}/valueObject.ts`: Value objects
     - `src/core/domain/${domain}/ports/**.ts`: Port interfaces for external services (repositories, external APIs, etc.)
     - `src/core/domain/${domain}/services/**.ts`: Domain services for complex business logic
-    - `src/core/domain/ports/yamlCodec.ts`: YAML codec port interface (domain layer does not depend on `yaml` library directly)
+    - `src/core/domain/ports/configCodec.ts`: Config codec port interface (domain layer does not depend on `yaml` library directly)
     - Domain parsers (`configParser.ts`) accept pre-parsed `unknown` data, not raw YAML text. YAML parsing is handled by the application layer.
     - Domain serializers (`configSerializer.ts`) return `Record<string, unknown>`, not YAML strings. YAML stringification is handled by the application layer.
     - `node:path` is used pragmatically in some domain services (e.g., `appFilePaths.ts`) since this is a Node.js CLI tool.
 - **Adapter Layer** (`src/core/adapters/`): Contains concrete implementations for external services
     - `src/core/adapters/${externalServiceProvider}/**.ts`: Adapters for external services like databases, APIs, etc.
-    - `src/core/adapters/yaml/yamlCodec.ts`: YAML codec adapter wrapping the `yaml` library
+    - `src/core/adapters/yaml/configCodec.ts`: Config codec adapter wrapping the `yaml` library
 - **Application Layer** (`src/core/application/`): Contains use cases and application services
     - `src/core/application/container/cli.ts`: CLI dependency injection container
     - `src/core/application/${domain}/${usecase}.ts`: Application services that orchestrate domain logic. Each service is a function that takes a context object.

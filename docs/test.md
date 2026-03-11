@@ -21,7 +21,7 @@
 
 - Use in-memory test containers from `helpers.ts` (e.g., `setupTestActionContainer()`)
 - Only when it is difficult to use actual adapters, prepare Empty adapters and mock it using `vi.spyOn`, etc.
-- YAML parsing/serialization is tested at the adapter level (`yamlCodec.test.ts`) and application level (`parseYamlText`, `stringifyToYaml`). Domain tests do not involve YAML.
+- YAML parsing/serialization is tested at the adapter level (`configCodec.test.ts`) and application level (`parseYamlText`, `stringifyToYaml`). Domain tests do not involve YAML.
 
 ## Manual Testing (kintone Integration)
 

@@ -1,4 +1,4 @@
-import { yamlCodec } from "@/core/adapters/yaml/yamlCodec";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { ValidationError, ValidationErrorCode } from "./error";
 
 export function parseYamlText(rawText: string, domainLabel: string): unknown {
@@ -10,7 +10,7 @@ export function parseYamlText(rawText: string, domainLabel: string): unknown {
   }
 
   try {
-    return yamlCodec.parse(rawText);
+    return configCodec.parse(rawText);
   } catch (cause) {
     throw new ValidationError(
       ValidationErrorCode.InvalidInput,

@@ -1,7 +1,7 @@
 import { parse, stringify } from "yaml";
-import type { YamlCodec } from "@/core/domain/ports/yamlCodec";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 
-export const yamlCodec: YamlCodec = {
+export const configCodec: ConfigCodec = {
   parse: (text: string): unknown => parse(text),
   stringify: (data: Record<string, unknown>): string =>
     stringify(data, {
