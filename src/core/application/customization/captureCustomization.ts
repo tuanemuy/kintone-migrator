@@ -135,8 +135,8 @@ function planPlatform(
   filesToDownload: readonly PlannedFile[];
   fileCount: number;
 } {
-  const platformDir = join(basePath, filePrefix, platformName);
-  const platformPrefix = platformName;
+  const platformDir = join(basePath, filePrefix, "customize", platformName);
+  const platformPrefix = join("customize", platformName);
 
   const jsPlan = planResources(
     remotePlatform.js,

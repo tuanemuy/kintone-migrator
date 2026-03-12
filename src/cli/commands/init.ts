@@ -207,7 +207,6 @@ export default define({
         const results = await captureAllForApp({
           container: containers,
           input: {
-            appName,
             customizeBasePath: dirname(resolve(paths.customize)),
           },
         });

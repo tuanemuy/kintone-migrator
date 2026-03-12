@@ -58,7 +58,6 @@ export type CaptureResult =
   | Readonly<{ domain: CaptureDomain; success: false; error: Error }>;
 
 export type CaptureAllForAppInput = Readonly<{
-  appName: string;
   customizeBasePath: string;
 }>;
 
@@ -99,7 +98,7 @@ function buildCaptureTasks(args: CaptureAllForAppArgs): readonly CaptureTask[] {
           container: c.customization,
           input: {
             basePath: input.customizeBasePath,
-            filePrefix: input.appName,
+            filePrefix: "",
           },
         });
         await saveCustomization({
