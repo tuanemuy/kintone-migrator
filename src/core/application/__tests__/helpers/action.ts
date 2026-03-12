@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { ActionContainer } from "@/core/application/container/action";
 import type { ActionConfig } from "@/core/domain/action/entity";
 import type { ActionConfigurator } from "@/core/domain/action/ports/actionConfigurator";
@@ -8,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryActionConfigurator
@@ -58,7 +58,7 @@ export type TestActionContainer = ActionContainer & {
 
 export function createTestActionContainer(): TestActionContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     actionConfigurator: new InMemoryActionConfigurator(),
     actionStorage: new InMemoryActionStorage(),
     appDeployer: new InMemoryAppDeployer(),

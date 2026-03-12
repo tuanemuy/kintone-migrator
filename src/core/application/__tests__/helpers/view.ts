@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { ViewContainer } from "@/core/application/container/view";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
@@ -8,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryViewConfigurator
@@ -58,7 +58,7 @@ export type TestViewContainer = ViewContainer & {
 
 export function createTestViewContainer(): TestViewContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     viewConfigurator: new InMemoryViewConfigurator(),
     viewStorage: new InMemoryViewStorage(),
     appDeployer: new InMemoryAppDeployer(),

@@ -1,10 +1,14 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { SeedContainer } from "@/core/application/container/seed";
 import type { SeedRecordWithId } from "@/core/domain/seedData/entity";
 import type { RecordManager } from "@/core/domain/seedData/ports/recordManager";
 import type { SeedStorage } from "@/core/domain/seedData/ports/seedStorage";
 import type { SeedRecord } from "@/core/domain/seedData/valueObject";
-import { FakeBase, InMemoryFileStorage, setupContainer } from "./shared";
+import {
+  FakeBase,
+  InMemoryFileStorage,
+  setupContainer,
+  testConfigCodec,
+} from "./shared";
 
 export class InMemoryRecordManager extends FakeBase implements RecordManager {
   private records: SeedRecordWithId[] = [];
@@ -58,7 +62,7 @@ export type TestSeedContainer = SeedContainer & {
 
 export function createTestSeedContainer(): TestSeedContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     recordManager: new InMemoryRecordManager(),
     seedStorage: new InMemorySeedStorage(),
   };

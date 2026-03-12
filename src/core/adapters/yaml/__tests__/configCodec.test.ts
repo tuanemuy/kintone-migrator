@@ -20,6 +20,21 @@ describe("configCodec", () => {
     it("should throw on invalid YAML syntax", () => {
       expect(() => configCodec.parse("key: [unclosed")).toThrow();
     });
+
+    it("should return null for empty string", () => {
+      expect(configCodec.parse("")).toBeNull();
+    });
+
+    it("should return a primitive for scalar YAML", () => {
+      expect(configCodec.parse("42")).toBe(42);
+      expect(configCodec.parse("hello")).toBe("hello");
+    });
+
+    it("should throw on multi-document YAML", () => {
+      expect(() =>
+        configCodec.parse("key: first\n---\nkey: second"),
+      ).toThrow();
+    });
   });
 
   describe("stringify", () => {
@@ -47,6 +62,17 @@ describe("configCodec", () => {
       const longValue = "a".repeat(200);
       const result = configCodec.stringify({ key: longValue });
       expect(result).toBe(`key: ${longValue}\n`);
+    });
+
+    it("should safely round-trip values with special characters", () => {
+      const data = {
+        colon: "key: value",
+        hash: "# not a comment",
+        quote: '"quoted"',
+      };
+      const yaml = configCodec.stringify(data);
+      const parsed = configCodec.parse(yaml);
+      expect(parsed).toEqual(data);
     });
   });
 });

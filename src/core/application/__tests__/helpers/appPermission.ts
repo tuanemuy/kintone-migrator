@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { AppPermissionContainer } from "@/core/application/container/appPermission";
 import type { AppRight } from "@/core/domain/appPermission/entity";
 import type { AppPermissionConfigurator } from "@/core/domain/appPermission/ports/appPermissionConfigurator";
@@ -8,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryAppPermissionConfigurator
@@ -65,7 +65,7 @@ export type TestAppPermissionContainer = AppPermissionContainer & {
 
 export function createTestAppPermissionContainer(): TestAppPermissionContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     appPermissionConfigurator: new InMemoryAppPermissionConfigurator(),
     appPermissionStorage: new InMemoryAppPermissionStorage(),
     appDeployer: new InMemoryAppDeployer(),

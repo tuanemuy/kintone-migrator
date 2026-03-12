@@ -10,7 +10,7 @@ import type {
   ResolvedResource,
 } from "@/core/domain/customization/valueObject";
 import type { CustomizationApplyServiceArgs } from "../container/customization";
-import { parseConfigText } from "./parseConfig";
+import { parseCustomizationConfigText } from "./parseConfig";
 
 type ApplyCustomizationInput = {
   basePath: string;
@@ -69,7 +69,10 @@ export async function applyCustomization({
       "Customization config file not found",
     );
   }
-  const config = parseConfigText(container.configCodec, result.content);
+  const config = parseCustomizationConfigText(
+    container.configCodec,
+    result.content,
+  );
 
   const currentCustomization =
     await container.customizationConfigurator.getCustomization();

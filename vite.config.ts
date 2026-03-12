@@ -20,6 +20,7 @@ export default defineConfig({
       thresholds: {
         statements: 75,
         branches: 75,
+        // Lower than other thresholds due to single-use factory functions in CLI layer
         functions: 73,
         lines: 75,
       },

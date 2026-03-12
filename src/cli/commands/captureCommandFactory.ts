@@ -1,6 +1,7 @@
 import * as p from "@clack/prompts";
 import { type Args, define } from "gunshi";
 import pc from "picocolors";
+import type { CaptureOutput } from "@/core/application/captureFromConfigBase";
 import type {
   AppEntry,
   ProjectConfig,
@@ -24,7 +25,7 @@ type CaptureCommandConfig<
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly captureFn: (args: {
     container: TContainer;
-  }) => Promise<{ configText: string; hasExistingConfig: boolean }>;
+  }) => Promise<CaptureOutput>;
   readonly saveFn: (args: {
     container: TContainer;
     input: { configText: string };
@@ -48,7 +49,7 @@ export function createCaptureCommand<
 
     const s = p.spinner();
     s.start(config.spinnerMessage);
-    let result: { configText: string; hasExistingConfig: boolean };
+    let result: CaptureOutput;
     try {
       result = await config.captureFn({ container });
     } catch (error) {

@@ -20,7 +20,7 @@ apps:
     expect(config.apps.size).toBe(1);
   });
 
-  it("無効なYAML構文の場合、ValidationErrorをスローする", () => {
+  it("無効な構文の場合、ValidationErrorをスローする", () => {
     const content = "{ invalid yaml:";
     try {
       loadProjectConfig({ content }, configCodec);
@@ -28,7 +28,9 @@ apps:
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
       if (isValidationError(error)) {
-        expect(error.message).toContain("Failed to parse Project config YAML");
+        expect(error.message).toContain(
+          "Failed to parse Project config:",
+        );
       }
     }
   });

@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { GeneralSettingsContainer } from "@/core/application/container/generalSettings";
 import type { GeneralSettingsConfig } from "@/core/domain/generalSettings/entity";
 import type { GeneralSettingsConfigurator } from "@/core/domain/generalSettings/ports/generalSettingsConfigurator";
@@ -8,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryGeneralSettingsConfigurator
@@ -58,7 +58,7 @@ export type TestGeneralSettingsContainer = GeneralSettingsContainer & {
 
 export function createTestGeneralSettingsContainer(): TestGeneralSettingsContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     generalSettingsConfigurator: new InMemoryGeneralSettingsConfigurator(),
     generalSettingsStorage: new InMemoryGeneralSettingsStorage(),
     appDeployer: new InMemoryAppDeployer(),

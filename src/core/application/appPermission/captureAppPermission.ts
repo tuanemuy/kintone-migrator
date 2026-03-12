@@ -4,7 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { AppPermissionServiceArgs } from "../container/appPermission";
-import { stringifyToYaml } from "../stringifyToYaml";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureAppPermissionOutput = CaptureOutput;
 
@@ -14,7 +14,7 @@ export async function captureAppPermission({
   return captureFromConfig({
     fetchRemote: () => container.appPermissionConfigurator.getAppPermissions(),
     serialize: ({ rights }) =>
-      stringifyToYaml(
+      stringifyConfig(
         container.configCodec,
         AppPermissionConfigSerializer.serialize({ rights }),
       ),

@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { NotificationContainer } from "@/core/application/container/notification";
 import type {
   GeneralNotification,
@@ -12,6 +11,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryNotificationConfigurator
@@ -157,7 +157,7 @@ export type TestNotificationContainer = NotificationContainer & {
 
 export function createTestNotificationContainer(): TestNotificationContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     notificationConfigurator: new InMemoryNotificationConfigurator(),
     notificationStorage: new InMemoryNotificationStorage(),
     appDeployer: new InMemoryAppDeployer(),

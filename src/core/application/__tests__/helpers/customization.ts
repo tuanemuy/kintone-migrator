@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import { SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
@@ -16,6 +15,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryCustomizationConfigurator
@@ -143,7 +143,7 @@ export type TestCustomizationContainer = CustomizationContainer & {
 
 export function createTestCustomizationContainer(): TestCustomizationContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     customizationConfigurator: new InMemoryCustomizationConfigurator(),
     customizationStorage: new InMemoryCustomizationStorage(),
     fileUploader: new InMemoryFileUploader(),

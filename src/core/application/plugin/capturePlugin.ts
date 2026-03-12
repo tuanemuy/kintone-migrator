@@ -4,7 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { PluginServiceArgs } from "../container/plugin";
-import { stringifyToYaml } from "../stringifyToYaml";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CapturePluginOutput = CaptureOutput;
 
@@ -14,7 +14,7 @@ export async function capturePlugin({
   return captureFromConfig({
     fetchRemote: () => container.pluginConfigurator.getPlugins(),
     serialize: ({ plugins }) =>
-      stringifyToYaml(
+      stringifyConfig(
         container.configCodec,
         PluginConfigSerializer.serialize({ plugins }),
       ),

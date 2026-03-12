@@ -3,7 +3,7 @@ import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { AppName } from "@/core/domain/projectConfig/valueObject";
 import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
 import { deduplicateName } from "@/lib/deduplicateName";
-import { stringifyToYaml } from "../stringifyToYaml";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type GenerateProjectConfigInput = Readonly<{
   apps: readonly SpaceApp[];
@@ -48,5 +48,5 @@ export function generateProjectConfig(
     apps,
   };
 
-  return stringifyToYaml(codec, config);
+  return stringifyConfig(codec, config);
 }

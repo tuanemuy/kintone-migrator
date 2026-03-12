@@ -1,7 +1,7 @@
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { ValidationError, ValidationErrorCode } from "./error";
 
-export function parseYamlText(
+export function parseConfigText(
   codec: ConfigCodec,
   rawText: string,
   domainLabel: string,
@@ -19,7 +19,7 @@ export function parseYamlText(
   } catch (cause) {
     throw new ValidationError(
       ValidationErrorCode.InvalidInput,
-      `Failed to parse ${domainLabel} YAML: ${cause instanceof Error ? cause.message : String(cause)}`,
+      `Failed to parse ${domainLabel}: ${cause instanceof Error ? cause.message : String(cause)}`,
       cause,
     );
   }

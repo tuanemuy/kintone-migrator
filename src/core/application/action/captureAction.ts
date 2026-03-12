@@ -4,7 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { ActionServiceArgs } from "../container/action";
-import { stringifyToYaml } from "../stringifyToYaml";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureActionOutput = CaptureOutput;
 
@@ -14,7 +14,7 @@ export async function captureAction({
   return captureFromConfig({
     fetchRemote: () => container.actionConfigurator.getActions(),
     serialize: ({ actions }) =>
-      stringifyToYaml(
+      stringifyConfig(
         container.configCodec,
         ActionConfigSerializer.serialize({ actions }),
       ),

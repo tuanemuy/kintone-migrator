@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { RecordPermissionContainer } from "@/core/application/container/recordPermission";
 import type { RecordRight } from "@/core/domain/recordPermission/entity";
 import type { RecordPermissionConfigurator } from "@/core/domain/recordPermission/ports/recordPermissionConfigurator";
@@ -8,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryRecordPermissionConfigurator
@@ -65,7 +65,7 @@ export type TestRecordPermissionContainer = RecordPermissionContainer & {
 
 export function createTestRecordPermissionContainer(): TestRecordPermissionContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     recordPermissionConfigurator: new InMemoryRecordPermissionConfigurator(),
     recordPermissionStorage: new InMemoryRecordPermissionStorage(),
     appDeployer: new InMemoryAppDeployer(),

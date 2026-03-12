@@ -4,7 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { ReportServiceArgs } from "../container/report";
-import { stringifyToYaml } from "../stringifyToYaml";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureReportOutput = CaptureOutput;
 
@@ -14,7 +14,7 @@ export async function captureReport({
   return captureFromConfig({
     fetchRemote: () => container.reportConfigurator.getReports(),
     serialize: ({ reports }) =>
-      stringifyToYaml(
+      stringifyConfig(
         container.configCodec,
         ReportConfigSerializer.serialize({ reports }),
       ),

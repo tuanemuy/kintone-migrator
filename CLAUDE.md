@@ -97,7 +97,7 @@ Hexagonal architecture with domain-driven design principles:
 - Defines error codes for each as needed (e.g., a `NETWORK_ERROR` code for `SystemError`).
 - Avoids using `try-catch`; throws these exceptions when a failure can be determined by the application logic.
 - Exception: `wrapBusinessRuleError()` uses `try-catch` to convert domain `BusinessRuleError` into application `ValidationError`, preserving the original error as `cause`.
-- `parseYamlText()` and `stringifyToYaml()` in the application layer use `try-catch` to convert YAML library errors into `ValidationError`/`SystemError`.
+- `parseConfigText()` and `stringifyConfig()` in the application layer use `try-catch` to convert codec errors into `ValidationError`/`SystemError`.
 
 ### Infrastructure Layer
 

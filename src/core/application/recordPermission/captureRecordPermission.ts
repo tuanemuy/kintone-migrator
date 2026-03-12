@@ -4,7 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { RecordPermissionServiceArgs } from "../container/recordPermission";
-import { stringifyToYaml } from "../stringifyToYaml";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureRecordPermissionOutput = CaptureOutput;
 
@@ -15,7 +15,7 @@ export async function captureRecordPermission({
     fetchRemote: () =>
       container.recordPermissionConfigurator.getRecordPermissions(),
     serialize: ({ rights }) =>
-      stringifyToYaml(
+      stringifyConfig(
         container.configCodec,
         RecordPermissionConfigSerializer.serialize({ rights }),
       ),

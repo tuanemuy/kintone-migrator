@@ -1,4 +1,3 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
 import type { AdminNotesConfig } from "@/core/domain/adminNotes/entity";
 import type { AdminNotesConfigurator } from "@/core/domain/adminNotes/ports/adminNotesConfigurator";
@@ -8,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryAdminNotesConfigurator
@@ -61,7 +61,7 @@ export type TestAdminNotesContainer = AdminNotesContainer & {
 
 export function createTestAdminNotesContainer(): TestAdminNotesContainer {
   return {
-    configCodec,
+    configCodec: testConfigCodec,
     adminNotesConfigurator: new InMemoryAdminNotesConfigurator(),
     adminNotesStorage: new InMemoryAdminNotesStorage(),
     appDeployer: new InMemoryAppDeployer(),
