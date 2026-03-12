@@ -1,4 +1,3 @@
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
 import {
@@ -440,86 +439,5 @@ describe("captureCustomization", () => {
     expect(
       container.fileWriter.writtenFiles.has("/project/myapp/desktop/js/app.js"),
     ).toBe(true);
-  });
-});
-
-describe("init → customize apply パス整合性", () => {
-  const getContainer = setupTestCustomizationContainer();
-
-  it("captureAllForApp 経由で生成されたパスが customize apply で正しく解決される", async () => {
-    const container = getContainer();
-    container.customizationConfigurator.setCustomization({
-      scope: "ALL",
-      desktop: {
-        js: [
-          {
-            type: "FILE",
-            file: {
-              fileKey: "fk-1",
-              name: "app.js",
-              contentType: "text/javascript",
-              size: "100",
-            },
-          },
-        ],
-        css: [
-          {
-            type: "FILE",
-            file: {
-              fileKey: "fk-2",
-              name: "style.css",
-              contentType: "text/css",
-              size: "50",
-            },
-          },
-        ],
-      },
-      mobile: {
-        js: [
-          {
-            type: "FILE",
-            file: {
-              fileKey: "fk-3",
-              name: "mobile.js",
-              contentType: "text/javascript",
-              size: "80",
-            },
-          },
-        ],
-        css: [],
-      },
-      revision: "1",
-    });
-
-    // captureAllForApp は basePath = dirname(resolve(paths.customize)),
-    // filePrefix = "" で captureCustomization を呼ぶ
-    const captureBasePath = "/project/myapp";
-    const result = await captureCustomization({
-      container,
-      input: { basePath: captureBasePath, filePrefix: "" },
-    });
-
-    const parsed = parseCustomizationConfigText(configCodec, result.configText);
-
-    // customize apply は basePath = join(dirname(resolve(customizeFilePath)), deriveFilePrefix(...))
-    // customizeFilePath = "myapp/customize.yaml" → deriveFilePrefix = "" → applyBasePath = captureBasePath
-    const applyBasePath = captureBasePath;
-
-    // YAML 内の全 FILE パスが、capture 時に書き込まれたファイルと一致することを検証
-    const allResources = [
-      ...parsed.desktop.js,
-      ...parsed.desktop.css,
-      ...parsed.mobile.js,
-      ...parsed.mobile.css,
-    ];
-
-    const fileResources = allResources.filter((r) => r.type === "FILE");
-    expect(fileResources.length).toBe(3);
-
-    for (const resource of fileResources) {
-      if (resource.type !== "FILE") continue;
-      const resolvedPath = resolve(applyBasePath, resource.path);
-      expect(container.fileWriter.writtenFiles.has(resolvedPath)).toBe(true);
-    }
   });
 });

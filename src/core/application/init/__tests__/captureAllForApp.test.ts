@@ -1,4 +1,7 @@
+import { dirname, join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { deriveFilePrefix } from "@/cli/commands/customize/capture";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import {
   createTestActionContainer,
   createTestAdminNotesContainer,
@@ -16,6 +19,7 @@ import {
   createTestViewContainer,
 } from "@/core/application/__tests__/helpers";
 import type { CaptureAllContainers } from "@/core/application/container/captureAll";
+import { parseCustomizationConfigText } from "@/core/application/customization/parseConfig";
 import {
   ForbiddenError,
   ForbiddenErrorCode,
@@ -219,6 +223,102 @@ describe("captureAllForApp", () => {
     // All domains in subsequent batches are skipped due to fatal error
     for (const result of results.slice(CAPTURE_BATCH_SIZE)) {
       expect(result.success).toBe(false);
+    }
+  });
+
+  it("init で capture したファイルパスが customize apply のパス解決と一致する", async () => {
+    const customization = createTestCustomizationContainer();
+    customization.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-2",
+              name: "style.css",
+              contentType: "text/css",
+              size: "50",
+            },
+          },
+        ],
+      },
+      mobile: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-3",
+              name: "mobile.js",
+              contentType: "text/javascript",
+              size: "80",
+            },
+          },
+        ],
+        css: [],
+      },
+      revision: "1",
+    });
+
+    // Simulate the init flow: customizeBasePath = dirname(resolve("myapp/customize.yaml"))
+    const customizeFilePath = "myapp/customize.yaml";
+    const customizeBasePath = dirname(resolve(customizeFilePath));
+
+    const containers: CaptureAllContainers = {
+      ...createMockContainers(),
+      customization,
+    };
+
+    const results = await captureAllForApp({
+      container: containers,
+      input: { customizeBasePath },
+    });
+
+    const customizeResult = results.find((r) => r.domain === "customize");
+    expect(customizeResult?.success).toBe(true);
+
+    // Read saved config from storage
+    const stored = await customization.customizationStorage.get();
+    expect(stored.exists).toBe(true);
+    if (!stored.exists) return;
+
+    const parsed = parseCustomizationConfigText(configCodec, stored.content);
+
+    // Compute apply basePath the same way customize apply does:
+    // basePath = join(dirname(resolve(customizeFilePath)), deriveFilePrefix(customizeFilePath))
+    const applyBasePath = join(
+      dirname(resolve(customizeFilePath)),
+      deriveFilePrefix(customizeFilePath),
+    );
+
+    // Verify that every FILE resource in the YAML resolves to a file
+    // that was actually written during capture
+    const allResources = [
+      ...parsed.desktop.js,
+      ...parsed.desktop.css,
+      ...parsed.mobile.js,
+      ...parsed.mobile.css,
+    ];
+    const fileResources = allResources.filter((r) => r.type === "FILE");
+    expect(fileResources).toHaveLength(3);
+
+    for (const resource of fileResources) {
+      if (resource.type !== "FILE") continue;
+      const resolvedPath = resolve(applyBasePath, resource.path);
+      expect(customization.fileWriter.writtenFiles.has(resolvedPath)).toBe(
+        true,
+      );
     }
   });
 });
