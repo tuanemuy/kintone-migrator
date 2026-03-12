@@ -28,9 +28,7 @@ apps:
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
       if (isValidationError(error)) {
-        expect(error.message).toContain(
-          "Failed to parse Project config:",
-        );
+        expect(error.message).toContain("Failed to parse Project config:");
       }
     }
   });

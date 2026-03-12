@@ -28,7 +28,7 @@ describe("ActionConfigSerializer", () => {
       const actions = result.actions as Record<string, Record<string, unknown>>;
       expect(actions).toHaveProperty("見積書を作成");
 
-      const action = actions["見積書を作成"];
+      const action = actions.見積書を作成;
       const destApp = action.destApp as Record<string, unknown>;
       expect(destApp.code).toBe("estimate-app");
 

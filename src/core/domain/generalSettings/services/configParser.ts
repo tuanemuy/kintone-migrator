@@ -162,6 +162,41 @@ function parseNumberPrecision(raw: unknown): NumberPrecisionConfig {
   };
 }
 
+function parseOptionalString(
+  obj: Record<string, unknown>,
+  fieldName: string,
+): string | undefined {
+  const value = obj[fieldName];
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string") {
+    throw new BusinessRuleError(
+      GeneralSettingsErrorCode.GsInvalidConfigStructure,
+      `${fieldName} must be a string`,
+    );
+  }
+  return value;
+}
+
+function parseFirstMonthOfFiscalYear(
+  obj: Record<string, unknown>,
+): number | undefined {
+  const value = obj.firstMonthOfFiscalYear;
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "number") {
+    throw new BusinessRuleError(
+      GeneralSettingsErrorCode.GsInvalidConfigStructure,
+      "firstMonthOfFiscalYear must be a number",
+    );
+  }
+  if (value < 1 || value > 12 || !Number.isInteger(value)) {
+    throw new BusinessRuleError(
+      GeneralSettingsErrorCode.GsInvalidConfigStructure,
+      `firstMonthOfFiscalYear must be an integer between 1 and 12, got: ${value}`,
+    );
+  }
+  return value;
+}
+
 export const GeneralSettingsConfigParser = {
   parse: (parsed: unknown): GeneralSettingsConfig => {
     const obj = validateParsedConfig(
@@ -170,47 +205,28 @@ export const GeneralSettingsConfigParser = {
       "General settings",
     );
 
-    let name: string | undefined;
-    if (obj.name !== undefined && obj.name !== null) {
-      if (typeof obj.name !== "string") {
-        throw new BusinessRuleError(
-          GeneralSettingsErrorCode.GsInvalidConfigStructure,
-          "name must be a string",
-        );
-      }
-      name = obj.name;
-    }
+    const name = parseOptionalString(obj, "name");
+    const description = parseOptionalString(obj, "description");
 
-    let description: string | undefined;
-    if (obj.description !== undefined && obj.description !== null) {
-      if (typeof obj.description !== "string") {
-        throw new BusinessRuleError(
-          GeneralSettingsErrorCode.GsInvalidConfigStructure,
-          "description must be a string",
-        );
-      }
-      description = obj.description;
-    }
+    const icon =
+      obj.icon !== undefined && obj.icon !== null
+        ? parseIcon(obj.icon)
+        : undefined;
 
-    let icon: IconConfig | undefined;
-    if (obj.icon !== undefined && obj.icon !== null) {
-      icon = parseIcon(obj.icon);
-    }
+    const theme =
+      obj.theme !== undefined && obj.theme !== null
+        ? parseEnum<ThemeType>(
+            obj.theme,
+            VALID_THEMES,
+            GeneralSettingsErrorCode.GsInvalidTheme,
+            `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(obj.theme)}`,
+          )
+        : undefined;
 
-    let theme: ThemeType | undefined;
-    if (obj.theme !== undefined && obj.theme !== null) {
-      theme = parseEnum<ThemeType>(
-        obj.theme,
-        VALID_THEMES,
-        GeneralSettingsErrorCode.GsInvalidTheme,
-        `theme must be WHITE, RED, GREEN, BLUE, YELLOW, BLACK, CLIPBOARD, BINDER, PENCIL, or CLIPS, got: ${String(obj.theme)}`,
-      );
-    }
-
-    let titleField: TitleFieldConfig | undefined;
-    if (obj.titleField !== undefined && obj.titleField !== null) {
-      titleField = parseTitleField(obj.titleField);
-    }
+    const titleField =
+      obj.titleField !== undefined && obj.titleField !== null
+        ? parseTitleField(obj.titleField)
+        : undefined;
 
     const enableThumbnails = parseOptionalBoolean(obj, "enableThumbnails");
     const enableBulkDeletion = parseOptionalBoolean(obj, "enableBulkDeletion");
@@ -224,34 +240,12 @@ export const GeneralSettingsConfigParser = {
       "enableInlineRecordEditing",
     );
 
-    let numberPrecision: NumberPrecisionConfig | undefined;
-    if (obj.numberPrecision !== undefined && obj.numberPrecision !== null) {
-      numberPrecision = parseNumberPrecision(obj.numberPrecision);
-    }
+    const numberPrecision =
+      obj.numberPrecision !== undefined && obj.numberPrecision !== null
+        ? parseNumberPrecision(obj.numberPrecision)
+        : undefined;
 
-    let firstMonthOfFiscalYear: number | undefined;
-    if (
-      obj.firstMonthOfFiscalYear !== undefined &&
-      obj.firstMonthOfFiscalYear !== null
-    ) {
-      if (typeof obj.firstMonthOfFiscalYear !== "number") {
-        throw new BusinessRuleError(
-          GeneralSettingsErrorCode.GsInvalidConfigStructure,
-          "firstMonthOfFiscalYear must be a number",
-        );
-      }
-      if (
-        obj.firstMonthOfFiscalYear < 1 ||
-        obj.firstMonthOfFiscalYear > 12 ||
-        !Number.isInteger(obj.firstMonthOfFiscalYear)
-      ) {
-        throw new BusinessRuleError(
-          GeneralSettingsErrorCode.GsInvalidConfigStructure,
-          `firstMonthOfFiscalYear must be an integer between 1 and 12, got: ${obj.firstMonthOfFiscalYear}`,
-        );
-      }
-      firstMonthOfFiscalYear = obj.firstMonthOfFiscalYear;
-    }
+    const firstMonthOfFiscalYear = parseFirstMonthOfFiscalYear(obj);
 
     const config: GeneralSettingsConfig = {
       ...(name !== undefined ? { name } : {}),

@@ -13,6 +13,47 @@ import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { assertSchemaValid } from "./assertSchemaValid";
 import { parseSchemaText } from "./parseSchema";
 
+function processModifiedEntry(
+  after: FieldDefinition,
+  before: FieldDefinition | undefined,
+  fieldsToUpdate: FieldDefinition[],
+  innerFieldsToDelete: FieldCode[],
+): void {
+  if (
+    after.type === "SUBTABLE" &&
+    before !== undefined &&
+    before.type === "SUBTABLE"
+  ) {
+    const { newInnerFields, existingInnerFields, deletedInnerFieldCodes } =
+      splitSubtableInnerFields(after, before);
+
+    if (newInnerFields.size > 0) {
+      throw new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        `kintone REST API does not support adding fields to an existing subtable. Use the schema override command instead. Subtable: ${after.code}`,
+      );
+    }
+
+    if (existingInnerFields.size > 0) {
+      fieldsToUpdate.push({
+        ...after,
+        properties: { fields: existingInnerFields },
+      });
+    }
+
+    for (const code of deletedInnerFieldCodes) {
+      innerFieldsToDelete.push(code);
+    }
+  } else if (before !== undefined && before.type !== after.type) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      `Field type change detected for "${after.code}" (${before.type} → ${after.type}). Use the schema override command instead.`,
+    );
+  } else {
+    fieldsToUpdate.push(after);
+  }
+}
+
 export async function executeMigration({
   container,
 }: FormSchemaServiceArgs): Promise<void> {
@@ -64,42 +105,12 @@ export async function executeMigration({
   for (const entry of modified) {
     if (entry.after === undefined) continue;
     if (subtableInnerCodes.has(entry.fieldCode)) continue;
-    const after = entry.after;
-    const before = entry.before;
-
-    if (
-      after.type === "SUBTABLE" &&
-      before !== undefined &&
-      before.type === "SUBTABLE"
-    ) {
-      const { newInnerFields, existingInnerFields, deletedInnerFieldCodes } =
-        splitSubtableInnerFields(after, before);
-
-      if (newInnerFields.size > 0) {
-        throw new ValidationError(
-          ValidationErrorCode.InvalidInput,
-          `kintone REST API does not support adding fields to an existing subtable. Use the schema override command instead. Subtable: ${after.code}`,
-        );
-      }
-
-      if (existingInnerFields.size > 0) {
-        fieldsToUpdate.push({
-          ...after,
-          properties: { fields: existingInnerFields },
-        });
-      }
-
-      for (const code of deletedInnerFieldCodes) {
-        innerFieldsToDelete.push(code);
-      }
-    } else if (before !== undefined && before.type !== after.type) {
-      throw new ValidationError(
-        ValidationErrorCode.InvalidInput,
-        `Field type change detected for "${after.code}" (${before.type} → ${after.type}). Use the schema override command instead.`,
-      );
-    } else {
-      fieldsToUpdate.push(after);
-    }
+    processModifiedEntry(
+      entry.after,
+      entry.before,
+      fieldsToUpdate,
+      innerFieldsToDelete,
+    );
   }
 
   // Operation order: add → update → delete.

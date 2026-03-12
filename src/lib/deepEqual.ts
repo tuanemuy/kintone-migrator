@@ -103,6 +103,45 @@ function isSetEqual(
   return true;
 }
 
+function compareDateOrRegExp(objA: object, objB: object): boolean | undefined {
+  if (objA instanceof Date && objB instanceof Date) {
+    const ta = objA.getTime();
+    const tb = objB.getTime();
+    return ta === tb || (Number.isNaN(ta) && Number.isNaN(tb));
+  }
+  if (objA instanceof Date || objB instanceof Date) return false;
+  if (objA instanceof RegExp && objB instanceof RegExp)
+    return String(objA) === String(objB);
+  if (objA instanceof RegExp || objB instanceof RegExp) return false;
+  return undefined;
+}
+
+function compareCollectionOrRecord(
+  objA: object,
+  objB: object,
+  stack: SeenStack,
+): boolean {
+  if (Array.isArray(objA)) {
+    return isArrayEqual(objA, objB, stack);
+  }
+  if (objA instanceof Map) {
+    return isMapEqual(objA, objB, stack);
+  }
+  if (objB instanceof Map) {
+    return false;
+  }
+  if (objA instanceof Set) {
+    return isSetEqual(objA, objB, stack);
+  }
+  if (objB instanceof Set) {
+    return false;
+  }
+  if (isRecord(objA)) {
+    return isRecordEqual(objA, objB, stack);
+  }
+  return false;
+}
+
 function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
   if (a === b) return true;
   if (
@@ -121,15 +160,8 @@ function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
 
   // Date and RegExp are compared by value and don't recurse,
   // so they don't need circular reference tracking.
-  if (objA instanceof Date && objB instanceof Date) {
-    const ta = objA.getTime();
-    const tb = objB.getTime();
-    return ta === tb || (Number.isNaN(ta) && Number.isNaN(tb));
-  }
-  if (objA instanceof Date || objB instanceof Date) return false;
-  if (objA instanceof RegExp && objB instanceof RegExp)
-    return String(objA) === String(objB);
-  if (objA instanceof RegExp || objB instanceof RegExp) return false;
+  const dateRegExpResult = compareDateOrRegExp(objA, objB);
+  if (dateRegExpResult !== undefined) return dateRegExpResult;
 
   // Circular reference detection (bisimilarity / observational equivalence):
   // If the exact pair (objA, objB) is already on the comparison stack, we
@@ -148,25 +180,7 @@ function deepEqualInner(a: unknown, b: unknown, stack: SeenStack): boolean {
   stack.push([objA, objB]);
 
   try {
-    if (Array.isArray(objA)) {
-      return isArrayEqual(objA, objB, stack);
-    }
-    if (objA instanceof Map) {
-      return isMapEqual(objA, objB, stack);
-    }
-    if (objB instanceof Map) {
-      return false;
-    }
-    if (objA instanceof Set) {
-      return isSetEqual(objA, objB, stack);
-    }
-    if (objB instanceof Set) {
-      return false;
-    }
-    if (isRecord(objA)) {
-      return isRecordEqual(objA, objB, stack);
-    }
-    return false;
+    return compareCollectionOrRecord(objA, objB, stack);
   } finally {
     stack.pop();
   }

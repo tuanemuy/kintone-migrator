@@ -21,8 +21,8 @@ describe("ViewConfigSerializer", () => {
       const views = result.views as Record<string, Record<string, unknown>>;
 
       expect(views).toHaveProperty("一覧");
-      expect(views["一覧"].type).toBe("LIST");
-      expect(views["一覧"].fields).toEqual(["field1", "field2"]);
+      expect(views.一覧.type).toBe("LIST");
+      expect(views.一覧.fields).toEqual(["field1", "field2"]);
     });
   });
 
@@ -43,9 +43,9 @@ describe("ViewConfigSerializer", () => {
       const result = ViewConfigSerializer.serialize(config);
       const views = result.views as Record<string, Record<string, unknown>>;
 
-      expect(views["カレンダー"].type).toBe("CALENDAR");
-      expect(views["カレンダー"].date).toBe("date_field");
-      expect(views["カレンダー"].title).toBe("title_field");
+      expect(views.カレンダー.type).toBe("CALENDAR");
+      expect(views.カレンダー.date).toBe("date_field");
+      expect(views.カレンダー.title).toBe("title_field");
     });
   });
 
@@ -147,11 +147,11 @@ describe("ViewConfigSerializer", () => {
       const serialized = ViewConfigSerializer.serialize(original);
       const parsed = ViewConfigParser.parse(serialized);
 
-      expect(parsed.views["一覧"].type).toBe("LIST");
-      expect(parsed.views["一覧"].fields).toEqual(["field1", "field2"]);
-      expect(parsed.views["一覧"].filterCond).toBe('status = "active"');
-      expect(parsed.views["カレンダー"].type).toBe("CALENDAR");
-      expect(parsed.views["カレンダー"].date).toBe("date_field");
+      expect(parsed.views.一覧.type).toBe("LIST");
+      expect(parsed.views.一覧.fields).toEqual(["field1", "field2"]);
+      expect(parsed.views.一覧.filterCond).toBe('status = "active"');
+      expect(parsed.views.カレンダー.type).toBe("CALENDAR");
+      expect(parsed.views.カレンダー.date).toBe("date_field");
     });
 
     it("should round-trip CUSTOM view with html", () => {

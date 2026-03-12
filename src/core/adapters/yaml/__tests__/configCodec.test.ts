@@ -31,9 +31,7 @@ describe("configCodec", () => {
     });
 
     it("should throw on multi-document YAML", () => {
-      expect(() =>
-        configCodec.parse("key: first\n---\nkey: second"),
-      ).toThrow();
+      expect(() => configCodec.parse("key: first\n---\nkey: second")).toThrow();
     });
   });
 

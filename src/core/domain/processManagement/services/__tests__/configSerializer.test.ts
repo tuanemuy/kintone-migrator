@@ -42,12 +42,12 @@ describe("ProcessManagementConfigSerializer", () => {
     expect(states).toHaveProperty("未処理");
     expect(states).toHaveProperty("処理中");
 
-    const state1 = states["未処理"];
+    const state1 = states.未処理;
     const assignee1 = state1.assignee as Record<string, unknown>;
     const entities1 = assignee1.entities as Record<string, unknown>[];
     expect(entities1[0].code).toBe("user1");
 
-    const state2 = states["処理中"];
+    const state2 = states.処理中;
     const assignee2 = state2.assignee as Record<string, unknown>;
     const entities2 = assignee2.entities as Record<string, unknown>[];
     expect(entities2[0].code).toBe("group1");

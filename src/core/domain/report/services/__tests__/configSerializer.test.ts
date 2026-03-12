@@ -35,8 +35,8 @@ describe("ReportConfigSerializer", () => {
       const reports = result.reports as Record<string, Record<string, unknown>>;
 
       expect(reports).toHaveProperty("月次タスク集計");
-      expect(reports["月次タスク集計"].chartType).toBe("COLUMN");
-      const groups0 = reports["月次タスク集計"].groups as Record<
+      expect(reports.月次タスク集計.chartType).toBe("COLUMN");
+      const groups0 = reports.月次タスク集計.groups as Record<
         string,
         unknown
       >[];
@@ -44,7 +44,7 @@ describe("ReportConfigSerializer", () => {
       expect(groups0[0].per).toBe("MONTH");
 
       expect(reports).toHaveProperty("担当者別タスク数");
-      expect(reports["担当者別タスク数"].chartType).toBe("PIE");
+      expect(reports.担当者別タスク数.chartType).toBe("PIE");
     });
 
     it("should serialize config with periodicReport", () => {
@@ -73,7 +73,7 @@ describe("ReportConfigSerializer", () => {
 
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
-      const report = reports["定期レポート"];
+      const report = reports.定期レポート;
 
       expect(report).toHaveProperty("periodicReport");
       const periodicReport = report.periodicReport as Record<string, unknown>;
@@ -103,7 +103,7 @@ describe("ReportConfigSerializer", () => {
 
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
-      const report = reports["テスト"];
+      const report = reports.テスト;
 
       expect(report).not.toHaveProperty("name");
     });
@@ -126,7 +126,7 @@ describe("ReportConfigSerializer", () => {
 
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
-      const aggregations = reports["テスト"].aggregations as Record<
+      const aggregations = reports.テスト.aggregations as Record<
         string,
         unknown
       >[];
@@ -153,7 +153,7 @@ describe("ReportConfigSerializer", () => {
 
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
-      const groups = reports["テスト"].groups as Record<string, unknown>[];
+      const groups = reports.テスト.groups as Record<string, unknown>[];
 
       expect(groups[0].per).toBe("MONTH");
     });
@@ -215,12 +215,12 @@ describe("ReportConfigSerializer", () => {
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
 
-      const yearReport = reports["年次レポート"];
+      const yearReport = reports.年次レポート;
       const yearPeriod = (yearReport.periodicReport as Record<string, unknown>)
         .period as Record<string, unknown>;
       expect(yearPeriod.month).toBe(4);
 
-      const quarterReport = reports["四半期レポート"];
+      const quarterReport = reports.四半期レポート;
       const quarterPeriod = (
         quarterReport.periodicReport as Record<string, unknown>
       ).period as Record<string, unknown>;
@@ -254,7 +254,7 @@ describe("ReportConfigSerializer", () => {
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
       const period = (
-        reports["月末レポート"].periodicReport as Record<string, unknown>
+        reports.月末レポート.periodicReport as Record<string, unknown>
       ).period as Record<string, unknown>;
 
       expect(period.dayOfMonth).toBe("END_OF_MONTH");
@@ -277,7 +277,7 @@ describe("ReportConfigSerializer", () => {
 
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
-      const report = reports["テスト"];
+      const report = reports.テスト;
 
       expect(report.chartType).toBe("PIE");
       expect(report).not.toHaveProperty("chartMode");
@@ -310,7 +310,7 @@ describe("ReportConfigSerializer", () => {
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
       const period = (
-        reports["週次レポート"].periodicReport as Record<string, unknown>
+        reports.週次レポート.periodicReport as Record<string, unknown>
       ).period as Record<string, unknown>;
 
       expect(period.dayOfWeek).toBe("MONDAY");
@@ -342,7 +342,7 @@ describe("ReportConfigSerializer", () => {
       const result = ReportConfigSerializer.serialize(config);
       const reports = result.reports as Record<string, Record<string, unknown>>;
       const period = (
-        reports["時間レポート"].periodicReport as Record<string, unknown>
+        reports.時間レポート.periodicReport as Record<string, unknown>
       ).period as Record<string, unknown>;
 
       expect(period.minute).toBe(30);
