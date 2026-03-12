@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneAppPermissionConfigurator } from "@/core/adapters/kintone/appPermissionConfigurator";
 import { createLocalFileAppPermissionStorage } from "@/core/adapters/local/appPermissionStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { AppPermissionContainer } from "@/core/application/container/appPermission";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import { createKintoneClient } from "./kintoneClient";
@@ -21,6 +22,7 @@ export function createAppPermissionCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     appPermissionConfigurator: new KintoneAppPermissionConfigurator(
       client,
       config.appId,

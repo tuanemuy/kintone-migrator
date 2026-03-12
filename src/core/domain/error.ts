@@ -13,7 +13,6 @@ import { ProjectConfigErrorCode } from "./projectConfig/errorCode";
 import { RecordPermissionErrorCode } from "./recordPermission/errorCode";
 import { ReportErrorCode } from "./report/errorCode";
 import { SeedDataErrorCode } from "./seedData/errorCode";
-import { DomainServiceErrorCode } from "./services/errorCode";
 import { ViewErrorCode } from "./view/errorCode";
 
 export const BusinessRuleErrorCode = {
@@ -31,7 +30,6 @@ export const BusinessRuleErrorCode = {
   ...RecordPermissionErrorCode,
   ...ReportErrorCode,
   ...SeedDataErrorCode,
-  ...DomainServiceErrorCode,
   ...ViewErrorCode,
 };
 

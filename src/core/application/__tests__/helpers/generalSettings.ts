@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryGeneralSettingsConfigurator
@@ -57,6 +58,7 @@ export type TestGeneralSettingsContainer = GeneralSettingsContainer & {
 
 export function createTestGeneralSettingsContainer(): TestGeneralSettingsContainer {
   return {
+    configCodec: testConfigCodec,
     generalSettingsConfigurator: new InMemoryGeneralSettingsConfigurator(),
     generalSettingsStorage: new InMemoryGeneralSettingsStorage(),
     appDeployer: new InMemoryAppDeployer(),

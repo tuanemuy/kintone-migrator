@@ -35,16 +35,28 @@ describe("FieldPermissionConfigSerializer", () => {
         ],
       };
 
-      const yaml = FieldPermissionConfigSerializer.serialize(config);
+      const result = FieldPermissionConfigSerializer.serialize(config);
+      const rights = result.rights as Record<string, unknown>[];
 
-      expect(yaml).toContain("field_code_1");
-      expect(yaml).toContain("WRITE");
-      expect(yaml).toContain("user1");
-      expect(yaml).toContain("group1");
-      expect(yaml).toContain("includeSubs: true");
-      expect(yaml).toContain("field_code_2");
-      expect(yaml).toContain("NONE");
-      expect(yaml).toContain("org1");
+      expect(rights).toHaveLength(2);
+      expect(rights[0].code).toBe("field_code_1");
+
+      const entities0 = rights[0].entities as Record<string, unknown>[];
+      expect(entities0[0].accessibility).toBe("WRITE");
+      expect((entities0[0].entity as Record<string, unknown>).code).toBe(
+        "user1",
+      );
+      expect((entities0[1].entity as Record<string, unknown>).code).toBe(
+        "group1",
+      );
+      expect(entities0[1].includeSubs).toBe(true);
+
+      expect(rights[1].code).toBe("field_code_2");
+      const entities1 = rights[1].entities as Record<string, unknown>[];
+      expect(entities1[0].accessibility).toBe("NONE");
+      expect((entities1[0].entity as Record<string, unknown>).code).toBe(
+        "org1",
+      );
     });
 
     it("should serialize config with includeSubs false", () => {
@@ -63,9 +75,11 @@ describe("FieldPermissionConfigSerializer", () => {
         ],
       };
 
-      const yaml = FieldPermissionConfigSerializer.serialize(config);
+      const result = FieldPermissionConfigSerializer.serialize(config);
+      const rights = result.rights as Record<string, unknown>[];
+      const entities = rights[0].entities as Record<string, unknown>[];
 
-      expect(yaml).toContain("includeSubs: false");
+      expect(entities[0].includeSubs).toBe(false);
     });
 
     it("should serialize config with empty rights", () => {
@@ -73,38 +87,45 @@ describe("FieldPermissionConfigSerializer", () => {
         rights: [],
       };
 
-      const yaml = FieldPermissionConfigSerializer.serialize(config);
+      const result = FieldPermissionConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("rights: []");
+      expect(result.rights).toEqual([]);
     });
 
     it("should roundtrip parse and serialize", () => {
-      const originalYaml = `
-rights:
-  - code: field_code_1
-    entities:
-      - accessibility: WRITE
-        entity:
-          type: USER
-          code: user1
-      - accessibility: READ
-        entity:
-          type: GROUP
-          code: group1
-        includeSubs: true
-  - code: field_code_2
-    entities:
-      - accessibility: NONE
-        entity:
-          type: ORGANIZATION
-          code: org1
-        includeSubs: true
-      - accessibility: READ
-        entity:
-          type: FIELD_ENTITY
-          code: creator_field
-`;
-      const parsed = FieldPermissionConfigParser.parse(originalYaml);
+      const input = {
+        rights: [
+          {
+            code: "field_code_1",
+            entities: [
+              {
+                accessibility: "WRITE",
+                entity: { type: "USER", code: "user1" },
+              },
+              {
+                accessibility: "READ",
+                entity: { type: "GROUP", code: "group1" },
+                includeSubs: true,
+              },
+            ],
+          },
+          {
+            code: "field_code_2",
+            entities: [
+              {
+                accessibility: "NONE",
+                entity: { type: "ORGANIZATION", code: "org1" },
+                includeSubs: true,
+              },
+              {
+                accessibility: "READ",
+                entity: { type: "FIELD_ENTITY", code: "creator_field" },
+              },
+            ],
+          },
+        ],
+      };
+      const parsed = FieldPermissionConfigParser.parse(input);
       const serialized = FieldPermissionConfigSerializer.serialize(parsed);
       const reparsed = FieldPermissionConfigParser.parse(serialized);
 

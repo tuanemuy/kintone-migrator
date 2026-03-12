@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryPluginConfigurator
@@ -55,6 +56,7 @@ export type TestPluginContainer = PluginContainer & {
 
 export function createTestPluginContainer(): TestPluginContainer {
   return {
+    configCodec: testConfigCodec,
     pluginConfigurator: new InMemoryPluginConfigurator(),
     pluginStorage: new InMemoryPluginStorage(),
     appDeployer: new InMemoryAppDeployer(),

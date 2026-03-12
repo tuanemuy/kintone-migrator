@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneActionConfigurator } from "@/core/adapters/kintone/actionConfigurator";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { createLocalFileActionStorage } from "@/core/adapters/local/actionStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { ActionContainer } from "@/core/application/container/action";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import { createKintoneClient } from "./kintoneClient";
@@ -21,6 +22,7 @@ export function createActionCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     actionConfigurator: new KintoneActionConfigurator(client, config.appId),
     actionStorage: createLocalFileActionStorage(config.actionFilePath),
     appDeployer: new KintoneAppDeployer(client, config.appId),

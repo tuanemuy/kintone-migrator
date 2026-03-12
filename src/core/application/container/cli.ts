@@ -9,6 +9,7 @@ import { createLocalFileCustomizationStorage } from "@/core/adapters/local/custo
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
 import { createLocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { createLocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { SeedContainer } from "@/core/application/container/seed";
@@ -56,6 +57,7 @@ export function createCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     formConfigurator: new KintoneFormConfigurator(client, config.appId),
     schemaStorage: createLocalFileSchemaStorage(config.schemaFilePath),
     appDeployer: new KintoneAppDeployer(client, config.appId),
@@ -68,6 +70,7 @@ export function createSeedCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     recordManager: new KintoneRecordManager(client, config.appId),
     seedStorage: createLocalFileSeedStorage(config.seedFilePath),
   };
@@ -88,6 +91,7 @@ export function createCustomizationCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     customizationConfigurator: new KintoneCustomizationConfigurator(
       client,
       config.appId,

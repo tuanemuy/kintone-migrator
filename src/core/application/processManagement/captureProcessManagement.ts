@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { ProcessManagementServiceArgs } from "../container/processManagement";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureProcessManagementOutput = CaptureOutput;
 
@@ -14,7 +15,10 @@ export async function captureProcessManagement({
     fetchRemote: () =>
       container.processManagementConfigurator.getProcessManagement(),
     serialize: ({ config }) =>
-      ProcessManagementConfigSerializer.serialize(config),
+      stringifyConfig(
+        container.configCodec,
+        ProcessManagementConfigSerializer.serialize(config),
+      ),
     getStorage: () => container.processManagementStorage.get(),
   });
 }

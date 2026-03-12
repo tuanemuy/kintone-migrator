@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { FieldPermissionServiceArgs } from "../container/fieldPermission";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureFieldPermissionOutput = CaptureOutput;
 
@@ -14,7 +15,10 @@ export async function captureFieldPermission({
     fetchRemote: () =>
       container.fieldPermissionConfigurator.getFieldPermissions(),
     serialize: ({ rights }) =>
-      FieldPermissionConfigSerializer.serialize({ rights }),
+      stringifyConfig(
+        container.configCodec,
+        FieldPermissionConfigSerializer.serialize({ rights }),
+      ),
     getStorage: () => container.fieldPermissionStorage.get(),
   });
 }

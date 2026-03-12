@@ -1,80 +1,20 @@
-import * as p from "@clack/prompts";
-import { define } from "gunshi";
 import { applyAppPermission } from "@/core/application/appPermission/applyAppPermission";
-import type { AppPermissionContainer } from "@/core/application/container/appPermission";
+import { createAppPermissionCliContainer } from "@/core/application/container/appPermissionCli";
 import {
-  type AppPermissionCliContainerConfig,
-  createAppPermissionCliContainer,
-} from "@/core/application/container/appPermissionCli";
-import {
-  type AppAclCliValues,
   appAclArgs,
   resolveAppAclAppContainerConfig,
   resolveAppAclContainerConfig,
 } from "../../appAclConfig";
-import { confirmArgs, type WithConfirm } from "../../config";
-import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, type Deployable } from "../../output";
-import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
+import { createApplyCommand } from "../applyCommandFactory";
 
-async function runAppAcl(
-  config: AppPermissionCliContainerConfig,
-): Promise<AppPermissionContainer> {
-  const container = createAppPermissionCliContainer(config);
-
-  const s = p.spinner();
-  s.start("Applying app access permissions...");
-  await applyAppPermission({ container });
-  s.stop("App access permissions applied.");
-
-  p.log.success("App access permissions applied successfully.");
-
-  return container;
-}
-
-export default define({
-  name: "apply",
+export default createApplyCommand({
   description: "Apply app access permissions from YAML to kintone app",
-  args: { ...appAclArgs, ...confirmArgs },
-  run: async (ctx) => {
-    try {
-      const values = ctx.values as WithConfirm<AppAclCliValues>;
-      const skipConfirm = values.yes === true;
-
-      await routeMultiApp(values, {
-        singleLegacy: async () => {
-          const config = resolveAppAclContainerConfig(values);
-          const container = await runAppAcl(config);
-          await confirmAndDeploy([container], skipConfirm);
-        },
-        singleApp: async (app, projectConfig) => {
-          const config = resolveAppAclAppContainerConfig(
-            app,
-            projectConfig,
-            values,
-          );
-          const container = await runAppAcl(config);
-          await confirmAndDeploy([container], skipConfirm);
-        },
-        multiApp: async (plan, projectConfig) => {
-          const containers: Deployable[] = [];
-          await runMultiAppWithHeaders(plan, async (app) => {
-            const config = resolveAppAclAppContainerConfig(
-              app,
-              projectConfig,
-              values,
-            );
-            const container = await runAppAcl(config);
-            containers.push({
-              appDeployer: container.appDeployer,
-              appName: app.name,
-            });
-          });
-          await confirmAndDeploy(containers, skipConfirm);
-        },
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  },
+  args: appAclArgs,
+  spinnerMessage: "Applying app access permissions...",
+  spinnerStopMessage: "App access permissions applied.",
+  successMessage: "App access permissions applied successfully.",
+  createContainer: createAppPermissionCliContainer,
+  applyFn: applyAppPermission,
+  resolveContainerConfig: resolveAppAclContainerConfig,
+  resolveAppContainerConfig: resolveAppAclAppContainerConfig,
 });

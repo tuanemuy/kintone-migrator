@@ -4,10 +4,12 @@ import type { FileDownloader } from "@/core/domain/customization/ports/fileDownl
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ServiceArgs } from "../types";
 
 /** Ports needed by customize apply */
 export type CustomizationApplyContainer = {
+  configCodec: ConfigCodec;
   customizationConfigurator: CustomizationConfigurator;
   customizationStorage: CustomizationStorage;
   fileUploader: FileUploader;
@@ -16,6 +18,7 @@ export type CustomizationApplyContainer = {
 
 /** Ports needed by customize capture / save */
 export type CustomizationCaptureContainer = {
+  configCodec: ConfigCodec;
   customizationConfigurator: CustomizationConfigurator;
   customizationStorage: CustomizationStorage;
   fileDownloader: FileDownloader;
@@ -24,6 +27,7 @@ export type CustomizationCaptureContainer = {
 
 /** Ports needed by customize diff (subset of apply) */
 export type CustomizationDiffContainer = {
+  configCodec: ConfigCodec;
   customizationConfigurator: CustomizationConfigurator;
   customizationStorage: CustomizationStorage;
 };

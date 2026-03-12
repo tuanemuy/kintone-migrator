@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { GeneralSettingsConfigParser } from "@/core/domain/generalSettings/services/configParser";
 import { isValidationError } from "../../error";
 import { parseGeneralSettingsConfigText } from "../parseConfig";
@@ -10,7 +11,7 @@ name: My App
 theme: BLUE
 enableThumbnails: true
 `;
-    const config = parseGeneralSettingsConfigText(rawText);
+    const config = parseGeneralSettingsConfigText(configCodec, rawText);
     expect(config.name).toBe("My App");
     expect(config.theme).toBe("BLUE");
     expect(config.enableThumbnails).toBe(true);
@@ -18,7 +19,7 @@ enableThumbnails: true
 
   it("should convert BusinessRuleError to ValidationError", () => {
     try {
-      parseGeneralSettingsConfigText("");
+      parseGeneralSettingsConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -27,7 +28,7 @@ enableThumbnails: true
 
   it("should throw ValidationError for invalid YAML", () => {
     try {
-      parseGeneralSettingsConfigText("{ invalid yaml:");
+      parseGeneralSettingsConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -36,7 +37,7 @@ enableThumbnails: true
 
   it("should throw ValidationError for invalid structure", () => {
     try {
-      parseGeneralSettingsConfigText("theme: INVALID_THEME");
+      parseGeneralSettingsConfigText(configCodec, "theme: INVALID_THEME");
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -47,7 +48,9 @@ enableThumbnails: true
     vi.spyOn(GeneralSettingsConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parseGeneralSettingsConfigText("dummy")).toThrow(TypeError);
+    expect(() => parseGeneralSettingsConfigText(configCodec, "dummy")).toThrow(
+      TypeError,
+    );
     vi.restoreAllMocks();
   });
 });

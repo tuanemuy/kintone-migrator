@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/configValidator";
 import {
   isRecord,
   parseEnum,
@@ -213,22 +213,17 @@ function parseAction(raw: unknown, index: number): ProcessAction {
 }
 
 export const ProcessManagementConfigParser = {
-  parse: (rawText: string): ProcessManagementConfig => {
-    const parsed = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: ProcessManagementErrorCode.PmEmptyConfigText,
-        invalidConfigYaml: ProcessManagementErrorCode.PmInvalidConfigYaml,
-        invalidConfigStructure:
-          ProcessManagementErrorCode.PmInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): ProcessManagementConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      ProcessManagementErrorCode.PmInvalidConfigStructure,
       "Process management",
     );
 
     const enable =
-      parsed.enable !== undefined && parsed.enable !== null
+      obj.enable !== undefined && obj.enable !== null
         ? parseStrictBoolean(
-            parsed.enable,
+            obj.enable,
             "enable",
             "Config",
             ProcessManagementErrorCode.PmInvalidBooleanField,
@@ -236,9 +231,9 @@ export const ProcessManagementConfigParser = {
         : false;
 
     if (
-      parsed.states !== undefined &&
-      parsed.states !== null &&
-      !isRecord(parsed.states)
+      obj.states !== undefined &&
+      obj.states !== null &&
+      !isRecord(obj.states)
     ) {
       throw new BusinessRuleError(
         ProcessManagementErrorCode.PmInvalidConfigStructure,
@@ -246,23 +241,21 @@ export const ProcessManagementConfigParser = {
       );
     }
 
-    const rawStates = isRecord(parsed.states) ? parsed.states : {};
+    const rawStates = isRecord(obj.states) ? obj.states : {};
     const states: Record<string, ProcessState> = {};
 
     for (const [name, value] of Object.entries(rawStates)) {
       states[name] = parseState(value, name);
     }
 
-    if (!Array.isArray(parsed.actions) && parsed.actions !== undefined) {
+    if (!Array.isArray(obj.actions) && obj.actions !== undefined) {
       throw new BusinessRuleError(
         ProcessManagementErrorCode.PmInvalidConfigStructure,
         'Config "actions" must be an array',
       );
     }
 
-    const rawActions: unknown[] = Array.isArray(parsed.actions)
-      ? parsed.actions
-      : [];
+    const rawActions: unknown[] = Array.isArray(obj.actions) ? obj.actions : [];
     const actions = rawActions.map((item: unknown, i: number) =>
       parseAction(item, i),
     );

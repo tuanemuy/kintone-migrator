@@ -1,8 +1,9 @@
-import { stringify as stringifyYaml } from "yaml";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { AppName } from "@/core/domain/projectConfig/valueObject";
 import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
 import { deduplicateName } from "@/lib/deduplicateName";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type GenerateProjectConfigInput = Readonly<{
   apps: readonly SpaceApp[];
@@ -22,6 +23,7 @@ function deduplicateAppName(baseName: string, usedNames: Set<string>): AppName {
 
 export function generateProjectConfig(
   input: GenerateProjectConfigInput,
+  codec: ConfigCodec,
 ): string {
   const apps: Record<string, { appId: string; files: Record<string, string> }> =
     {};
@@ -46,5 +48,5 @@ export function generateProjectConfig(
     apps,
   };
 
-  return stringifyYaml(config, { lineWidth: 0 });
+  return stringifyConfig(codec, config);
 }

@@ -1,9 +1,11 @@
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ProcessManagementConfigurator } from "@/core/domain/processManagement/ports/processManagementConfigurator";
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
 import type { ServiceArgs } from "../types";
 
 export type ProcessManagementDiffContainer = {
+  configCodec: ConfigCodec;
   processManagementConfigurator: ProcessManagementConfigurator;
   processManagementStorage: ProcessManagementStorage;
 };

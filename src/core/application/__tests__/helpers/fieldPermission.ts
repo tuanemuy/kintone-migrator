@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryFieldPermissionConfigurator
@@ -64,6 +65,7 @@ export type TestFieldPermissionContainer = FieldPermissionContainer & {
 
 export function createTestFieldPermissionContainer(): TestFieldPermissionContainer {
   return {
+    configCodec: testConfigCodec,
     fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
     fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
     appDeployer: new InMemoryAppDeployer(),

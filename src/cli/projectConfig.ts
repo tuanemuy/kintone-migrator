@@ -1,6 +1,7 @@
 import { access, readFile } from "node:fs/promises";
 import * as p from "@clack/prompts";
 import pc from "picocolors";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import {
   SystemError,
@@ -91,7 +92,7 @@ export async function resolveTarget(
   // Mode 2/3: --app or --all → requires config file
   if (values.app || values.all) {
     const content = await readConfigFile(configPath);
-    const config = loadProjectConfig({ content });
+    const config = loadProjectConfig({ content }, configCodec);
     const plan = resolveExecutionPlan({
       config,
       appName: values.app,
@@ -107,7 +108,7 @@ export async function resolveTarget(
   // Mode 4: No flags, config file exists → show available apps
   if (await configFileExists(configPath)) {
     const content = await readConfigFile(configPath);
-    const config = loadProjectConfig({ content });
+    const config = loadProjectConfig({ content }, configCodec);
     return { mode: "list-apps", config };
   }
 

@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { ActionServiceArgs } from "../container/action";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureActionOutput = CaptureOutput;
 
@@ -12,7 +13,11 @@ export async function captureAction({
 }: ActionServiceArgs): Promise<CaptureActionOutput> {
   return captureFromConfig({
     fetchRemote: () => container.actionConfigurator.getActions(),
-    serialize: ({ actions }) => ActionConfigSerializer.serialize({ actions }),
+    serialize: ({ actions }) =>
+      stringifyConfig(
+        container.configCodec,
+        ActionConfigSerializer.serialize({ actions }),
+      ),
     getStorage: () => container.actionStorage.get(),
   });
 }

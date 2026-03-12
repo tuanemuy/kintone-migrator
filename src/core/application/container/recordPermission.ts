@@ -1,9 +1,11 @@
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { RecordPermissionConfigurator } from "@/core/domain/recordPermission/ports/recordPermissionConfigurator";
 import type { RecordPermissionStorage } from "@/core/domain/recordPermission/ports/recordPermissionStorage";
 import type { ServiceArgs } from "../types";
 
 export type RecordPermissionDiffContainer = {
+  configCodec: ConfigCodec;
   recordPermissionConfigurator: RecordPermissionConfigurator;
   recordPermissionStorage: RecordPermissionStorage;
 };

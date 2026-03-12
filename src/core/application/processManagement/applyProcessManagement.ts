@@ -17,7 +17,10 @@ export async function applyProcessManagement({
       "Process management config file not found",
     );
   }
-  const config = parseProcessManagementConfigText(result.content);
+  const config = parseProcessManagementConfigText(
+    container.configCodec,
+    result.content,
+  );
 
   const current =
     await container.processManagementConfigurator.getProcessManagement();

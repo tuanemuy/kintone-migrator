@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryProcessManagementConfigurator
@@ -61,6 +62,7 @@ export type TestProcessManagementContainer = ProcessManagementContainer & {
 
 export function createTestProcessManagementContainer(): TestProcessManagementContainer {
   return {
+    configCodec: testConfigCodec,
     processManagementConfigurator: new InMemoryProcessManagementConfigurator(),
     processManagementStorage: new InMemoryProcessManagementStorage(),
     appDeployer: new InMemoryAppDeployer(),

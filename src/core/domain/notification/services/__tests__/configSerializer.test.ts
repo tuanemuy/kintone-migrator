@@ -46,48 +46,60 @@ const fullConfig: NotificationConfig = {
 
 describe("NotificationConfigSerializer.serialize", () => {
   it("3種類全部含むconfigをシリアライズできる", () => {
-    const yaml = NotificationConfigSerializer.serialize(fullConfig);
+    const result = NotificationConfigSerializer.serialize(fullConfig);
 
-    expect(yaml).toContain("general:");
-    expect(yaml).toContain("perRecord:");
-    expect(yaml).toContain("reminder:");
-    expect(yaml).toContain("notifyToCommenter: true");
-    expect(yaml).toContain("code: admin");
-    expect(yaml).toContain("code: managers");
-    expect(yaml).toContain("timezone: Asia/Tokyo");
+    expect(result).toHaveProperty("general");
+    expect(result).toHaveProperty("perRecord");
+    expect(result).toHaveProperty("reminder");
+
+    const general = result.general as Record<string, unknown>;
+    expect(general.notifyToCommenter).toBe(true);
+
+    const notifications = general.notifications as Record<string, unknown>[];
+    expect((notifications[0].entity as Record<string, unknown>).code).toBe(
+      "admin",
+    );
+
+    const perRecord = result.perRecord as Record<string, unknown>[];
+    expect(
+      (perRecord[0].targets as Record<string, unknown>[])[0],
+    ).toHaveProperty("entity");
+
+    const reminder = result.reminder as Record<string, unknown>;
+    expect(reminder.timezone).toBe("Asia/Tokyo");
   });
 
   it("generalのみをシリアライズできる", () => {
     const config: NotificationConfig = {
       general: fullConfig.general,
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
+    const result = NotificationConfigSerializer.serialize(config);
 
-    expect(yaml).toContain("general:");
-    expect(yaml).not.toContain("perRecord:");
-    expect(yaml).not.toContain("reminder:");
+    expect(result).toHaveProperty("general");
+    expect(result).not.toHaveProperty("perRecord");
+    expect(result).not.toHaveProperty("reminder");
   });
 
   it("perRecordのみをシリアライズできる", () => {
     const config: NotificationConfig = {
       perRecord: fullConfig.perRecord,
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
+    const result = NotificationConfigSerializer.serialize(config);
 
-    expect(yaml).not.toContain("general:");
-    expect(yaml).toContain("perRecord:");
-    expect(yaml).not.toContain("reminder:");
+    expect(result).not.toHaveProperty("general");
+    expect(result).toHaveProperty("perRecord");
+    expect(result).not.toHaveProperty("reminder");
   });
 
   it("reminderのみをシリアライズできる", () => {
     const config: NotificationConfig = {
       reminder: fullConfig.reminder,
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
+    const result = NotificationConfigSerializer.serialize(config);
 
-    expect(yaml).not.toContain("general:");
-    expect(yaml).not.toContain("perRecord:");
-    expect(yaml).toContain("reminder:");
+    expect(result).not.toHaveProperty("general");
+    expect(result).not.toHaveProperty("perRecord");
+    expect(result).toHaveProperty("reminder");
   });
 
   it("includeSubs falseをシリアライズできる", () => {
@@ -107,14 +119,17 @@ describe("NotificationConfigSerializer.serialize", () => {
         ],
       },
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
-    expect(yaml).toContain("includeSubs: false");
+    const result = NotificationConfigSerializer.serialize(config);
+    const general = result.general as Record<string, unknown>;
+    const notifications = general.notifications as Record<string, unknown>[];
+
+    expect(notifications[0].includeSubs).toBe(false);
   });
 
   it("空のconfigをシリアライズできる", () => {
     const config: NotificationConfig = {};
-    const yaml = NotificationConfigSerializer.serialize(config);
-    expect(yaml.trim()).toBe("{}");
+    const result = NotificationConfigSerializer.serialize(config);
+    expect(Object.keys(result)).toHaveLength(0);
   });
 
   it("perRecordのtargetにincludeSubsを含めてシリアライズできる", () => {
@@ -132,8 +147,11 @@ describe("NotificationConfigSerializer.serialize", () => {
         },
       ],
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
-    expect(yaml).toContain("includeSubs: true");
+    const result = NotificationConfigSerializer.serialize(config);
+    const perRecord = result.perRecord as Record<string, unknown>[];
+    const targets = perRecord[0].targets as Record<string, unknown>[];
+
+    expect(targets[0].includeSubs).toBe(true);
   });
 
   it("reminderのtimeフィールドをシリアライズできる", () => {
@@ -152,10 +170,13 @@ describe("NotificationConfigSerializer.serialize", () => {
         ],
       },
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
-    expect(yaml).toContain("time:");
-    expect(yaml).toContain("09:00");
-    expect(yaml).not.toContain("hoursLater");
+    const result = NotificationConfigSerializer.serialize(config);
+    const reminder = result.reminder as Record<string, unknown>;
+    const notifications = reminder.notifications as Record<string, unknown>[];
+
+    expect(notifications[0]).toHaveProperty("time");
+    expect(notifications[0].time).toBe("09:00");
+    expect(notifications[0]).not.toHaveProperty("hoursLater");
   });
 
   it("reminderのtargetにincludeSubsを含めてシリアライズできる", () => {
@@ -179,15 +200,19 @@ describe("NotificationConfigSerializer.serialize", () => {
         ],
       },
     };
-    const yaml = NotificationConfigSerializer.serialize(config);
-    expect(yaml).toContain("includeSubs: false");
+    const result = NotificationConfigSerializer.serialize(config);
+    const reminder = result.reminder as Record<string, unknown>;
+    const notifications = reminder.notifications as Record<string, unknown>[];
+    const targets = notifications[0].targets as Record<string, unknown>[];
+
+    expect(targets[0].includeSubs).toBe(false);
   });
 
   it("ラウンドトリップテスト: parse→serialize→parse→比較", () => {
-    const yaml1 = NotificationConfigSerializer.serialize(fullConfig);
-    const parsed1 = NotificationConfigParser.parse(yaml1);
-    const yaml2 = NotificationConfigSerializer.serialize(parsed1);
-    const parsed2 = NotificationConfigParser.parse(yaml2);
+    const result1 = NotificationConfigSerializer.serialize(fullConfig);
+    const parsed1 = NotificationConfigParser.parse(result1);
+    const result2 = NotificationConfigSerializer.serialize(parsed1);
+    const parsed2 = NotificationConfigParser.parse(result2);
 
     expect(parsed2).toEqual(parsed1);
   });

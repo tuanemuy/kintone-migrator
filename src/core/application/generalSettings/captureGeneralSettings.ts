@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { GeneralSettingsServiceArgs } from "../container/generalSettings";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureGeneralSettingsOutput = CaptureOutput;
 
@@ -14,7 +15,10 @@ export async function captureGeneralSettings({
     fetchRemote: () =>
       container.generalSettingsConfigurator.getGeneralSettings(),
     serialize: ({ config }) =>
-      GeneralSettingsConfigSerializer.serialize(config),
+      stringifyConfig(
+        container.configCodec,
+        GeneralSettingsConfigSerializer.serialize(config),
+      ),
     getStorage: () => container.generalSettingsStorage.get(),
   });
 }

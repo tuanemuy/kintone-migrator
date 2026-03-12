@@ -13,7 +13,8 @@ export async function detectRecordPermissionDiff({
     getStorage: () => container.recordPermissionStorage.get(),
     fetchRemote: () =>
       container.recordPermissionConfigurator.getRecordPermissions(),
-    parseConfig: parseRecordPermissionConfigText,
+    parseConfig: (content) =>
+      parseRecordPermissionConfigText(container.configCodec, content),
     detect: (local, remote) =>
       RecordPermissionDiffDetector.detect(local, { rights: remote.rights }),
     notFoundMessage: "Record permission config file not found",

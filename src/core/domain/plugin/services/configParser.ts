@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/configValidator";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { PluginConfig, PluginsConfig } from "../entity";
 import { PluginErrorCode } from "../errorCode";
@@ -39,14 +39,10 @@ function parsePluginEntry(raw: unknown, index: number): PluginConfig {
 }
 
 export const PluginConfigParser = {
-  parse: (rawText: string): PluginsConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: PluginErrorCode.PlEmptyConfigText,
-        invalidConfigYaml: PluginErrorCode.PlInvalidConfigYaml,
-        invalidConfigStructure: PluginErrorCode.PlInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): PluginsConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      PluginErrorCode.PlInvalidConfigStructure,
       "Plugin",
     );
 

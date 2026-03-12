@@ -19,6 +19,15 @@
     "includes": ["**"],
     "rules": {
       "recommended": true,
+      "performance": {
+        "noAccumulatingSpread": "error"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": { "maxAllowedComplexity": 25 }
+        }
+      },
       "style": {
         "noParameterAssign": "error",
         "useAsConstAssertion": "error",

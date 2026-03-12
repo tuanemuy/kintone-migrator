@@ -1,78 +1,20 @@
-import * as p from "@clack/prompts";
-import { define } from "gunshi";
 import { applyAction } from "@/core/application/action/applyAction";
-import type { ActionContainer } from "@/core/application/container/action";
-import type { ActionCliContainerConfig } from "@/core/application/container/actionCli";
 import { createActionCliContainer } from "@/core/application/container/actionCli";
 import {
-  type ActionCliValues,
   actionArgs,
   resolveActionAppContainerConfig,
   resolveActionContainerConfig,
 } from "../../actionConfig";
-import { confirmArgs, type WithConfirm } from "../../config";
-import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, type Deployable } from "../../output";
-import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
+import { createApplyCommand } from "../applyCommandFactory";
 
-async function runAction(
-  config: ActionCliContainerConfig,
-): Promise<ActionContainer> {
-  const container = createActionCliContainer(config);
-
-  const s = p.spinner();
-  s.start("Applying action settings...");
-  await applyAction({ container });
-  s.stop("Action settings applied.");
-
-  p.log.success("Action settings applied successfully.");
-
-  return container;
-}
-
-export default define({
-  name: "apply",
+export default createApplyCommand({
   description: "Apply action settings from YAML to kintone app",
-  args: { ...actionArgs, ...confirmArgs },
-  run: async (ctx) => {
-    try {
-      const values = ctx.values as WithConfirm<ActionCliValues>;
-      const skipConfirm = values.yes === true;
-
-      await routeMultiApp(values, {
-        singleLegacy: async () => {
-          const config = resolveActionContainerConfig(values);
-          const container = await runAction(config);
-          await confirmAndDeploy([container], skipConfirm);
-        },
-        singleApp: async (app, projectConfig) => {
-          const config = resolveActionAppContainerConfig(
-            app,
-            projectConfig,
-            values,
-          );
-          const container = await runAction(config);
-          await confirmAndDeploy([container], skipConfirm);
-        },
-        multiApp: async (plan, projectConfig) => {
-          const containers: Deployable[] = [];
-          await runMultiAppWithHeaders(plan, async (app) => {
-            const config = resolveActionAppContainerConfig(
-              app,
-              projectConfig,
-              values,
-            );
-            const container = await runAction(config);
-            containers.push({
-              appDeployer: container.appDeployer,
-              appName: app.name,
-            });
-          });
-          await confirmAndDeploy(containers, skipConfirm);
-        },
-      });
-    } catch (error) {
-      handleCliError(error);
-    }
-  },
+  args: actionArgs,
+  spinnerMessage: "Applying action settings...",
+  spinnerStopMessage: "Action settings applied.",
+  successMessage: "Action settings applied successfully.",
+  createContainer: createActionCliContainer,
+  applyFn: applyAction,
+  resolveContainerConfig: resolveActionContainerConfig,
+  resolveAppContainerConfig: resolveActionAppContainerConfig,
 });

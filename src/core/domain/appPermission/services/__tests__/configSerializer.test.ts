@@ -33,15 +33,23 @@ describe("AppPermissionConfigSerializer", () => {
         ],
       };
 
-      const yaml = AppPermissionConfigSerializer.serialize(config);
+      const result = AppPermissionConfigSerializer.serialize(config);
+      const rights = result.rights as Record<string, unknown>[];
 
-      expect(yaml).toContain("Administrators");
-      expect(yaml).toContain("GROUP");
-      expect(yaml).toContain("user1");
-      expect(yaml).toContain("USER");
-      expect(yaml).toContain("appEditable: true");
-      expect(yaml).toContain("appEditable: false");
-      expect(yaml).toContain("recordViewable: true");
+      expect(rights).toHaveLength(2);
+
+      const first = rights[0];
+      const firstEntity = first.entity as Record<string, unknown>;
+      expect(firstEntity.code).toBe("Administrators");
+      expect(firstEntity.type).toBe("GROUP");
+      expect(first.appEditable).toBe(true);
+      expect(first.recordViewable).toBe(true);
+
+      const second = rights[1];
+      const secondEntity = second.entity as Record<string, unknown>;
+      expect(secondEntity.code).toBe("user1");
+      expect(secondEntity.type).toBe("USER");
+      expect(second.appEditable).toBe(false);
     });
 
     it("should serialize config with CREATOR entity type", () => {
@@ -61,11 +69,13 @@ describe("AppPermissionConfigSerializer", () => {
         ],
       };
 
-      const yaml = AppPermissionConfigSerializer.serialize(config);
+      const result = AppPermissionConfigSerializer.serialize(config);
+      const rights = result.rights as Record<string, unknown>[];
+      const entity = rights[0].entity as Record<string, unknown>;
 
-      expect(yaml).toContain("CREATOR");
-      expect(yaml).toContain("recordViewable: true");
-      expect(yaml).toContain("appEditable: false");
+      expect(entity.type).toBe("CREATOR");
+      expect(rights[0].recordViewable).toBe(true);
+      expect(rights[0].appEditable).toBe(false);
     });
 
     it("should serialize config with includeSubs true", () => {
@@ -85,11 +95,13 @@ describe("AppPermissionConfigSerializer", () => {
         ],
       };
 
-      const yaml = AppPermissionConfigSerializer.serialize(config);
+      const result = AppPermissionConfigSerializer.serialize(config);
+      const rights = result.rights as Record<string, unknown>[];
 
-      expect(yaml).toContain("includeSubs: true");
-      expect(yaml).toContain("ORGANIZATION");
-      expect(yaml).toContain("dev-team");
+      expect(rights[0].includeSubs).toBe(true);
+      const entity = rights[0].entity as Record<string, unknown>;
+      expect(entity.type).toBe("ORGANIZATION");
+      expect(entity.code).toBe("dev-team");
     });
 
     it("should serialize config with empty rights", () => {
@@ -97,48 +109,50 @@ describe("AppPermissionConfigSerializer", () => {
         rights: [],
       };
 
-      const yaml = AppPermissionConfigSerializer.serialize(config);
+      const result = AppPermissionConfigSerializer.serialize(config);
 
-      expect(yaml).toContain("rights: []");
+      expect(result.rights).toEqual([]);
     });
 
     it("should roundtrip parse and serialize", () => {
-      const originalYaml = `
-rights:
-  - entity:
-      type: GROUP
-      code: Administrators
-    includeSubs: false
-    appEditable: true
-    recordViewable: true
-    recordAddable: true
-    recordEditable: true
-    recordDeletable: true
-    recordImportable: true
-    recordExportable: true
-  - entity:
-      type: CREATOR
-    includeSubs: false
-    appEditable: false
-    recordViewable: true
-    recordAddable: false
-    recordEditable: false
-    recordDeletable: false
-    recordImportable: false
-    recordExportable: false
-  - entity:
-      type: ORGANIZATION
-      code: dev-team
-    includeSubs: true
-    appEditable: false
-    recordViewable: true
-    recordAddable: true
-    recordEditable: true
-    recordDeletable: false
-    recordImportable: false
-    recordExportable: false
-`;
-      const parsed = AppPermissionConfigParser.parse(originalYaml);
+      const input = {
+        rights: [
+          {
+            entity: { type: "GROUP", code: "Administrators" },
+            includeSubs: false,
+            appEditable: true,
+            recordViewable: true,
+            recordAddable: true,
+            recordEditable: true,
+            recordDeletable: true,
+            recordImportable: true,
+            recordExportable: true,
+          },
+          {
+            entity: { type: "CREATOR" },
+            includeSubs: false,
+            appEditable: false,
+            recordViewable: true,
+            recordAddable: false,
+            recordEditable: false,
+            recordDeletable: false,
+            recordImportable: false,
+            recordExportable: false,
+          },
+          {
+            entity: { type: "ORGANIZATION", code: "dev-team" },
+            includeSubs: true,
+            appEditable: false,
+            recordViewable: true,
+            recordAddable: true,
+            recordEditable: true,
+            recordDeletable: false,
+            recordImportable: false,
+            recordExportable: false,
+          },
+        ],
+      };
+      const parsed = AppPermissionConfigParser.parse(input);
       const serialized = AppPermissionConfigSerializer.serialize(parsed);
       const reparsed = AppPermissionConfigParser.parse(serialized);
 

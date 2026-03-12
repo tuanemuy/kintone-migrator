@@ -1,6 +1,7 @@
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import { SchemaSerializer } from "@/core/domain/formSchema/services/schemaSerializer";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
+import { stringifyConfig } from "../stringifyConfig";
 import type { CaptureSchemaOutput } from "./dto";
 
 export async function captureSchema({
@@ -11,7 +12,10 @@ export async function captureSchema({
     container.formConfigurator.getLayout(),
   ]);
   const enrichedLayout = enrichLayoutWithFields(currentLayout, currentFields);
-  const schemaText = SchemaSerializer.serialize(enrichedLayout, currentFields);
+  const schemaText = stringifyConfig(
+    container.configCodec,
+    SchemaSerializer.serialize(enrichedLayout, currentFields),
+  );
   const existingResult = await container.schemaStorage.get();
 
   return {

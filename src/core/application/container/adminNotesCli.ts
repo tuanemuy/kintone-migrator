@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAdminNotesConfigurator } from "@/core/adapters/kintone/adminNotesConfigurator";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { createLocalFileAdminNotesStorage } from "@/core/adapters/local/adminNotesStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import { createKintoneClient } from "./kintoneClient";
@@ -21,6 +22,7 @@ export function createAdminNotesCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     adminNotesConfigurator: new KintoneAdminNotesConfigurator(
       client,
       config.appId,

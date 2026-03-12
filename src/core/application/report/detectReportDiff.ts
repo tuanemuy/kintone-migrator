@@ -12,7 +12,8 @@ export async function detectReportDiff({
   return detectDiffFromConfig({
     getStorage: () => container.reportStorage.get(),
     fetchRemote: () => container.reportConfigurator.getReports(),
-    parseConfig: parseReportConfigText,
+    parseConfig: (content) =>
+      parseReportConfigText(container.configCodec, content),
     detect: (local, remote) =>
       ReportDiffDetector.detect(local, { reports: remote.reports }),
     notFoundMessage: "Report config file not found",

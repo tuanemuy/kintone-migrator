@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryReportConfigurator
@@ -57,6 +58,7 @@ export type TestReportContainer = ReportContainer & {
 
 export function createTestReportContainer(): TestReportContainer {
   return {
+    configCodec: testConfigCodec,
     reportConfigurator: new InMemoryReportConfigurator(),
     reportStorage: new InMemoryReportStorage(),
     appDeployer: new InMemoryAppDeployer(),

@@ -7,7 +7,8 @@ export async function applyGeneralSettings({
 }: GeneralSettingsServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.generalSettingsStorage.get(),
-    parseConfig: parseGeneralSettingsConfigText,
+    parseConfig: (content) =>
+      parseGeneralSettingsConfigText(container.configCodec, content),
     fetchRemote: () =>
       container.generalSettingsConfigurator.getGeneralSettings(),
     update: async (config, current) => {

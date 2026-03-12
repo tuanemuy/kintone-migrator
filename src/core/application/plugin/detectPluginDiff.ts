@@ -12,7 +12,8 @@ export async function detectPluginDiff({
   return detectDiffFromConfig({
     getStorage: () => container.pluginStorage.get(),
     fetchRemote: () => container.pluginConfigurator.getPlugins(),
-    parseConfig: parsePluginConfigText,
+    parseConfig: (content) =>
+      parsePluginConfigText(container.configCodec, content),
     detect: (local, remote) =>
       PluginDiffDetector.detect(local, { plugins: remote.plugins }),
     notFoundMessage: "Plugin config file not found",

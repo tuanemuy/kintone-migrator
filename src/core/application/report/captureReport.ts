@@ -4,6 +4,7 @@ import {
   captureFromConfig,
 } from "../captureFromConfigBase";
 import type { ReportServiceArgs } from "../container/report";
+import { stringifyConfig } from "../stringifyConfig";
 
 export type CaptureReportOutput = CaptureOutput;
 
@@ -12,7 +13,11 @@ export async function captureReport({
 }: ReportServiceArgs): Promise<CaptureReportOutput> {
   return captureFromConfig({
     fetchRemote: () => container.reportConfigurator.getReports(),
-    serialize: ({ reports }) => ReportConfigSerializer.serialize({ reports }),
+    serialize: ({ reports }) =>
+      stringifyConfig(
+        container.configCodec,
+        ReportConfigSerializer.serialize({ reports }),
+      ),
     getStorage: () => container.reportStorage.get(),
   });
 }

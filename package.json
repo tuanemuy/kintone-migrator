@@ -60,6 +60,11 @@
     "valibot": "^1.2.0",
     "yaml": "^2.8.2"
   },
+  "pnpm": {
+    "overrides": {
+      "rollup": ">=4.59.0"
+    }
+  },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
     "@semantic-release/commit-analyzer": "^13.0.1",

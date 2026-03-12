@@ -15,6 +15,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryCustomizationConfigurator
@@ -142,6 +143,7 @@ export type TestCustomizationContainer = CustomizationContainer & {
 
 export function createTestCustomizationContainer(): TestCustomizationContainer {
   return {
+    configCodec: testConfigCodec,
     customizationConfigurator: new InMemoryCustomizationConfigurator(),
     customizationStorage: new InMemoryCustomizationStorage(),
     fileUploader: new InMemoryFileUploader(),

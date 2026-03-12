@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { FieldPermissionConfigParser } from "@/core/domain/fieldPermission/services/configParser";
 import { isValidationError } from "../../error";
 import { parseFieldPermissionConfigText } from "../parseConfig";
@@ -14,14 +15,14 @@ rights:
           type: USER
           code: user1
 `;
-    const config = parseFieldPermissionConfigText(rawText);
+    const config = parseFieldPermissionConfigText(configCodec, rawText);
     expect(config.rights).toHaveLength(1);
     expect(config.rights[0].code).toBe("name");
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {
     try {
-      parseFieldPermissionConfigText("");
+      parseFieldPermissionConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -30,7 +31,7 @@ rights:
 
   it("不正なYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseFieldPermissionConfigText("{ invalid yaml:");
+      parseFieldPermissionConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -39,7 +40,7 @@ rights:
 
   it("不正な構造のYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseFieldPermissionConfigText("rights: not_array");
+      parseFieldPermissionConfigText(configCodec, "rights: not_array");
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -50,7 +51,9 @@ rights:
     vi.spyOn(FieldPermissionConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parseFieldPermissionConfigText("dummy")).toThrow(TypeError);
+    expect(() => parseFieldPermissionConfigText(configCodec, "dummy")).toThrow(
+      TypeError,
+    );
     vi.restoreAllMocks();
   });
 });

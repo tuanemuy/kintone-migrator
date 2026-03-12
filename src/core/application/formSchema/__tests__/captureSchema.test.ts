@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { setupTestFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import { SystemError } from "@/core/application/error";
 import {
@@ -6,6 +7,7 @@ import {
   type FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
 import { captureSchema } from "../captureSchema";
+import { parseSchemaText } from "../parseSchema";
 
 const getContainer = setupTestFormSchemaContainer();
 
@@ -138,9 +140,6 @@ describe("captureSchema", () => {
   });
 
   it("キャプチャしたスキーマは再パース可能（ラウンドトリップ）", async () => {
-    const { SchemaParser } = await import(
-      "@/core/domain/formSchema/services/schemaParser"
-    );
     const container = getContainer();
     const name = textField("name", "名前");
     container.formConfigurator.setFields(
@@ -151,7 +150,7 @@ describe("captureSchema", () => {
     ]);
 
     const result = await captureSchema({ container });
-    const parsed = SchemaParser.parse(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
 
     expect(parsed.fields.size).toBe(1);
     expect(parsed.fields.has(FieldCode.create("name"))).toBe(true);
@@ -262,9 +261,6 @@ describe("captureSchema", () => {
   });
 
   it("SUBTABLE を含むフォームをキャプチャしてラウンドトリップできる", async () => {
-    const { SchemaParser } = await import(
-      "@/core/domain/formSchema/services/schemaParser"
-    );
     const container = getContainer();
     const innerField = textField("item_name", "品名");
     const subField: FieldDefinition = {
@@ -295,7 +291,7 @@ describe("captureSchema", () => {
     expect(result.schemaText).toContain("SUBTABLE");
     expect(result.schemaText).toContain("item_name");
 
-    const parsed = SchemaParser.parse(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
     expect(parsed.fields.has(FieldCode.create("items"))).toBe(true);
     const items = parsed.fields.get(FieldCode.create("items"));
     expect(items?.type).toBe("SUBTABLE");
@@ -307,9 +303,6 @@ describe("captureSchema", () => {
   });
 
   it("REFERENCE_TABLE を含むフォームをキャプチャしてラウンドトリップできる", async () => {
-    const { SchemaParser } = await import(
-      "@/core/domain/formSchema/services/schemaParser"
-    );
     const container = getContainer();
     const refField: FieldDefinition = {
       code: FieldCode.create("ref"),
@@ -338,7 +331,7 @@ describe("captureSchema", () => {
 
     expect(result.schemaText).toContain("REFERENCE_TABLE");
 
-    const parsed = SchemaParser.parse(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
     expect(parsed.fields.has(FieldCode.create("ref"))).toBe(true);
     const ref = parsed.fields.get(FieldCode.create("ref"));
     expect(ref?.type).toBe("REFERENCE_TABLE");
@@ -349,9 +342,6 @@ describe("captureSchema", () => {
   });
 
   it("複数のフィールドタイプが混在するフォームをキャプチャしてラウンドトリップできる", async () => {
-    const { SchemaParser } = await import(
-      "@/core/domain/formSchema/services/schemaParser"
-    );
     const container = getContainer();
     const name = textField("name", "名前");
     const price = numberField("price", "金額");
@@ -392,7 +382,7 @@ describe("captureSchema", () => {
 
     const result = await captureSchema({ container });
 
-    const parsed = SchemaParser.parse(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
     expect(parsed.fields.size).toBe(4);
     expect(parsed.fields.get(FieldCode.create("name"))?.type).toBe(
       "SINGLE_LINE_TEXT",

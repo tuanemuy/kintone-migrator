@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryAdminNotesConfigurator
@@ -60,6 +61,7 @@ export type TestAdminNotesContainer = AdminNotesContainer & {
 
 export function createTestAdminNotesContainer(): TestAdminNotesContainer {
   return {
+    configCodec: testConfigCodec,
     adminNotesConfigurator: new InMemoryAdminNotesConfigurator(),
     adminNotesStorage: new InMemoryAdminNotesStorage(),
     appDeployer: new InMemoryAppDeployer(),

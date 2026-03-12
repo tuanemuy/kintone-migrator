@@ -4,6 +4,17 @@ import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ViewConfig } from "../entity";
 import type { ViewDiff, ViewDiffEntry } from "../valueObject";
 
+function checkOptionalStringChange(
+  changes: string[],
+  field: string,
+  localVal: string | undefined,
+  remoteVal: string | undefined,
+): void {
+  if ((localVal ?? "") !== (remoteVal ?? "")) {
+    changes.push(`${field} changed`);
+  }
+}
+
 function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
   const changes: string[] = [];
 
@@ -12,33 +23,27 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
   }
 
   // kintone API returns "" for non-builtin views, so undefined and "" are treated as equivalent
-  if ((local.builtinType ?? "") !== (remote.builtinType ?? "")) {
-    changes.push("builtinType changed");
-  }
+  checkOptionalStringChange(
+    changes,
+    "builtinType",
+    local.builtinType,
+    remote.builtinType,
+  );
 
   if (local.index !== remote.index) {
     changes.push(`index: ${remote.index} -> ${local.index}`);
   }
 
-  if ((local.filterCond ?? "") !== (remote.filterCond ?? "")) {
-    changes.push("filterCond changed");
-  }
-
-  if ((local.sort ?? "") !== (remote.sort ?? "")) {
-    changes.push("sort changed");
-  }
-
-  if ((local.date ?? "") !== (remote.date ?? "")) {
-    changes.push("date changed");
-  }
-
-  if ((local.title ?? "") !== (remote.title ?? "")) {
-    changes.push("title changed");
-  }
-
-  if ((local.html ?? "") !== (remote.html ?? "")) {
-    changes.push("html changed");
-  }
+  checkOptionalStringChange(
+    changes,
+    "filterCond",
+    local.filterCond,
+    remote.filterCond,
+  );
+  checkOptionalStringChange(changes, "sort", local.sort, remote.sort);
+  checkOptionalStringChange(changes, "date", local.date, remote.date);
+  checkOptionalStringChange(changes, "title", local.title, remote.title);
+  checkOptionalStringChange(changes, "html", local.html, remote.html);
 
   if ((local.pager ?? false) !== (remote.pager ?? false)) {
     changes.push(
@@ -46,9 +51,7 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
     );
   }
 
-  if ((local.device ?? "") !== (remote.device ?? "")) {
-    changes.push("device changed");
-  }
+  checkOptionalStringChange(changes, "device", local.device, remote.device);
 
   if (!deepEqual(local.fields ?? [], remote.fields ?? [])) {
     changes.push("fields changed");

@@ -12,7 +12,8 @@ export async function detectAdminNotesDiff({
   return detectDiffFromConfig({
     getStorage: () => container.adminNotesStorage.get(),
     fetchRemote: () => container.adminNotesConfigurator.getAdminNotes(),
-    parseConfig: parseAdminNotesConfigText,
+    parseConfig: (content) =>
+      parseAdminNotesConfigText(container.configCodec, content),
     detect: (local, remote) =>
       AdminNotesDiffDetector.detect(local, remote.config),
     notFoundMessage: "Admin notes config file not found",

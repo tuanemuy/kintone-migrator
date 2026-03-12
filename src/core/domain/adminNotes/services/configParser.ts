@@ -1,28 +1,24 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/configValidator";
 import type { AdminNotesConfig } from "../entity";
 import { AdminNotesErrorCode } from "../errorCode";
 
 export const AdminNotesConfigParser = {
-  parse: (rawText: string): AdminNotesConfig => {
-    const parsed = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: AdminNotesErrorCode.AnEmptyConfigText,
-        invalidConfigYaml: AdminNotesErrorCode.AnInvalidConfigYaml,
-        invalidConfigStructure: AdminNotesErrorCode.AnInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): AdminNotesConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      AdminNotesErrorCode.AnInvalidConfigStructure,
       "Admin notes",
     );
 
-    if (typeof parsed.content !== "string") {
+    if (typeof obj.content !== "string") {
       throw new BusinessRuleError(
         AdminNotesErrorCode.AnInvalidConfigStructure,
         'Config must have a "content" string property',
       );
     }
 
-    if (typeof parsed.includeInTemplateAndDuplicates !== "boolean") {
+    if (typeof obj.includeInTemplateAndDuplicates !== "boolean") {
       throw new BusinessRuleError(
         AdminNotesErrorCode.AnInvalidConfigStructure,
         'Config must have an "includeInTemplateAndDuplicates" boolean property',
@@ -30,8 +26,8 @@ export const AdminNotesConfigParser = {
     }
 
     return {
-      content: parsed.content,
-      includeInTemplateAndDuplicates: parsed.includeInTemplateAndDuplicates,
+      content: obj.content,
+      includeInTemplateAndDuplicates: obj.includeInTemplateAndDuplicates,
     };
   },
 };

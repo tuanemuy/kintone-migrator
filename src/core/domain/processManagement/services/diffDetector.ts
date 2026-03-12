@@ -66,23 +66,11 @@ function compareActions(
   return diffs;
 }
 
-function compareConfigs(
+function compareStates(
   local: ProcessManagementConfig,
   remote: ProcessManagementConfig,
-): ProcessManagementDiffEntry[] {
-  const entries: ProcessManagementDiffEntry[] = [];
-
-  // Compare enable flag
-  if (local.enable !== remote.enable) {
-    entries.push({
-      type: "modified",
-      category: "enable",
-      name: "enable",
-      details: `${String(remote.enable)} -> ${String(local.enable)}`,
-    });
-  }
-
-  // Compare states
+  entries: ProcessManagementDiffEntry[],
+): void {
   const localStateNames = new Set(Object.keys(local.states));
   const remoteStateNames = new Set(Object.keys(remote.states));
 
@@ -137,8 +125,13 @@ function compareConfigs(
       });
     }
   }
+}
 
-  // Compare actions (keyed by name)
+function compareActionEntries(
+  local: ProcessManagementConfig,
+  remote: ProcessManagementConfig,
+  entries: ProcessManagementDiffEntry[],
+): void {
   const localActionMap = new Map(local.actions.map((a) => [a.name, a]));
   const remoteActionMap = new Map(remote.actions.map((a) => [a.name, a]));
 
@@ -174,6 +167,25 @@ function compareConfigs(
       });
     }
   }
+}
+
+function compareConfigs(
+  local: ProcessManagementConfig,
+  remote: ProcessManagementConfig,
+): ProcessManagementDiffEntry[] {
+  const entries: ProcessManagementDiffEntry[] = [];
+
+  if (local.enable !== remote.enable) {
+    entries.push({
+      type: "modified",
+      category: "enable",
+      name: "enable",
+      details: `${String(remote.enable)} -> ${String(local.enable)}`,
+    });
+  }
+
+  compareStates(local, remote, entries);
+  compareActionEntries(local, remote, entries);
 
   return entries;
 }

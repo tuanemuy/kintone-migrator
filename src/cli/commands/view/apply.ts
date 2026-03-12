@@ -1,84 +1,34 @@
 import * as p from "@clack/prompts";
-import { define } from "gunshi";
-import type { ViewContainer } from "@/core/application/container/view";
-import {
-  createViewCliContainer,
-  type ViewCliContainerConfig,
-} from "@/core/application/container/viewCli";
+import { createViewCliContainer } from "@/core/application/container/viewCli";
+import type { ApplyViewOutput } from "@/core/application/view/applyView";
 import { applyView } from "@/core/application/view/applyView";
-import { confirmArgs, type WithConfirm } from "../../config";
-import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, type Deployable } from "../../output";
-import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import {
   resolveViewAppContainerConfig,
   resolveViewContainerConfig,
-  type ViewCliValues,
   viewArgs,
 } from "../../viewConfig";
+import { createApplyCommand } from "../applyCommandFactory";
 
-async function runView(config: ViewCliContainerConfig): Promise<ViewContainer> {
-  const container = createViewCliContainer(config);
-
-  const s = p.spinner();
-  s.start("Applying views...");
-  const result = await applyView({ container });
-  s.stop("Views applied.");
-
-  if (result.skippedBuiltinViews.length > 0) {
-    p.log.warn(
-      `Skipped built-in views: ${result.skippedBuiltinViews.join(", ")}`,
-    );
-  }
-
-  p.log.success("Views applied successfully.");
-
-  return container;
-}
-
-export default define({
-  name: "apply",
+export default createApplyCommand<
+  Parameters<typeof createViewCliContainer>[0],
+  ReturnType<typeof createViewCliContainer>,
+  Parameters<typeof resolveViewContainerConfig>[0],
+  ApplyViewOutput
+>({
   description: "Apply view settings from YAML to kintone app",
-  args: { ...viewArgs, ...confirmArgs },
-  run: async (ctx) => {
-    try {
-      const values = ctx.values as WithConfirm<ViewCliValues>;
-      const skipConfirm = values.yes === true;
-
-      await routeMultiApp(values, {
-        singleLegacy: async () => {
-          const config = resolveViewContainerConfig(values);
-          const container = await runView(config);
-          await confirmAndDeploy([container], skipConfirm);
-        },
-        singleApp: async (app, projectConfig) => {
-          const config = resolveViewAppContainerConfig(
-            app,
-            projectConfig,
-            values,
-          );
-          const container = await runView(config);
-          await confirmAndDeploy([container], skipConfirm);
-        },
-        multiApp: async (plan, projectConfig) => {
-          const containers: Deployable[] = [];
-          await runMultiAppWithHeaders(plan, async (app) => {
-            const config = resolveViewAppContainerConfig(
-              app,
-              projectConfig,
-              values,
-            );
-            const container = await runView(config);
-            containers.push({
-              appDeployer: container.appDeployer,
-              appName: app.name,
-            });
-          });
-          await confirmAndDeploy(containers, skipConfirm);
-        },
-      });
-    } catch (error) {
-      handleCliError(error);
+  args: viewArgs,
+  spinnerMessage: "Applying views...",
+  spinnerStopMessage: "Views applied.",
+  successMessage: "Views applied successfully.",
+  createContainer: createViewCliContainer,
+  applyFn: applyView,
+  onResult: (result) => {
+    if (result.skippedBuiltinViews.length > 0) {
+      p.log.warn(
+        `Skipped built-in views: ${result.skippedBuiltinViews.join(", ")}`,
+      );
     }
   },
+  resolveContainerConfig: resolveViewContainerConfig,
+  resolveAppContainerConfig: resolveViewAppContainerConfig,
 });

@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import type { ActionEntity, ActionMapping } from "../valueObject";
 
@@ -49,7 +48,7 @@ function serializeActionConfig(config: ActionConfig): Record<string, unknown> {
 }
 
 export const ActionConfigSerializer = {
-  serialize: (config: ActionsConfig): string => {
+  serialize: (config: ActionsConfig): Record<string, unknown> => {
     const serialized: Record<string, unknown> = {};
     const actions: Record<string, unknown> = {};
 
@@ -59,6 +58,6 @@ export const ActionConfigSerializer = {
 
     serialized.actions = actions;
 
-    return serializeToYaml(serialized);
+    return serialized;
   },
 };

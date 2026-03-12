@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryActionConfigurator
@@ -57,6 +58,7 @@ export type TestActionContainer = ActionContainer & {
 
 export function createTestActionContainer(): TestActionContainer {
   return {
+    configCodec: testConfigCodec,
     actionConfigurator: new InMemoryActionConfigurator(),
     actionStorage: new InMemoryActionStorage(),
     appDeployer: new InMemoryAppDeployer(),

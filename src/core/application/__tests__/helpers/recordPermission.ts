@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryRecordPermissionConfigurator
@@ -64,6 +65,7 @@ export type TestRecordPermissionContainer = RecordPermissionContainer & {
 
 export function createTestRecordPermissionContainer(): TestRecordPermissionContainer {
   return {
+    configCodec: testConfigCodec,
     recordPermissionConfigurator: new InMemoryRecordPermissionConfigurator(),
     recordPermissionStorage: new InMemoryRecordPermissionStorage(),
     appDeployer: new InMemoryAppDeployer(),

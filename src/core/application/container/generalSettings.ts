@@ -1,9 +1,11 @@
 import type { GeneralSettingsConfigurator } from "@/core/domain/generalSettings/ports/generalSettingsConfigurator";
 import type { GeneralSettingsStorage } from "@/core/domain/generalSettings/ports/generalSettingsStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ServiceArgs } from "../types";
 
 export type GeneralSettingsDiffContainer = {
+  configCodec: ConfigCodec;
   generalSettingsConfigurator: GeneralSettingsConfigurator;
   generalSettingsStorage: GeneralSettingsStorage;
 };

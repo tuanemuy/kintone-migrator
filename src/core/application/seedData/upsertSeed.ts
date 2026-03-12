@@ -19,7 +19,7 @@ export async function upsertSeed({
       "Seed file not found",
     );
   }
-  const seedData = parseSeedText(result.content);
+  const seedData = parseSeedText(container.configCodec, result.content);
 
   if (input.clean) {
     const { deletedCount } = await container.recordManager.deleteAllRecords();

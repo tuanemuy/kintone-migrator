@@ -44,6 +44,46 @@ function describeRight(right: RecordRight): string {
   return perEntity.length > 0 ? perEntity.join(", ") : "no entities";
 }
 
+function compareRightsForFilter(
+  filterCond: string,
+  localRights: readonly RecordRight[],
+  remoteRights: readonly RecordRight[],
+  entries: RecordPermissionDiffEntry[],
+): void {
+  const maxLen = Math.max(localRights.length, remoteRights.length);
+
+  for (let i = 0; i < maxLen; i++) {
+    const localRight = localRights[i];
+    const remoteRight = remoteRights[i];
+
+    if (localRight && !remoteRight) {
+      entries.push({
+        type: "added",
+        filterCond,
+        details: describeRight(localRight),
+      });
+    } else if (!localRight && remoteRight) {
+      entries.push({
+        type: "deleted",
+        filterCond,
+        details: describeRight(remoteRight),
+      });
+    } else if (localRight && remoteRight) {
+      if (!isRightEqual(localRight, remoteRight)) {
+        const detail =
+          localRight.entities.length !== remoteRight.entities.length
+            ? `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`
+            : "entities changed";
+        entries.push({
+          type: "modified",
+          filterCond,
+          details: detail,
+        });
+      }
+    }
+  }
+}
+
 export const RecordPermissionDiffDetector = {
   // Partially order-sensitive: rights are grouped by filterCond, and within
   // each group, positional comparison is used (order matters). Across groups,
@@ -59,42 +99,7 @@ export const RecordPermissionDiffDetector = {
 
     for (const [filterCond, localRights] of localMulti) {
       const remoteRights = remoteMulti.get(filterCond) ?? [];
-      const maxLen = Math.max(localRights.length, remoteRights.length);
-
-      for (let i = 0; i < maxLen; i++) {
-        const localRight = localRights[i];
-        const remoteRight = remoteRights[i];
-
-        if (localRight && !remoteRight) {
-          entries.push({
-            type: "added",
-            filterCond,
-            details: describeRight(localRight),
-          });
-        } else if (!localRight && remoteRight) {
-          entries.push({
-            type: "deleted",
-            filterCond,
-            details: describeRight(remoteRight),
-          });
-        } else if (localRight && remoteRight) {
-          if (!isRightEqual(localRight, remoteRight)) {
-            const diffs: string[] = [];
-            if (localRight.entities.length !== remoteRight.entities.length) {
-              diffs.push(
-                `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`,
-              );
-            } else {
-              diffs.push("entities changed");
-            }
-            entries.push({
-              type: "modified",
-              filterCond,
-              details: diffs.join(", "),
-            });
-          }
-        }
-      }
+      compareRightsForFilter(filterCond, localRights, remoteRights, entries);
     }
 
     // Check for filterConds that only exist in remote

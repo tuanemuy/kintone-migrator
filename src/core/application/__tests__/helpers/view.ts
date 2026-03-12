@@ -7,6 +7,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryViewConfigurator
@@ -57,6 +58,7 @@ export type TestViewContainer = ViewContainer & {
 
 export function createTestViewContainer(): TestViewContainer {
   return {
+    configCodec: testConfigCodec,
     viewConfigurator: new InMemoryViewConfigurator(),
     viewStorage: new InMemoryViewStorage(),
     appDeployer: new InMemoryAppDeployer(),

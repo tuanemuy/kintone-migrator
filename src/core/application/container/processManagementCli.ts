@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneProcessManagementConfigurator } from "@/core/adapters/kintone/processManagementConfigurator";
 import { createLocalFileProcessManagementStorage } from "@/core/adapters/local/processManagementStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { KintoneAuth } from "./cli";
 import { createKintoneClient } from "./kintoneClient";
 import type { ProcessManagementContainer } from "./processManagement";
@@ -21,6 +22,7 @@ export function createProcessManagementCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     processManagementConfigurator: new KintoneProcessManagementConfigurator(
       client,
       config.appId,

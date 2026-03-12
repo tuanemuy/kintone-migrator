@@ -83,6 +83,25 @@ export function toKintoneFieldValue(value: RecordFieldValue): {
   return { value };
 }
 
+function flattenSubtableRow(row: {
+  value: Record<string, { value: unknown }>;
+}): Record<string, string | readonly string[]> {
+  const cells = row.value;
+  const flat: Record<string, string | readonly string[]> = {};
+  for (const [k, cell] of Object.entries(cells)) {
+    if (SYSTEM_FIELDS.has(k)) continue;
+    if (Array.isArray(cell.value)) {
+      flat[k] = cell.value.map(String) as readonly string[];
+    } else {
+      flat[k] =
+        cell.value === null || cell.value === undefined
+          ? ""
+          : String(cell.value);
+    }
+  }
+  return flat;
+}
+
 export function fromKintoneFieldValue(value: unknown): RecordFieldValue {
   if (value === null || value === undefined) {
     return "";
@@ -108,22 +127,7 @@ export function fromKintoneFieldValue(value: unknown): RecordFieldValue {
       }
       // Subtable row: { id: string, value: { field: { value: ... } } }
       if ("value" in first) {
-        return value.filter(isKintoneSubtableRow).map((row) => {
-          const cells = row.value;
-          const flat: Record<string, string | readonly string[]> = {};
-          for (const [k, cell] of Object.entries(cells)) {
-            if (SYSTEM_FIELDS.has(k)) continue;
-            if (Array.isArray(cell.value)) {
-              flat[k] = cell.value.map(String) as readonly string[];
-            } else {
-              flat[k] =
-                cell.value === null || cell.value === undefined
-                  ? ""
-                  : String(cell.value);
-            }
-          }
-          return flat;
-        });
+        return value.filter(isKintoneSubtableRow).map(flattenSubtableRow);
       }
     }
     return value.map(String) as readonly string[];

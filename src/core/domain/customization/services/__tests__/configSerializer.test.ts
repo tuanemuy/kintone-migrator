@@ -14,8 +14,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.scope).toBe("ALL");
     expect(parsed.desktop.js).toEqual([
@@ -38,8 +38,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.scope).toBeUndefined();
     expect(parsed.desktop.js).toEqual([
@@ -60,8 +60,8 @@ describe("CustomizationConfigSerializer", () => {
       },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.scope).toBe("ADMIN");
     expect(parsed.desktop.js).toEqual([
@@ -85,8 +85,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.desktop.js).toHaveLength(2);
     expect(parsed.desktop.js[0]).toEqual({
@@ -110,8 +110,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    expect(yaml).not.toContain("mobile");
+    const result = CustomizationConfigSerializer.serialize(config);
+    expect(result).not.toHaveProperty("mobile");
   });
 
   it("should omit scope when undefined", () => {
@@ -124,8 +124,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    expect(yaml).not.toContain("scope");
+    const result = CustomizationConfigSerializer.serialize(config);
+    expect(result).not.toHaveProperty("scope");
   });
 
   it("should handle NONE scope", () => {
@@ -138,8 +138,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.scope).toBe("NONE");
   });
@@ -151,8 +151,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.scope).toBe("ALL");
     expect(parsed.desktop.js).toEqual([]);
@@ -168,8 +168,8 @@ describe("CustomizationConfigSerializer", () => {
       mobile: { js: [], css: [] },
     };
 
-    const yaml = CustomizationConfigSerializer.serialize(config);
-    const parsed = CustomizationConfigParser.parse(yaml);
+    const result = CustomizationConfigSerializer.serialize(config);
+    const parsed = CustomizationConfigParser.parse(result);
 
     expect(parsed.scope).toBeUndefined();
     expect(parsed.desktop.js).toEqual([]);

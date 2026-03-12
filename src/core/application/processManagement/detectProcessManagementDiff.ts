@@ -13,7 +13,8 @@ export async function detectProcessManagementDiff({
     getStorage: () => container.processManagementStorage.get(),
     fetchRemote: () =>
       container.processManagementConfigurator.getProcessManagement(),
-    parseConfig: parseProcessManagementConfigText,
+    parseConfig: (content) =>
+      parseProcessManagementConfigText(container.configCodec, content),
     detect: (local, remote) =>
       ProcessManagementDiffDetector.detect(local, remote.config),
     notFoundMessage: "Process management config file not found",

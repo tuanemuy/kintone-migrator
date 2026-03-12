@@ -137,6 +137,7 @@ describe("init コマンド", () => {
     expect(handleCliError).not.toHaveBeenCalled();
     expect(generateProjectConfig).toHaveBeenCalledWith(
       expect.objectContaining({ domain: "env.cybozu.com" }),
+      expect.anything(),
     );
   });
 
@@ -260,6 +261,7 @@ describe("init コマンド", () => {
     );
     expect(generateProjectConfig).toHaveBeenCalledWith(
       expect.objectContaining({ baseDir: "mydir" }),
+      expect.anything(),
     );
     expect(createCliCaptureContainers).toHaveBeenCalledWith(
       expect.objectContaining({ baseDir: "mydir" }),
@@ -298,6 +300,7 @@ describe("init コマンド", () => {
     );
     expect(generateProjectConfig).toHaveBeenCalledWith(
       expect.objectContaining({ baseDir: undefined }),
+      expect.anything(),
     );
     expect(createCliCaptureContainers).toHaveBeenCalledWith(
       expect.objectContaining({ baseDir: undefined }),

@@ -1,7 +1,15 @@
 import { beforeEach } from "vitest";
+import { configCodec as yamlConfigCodec } from "@/core/adapters/yaml/configCodec";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
+
+/**
+ * Test ConfigCodec backed by the YAML adapter.
+ * Centralized here so that adapter coupling is localized to a single point.
+ */
+export const testConfigCodec: ConfigCodec = yamlConfigCodec;
 
 export class FakeBase {
   private _callLog: string[] = [];

@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/configValidator";
 import {
   isRecord,
   parseEntityBase,
@@ -105,26 +105,21 @@ function parseFieldRight(raw: unknown, index: number): FieldRight {
 }
 
 export const FieldPermissionConfigParser = {
-  parse: (rawText: string): FieldPermissionConfig => {
-    const parsed = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: FieldPermissionErrorCode.FpEmptyConfigText,
-        invalidConfigYaml: FieldPermissionErrorCode.FpInvalidConfigYaml,
-        invalidConfigStructure:
-          FieldPermissionErrorCode.FpInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): FieldPermissionConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      FieldPermissionErrorCode.FpInvalidConfigStructure,
       "Field permission",
     );
 
-    if (!Array.isArray(parsed.rights)) {
+    if (!Array.isArray(obj.rights)) {
       throw new BusinessRuleError(
         FieldPermissionErrorCode.FpInvalidConfigStructure,
         'Config must have a "rights" array',
       );
     }
 
-    const rights = parsed.rights.map((item: unknown, i: number) =>
+    const rights = obj.rights.map((item: unknown, i: number) =>
       parseFieldRight(item, i),
     );
 

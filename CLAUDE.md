@@ -49,8 +49,13 @@ Hexagonal architecture with domain-driven design principles:
     - `src/core/domain/${domain}/valueObject.ts`: Value objects
     - `src/core/domain/${domain}/ports/**.ts`: Port interfaces for external services (repositories, external APIs, etc.)
     - `src/core/domain/${domain}/services/**.ts`: Domain services for complex business logic
+    - `src/core/domain/ports/configCodec.ts`: Config codec port interface (domain layer does not depend on `yaml` library directly)
+    - Domain parsers (`configParser.ts`) accept pre-parsed `unknown` data, not raw YAML text. YAML parsing is handled by the application layer.
+    - Domain serializers (`configSerializer.ts`) return `Record<string, unknown>`, not YAML strings. YAML stringification is handled by the application layer.
+    - `node:path` is used pragmatically in some domain services (e.g., `appFilePaths.ts`) since this is a Node.js CLI tool.
 - **Adapter Layer** (`src/core/adapters/`): Contains concrete implementations for external services
     - `src/core/adapters/${externalServiceProvider}/**.ts`: Adapters for external services like databases, APIs, etc.
+    - `src/core/adapters/yaml/configCodec.ts`: Config codec adapter wrapping the `yaml` library
 - **Application Layer** (`src/core/application/`): Contains use cases and application services
     - `src/core/application/container/cli.ts`: CLI dependency injection container
     - `src/core/application/${domain}/${usecase}.ts`: Application services that orchestrate domain logic. Each service is a function that takes a context object.
@@ -61,6 +66,9 @@ Hexagonal architecture with domain-driven design principles:
 - **Presentation Layer** (`src/cli/`): CLI commands built with gunshi
     - `src/cli/index.ts`: Main entry point with shebang
     - `src/cli/commands/`: Domain-grouped subcommand definitions (schema/, seed/, customize/, field-acl/)
+    - `src/cli/commands/applyCommandFactory.ts`: Factory for apply commands (reduces boilerplate across 10+ commands)
+    - `src/cli/commands/captureCommandFactory.ts`: Factory for capture commands
+    - `src/cli/commands/diffCommandFactory.ts`: Factory for diff commands
     - `src/cli/config.ts`: Configuration resolver (CLI args > env vars)
     - `src/cli/output.ts`: Shared output formatting
     - `src/cli/handleError.ts`: Error handling
@@ -88,6 +96,8 @@ Hexagonal architecture with domain-driven design principles:
     - `SystemError`
 - Defines error codes for each as needed (e.g., a `NETWORK_ERROR` code for `SystemError`).
 - Avoids using `try-catch`; throws these exceptions when a failure can be determined by the application logic.
+- Exception: `wrapBusinessRuleError()` uses `try-catch` to convert domain `BusinessRuleError` into application `ValidationError`, preserving the original error as `cause`.
+- `parseConfigText()` and `stringifyConfig()` in the application layer use `try-catch` to convert codec errors into `ValidationError`/`SystemError`.
 
 ### Infrastructure Layer
 

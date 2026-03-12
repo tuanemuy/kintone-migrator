@@ -11,6 +11,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryNotificationConfigurator
@@ -156,6 +157,7 @@ export type TestNotificationContainer = NotificationContainer & {
 
 export function createTestNotificationContainer(): TestNotificationContainer {
   return {
+    configCodec: testConfigCodec,
     notificationConfigurator: new InMemoryNotificationConfigurator(),
     notificationStorage: new InMemoryNotificationStorage(),
     appDeployer: new InMemoryAppDeployer(),

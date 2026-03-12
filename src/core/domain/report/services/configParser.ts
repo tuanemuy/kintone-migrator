@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { parseYamlConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/configValidator";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import { ReportErrorCode } from "../errorCode";
@@ -112,6 +112,86 @@ function parseSort(raw: unknown, index: number): ReportSort {
   };
 }
 
+function parsePeriodMonth(raw: Record<string, unknown>): number | undefined {
+  if (raw.month === undefined || raw.month === null) return undefined;
+  const parsed = Number(raw.month);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 12) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `periodicReport.period has invalid month: ${String(raw.month)}. Must be an integer between 1 and 12`,
+    );
+  }
+  return parsed;
+}
+
+function parsePeriodPattern(
+  raw: Record<string, unknown>,
+): PeriodicReportPeriod["pattern"] {
+  if (raw.pattern === undefined || raw.pattern === null) return undefined;
+  if (
+    typeof raw.pattern !== "string" ||
+    !isPeriodicReportPattern(raw.pattern)
+  ) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `periodicReport.period has invalid pattern: ${String(raw.pattern)}. Must be JAN_APR_JUL_OCT, FEB_MAY_AUG_NOV, or MAR_JUN_SEP_DEC`,
+    );
+  }
+  return raw.pattern;
+}
+
+function parsePeriodDayOfMonth(
+  raw: Record<string, unknown>,
+): number | "END_OF_MONTH" | undefined {
+  if (raw.dayOfMonth === undefined || raw.dayOfMonth === null) return undefined;
+  if (raw.dayOfMonth === "END_OF_MONTH") return "END_OF_MONTH";
+  const parsed = Number(raw.dayOfMonth);
+  if (!Number.isInteger(parsed)) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `periodicReport.period has invalid dayOfMonth: ${String(raw.dayOfMonth)}. Must be an integer or "END_OF_MONTH"`,
+    );
+  }
+  if (parsed < 1 || parsed > 31) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `periodicReport.period has out-of-range dayOfMonth: ${parsed}. Must be 1-31`,
+    );
+  }
+  return parsed;
+}
+
+function parsePeriodDayOfWeek(
+  raw: Record<string, unknown>,
+): PeriodicReportPeriod["dayOfWeek"] {
+  if (raw.dayOfWeek === undefined || raw.dayOfWeek === null) return undefined;
+  const dayStr = String(raw.dayOfWeek);
+  if (!isDayOfWeek(dayStr)) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `periodicReport.period has invalid dayOfWeek: ${dayStr}. Must be SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, or SATURDAY`,
+    );
+  }
+  return dayStr;
+}
+
+function parsePeriodMinute(raw: Record<string, unknown>): number | undefined {
+  if (raw.minute === undefined || raw.minute === null) return undefined;
+  const parsed = Number(raw.minute);
+  if (
+    !Number.isInteger(parsed) ||
+    parsed < 0 ||
+    parsed > 50 ||
+    parsed % 10 !== 0
+  ) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `periodicReport.period has invalid minute: ${String(raw.minute)}. Must be a multiple of 10 (0, 10, 20, 30, 40, 50)`,
+    );
+  }
+  return parsed;
+}
+
 function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
@@ -127,92 +207,16 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
     );
   }
 
-  const every = raw.every;
+  const month = parsePeriodMonth(raw);
+  const pattern = parsePeriodPattern(raw);
+  const dayOfMonth = parsePeriodDayOfMonth(raw);
+  const time =
+    raw.time !== undefined && raw.time !== null ? String(raw.time) : undefined;
+  const dayOfWeek = parsePeriodDayOfWeek(raw);
+  const minute = parsePeriodMinute(raw);
 
-  let month: number | undefined;
-  if (raw.month !== undefined && raw.month !== null) {
-    const parsed = Number(raw.month);
-    if (!Number.isInteger(parsed) || parsed < 1 || parsed > 12) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtInvalidConfigStructure,
-        `periodicReport.period has invalid month: ${String(raw.month)}. Must be an integer between 1 and 12`,
-      );
-    }
-    month = parsed;
-  }
-
-  let pattern: PeriodicReportPeriod["pattern"];
-  if (raw.pattern !== undefined && raw.pattern !== null) {
-    if (
-      typeof raw.pattern !== "string" ||
-      !isPeriodicReportPattern(raw.pattern)
-    ) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtInvalidConfigStructure,
-        `periodicReport.period has invalid pattern: ${String(raw.pattern)}. Must be JAN_APR_JUL_OCT, FEB_MAY_AUG_NOV, or MAR_JUN_SEP_DEC`,
-      );
-    }
-    pattern = raw.pattern;
-  }
-
-  let dayOfMonth: number | "END_OF_MONTH" | undefined;
-  if (raw.dayOfMonth !== undefined && raw.dayOfMonth !== null) {
-    if (raw.dayOfMonth === "END_OF_MONTH") {
-      dayOfMonth = "END_OF_MONTH";
-    } else {
-      const parsed = Number(raw.dayOfMonth);
-      if (!Number.isInteger(parsed)) {
-        throw new BusinessRuleError(
-          ReportErrorCode.RtInvalidConfigStructure,
-          `periodicReport.period has invalid dayOfMonth: ${String(raw.dayOfMonth)}. Must be an integer or "END_OF_MONTH"`,
-        );
-      }
-      if (parsed < 1 || parsed > 31) {
-        throw new BusinessRuleError(
-          ReportErrorCode.RtInvalidConfigStructure,
-          `periodicReport.period has out-of-range dayOfMonth: ${parsed}. Must be 1-31`,
-        );
-      }
-      dayOfMonth = parsed;
-    }
-  }
-
-  let time: string | undefined;
-  if (raw.time !== undefined && raw.time !== null) {
-    time = String(raw.time);
-  }
-
-  let dayOfWeek: PeriodicReportPeriod["dayOfWeek"];
-  if (raw.dayOfWeek !== undefined && raw.dayOfWeek !== null) {
-    const dayStr = String(raw.dayOfWeek);
-    if (!isDayOfWeek(dayStr)) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtInvalidConfigStructure,
-        `periodicReport.period has invalid dayOfWeek: ${dayStr}. Must be SUNDAY, MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, or SATURDAY`,
-      );
-    }
-    dayOfWeek = dayStr;
-  }
-
-  let minute: number | undefined;
-  if (raw.minute !== undefined && raw.minute !== null) {
-    const parsed = Number(raw.minute);
-    if (
-      !Number.isInteger(parsed) ||
-      parsed < 0 ||
-      parsed > 50 ||
-      parsed % 10 !== 0
-    ) {
-      throw new BusinessRuleError(
-        ReportErrorCode.RtInvalidConfigStructure,
-        `periodicReport.period has invalid minute: ${String(raw.minute)}. Must be a multiple of 10 (0, 10, 20, 30, 40, 50)`,
-      );
-    }
-    minute = parsed;
-  }
-
-  const result: PeriodicReportPeriod = {
-    every,
+  return {
+    every: raw.every,
     ...(month !== undefined ? { month } : {}),
     ...(pattern !== undefined ? { pattern } : {}),
     ...(dayOfMonth !== undefined ? { dayOfMonth } : {}),
@@ -220,8 +224,6 @@ function parsePeriodicReportPeriod(raw: unknown): PeriodicReportPeriod {
     ...(dayOfWeek !== undefined ? { dayOfWeek } : {}),
     ...(minute !== undefined ? { minute } : {}),
   };
-
-  return result;
 }
 
 function parsePeriodicReport(raw: unknown): PeriodicReport {
@@ -246,6 +248,24 @@ function parsePeriodicReport(raw: unknown): PeriodicReport {
     active,
     period,
   };
+}
+
+function parseOptionalArrayField<T>(
+  raw: Record<string, unknown>,
+  fieldName: string,
+  reportName: string,
+  parseFn: (item: unknown, index: number) => T,
+): T[] {
+  const value = raw[fieldName];
+  if (value !== undefined && !Array.isArray(value)) {
+    throw new BusinessRuleError(
+      ReportErrorCode.RtInvalidConfigStructure,
+      `Report "${reportName}" has invalid ${fieldName}: must be an array`,
+    );
+  }
+  return Array.isArray(value)
+    ? value.map((item: unknown, i: number) => parseFn(item, i))
+    : [];
 }
 
 function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
@@ -300,39 +320,15 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
   }
   const index = typeof raw.index === "number" ? raw.index : 0;
 
-  if (raw.groups !== undefined && !Array.isArray(raw.groups)) {
-    throw new BusinessRuleError(
-      ReportErrorCode.RtInvalidConfigStructure,
-      `Report "${reportName}" has invalid groups: must be an array`,
-    );
-  }
-  const groups = Array.isArray(raw.groups)
-    ? raw.groups.map((item: unknown, i: number) => parseGroup(item, i))
-    : [];
-
-  if (raw.aggregations !== undefined && !Array.isArray(raw.aggregations)) {
-    throw new BusinessRuleError(
-      ReportErrorCode.RtInvalidConfigStructure,
-      `Report "${reportName}" has invalid aggregations: must be an array`,
-    );
-  }
-  const aggregations = Array.isArray(raw.aggregations)
-    ? raw.aggregations.map((item: unknown, i: number) =>
-        parseAggregation(item, i),
-      )
-    : [];
-
+  const groups = parseOptionalArrayField(raw, "groups", reportName, parseGroup);
+  const aggregations = parseOptionalArrayField(
+    raw,
+    "aggregations",
+    reportName,
+    parseAggregation,
+  );
   const filterCond = typeof raw.filterCond === "string" ? raw.filterCond : "";
-
-  if (raw.sorts !== undefined && !Array.isArray(raw.sorts)) {
-    throw new BusinessRuleError(
-      ReportErrorCode.RtInvalidConfigStructure,
-      `Report "${reportName}" has invalid sorts: must be an array`,
-    );
-  }
-  const sorts = Array.isArray(raw.sorts)
-    ? raw.sorts.map((item: unknown, i: number) => parseSort(item, i))
-    : [];
+  const sorts = parseOptionalArrayField(raw, "sorts", reportName, parseSort);
 
   const result: ReportConfig = {
     chartType: raw.chartType,
@@ -356,14 +352,10 @@ function parseReportConfig(raw: unknown, reportName: string): ReportConfig {
 }
 
 export const ReportConfigParser = {
-  parse: (rawText: string): ReportsConfig => {
-    const obj = parseYamlConfig(
-      rawText,
-      {
-        emptyConfigText: ReportErrorCode.RtEmptyConfigText,
-        invalidConfigYaml: ReportErrorCode.RtInvalidConfigYaml,
-        invalidConfigStructure: ReportErrorCode.RtInvalidConfigStructure,
-      },
+  parse: (parsed: unknown): ReportsConfig => {
+    const obj = validateParsedConfig(
+      parsed,
+      ReportErrorCode.RtInvalidConfigStructure,
       "Report",
     );
 

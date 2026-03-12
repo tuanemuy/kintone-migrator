@@ -11,6 +11,7 @@ import {
   InMemoryAppDeployer,
   InMemoryFileStorage,
   setupContainer,
+  testConfigCodec,
 } from "./shared";
 
 export class InMemoryFormConfigurator
@@ -97,6 +98,7 @@ export type TestFormSchemaContainer = FormSchemaContainer & {
 
 export function createTestFormSchemaContainer(): TestFormSchemaContainer {
   return {
+    configCodec: testConfigCodec,
     formConfigurator: new InMemoryFormConfigurator(),
     schemaStorage: new InMemorySchemaStorage(),
     appDeployer: new InMemoryAppDeployer(),

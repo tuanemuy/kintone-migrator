@@ -1,6 +1,4 @@
 export const ViewErrorCode = {
-  VwEmptyConfigText: "VW_EMPTY_CONFIG_TEXT",
-  VwInvalidConfigYaml: "VW_INVALID_CONFIG_YAML",
   VwInvalidConfigStructure: "VW_INVALID_CONFIG_STRUCTURE",
   VwInvalidViewType: "VW_INVALID_VIEW_TYPE",
   VwInvalidDeviceType: "VW_INVALID_DEVICE_TYPE",

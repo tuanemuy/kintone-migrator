@@ -1,4 +1,3 @@
-import { serializeToYaml } from "@/core/domain/services/yamlConfigSerializer";
 import type { ViewConfig, ViewsConfig } from "../entity";
 
 function serializeViewConfig(config: ViewConfig): Record<string, unknown> {
@@ -21,13 +20,13 @@ function serializeViewConfig(config: ViewConfig): Record<string, unknown> {
 }
 
 export const ViewConfigSerializer = {
-  serialize: (config: ViewsConfig): string => {
+  serialize: (config: ViewsConfig): Record<string, unknown> => {
     const serialized: Record<string, Record<string, unknown>> = {};
 
     for (const [name, viewConfig] of Object.entries(config.views)) {
       serialized[name] = serializeViewConfig(viewConfig);
     }
 
-    return serializeToYaml({ views: serialized });
+    return { views: serialized };
   },
 };
