@@ -1,6 +1,7 @@
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ProjectConfig } from "@/core/domain/projectConfig/entity";
 import { ConfigParser } from "@/core/domain/projectConfig/services/configParser";
+import { wrapBusinessRuleError } from "../error";
 import { parseYamlText } from "../parseYamlText";
 
 export type LoadProjectConfigInput = Readonly<{
@@ -17,5 +18,5 @@ export function loadProjectConfig(
   codec: ConfigCodec,
 ): ProjectConfig {
   const raw = parseYamlText(codec, input.content, "Project config");
-  return ConfigParser.parse(raw);
+  return wrapBusinessRuleError(() => ConfigParser.parse(raw));
 }

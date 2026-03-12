@@ -12,13 +12,13 @@ describe("validateParsedConfig", () => {
     ).toThrow(BusinessRuleError);
     expect(() =>
       validateParsedConfig("just a string", errorCode, "Test"),
-    ).toThrow("Test config must be a YAML object");
+    ).toThrow("Test config must be an object");
   });
 
   it("should throw on array input", () => {
     expect(() =>
       validateParsedConfig(["item1", "item2"], errorCode, "Test"),
-    ).toThrow("Test config must be a YAML object");
+    ).toThrow("Test config must be an object");
   });
 
   it("should return valid object", () => {
@@ -32,13 +32,13 @@ describe("validateParsedConfig", () => {
 
   it("should throw on null", () => {
     expect(() => validateParsedConfig(null, errorCode, "Test")).toThrow(
-      "Test config must be a YAML object",
+      "Test config must be an object",
     );
   });
 
   it("should throw on undefined", () => {
     expect(() => validateParsedConfig(undefined, errorCode, "Test")).toThrow(
-      "Test config must be a YAML object",
+      "Test config must be an object",
     );
   });
 
@@ -53,6 +53,6 @@ describe("validateParsedConfig", () => {
   it("should include domainLabel in error messages", () => {
     expect(() =>
       validateParsedConfig("scalar", errorCode, "Notification"),
-    ).toThrow("Notification config must be a YAML object");
+    ).toThrow("Notification config must be an object");
   });
 });

@@ -62,15 +62,15 @@ export function createCaptureCommand<
       input: { configText: result.configText },
     });
 
-    p.log.success(
-      `${config.domainLabel} saved to: ${pc.cyan(config.getConfigFilePath(containerConfig))}`,
-    );
-
     if (result.hasExistingConfig) {
       p.log.warn(
         `Existing ${config.domainLabel.toLowerCase()} file was overwritten.`,
       );
     }
+
+    p.log.success(
+      `${config.domainLabel} saved to: ${pc.cyan(config.getConfigFilePath(containerConfig))}`,
+    );
   }
 
   return define({

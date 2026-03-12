@@ -30,7 +30,7 @@ Requires a kintone environment with valid credentials.
 ### Environment Variables
 
 Set these in `.env` or export them:
-- `KINTONE_BASE_URL` — kintone domain (e.g., `https://example.cybozu.com`)
+- `KINTONE_DOMAIN` — kintone domain (e.g., `example.cybozu.com`)
 - `KINTONE_USERNAME` / `KINTONE_PASSWORD` — Password auth
 - `KINTONE_API_TOKEN` — API token auth (alternative to password)
 - `KINTONE_APP_ID` — Target app ID

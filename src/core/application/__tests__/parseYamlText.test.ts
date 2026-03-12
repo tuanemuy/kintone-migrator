@@ -21,6 +21,34 @@ describe("parseYamlText", () => {
     }
   });
 
+  it("パース結果がnullの場合、ValidationErrorをスローする", () => {
+    try {
+      parseYamlText(configCodec, "---\n", "Test");
+      expect.fail("Expected error");
+    } catch (error) {
+      expect(isValidationError(error)).toBe(true);
+      if (isValidationError(error)) {
+        expect(error.message).toContain(
+          "Test config is empty (no data after parsing)",
+        );
+      }
+    }
+  });
+
+  it("コメントのみのYAMLの場合、ValidationErrorをスローする", () => {
+    try {
+      parseYamlText(configCodec, "# just a comment\n", "Test");
+      expect.fail("Expected error");
+    } catch (error) {
+      expect(isValidationError(error)).toBe(true);
+      if (isValidationError(error)) {
+        expect(error.message).toContain(
+          "Test config is empty (no data after parsing)",
+        );
+      }
+    }
+  });
+
   it("不正なYAMLの場合、ValidationErrorをスローする", () => {
     try {
       parseYamlText(configCodec, "{ invalid yaml:", "Test");

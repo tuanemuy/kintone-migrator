@@ -10,7 +10,7 @@ export function validateParsedConfig(
   if (!isRecord(parsed)) {
     throw new BusinessRuleError(
       invalidConfigStructure,
-      `${domainLabel} config must be a YAML object`,
+      `${domainLabel} config must be an object`,
     );
   }
 

@@ -13,8 +13,9 @@ export function parseYamlText(
     );
   }
 
+  let result: unknown;
   try {
-    return codec.parse(rawText);
+    result = codec.parse(rawText);
   } catch (cause) {
     throw new ValidationError(
       ValidationErrorCode.InvalidInput,
@@ -22,4 +23,13 @@ export function parseYamlText(
       cause,
     );
   }
+
+  if (result == null) {
+    throw new ValidationError(
+      ValidationErrorCode.InvalidInput,
+      `${domainLabel} config is empty (no data after parsing)`,
+    );
+  }
+
+  return result;
 }
