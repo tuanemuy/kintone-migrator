@@ -15,7 +15,10 @@ export async function captureGeneralSettings({
     fetchRemote: () =>
       container.generalSettingsConfigurator.getGeneralSettings(),
     serialize: ({ config }) =>
-      stringifyToYaml(GeneralSettingsConfigSerializer.serialize(config)),
+      stringifyToYaml(
+        container.configCodec,
+        GeneralSettingsConfigSerializer.serialize(config),
+      ),
     getStorage: () => container.generalSettingsStorage.get(),
   });
 }

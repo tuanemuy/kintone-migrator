@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintoneGeneralSettingsConfigurator } from "@/core/adapters/kintone/generalSettingsConfigurator";
 import { createLocalFileGeneralSettingsStorage } from "@/core/adapters/local/generalSettingsStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { KintoneAuth } from "./cli";
 import type { GeneralSettingsContainer } from "./generalSettings";
 import { createKintoneClient } from "./kintoneClient";
@@ -21,6 +22,7 @@ export function createGeneralSettingsCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     generalSettingsConfigurator: new KintoneGeneralSettingsConfigurator(
       client,
       config.appId,

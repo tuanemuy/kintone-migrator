@@ -24,7 +24,10 @@ export async function detectNotificationDiff({
       "Notification config file not found",
     );
   }
-  const localConfig = parseNotificationConfigText(storageResult.content);
+  const localConfig = parseNotificationConfigText(
+    container.configCodec,
+    storageResult.content,
+  );
 
   // The kintone API always returns all three sections (general, perRecord, reminder)
   // even when they are empty (empty arrays / default values). This matches the

@@ -14,7 +14,10 @@ export async function captureReport({
   return captureFromConfig({
     fetchRemote: () => container.reportConfigurator.getReports(),
     serialize: ({ reports }) =>
-      stringifyToYaml(ReportConfigSerializer.serialize({ reports })),
+      stringifyToYaml(
+        container.configCodec,
+        ReportConfigSerializer.serialize({ reports }),
+      ),
     getStorage: () => container.reportStorage.get(),
   });
 }

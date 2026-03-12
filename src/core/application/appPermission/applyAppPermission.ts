@@ -7,7 +7,8 @@ export async function applyAppPermission({
 }: AppPermissionServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.appPermissionStorage.get(),
-    parseConfig: parseAppPermissionConfigText,
+    parseConfig: (content) =>
+      parseAppPermissionConfigText(container.configCodec, content),
     fetchRemote: () => container.appPermissionConfigurator.getAppPermissions(),
     update: async (config, current) => {
       await container.appPermissionConfigurator.updateAppPermissions({

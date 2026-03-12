@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { setupTestFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import { SystemError } from "@/core/application/error";
 import {
@@ -149,7 +150,7 @@ describe("captureSchema", () => {
     ]);
 
     const result = await captureSchema({ container });
-    const parsed = parseSchemaText(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
 
     expect(parsed.fields.size).toBe(1);
     expect(parsed.fields.has(FieldCode.create("name"))).toBe(true);
@@ -290,7 +291,7 @@ describe("captureSchema", () => {
     expect(result.schemaText).toContain("SUBTABLE");
     expect(result.schemaText).toContain("item_name");
 
-    const parsed = parseSchemaText(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
     expect(parsed.fields.has(FieldCode.create("items"))).toBe(true);
     const items = parsed.fields.get(FieldCode.create("items"));
     expect(items?.type).toBe("SUBTABLE");
@@ -330,7 +331,7 @@ describe("captureSchema", () => {
 
     expect(result.schemaText).toContain("REFERENCE_TABLE");
 
-    const parsed = parseSchemaText(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
     expect(parsed.fields.has(FieldCode.create("ref"))).toBe(true);
     const ref = parsed.fields.get(FieldCode.create("ref"));
     expect(ref?.type).toBe("REFERENCE_TABLE");
@@ -381,7 +382,7 @@ describe("captureSchema", () => {
 
     const result = await captureSchema({ container });
 
-    const parsed = parseSchemaText(result.schemaText);
+    const parsed = parseSchemaText(configCodec, result.schemaText);
     expect(parsed.fields.size).toBe(4);
     expect(parsed.fields.get(FieldCode.create("name"))?.type).toBe(
       "SINGLE_LINE_TEXT",

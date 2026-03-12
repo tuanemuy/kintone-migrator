@@ -1,6 +1,4 @@
 export const FieldPermissionErrorCode = {
-  FpEmptyConfigText: "FP_EMPTY_CONFIG_TEXT",
-  FpInvalidConfigYaml: "FP_INVALID_CONFIG_YAML",
   FpInvalidConfigStructure: "FP_INVALID_CONFIG_STRUCTURE",
   FpInvalidAccessibility: "FP_INVALID_ACCESSIBILITY",
   FpInvalidEntityType: "FP_INVALID_ENTITY_TYPE",

@@ -7,7 +7,8 @@ export async function applyReport({
 }: ReportServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.reportStorage.get(),
-    parseConfig: parseReportConfigText,
+    parseConfig: (content) =>
+      parseReportConfigText(container.configCodec, content),
     fetchRemote: () => container.reportConfigurator.getReports(),
     update: async (config, current) => {
       await container.reportConfigurator.updateReports({

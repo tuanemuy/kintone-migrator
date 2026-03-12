@@ -1,3 +1,4 @@
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { ProcessManagementContainer } from "@/core/application/container/processManagement";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import type { ProcessManagementConfigurator } from "@/core/domain/processManagement/ports/processManagementConfigurator";
@@ -61,6 +62,7 @@ export type TestProcessManagementContainer = ProcessManagementContainer & {
 
 export function createTestProcessManagementContainer(): TestProcessManagementContainer {
   return {
+    configCodec,
     processManagementConfigurator: new InMemoryProcessManagementConfigurator(),
     processManagementStorage: new InMemoryProcessManagementStorage(),
     appDeployer: new InMemoryAppDeployer(),

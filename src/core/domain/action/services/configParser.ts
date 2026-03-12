@@ -1,5 +1,5 @@
 import { BusinessRuleError } from "@/core/domain/error";
-import { validateParsedConfig } from "@/core/domain/services/yamlConfigParser";
+import { validateParsedConfig } from "@/core/domain/services/configValidator";
 import { isRecord } from "@/core/domain/typeGuards";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import { ActionErrorCode } from "../errorCode";

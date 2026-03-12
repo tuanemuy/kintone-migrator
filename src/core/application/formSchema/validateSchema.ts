@@ -33,7 +33,7 @@ export async function validateSchema({
   // both parse errors and validation results in a unified report.
   let schema: Schema;
   try {
-    schema = parseSchemaText(result.content);
+    schema = parseSchemaText(container.configCodec, result.content);
   } catch (error) {
     if (isValidationError(error)) {
       return {

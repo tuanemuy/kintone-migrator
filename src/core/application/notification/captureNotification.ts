@@ -30,6 +30,7 @@ export async function captureNotification({
   };
 
   const configText = stringifyToYaml(
+    container.configCodec,
     NotificationConfigSerializer.serialize(config),
   );
   const existing = await container.notificationStorage.get();

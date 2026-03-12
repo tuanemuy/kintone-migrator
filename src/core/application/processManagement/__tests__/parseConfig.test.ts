@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { ProcessManagementConfigParser } from "@/core/domain/processManagement/services/configParser";
 import { isValidationError } from "../../error";
 import { parseProcessManagementConfigText } from "../parseConfig";
@@ -17,7 +18,7 @@ states:
           code: user1
 actions: []
 `;
-    const config = parseProcessManagementConfigText(rawText);
+    const config = parseProcessManagementConfigText(configCodec, rawText);
     expect(config.enable).toBe(true);
     expect(Object.keys(config.states)).toHaveLength(1);
     expect(config.states.未処理.assignee.type).toBe("ONE");
@@ -25,7 +26,7 @@ actions: []
 
   it("BusinessRuleError を ValidationError に変換する", () => {
     try {
-      parseProcessManagementConfigText("");
+      parseProcessManagementConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -34,7 +35,7 @@ actions: []
 
   it("不正なYAMLの場合に ValidationError をスローする", () => {
     try {
-      parseProcessManagementConfigText("{ invalid yaml:");
+      parseProcessManagementConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -43,7 +44,10 @@ actions: []
 
   it("不正な構造のYAMLの場合に ValidationError をスローする", () => {
     try {
-      parseProcessManagementConfigText("states:\n  - invalid_array");
+      parseProcessManagementConfigText(
+        configCodec,
+        "states:\n  - invalid_array",
+      );
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -54,7 +58,9 @@ actions: []
     vi.spyOn(ProcessManagementConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parseProcessManagementConfigText("dummy")).toThrow(TypeError);
+    expect(() =>
+      parseProcessManagementConfigText(configCodec, "dummy"),
+    ).toThrow(TypeError);
     vi.restoreAllMocks();
   });
 });

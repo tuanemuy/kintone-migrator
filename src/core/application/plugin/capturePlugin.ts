@@ -14,7 +14,10 @@ export async function capturePlugin({
   return captureFromConfig({
     fetchRemote: () => container.pluginConfigurator.getPlugins(),
     serialize: ({ plugins }) =>
-      stringifyToYaml(PluginConfigSerializer.serialize({ plugins })),
+      stringifyToYaml(
+        container.configCodec,
+        PluginConfigSerializer.serialize({ plugins }),
+      ),
     getStorage: () => container.pluginStorage.get(),
   });
 }

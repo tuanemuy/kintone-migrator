@@ -1,6 +1,4 @@
 export const AppPermissionErrorCode = {
-  ApEmptyConfigText: "AP_EMPTY_CONFIG_TEXT",
-  ApInvalidConfigYaml: "AP_INVALID_CONFIG_YAML",
   ApInvalidConfigStructure: "AP_INVALID_CONFIG_STRUCTURE",
   ApInvalidEntityType: "AP_INVALID_ENTITY_TYPE",
   ApInvalidBooleanField: "AP_INVALID_BOOLEAN_FIELD",

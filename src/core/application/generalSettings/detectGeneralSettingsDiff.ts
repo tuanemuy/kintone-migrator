@@ -13,7 +13,8 @@ export async function detectGeneralSettingsDiff({
     getStorage: () => container.generalSettingsStorage.get(),
     fetchRemote: () =>
       container.generalSettingsConfigurator.getGeneralSettings(),
-    parseConfig: parseGeneralSettingsConfigText,
+    parseConfig: (content) =>
+      parseGeneralSettingsConfigText(container.configCodec, content),
     detect: (local, remote) =>
       GeneralSettingsDiffDetector.detect(local, remote.config),
     notFoundMessage: "General settings config file not found",

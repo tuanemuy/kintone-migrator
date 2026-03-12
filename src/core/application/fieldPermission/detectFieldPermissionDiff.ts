@@ -13,7 +13,8 @@ export async function detectFieldPermissionDiff({
     getStorage: () => container.fieldPermissionStorage.get(),
     fetchRemote: () =>
       container.fieldPermissionConfigurator.getFieldPermissions(),
-    parseConfig: parseFieldPermissionConfigText,
+    parseConfig: (content) =>
+      parseFieldPermissionConfigText(container.configCodec, content),
     detect: (local, remote) =>
       FieldPermissionDiffDetector.detect(local, { rights: remote.rights }),
     notFoundMessage: "Field permission config file not found",

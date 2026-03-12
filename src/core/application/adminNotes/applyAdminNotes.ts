@@ -7,7 +7,8 @@ export async function applyAdminNotes({
 }: AdminNotesServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.adminNotesStorage.get(),
-    parseConfig: parseAdminNotesConfigText,
+    parseConfig: (content) =>
+      parseAdminNotesConfigText(container.configCodec, content),
     fetchRemote: () => container.adminNotesConfigurator.getAdminNotes(),
     update: async (config, current) => {
       await container.adminNotesConfigurator.updateAdminNotes({

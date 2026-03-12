@@ -15,7 +15,10 @@ export async function captureProcessManagement({
     fetchRemote: () =>
       container.processManagementConfigurator.getProcessManagement(),
     serialize: ({ config }) =>
-      stringifyToYaml(ProcessManagementConfigSerializer.serialize(config)),
+      stringifyToYaml(
+        container.configCodec,
+        ProcessManagementConfigSerializer.serialize(config),
+      ),
     getStorage: () => container.processManagementStorage.get(),
   });
 }

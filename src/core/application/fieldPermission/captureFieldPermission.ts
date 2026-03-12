@@ -15,7 +15,10 @@ export async function captureFieldPermission({
     fetchRemote: () =>
       container.fieldPermissionConfigurator.getFieldPermissions(),
     serialize: ({ rights }) =>
-      stringifyToYaml(FieldPermissionConfigSerializer.serialize({ rights })),
+      stringifyToYaml(
+        container.configCodec,
+        FieldPermissionConfigSerializer.serialize({ rights }),
+      ),
     getStorage: () => container.fieldPermissionStorage.get(),
   });
 }

@@ -7,7 +7,8 @@ export async function applyFieldPermission({
 }: FieldPermissionServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.fieldPermissionStorage.get(),
-    parseConfig: parseFieldPermissionConfigText,
+    parseConfig: (content) =>
+      parseFieldPermissionConfigText(container.configCodec, content),
     fetchRemote: () =>
       container.fieldPermissionConfigurator.getFieldPermissions(),
     update: async (config, current) => {

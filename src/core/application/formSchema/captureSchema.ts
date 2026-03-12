@@ -13,6 +13,7 @@ export async function captureSchema({
   ]);
   const enrichedLayout = enrichLayoutWithFields(currentLayout, currentFields);
   const schemaText = stringifyToYaml(
+    container.configCodec,
     SchemaSerializer.serialize(enrichedLayout, currentFields),
   );
   const existingResult = await container.schemaStorage.get();

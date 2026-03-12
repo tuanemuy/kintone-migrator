@@ -14,7 +14,10 @@ export async function captureView({
   return captureFromConfig({
     fetchRemote: () => container.viewConfigurator.getViews(),
     serialize: ({ views }) =>
-      stringifyToYaml(ViewConfigSerializer.serialize({ views })),
+      stringifyToYaml(
+        container.configCodec,
+        ViewConfigSerializer.serialize({ views }),
+      ),
     getStorage: () => container.viewStorage.get(),
   });
 }

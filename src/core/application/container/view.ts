@@ -1,9 +1,11 @@
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
 import type { ServiceArgs } from "../types";
 
 export type ViewDiffContainer = {
+  configCodec: ConfigCodec;
   viewConfigurator: ViewConfigurator;
   viewStorage: ViewStorage;
 };

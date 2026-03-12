@@ -7,7 +7,8 @@ export async function applyAction({
 }: ActionServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.actionStorage.get(),
-    parseConfig: parseActionConfigText,
+    parseConfig: (content) =>
+      parseActionConfigText(container.configCodec, content),
     fetchRemote: () => container.actionConfigurator.getActions(),
     update: async (config, current) => {
       await container.actionConfigurator.updateActions({

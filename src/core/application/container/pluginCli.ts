@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
 import { KintonePluginConfigurator } from "@/core/adapters/kintone/pluginConfigurator";
 import { createLocalFilePluginStorage } from "@/core/adapters/local/pluginStorage";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { KintoneAuth } from "./cli";
 import { createKintoneClient } from "./kintoneClient";
 import type { PluginContainer } from "./plugin";
@@ -21,6 +22,7 @@ export function createPluginCliContainer(
   const client = config.client ?? createKintoneClient(config);
 
   return {
+    configCodec,
     pluginConfigurator: new KintonePluginConfigurator(client, config.appId),
     pluginStorage: createLocalFilePluginStorage(config.pluginFilePath),
     appDeployer: new KintoneAppDeployer(client, config.appId),

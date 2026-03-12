@@ -1,9 +1,11 @@
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ServiceArgs } from "../types";
 
 export type PluginDiffContainer = {
+  configCodec: ConfigCodec;
   pluginConfigurator: PluginConfigurator;
   pluginStorage: PluginStorage;
 };

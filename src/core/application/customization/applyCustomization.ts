@@ -69,7 +69,7 @@ export async function applyCustomization({
       "Customization config file not found",
     );
   }
-  const config = parseConfigText(result.content);
+  const config = parseConfigText(container.configCodec, result.content);
 
   const currentCustomization =
     await container.customizationConfigurator.getCustomization();

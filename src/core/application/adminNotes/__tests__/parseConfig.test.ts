@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { AdminNotesConfigParser } from "@/core/domain/adminNotes/services/configParser";
 import { isValidationError } from "../../error";
 import { parseAdminNotesConfigText } from "../parseConfig";
@@ -10,14 +11,14 @@ content: |
   <p>Test memo</p>
 includeInTemplateAndDuplicates: true
 `;
-    const config = parseAdminNotesConfigText(rawText);
+    const config = parseAdminNotesConfigText(configCodec, rawText);
     expect(config.content).toContain("<p>Test memo</p>");
     expect(config.includeInTemplateAndDuplicates).toBe(true);
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {
     try {
-      parseAdminNotesConfigText("");
+      parseAdminNotesConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -26,7 +27,7 @@ includeInTemplateAndDuplicates: true
 
   it("不正なYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseAdminNotesConfigText("{ invalid yaml:");
+      parseAdminNotesConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -35,7 +36,7 @@ includeInTemplateAndDuplicates: true
 
   it("不正な構造のYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseAdminNotesConfigText("content: 123");
+      parseAdminNotesConfigText(configCodec, "content: 123");
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -46,7 +47,9 @@ includeInTemplateAndDuplicates: true
     vi.spyOn(AdminNotesConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parseAdminNotesConfigText("dummy")).toThrow(TypeError);
+    expect(() => parseAdminNotesConfigText(configCodec, "dummy")).toThrow(
+      TypeError,
+    );
     vi.restoreAllMocks();
   });
 });

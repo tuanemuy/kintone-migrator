@@ -2,6 +2,7 @@ import { dirname, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { createCliCaptureContainers } from "@/core/application/container/captureAllCli";
 import { createInitCliContainer } from "@/core/application/container/initCli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
@@ -141,12 +142,15 @@ export default define({
       // Auth is intentionally omitted from the generated file to prevent
       // credentials from being committed to version control. The user is
       // expected to supply auth via environment variables or add it manually.
-      const configText = generateProjectConfig({
-        apps,
-        domain: kintoneDomain,
-        guestSpaceId,
-        baseDir: output,
-      });
+      const configText = generateProjectConfig(
+        {
+          apps,
+          domain: kintoneDomain,
+          guestSpaceId,
+          baseDir: output,
+        },
+        configCodec,
+      );
 
       if (dryRun) {
         p.log.info(pc.dim("(dry-run mode - no files will be written)"));

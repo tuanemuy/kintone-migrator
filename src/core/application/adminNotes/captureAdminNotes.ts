@@ -14,7 +14,10 @@ export async function captureAdminNotes({
   return captureFromConfig({
     fetchRemote: () => container.adminNotesConfigurator.getAdminNotes(),
     serialize: ({ config }) =>
-      stringifyToYaml(AdminNotesConfigSerializer.serialize(config)),
+      stringifyToYaml(
+        container.configCodec,
+        AdminNotesConfigSerializer.serialize(config),
+      ),
     getStorage: () => container.adminNotesStorage.get(),
   });
 }

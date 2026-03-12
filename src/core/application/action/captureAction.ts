@@ -14,7 +14,10 @@ export async function captureAction({
   return captureFromConfig({
     fetchRemote: () => container.actionConfigurator.getActions(),
     serialize: ({ actions }) =>
-      stringifyToYaml(ActionConfigSerializer.serialize({ actions })),
+      stringifyToYaml(
+        container.configCodec,
+        ActionConfigSerializer.serialize({ actions }),
+      ),
     getStorage: () => container.actionStorage.get(),
   });
 }

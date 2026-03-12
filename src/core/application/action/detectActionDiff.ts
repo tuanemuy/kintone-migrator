@@ -12,7 +12,8 @@ export async function detectActionDiff({
   return detectDiffFromConfig({
     getStorage: () => container.actionStorage.get(),
     fetchRemote: () => container.actionConfigurator.getActions(),
-    parseConfig: parseActionConfigText,
+    parseConfig: (content) =>
+      parseActionConfigText(container.configCodec, content),
     detect: (local, remote) =>
       ActionDiffDetector.detect(local, { actions: remote.actions }),
     notFoundMessage: "Action config file not found",

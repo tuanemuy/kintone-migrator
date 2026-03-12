@@ -12,7 +12,7 @@ export async function detectCustomizationDiff({
   return detectDiffFromConfig({
     getStorage: () => container.customizationStorage.get(),
     fetchRemote: () => container.customizationConfigurator.getCustomization(),
-    parseConfig: (content) => parseConfigText(content),
+    parseConfig: (content) => parseConfigText(container.configCodec, content),
     detect: (local, remote) => CustomizationDiffDetector.detect(local, remote),
     notFoundMessage: "Customization config file not found",
   });

@@ -213,6 +213,7 @@ export async function captureCustomization({
   };
 
   const configText = stringifyToYaml(
+    container.configCodec,
     CustomizationConfigSerializer.serialize(config),
   );
 

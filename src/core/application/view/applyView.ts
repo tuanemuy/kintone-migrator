@@ -17,7 +17,7 @@ export async function applyView({
       "View config file not found",
     );
   }
-  const config = parseViewConfigText(result.content);
+  const config = parseViewConfigText(container.configCodec, result.content);
 
   const skippedBuiltinViews: string[] = [];
   const filteredViews: Record<string, ViewConfig> = {};

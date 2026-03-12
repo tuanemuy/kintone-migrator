@@ -21,7 +21,10 @@ export async function captureSeed({
 
   const records = existingRecords.map(({ record }) => record);
 
-  const seedText = stringifyToYaml(SeedSerializer.serialize({ key, records }));
+  const seedText = stringifyToYaml(
+    container.configCodec,
+    SeedSerializer.serialize({ key, records }),
+  );
 
   const existing = await container.seedStorage.get();
 

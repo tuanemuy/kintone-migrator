@@ -1,3 +1,4 @@
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import type { FieldRight } from "@/core/domain/fieldPermission/entity";
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
@@ -64,6 +65,7 @@ export type TestFieldPermissionContainer = FieldPermissionContainer & {
 
 export function createTestFieldPermissionContainer(): TestFieldPermissionContainer {
   return {
+    configCodec,
     fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
     fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
     appDeployer: new InMemoryAppDeployer(),

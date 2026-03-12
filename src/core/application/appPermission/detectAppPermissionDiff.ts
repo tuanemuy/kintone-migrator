@@ -12,7 +12,8 @@ export async function detectAppPermissionDiff({
   return detectDiffFromConfig({
     getStorage: () => container.appPermissionStorage.get(),
     fetchRemote: () => container.appPermissionConfigurator.getAppPermissions(),
-    parseConfig: parseAppPermissionConfigText,
+    parseConfig: (content) =>
+      parseAppPermissionConfigText(container.configCodec, content),
     detect: (local, remote) =>
       AppPermissionDiffDetector.detect(local, { rights: remote.rights }),
     notFoundMessage: "App permission config file not found",

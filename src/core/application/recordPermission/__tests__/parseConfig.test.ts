@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { RecordPermissionConfigParser } from "@/core/domain/recordPermission/services/configParser";
 import { isValidationError } from "../../error";
 import { parseRecordPermissionConfigText } from "../parseConfig";
@@ -17,14 +18,14 @@ rights:
         deletable: false
         includeSubs: false
 `;
-    const config = parseRecordPermissionConfigText(rawText);
+    const config = parseRecordPermissionConfigText(configCodec, rawText);
     expect(config.rights).toHaveLength(1);
     expect(config.rights[0].entities[0].entity.code).toBe("user1");
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {
     try {
-      parseRecordPermissionConfigText("");
+      parseRecordPermissionConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -33,7 +34,7 @@ rights:
 
   it("不正なYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseRecordPermissionConfigText("{ invalid yaml:");
+      parseRecordPermissionConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -42,7 +43,7 @@ rights:
 
   it("不正な構造のYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseRecordPermissionConfigText("rights: not_array");
+      parseRecordPermissionConfigText(configCodec, "rights: not_array");
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -53,7 +54,9 @@ rights:
     vi.spyOn(RecordPermissionConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parseRecordPermissionConfigText("dummy")).toThrow(TypeError);
+    expect(() => parseRecordPermissionConfigText(configCodec, "dummy")).toThrow(
+      TypeError,
+    );
     vi.restoreAllMocks();
   });
 });

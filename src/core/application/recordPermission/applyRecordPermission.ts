@@ -7,7 +7,8 @@ export async function applyRecordPermission({
 }: RecordPermissionServiceArgs): Promise<void> {
   await applyFromConfig({
     getStorage: () => container.recordPermissionStorage.get(),
-    parseConfig: parseRecordPermissionConfigText,
+    parseConfig: (content) =>
+      parseRecordPermissionConfigText(container.configCodec, content),
     fetchRemote: () =>
       container.recordPermissionConfigurator.getRecordPermissions(),
     update: async (config, current) => {

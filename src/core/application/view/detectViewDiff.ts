@@ -12,7 +12,8 @@ export async function detectViewDiff({
   return detectDiffFromConfig({
     getStorage: () => container.viewStorage.get(),
     fetchRemote: () => container.viewConfigurator.getViews(),
-    parseConfig: (content) => parseViewConfigText(content).views,
+    parseConfig: (content) =>
+      parseViewConfigText(container.configCodec, content).views,
     detect: (views, remote) => ViewDiffDetector.detect(views, remote.views),
     notFoundMessage: "View config file not found",
   });

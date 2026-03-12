@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { isValidationError } from "../../error";
 import { loadProjectConfig } from "../loadProjectConfig";
 
@@ -14,7 +15,7 @@ apps:
     appId: "100"
     schemaFilePath: schema.yaml
 `;
-    const config = loadProjectConfig({ content });
+    const config = loadProjectConfig({ content }, configCodec);
 
     expect(config.apps.size).toBe(1);
   });
@@ -22,7 +23,7 @@ apps:
   it("無効なYAML構文の場合、ValidationErrorをスローする", () => {
     const content = "{ invalid yaml:";
     try {
-      loadProjectConfig({ content });
+      loadProjectConfig({ content }, configCodec);
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -46,7 +47,7 @@ apps:
     appId: "200"
     schemaFilePath: schema2.yaml
 `;
-    const config = loadProjectConfig({ content });
+    const config = loadProjectConfig({ content }, configCodec);
 
     expect(config.apps.size).toBe(2);
   });
@@ -67,7 +68,7 @@ apps:
     dependsOn:
       - app1
 `;
-    const config = loadProjectConfig({ content });
+    const config = loadProjectConfig({ content }, configCodec);
 
     expect(config.apps.size).toBe(2);
   });

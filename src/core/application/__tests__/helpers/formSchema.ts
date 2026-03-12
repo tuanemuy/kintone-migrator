@@ -1,3 +1,4 @@
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
@@ -97,6 +98,7 @@ export type TestFormSchemaContainer = FormSchemaContainer & {
 
 export function createTestFormSchemaContainer(): TestFormSchemaContainer {
   return {
+    configCodec,
     formConfigurator: new InMemoryFormConfigurator(),
     schemaStorage: new InMemorySchemaStorage(),
     appDeployer: new InMemoryAppDeployer(),

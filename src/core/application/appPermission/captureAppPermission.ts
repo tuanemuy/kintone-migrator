@@ -14,7 +14,10 @@ export async function captureAppPermission({
   return captureFromConfig({
     fetchRemote: () => container.appPermissionConfigurator.getAppPermissions(),
     serialize: ({ rights }) =>
-      stringifyToYaml(AppPermissionConfigSerializer.serialize({ rights })),
+      stringifyToYaml(
+        container.configCodec,
+        AppPermissionConfigSerializer.serialize({ rights }),
+      ),
     getStorage: () => container.appPermissionStorage.get(),
   });
 }

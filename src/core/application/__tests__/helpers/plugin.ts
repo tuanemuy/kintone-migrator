@@ -1,3 +1,4 @@
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { PluginContainer } from "@/core/application/container/plugin";
 import type { PluginConfig } from "@/core/domain/plugin/entity";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
@@ -55,6 +56,7 @@ export type TestPluginContainer = PluginContainer & {
 
 export function createTestPluginContainer(): TestPluginContainer {
   return {
+    configCodec,
     pluginConfigurator: new InMemoryPluginConfigurator(),
     pluginStorage: new InMemoryPluginStorage(),
     appDeployer: new InMemoryAppDeployer(),

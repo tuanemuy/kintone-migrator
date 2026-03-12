@@ -12,7 +12,7 @@ export async function applyPlugin({
       "Plugin config file not found",
     );
   }
-  const config = parsePluginConfigText(result.content);
+  const config = parsePluginConfigText(container.configCodec, result.content);
 
   const current = await container.pluginConfigurator.getPlugins();
 

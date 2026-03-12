@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { PluginConfigParser } from "@/core/domain/plugin/services/configParser";
 import { isValidationError } from "../../error";
 import { parsePluginConfigText } from "../parseConfig";
@@ -10,14 +11,14 @@ plugins:
   - id: djmhffjlbkikgmepoociabnpfcfjhdge
     name: 条件分岐プラグイン
 `;
-    const config = parsePluginConfigText(rawText);
+    const config = parsePluginConfigText(configCodec, rawText);
     expect(config.plugins).toHaveLength(1);
     expect(config.plugins[0].id).toBe("djmhffjlbkikgmepoociabnpfcfjhdge");
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {
     try {
-      parsePluginConfigText("");
+      parsePluginConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -26,7 +27,7 @@ plugins:
 
   it("不正なYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parsePluginConfigText("{ invalid yaml:");
+      parsePluginConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -35,7 +36,7 @@ plugins:
 
   it("不正な構造のYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parsePluginConfigText("plugins: not_array");
+      parsePluginConfigText(configCodec, "plugins: not_array");
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -46,7 +47,9 @@ plugins:
     vi.spyOn(PluginConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parsePluginConfigText("dummy")).toThrow(TypeError);
+    expect(() => parsePluginConfigText(configCodec, "dummy")).toThrow(
+      TypeError,
+    );
     vi.restoreAllMocks();
   });
 });

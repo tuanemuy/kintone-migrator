@@ -44,7 +44,7 @@ export async function detectDiff({
       "Schema file not found",
     );
   }
-  const schema = parseSchemaText(result.content);
+  const schema = parseSchemaText(container.configCodec, result.content);
   const [currentFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(),
     container.formConfigurator.getLayout(),

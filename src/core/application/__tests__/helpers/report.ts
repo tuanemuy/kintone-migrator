@@ -1,3 +1,4 @@
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { ReportContainer } from "@/core/application/container/report";
 import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
@@ -57,6 +58,7 @@ export type TestReportContainer = ReportContainer & {
 
 export function createTestReportContainer(): TestReportContainer {
   return {
+    configCodec,
     reportConfigurator: new InMemoryReportConfigurator(),
     reportStorage: new InMemoryReportStorage(),
     appDeployer: new InMemoryAppDeployer(),

@@ -1,9 +1,12 @@
-import { configCodec } from "@/core/adapters/yaml/configCodec";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { SystemError, SystemErrorCode } from "./error";
 
-export function stringifyToYaml(data: Record<string, unknown>): string {
+export function stringifyToYaml(
+  codec: ConfigCodec,
+  data: Record<string, unknown>,
+): string {
   try {
-    return configCodec.stringify(data);
+    return codec.stringify(data);
   } catch (cause) {
     throw new SystemError(
       SystemErrorCode.InternalServerError,

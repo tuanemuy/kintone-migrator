@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { ReportConfigParser } from "@/core/domain/report/services/configParser";
 import { isValidationError } from "../../error";
 import { parseReportConfigText } from "../parseConfig";
@@ -18,14 +19,14 @@ reports:
     filterCond: ""
     sorts: []
 `;
-    const config = parseReportConfigText(rawText);
+    const config = parseReportConfigText(configCodec, rawText);
     expect(Object.keys(config.reports)).toHaveLength(1);
     expect(config.reports.テスト.chartType).toBe("BAR");
   });
 
   it("BusinessRuleErrorをValidationErrorに変換する", () => {
     try {
-      parseReportConfigText("");
+      parseReportConfigText(configCodec, "");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -34,7 +35,7 @@ reports:
 
   it("不正なYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseReportConfigText("{ invalid yaml:");
+      parseReportConfigText(configCodec, "{ invalid yaml:");
       expect.fail("Expected ValidationError to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -43,7 +44,7 @@ reports:
 
   it("不正な構造のYAMLの場合にValidationErrorをスローする", () => {
     try {
-      parseReportConfigText("reports: not_object");
+      parseReportConfigText(configCodec, "reports: not_object");
       expect.fail("Expected error to be thrown");
     } catch (error) {
       expect(isValidationError(error)).toBe(true);
@@ -54,7 +55,9 @@ reports:
     vi.spyOn(ReportConfigParser, "parse").mockImplementation(() => {
       throw new TypeError("unexpected error");
     });
-    expect(() => parseReportConfigText("dummy")).toThrow(TypeError);
+    expect(() => parseReportConfigText(configCodec, "dummy")).toThrow(
+      TypeError,
+    );
     vi.restoreAllMocks();
   });
 });

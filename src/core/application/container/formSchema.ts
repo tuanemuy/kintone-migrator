@@ -1,10 +1,12 @@
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { ServiceArgs } from "../types";
 
 /** Ports needed by schema diff (subset of full container) */
 export type FormSchemaDiffContainer = {
+  configCodec: ConfigCodec;
   formConfigurator: FormConfigurator;
   schemaStorage: SchemaStorage;
 };

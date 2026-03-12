@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BusinessRuleErrorCode } from "@/core/domain/error";
 import { BusinessRuleError } from "@/core/domain/error";
-import { validateParsedConfig } from "../yamlConfigParser";
+import { validateParsedConfig } from "../configValidator";
 
 const errorCode = "TEST_INVALID_STRUCTURE" as BusinessRuleErrorCode;
 

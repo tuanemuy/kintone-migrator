@@ -1,3 +1,4 @@
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { AppName } from "@/core/domain/projectConfig/valueObject";
 import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
@@ -22,6 +23,7 @@ function deduplicateAppName(baseName: string, usedNames: Set<string>): AppName {
 
 export function generateProjectConfig(
   input: GenerateProjectConfigInput,
+  codec: ConfigCodec,
 ): string {
   const apps: Record<string, { appId: string; files: Record<string, string> }> =
     {};
@@ -46,5 +48,5 @@ export function generateProjectConfig(
     apps,
   };
 
-  return stringifyToYaml(config);
+  return stringifyToYaml(codec, config);
 }

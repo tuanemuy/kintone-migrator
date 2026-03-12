@@ -21,7 +21,10 @@ export async function applyNotification({
       "Notification config file not found",
     );
   }
-  const config = parseNotificationConfigText(result.content);
+  const config = parseNotificationConfigText(
+    container.configCodec,
+    result.content,
+  );
 
   if (config.general !== undefined) {
     const currentGeneral =
