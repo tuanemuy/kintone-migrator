@@ -58,7 +58,6 @@ export type CaptureResult =
   | Readonly<{ domain: CaptureDomain; success: false; error: Error }>;
 
 export type CaptureAllForAppInput = Readonly<{
-  appName: string;
   customizeBasePath: string;
 }>;
 
@@ -99,7 +98,9 @@ function buildCaptureTasks(args: CaptureAllForAppArgs): readonly CaptureTask[] {
           container: c.customization,
           input: {
             basePath: input.customizeBasePath,
-            filePrefix: input.appName,
+            // basePath already points to the app-specific directory (parent of
+            // customize.yaml), so no filePrefix is needed.
+            filePrefix: "",
           },
         });
         await saveCustomization({
