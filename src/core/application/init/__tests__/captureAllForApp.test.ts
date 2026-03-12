@@ -112,7 +112,6 @@ describe("isFatalError", () => {
 
 describe("captureAllForApp", () => {
   const baseInput = {
-    appName: "test-app",
     customizeBasePath: "apps/test-app",
   };
 

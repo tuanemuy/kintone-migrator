@@ -98,6 +98,8 @@ function buildCaptureTasks(args: CaptureAllForAppArgs): readonly CaptureTask[] {
           container: c.customization,
           input: {
             basePath: input.customizeBasePath,
+            // basePath は既にアプリ固有ディレクトリ（customize.yaml の親ディレクトリ）を
+            // 指しているため、filePrefix は不要
             filePrefix: "",
           },
         });
