@@ -330,6 +330,47 @@ describe("init コマンド", () => {
     expect(handleCliError).toHaveBeenCalledWith(error);
   });
 
+  it("fetchAllApps のエラーが handleCliError で処理される", async () => {
+    const error = new Error("Apps API error");
+    vi.mocked(fetchAllApps).mockRejectedValue(error);
+
+    await command.run({
+      values: {
+        domain: "test.cybozu.com",
+        "api-token": "token",
+      },
+    } as never);
+
+    expect(handleCliError).toHaveBeenCalledWith(error);
+  });
+
+  it("無効な space-id の場合にバリデーションエラーが発生する", async () => {
+    await command.run({
+      values: {
+        "space-id": "0",
+        domain: "test.cybozu.com",
+        "api-token": "token",
+      },
+    } as never);
+
+    expect(handleCliError).toHaveBeenCalled();
+    expect(fetchSpaceApps).not.toHaveBeenCalled();
+    expect(fetchAllApps).not.toHaveBeenCalled();
+  });
+
+  it("space-id が文字列の場合にバリデーションエラーが発生する", async () => {
+    await command.run({
+      values: {
+        "space-id": "abc",
+        domain: "test.cybozu.com",
+        "api-token": "token",
+      },
+    } as never);
+
+    expect(handleCliError).toHaveBeenCalled();
+    expect(fetchSpaceApps).not.toHaveBeenCalled();
+  });
+
   it("space-id 未指定時に fetchAllApps が呼ばれる", async () => {
     vi.mocked(fetchAllApps).mockResolvedValue([
       { appId: "1", code: "myapp", name: "My App" },
