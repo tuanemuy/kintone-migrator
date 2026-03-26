@@ -76,11 +76,11 @@ import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
 import { createCliCaptureContainers } from "@/core/application/container/captureAllCli";
 import { createInitCliContainer } from "@/core/application/container/initCli";
+import { ValidationError } from "@/core/application/error";
 import { captureAllForApp } from "@/core/application/init/captureAllForApp";
 import { fetchAllApps } from "@/core/application/init/fetchAllApps";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
-import { ValidationError } from "@/core/application/error";
 import command from "../init";
 
 afterEach(() => {

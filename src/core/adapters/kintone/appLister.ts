@@ -1,9 +1,6 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AppLister } from "@/core/domain/app/ports/appLister";
-import {
-  SystemError,
-  SystemErrorCode,
-} from "@/core/application/error";
 import type { SpaceApp } from "@/core/domain/space/entity";
 import { wrapKintoneError } from "./wrapKintoneError";
 
