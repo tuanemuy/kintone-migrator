@@ -10,10 +10,11 @@ import {
   type CaptureResult,
   captureAllForApp,
 } from "@/core/application/init/captureAllForApp";
+import { fetchAllApps } from "@/core/application/init/fetchAllApps";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
-import { resolveAppName } from "@/core/domain/space/entity";
+import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
 import { kintoneArgs, resolveAuth, validateKintoneDomain } from "../config";
 import {
   formatErrorForDisplay,
@@ -27,7 +28,6 @@ const initArgs = {
     type: "string" as const,
     short: "s",
     description: "kintone space ID",
-    required: true as const,
   },
   domain: kintoneArgs.domain,
   username: kintoneArgs.username,
@@ -52,7 +52,7 @@ const initArgs = {
 };
 
 type InitCliValues = {
-  "space-id": string;
+  "space-id"?: string;
   domain?: string;
   username?: string;
   password?: string;
@@ -76,16 +76,80 @@ function printCaptureResults(results: readonly CaptureResult[]): void {
   }
 }
 
+function printDryRunPreview(
+  apps: readonly SpaceApp[],
+  configPath: string,
+  configText: string,
+  output: string | undefined,
+): void {
+  p.log.info(pc.dim("(dry-run mode - no files will be written)"));
+  p.log.step(`\nConfig file: ${pc.cyan(configPath)}`);
+  p.log.message(configText);
+
+  for (const app of apps) {
+    const appName = resolveAppName(app);
+    const paths = buildAppFilePaths(appName, output);
+    p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
+    p.log.message("  Files that would be created:");
+    for (const [domain, filePath] of Object.entries(paths)) {
+      p.log.message(`    ${domain}: ${pc.dim(filePath)}`);
+    }
+  }
+
+  p.log.success("\nDry run complete. No files were written.");
+}
+
+async function captureApps(
+  apps: readonly SpaceApp[],
+  config: {
+    baseUrl: string;
+    auth: ReturnType<typeof resolveAuth>;
+    guestSpaceId: string | undefined;
+    output: string | undefined;
+  },
+): Promise<void> {
+  for (const app of apps) {
+    const appName = resolveAppName(app);
+    p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
+
+    const { containers, paths } = createCliCaptureContainers({
+      baseUrl: config.baseUrl,
+      auth: config.auth,
+      appId: app.appId,
+      guestSpaceId: config.guestSpaceId,
+      appName,
+      baseDir: config.output,
+    });
+
+    const cs = p.spinner();
+    cs.start(`Capturing all domains for ${appName}...`);
+    const results = await captureAllForApp({
+      container: containers,
+      input: {
+        customizeBasePath: dirname(resolve(paths.customize)),
+      },
+    });
+    const successCount = results.filter((r) => r.success).length;
+    const failCount = results.length - successCount;
+    cs.stop(
+      `Captured ${successCount}/${results.length} domains.` +
+        (failCount > 0 ? pc.red(` (${failCount} failed)`) : ""),
+    );
+
+    printCaptureResults(results);
+  }
+}
+
 export default define({
   name: "init",
-  description: "Initialize project from a kintone space",
+  description: "Initialize project from kintone",
   args: initArgs,
   run: async (ctx) => {
     try {
       const values = ctx.values as InitCliValues;
 
       const spaceId = values["space-id"];
-      if (!/^[1-9]\d*$/.test(spaceId)) {
+      if (spaceId && !/^[1-9]\d*$/.test(spaceId)) {
         throw new ValidationError(
           ValidationErrorCode.InvalidInput,
           `Invalid space ID: "${spaceId}" (must be a positive integer, e.g. 1, 42, 100)`,
@@ -113,21 +177,32 @@ export default define({
       const skipConfirm = values.yes ?? false;
       const dryRun = values["dry-run"] ?? false;
 
-      const { spaceReader, projectConfigStorage } = createInitCliContainer({
-        baseUrl,
-        auth,
-        guestSpaceId,
-        configFilePath: configPath,
-      });
+      const { spaceReader, appLister, projectConfigStorage } =
+        createInitCliContainer({
+          baseUrl,
+          auth,
+          guestSpaceId,
+          configFilePath: configPath,
+        });
 
-      // Fetch space apps
+      // Fetch apps
       const s = p.spinner();
-      s.start("Fetching space info...");
-      const apps = await fetchSpaceApps({
-        container: { spaceReader },
-        input: { spaceId },
-      });
-      s.stop(`Found ${apps.length} app(s) in the space.`);
+      let apps: readonly SpaceApp[];
+
+      if (spaceId) {
+        s.start("Fetching space info...");
+        apps = await fetchSpaceApps({
+          container: { spaceReader },
+          input: { spaceId },
+        });
+        s.stop(`Found ${apps.length} app(s) in the space.`);
+      } else {
+        s.start("Fetching all apps...");
+        apps = await fetchAllApps({
+          container: { appLister },
+        });
+        s.stop(`Found ${apps.length} app(s).`);
+      }
 
       // Display found apps
       p.log.info("Apps:");
@@ -153,21 +228,7 @@ export default define({
       );
 
       if (dryRun) {
-        p.log.info(pc.dim("(dry-run mode - no files will be written)"));
-        p.log.step(`\nConfig file: ${pc.cyan(configPath)}`);
-        p.log.message(configText);
-
-        for (const app of apps) {
-          const appName = resolveAppName(app);
-          const paths = buildAppFilePaths(appName, output);
-          p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
-          p.log.message("  Files that would be created:");
-          for (const [domain, filePath] of Object.entries(paths)) {
-            p.log.message(`    ${domain}: ${pc.dim(filePath)}`);
-          }
-        }
-
-        p.log.success("\nDry run complete. No files were written.");
+        printDryRunPreview(apps, configPath, configText, output);
         return;
       }
 
@@ -189,36 +250,7 @@ export default define({
       p.log.success(`Config written to: ${pc.cyan(configPath)}`);
 
       // Run captures for each app
-      for (const app of apps) {
-        const appName = resolveAppName(app);
-        p.log.step(`\n=== [${pc.bold(appName)}] (appId: ${app.appId}) ===`);
-
-        const { containers, paths } = createCliCaptureContainers({
-          baseUrl,
-          auth,
-          appId: app.appId,
-          guestSpaceId,
-          appName,
-          baseDir: output,
-        });
-
-        const cs = p.spinner();
-        cs.start(`Capturing all domains for ${appName}...`);
-        const results = await captureAllForApp({
-          container: containers,
-          input: {
-            customizeBasePath: dirname(resolve(paths.customize)),
-          },
-        });
-        const successCount = results.filter((r) => r.success).length;
-        const failCount = results.length - successCount;
-        cs.stop(
-          `Captured ${successCount}/${results.length} domains.` +
-            (failCount > 0 ? pc.red(` (${failCount} failed)`) : ""),
-        );
-
-        printCaptureResults(results);
-      }
+      await captureApps(apps, { baseUrl, auth, guestSpaceId, output });
 
       p.log.info(
         `Add authentication settings (auth) to ${pc.cyan(configPath)} or set KINTONE_API_TOKEN / KINTONE_USERNAME + KINTONE_PASSWORD environment variables.`,

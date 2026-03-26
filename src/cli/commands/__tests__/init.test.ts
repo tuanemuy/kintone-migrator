@@ -33,6 +33,7 @@ vi.mock("@/cli/config", () => ({
 vi.mock("@/core/application/container/initCli", () => ({
   createInitCliContainer: vi.fn(() => ({
     spaceReader: {},
+    appLister: {},
     projectConfigStorage: {
       get: vi.fn().mockResolvedValue({ exists: false }),
       update: vi.fn().mockResolvedValue(undefined),
@@ -41,6 +42,7 @@ vi.mock("@/core/application/container/initCli", () => ({
 }));
 
 vi.mock("@/core/application/init/fetchSpaceApps");
+vi.mock("@/core/application/init/fetchAllApps");
 vi.mock("@/core/application/init/generateProjectConfig");
 vi.mock("@/core/application/init/captureAllForApp");
 
@@ -75,6 +77,7 @@ import { handleCliError } from "@/cli/handleError";
 import { createCliCaptureContainers } from "@/core/application/container/captureAllCli";
 import { createInitCliContainer } from "@/core/application/container/initCli";
 import { captureAllForApp } from "@/core/application/init/captureAllForApp";
+import { fetchAllApps } from "@/core/application/init/fetchAllApps";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
 import command from "../init";
@@ -144,6 +147,7 @@ describe("init コマンド", () => {
   it("既存設定ファイルがある場合に確認プロンプトを表示する", async () => {
     vi.mocked(createInitCliContainer).mockReturnValue({
       spaceReader: {} as never,
+      appLister: {} as never,
       projectConfigStorage: {
         get: vi.fn().mockResolvedValue({ content: "existing", exists: true }),
         update: vi.fn().mockResolvedValue(undefined),
@@ -173,6 +177,7 @@ describe("init コマンド", () => {
   it("既存設定ファイルの上書きを拒否した場合に中断する", async () => {
     vi.mocked(createInitCliContainer).mockReturnValue({
       spaceReader: {} as never,
+      appLister: {} as never,
       projectConfigStorage: {
         get: vi.fn().mockResolvedValue({ content: "existing", exists: true }),
         update: vi.fn().mockResolvedValue(undefined),
@@ -202,6 +207,7 @@ describe("init コマンド", () => {
   it("--yes で確認プロンプトをスキップする", async () => {
     vi.mocked(createInitCliContainer).mockReturnValue({
       spaceReader: {} as never,
+      appLister: {} as never,
       projectConfigStorage: {
         get: vi.fn().mockResolvedValue({ content: "existing", exists: true }),
         update: vi.fn().mockResolvedValue(undefined),
@@ -231,6 +237,7 @@ describe("init コマンド", () => {
   it("--output でディレクトリを指定した場合に baseDir が渡される", async () => {
     vi.mocked(createInitCliContainer).mockReturnValue({
       spaceReader: {} as never,
+      appLister: {} as never,
       projectConfigStorage: {
         get: vi.fn().mockResolvedValue({ content: "", exists: false }),
         update: vi.fn().mockResolvedValue(undefined),
@@ -271,6 +278,7 @@ describe("init コマンド", () => {
   it("--output 未指定の場合に baseDir が undefined になる", async () => {
     vi.mocked(createInitCliContainer).mockReturnValue({
       spaceReader: {} as never,
+      appLister: {} as never,
       projectConfigStorage: {
         get: vi.fn().mockResolvedValue({ content: "", exists: false }),
         update: vi.fn().mockResolvedValue(undefined),
@@ -320,5 +328,26 @@ describe("init コマンド", () => {
     } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
+  });
+
+  it("space-id 未指定時に fetchAllApps が呼ばれる", async () => {
+    vi.mocked(fetchAllApps).mockResolvedValue([
+      { appId: "1", code: "myapp", name: "My App" },
+    ]);
+    vi.mocked(generateProjectConfig).mockReturnValue("domain: test\n");
+    vi.mocked(captureAllForApp).mockResolvedValue([
+      { domain: "schema", success: true },
+    ]);
+
+    await command.run({
+      values: {
+        domain: "test.cybozu.com",
+        "api-token": "token",
+      },
+    } as never);
+
+    expect(fetchAllApps).toHaveBeenCalled();
+    expect(fetchSpaceApps).not.toHaveBeenCalled();
+    expect(handleCliError).not.toHaveBeenCalled();
   });
 });
