@@ -1,5 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import type { AppLister } from "@/core/domain/app/ports/appLister";
+import {
+  SystemError,
+  SystemErrorCode,
+} from "@/core/application/error";
 import type { SpaceApp } from "@/core/domain/space/entity";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -14,6 +18,7 @@ export class KintoneAppLister implements AppLister {
 
     try {
       let offset = 0;
+      let completed = false;
 
       for (let page = 0; page < MAX_PAGES; page++) {
         const { apps } = await this.client.app.getApps({
@@ -31,10 +36,18 @@ export class KintoneAppLister implements AppLister {
         }
 
         if (apps.length < PAGE_LIMIT) {
+          completed = true;
           break;
         }
 
         offset += PAGE_LIMIT;
+      }
+
+      if (!completed) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Pagination did not complete within ${MAX_PAGES} pages (fetched ${result.length} apps). This may indicate an API issue.`,
+        );
       }
 
       return result;

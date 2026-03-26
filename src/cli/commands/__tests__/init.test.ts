@@ -80,6 +80,7 @@ import { captureAllForApp } from "@/core/application/init/captureAllForApp";
 import { fetchAllApps } from "@/core/application/init/fetchAllApps";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
+import { ValidationError } from "@/core/application/error";
 import command from "../init";
 
 afterEach(() => {
@@ -106,6 +107,7 @@ describe("init コマンド", () => {
     } as never);
 
     expect(fetchSpaceApps).toHaveBeenCalled();
+    expect(fetchAllApps).not.toHaveBeenCalled();
     expect(generateProjectConfig).toHaveBeenCalled();
     const container = vi.mocked(createInitCliContainer).mock.results[0].value;
     expect(container.projectConfigStorage.update).toHaveBeenCalledWith(
@@ -344,7 +346,7 @@ describe("init コマンド", () => {
     expect(handleCliError).toHaveBeenCalledWith(error);
   });
 
-  it("無効な space-id の場合にバリデーションエラーが発生する", async () => {
+  it("無効な space-id (0) の場合にバリデーションエラーが発生する", async () => {
     await command.run({
       values: {
         "space-id": "0",
@@ -353,12 +355,12 @@ describe("init コマンド", () => {
       },
     } as never);
 
-    expect(handleCliError).toHaveBeenCalled();
+    expect(handleCliError).toHaveBeenCalledWith(expect.any(ValidationError));
     expect(fetchSpaceApps).not.toHaveBeenCalled();
     expect(fetchAllApps).not.toHaveBeenCalled();
   });
 
-  it("space-id が文字列の場合にバリデーションエラーが発生する", async () => {
+  it("無効な space-id (文字列) の場合にバリデーションエラーが発生する", async () => {
     await command.run({
       values: {
         "space-id": "abc",
@@ -367,8 +369,22 @@ describe("init コマンド", () => {
       },
     } as never);
 
-    expect(handleCliError).toHaveBeenCalled();
+    expect(handleCliError).toHaveBeenCalledWith(expect.any(ValidationError));
     expect(fetchSpaceApps).not.toHaveBeenCalled();
+  });
+
+  it("無効な space-id (負の整数) の場合にバリデーションエラーが発生する", async () => {
+    await command.run({
+      values: {
+        "space-id": "-1",
+        domain: "test.cybozu.com",
+        "api-token": "token",
+      },
+    } as never);
+
+    expect(handleCliError).toHaveBeenCalledWith(expect.any(ValidationError));
+    expect(fetchSpaceApps).not.toHaveBeenCalled();
+    expect(fetchAllApps).not.toHaveBeenCalled();
   });
 
   it("space-id 未指定時に fetchAllApps が呼ばれる", async () => {
