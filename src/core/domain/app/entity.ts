@@ -1,6 +1,6 @@
 import { AppName } from "@/core/domain/projectConfig/valueObject";
 
-export type SpaceApp = Readonly<{
+export type AppInfo = Readonly<{
   appId: string;
   code: string;
   name: string;
@@ -14,7 +14,7 @@ function sanitizeForFileSystem(name: string): string {
   return sanitized === "" ? "_" : sanitized;
 }
 
-export function resolveAppName(app: SpaceApp): AppName {
+export function resolveAppName(app: AppInfo): AppName {
   const raw =
     app.code !== ""
       ? app.code

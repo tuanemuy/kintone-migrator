@@ -1,17 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { NotFoundError } from "@/core/application/error";
+import type { AppInfo } from "@/core/domain/app/entity";
 import type { AppLister } from "@/core/domain/app/ports/appLister";
-import type { SpaceApp } from "@/core/domain/space/entity";
 import { fetchAllApps } from "../fetchAllApps";
 
 class InMemoryAppLister implements AppLister {
-  private apps: readonly SpaceApp[] = [];
+  private apps: readonly AppInfo[] = [];
 
-  setApps(apps: readonly SpaceApp[]): void {
+  setApps(apps: readonly AppInfo[]): void {
     this.apps = apps;
   }
 
-  async getAllApps(): Promise<readonly SpaceApp[]> {
+  async getAllApps(): Promise<readonly AppInfo[]> {
     return this.apps;
   }
 }
@@ -19,7 +19,7 @@ class InMemoryAppLister implements AppLister {
 describe("fetchAllApps", () => {
   it("全アプリ一覧を返す", async () => {
     const lister = new InMemoryAppLister();
-    const apps: SpaceApp[] = [
+    const apps: AppInfo[] = [
       { appId: "1", code: "app1", name: "App 1" },
       { appId: "2", code: "app2", name: "App 2" },
     ];

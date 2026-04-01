@@ -5,7 +5,7 @@ import {
   ValidationError,
   ValidationErrorCode,
 } from "@/core/application/error";
-import type { SpaceApp } from "@/core/domain/space/entity";
+import type { AppInfo } from "@/core/domain/app/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -24,7 +24,7 @@ import { wrapKintoneError } from "./wrapKintoneError";
 export class KintoneSpaceReader implements SpaceReader {
   constructor(private readonly client: KintoneRestAPIClient) {}
 
-  async getSpaceApps(spaceId: string): Promise<readonly SpaceApp[]> {
+  async getSpaceApps(spaceId: string): Promise<readonly AppInfo[]> {
     if (!spaceId) {
       throw new ValidationError(
         ValidationErrorCode.InvalidInput,
@@ -66,7 +66,7 @@ export class KintoneSpaceReader implements SpaceReader {
         }
       }
 
-      const result: SpaceApp[] = [];
+      const result: AppInfo[] = [];
       for (const app of validApps) {
         const appId =
           typeof app.appId === "string"

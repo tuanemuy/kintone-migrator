@@ -1,5 +1,5 @@
-import type { SpaceApp } from "../../space/entity";
+import type { AppInfo } from "../entity";
 
 export interface AppLister {
-  getAllApps(): Promise<readonly SpaceApp[]>;
+  getAllApps(): Promise<readonly AppInfo[]>;
 }
