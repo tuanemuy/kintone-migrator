@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { parse as parseYaml } from "yaml";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
-import type { SpaceApp } from "@/core/domain/space/entity";
+import type { AppInfo } from "@/core/domain/app/entity";
 import { generateProjectConfig } from "../generateProjectConfig";
 
 describe("generateProjectConfig", () => {
   it("有効なYAMLを生成する", () => {
-    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+    const apps: AppInfo[] = [{ appId: "1", code: "myapp", name: "My App" }];
 
     const result = generateProjectConfig(
       {
@@ -22,7 +22,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("codeをアプリ名として使用する", () => {
-    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+    const apps: AppInfo[] = [{ appId: "1", code: "myapp", name: "My App" }];
 
     const result = generateProjectConfig(
       {
@@ -39,7 +39,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("codeが空の場合、アプリ名を使用する", () => {
-    const apps: SpaceApp[] = [{ appId: "42", code: "", name: "No Code App" }];
+    const apps: AppInfo[] = [{ appId: "42", code: "", name: "No Code App" }];
 
     const result = generateProjectConfig(
       {
@@ -58,7 +58,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("codeとnameが両方空の場合、app-{appId}をフォールバックとして使用する", () => {
-    const apps: SpaceApp[] = [{ appId: "42", code: "", name: "" }];
+    const apps: AppInfo[] = [{ appId: "42", code: "", name: "" }];
 
     const result = generateProjectConfig(
       {
@@ -75,7 +75,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("複数アプリの設定を生成する", () => {
-    const apps: SpaceApp[] = [
+    const apps: AppInfo[] = [
       { appId: "1", code: "app1", name: "App 1" },
       { appId: "2", code: "app2", name: "App 2" },
       { appId: "3", code: "", name: "App 3" },
@@ -97,7 +97,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("filesオブジェクトに全ドメインのファイルパスを含む", () => {
-    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+    const apps: AppInfo[] = [{ appId: "1", code: "myapp", name: "My App" }];
 
     const result = generateProjectConfig(
       {
@@ -126,7 +126,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("guestSpaceIdが指定された場合、設定に含める", () => {
-    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+    const apps: AppInfo[] = [{ appId: "1", code: "myapp", name: "My App" }];
 
     const result = generateProjectConfig(
       {
@@ -142,7 +142,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("guestSpaceIdが未指定の場合、設定に含めない", () => {
-    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+    const apps: AppInfo[] = [{ appId: "1", code: "myapp", name: "My App" }];
 
     const result = generateProjectConfig(
       {
@@ -157,7 +157,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("同じcodeのアプリが2つある場合、2つ目に-2サフィックスを付与する", () => {
-    const apps: SpaceApp[] = [
+    const apps: AppInfo[] = [
       { appId: "1", code: "myapp", name: "App 1" },
       { appId: "2", code: "myapp", name: "App 2" },
     ];
@@ -179,7 +179,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("生成された設定にauthフィールドが含まれない", () => {
-    const apps: SpaceApp[] = [{ appId: "1", code: "myapp", name: "My App" }];
+    const apps: AppInfo[] = [{ appId: "1", code: "myapp", name: "My App" }];
 
     const result = generateProjectConfig(
       {
@@ -194,7 +194,7 @@ describe("generateProjectConfig", () => {
   });
 
   it("同じcodeのアプリが3つある場合、-2と-3サフィックスを付与する", () => {
-    const apps: SpaceApp[] = [
+    const apps: AppInfo[] = [
       { appId: "1", code: "dup", name: "Dup 1" },
       { appId: "2", code: "dup", name: "Dup 2" },
       { appId: "3", code: "dup", name: "Dup 3" },

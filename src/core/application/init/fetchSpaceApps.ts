@@ -1,4 +1,4 @@
-import type { SpaceApp } from "@/core/domain/space/entity";
+import type { AppInfo } from "@/core/domain/app/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
 import { NotFoundError, NotFoundErrorCode } from "../error";
 
@@ -13,7 +13,7 @@ export type FetchSpaceAppsInput = Readonly<{
 export async function fetchSpaceApps(args: {
   container: FetchSpaceAppsContainer;
   input: FetchSpaceAppsInput;
-}): Promise<readonly SpaceApp[]> {
+}): Promise<readonly AppInfo[]> {
   const apps = await args.container.spaceReader.getSpaceApps(
     args.input.spaceId,
   );

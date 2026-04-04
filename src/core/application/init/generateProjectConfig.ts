@@ -1,12 +1,12 @@
+import { type AppInfo, resolveAppName } from "@/core/domain/app/entity";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { AppName } from "@/core/domain/projectConfig/valueObject";
-import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
 import { deduplicateName } from "@/lib/deduplicateName";
 import { stringifyConfig } from "../stringifyConfig";
 
 export type GenerateProjectConfigInput = Readonly<{
-  apps: readonly SpaceApp[];
+  apps: readonly AppInfo[];
   domain: string;
   guestSpaceId?: string;
   baseDir?: string;

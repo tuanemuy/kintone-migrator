@@ -1,5 +1,5 @@
+import type { AppInfo } from "@/core/domain/app/entity";
 import type { AppLister } from "@/core/domain/app/ports/appLister";
-import type { SpaceApp } from "@/core/domain/space/entity";
 import { NotFoundError, NotFoundErrorCode } from "../error";
 
 export type FetchAllAppsContainer = Readonly<{
@@ -8,7 +8,7 @@ export type FetchAllAppsContainer = Readonly<{
 
 export async function fetchAllApps(args: {
   container: FetchAllAppsContainer;
-}): Promise<readonly SpaceApp[]> {
+}): Promise<readonly AppInfo[]> {
   const apps = await args.container.appLister.getAllApps();
 
   if (apps.length === 0) {

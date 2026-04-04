@@ -1,18 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { NotFoundError } from "@/core/application/error";
-import type { SpaceApp } from "@/core/domain/space/entity";
+import type { AppInfo } from "@/core/domain/app/entity";
 import type { SpaceReader } from "@/core/domain/space/ports/spaceReader";
 import { fetchSpaceApps } from "../fetchSpaceApps";
 
 class InMemorySpaceReader implements SpaceReader {
-  private apps: readonly SpaceApp[] = [];
+  private apps: readonly AppInfo[] = [];
   lastSpaceId: string | undefined;
 
-  setApps(apps: readonly SpaceApp[]): void {
+  setApps(apps: readonly AppInfo[]): void {
     this.apps = apps;
   }
 
-  async getSpaceApps(spaceId: string): Promise<readonly SpaceApp[]> {
+  async getSpaceApps(spaceId: string): Promise<readonly AppInfo[]> {
     this.lastSpaceId = spaceId;
     return this.apps;
   }
@@ -21,7 +21,7 @@ class InMemorySpaceReader implements SpaceReader {
 describe("fetchSpaceApps", () => {
   it("スペースに属するアプリ一覧を返す", async () => {
     const reader = new InMemorySpaceReader();
-    const apps: SpaceApp[] = [
+    const apps: AppInfo[] = [
       { appId: "1", code: "app1", name: "App 1" },
       { appId: "2", code: "app2", name: "App 2" },
     ];

@@ -1,7 +1,7 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
+import type { AppInfo } from "@/core/domain/app/entity";
 import type { AppLister } from "@/core/domain/app/ports/appLister";
-import type { SpaceApp } from "@/core/domain/space/entity";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 const PAGE_LIMIT = 100;
@@ -10,8 +10,8 @@ const MAX_PAGES = 1000;
 export class KintoneAppLister implements AppLister {
   constructor(private readonly client: KintoneRestAPIClient) {}
 
-  async getAllApps(): Promise<readonly SpaceApp[]> {
-    const result: SpaceApp[] = [];
+  async getAllApps(): Promise<readonly AppInfo[]> {
+    const result: AppInfo[] = [];
 
     try {
       let offset = 0;

@@ -13,8 +13,8 @@ import {
 import { fetchAllApps } from "@/core/application/init/fetchAllApps";
 import { fetchSpaceApps } from "@/core/application/init/fetchSpaceApps";
 import { generateProjectConfig } from "@/core/application/init/generateProjectConfig";
+import { type AppInfo, resolveAppName } from "@/core/domain/app/entity";
 import { buildAppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
-import { resolveAppName, type SpaceApp } from "@/core/domain/space/entity";
 import { kintoneArgs, resolveAuth, validateKintoneDomain } from "../config";
 import {
   formatErrorForDisplay,
@@ -77,7 +77,7 @@ function printCaptureResults(results: readonly CaptureResult[]): void {
 }
 
 function printDryRunPreview(
-  apps: readonly SpaceApp[],
+  apps: readonly AppInfo[],
   configPath: string,
   configText: string,
   output: string | undefined,
@@ -100,7 +100,7 @@ function printDryRunPreview(
 }
 
 async function captureApps(
-  apps: readonly SpaceApp[],
+  apps: readonly AppInfo[],
   config: {
     baseUrl: string;
     auth: ReturnType<typeof resolveAuth>;
@@ -187,7 +187,7 @@ export default define({
 
       // Fetch apps
       const s = p.spinner();
-      let apps: readonly SpaceApp[];
+      let apps: readonly AppInfo[];
 
       if (spaceId) {
         s.start("Fetching space info...");
