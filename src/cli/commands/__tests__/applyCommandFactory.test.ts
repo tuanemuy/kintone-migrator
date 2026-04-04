@@ -223,9 +223,27 @@ describe("createApplyCommand", () => {
 
       await command.run({ values: { yes: true } } as never);
 
-      // p.confirm should only be called by confirmAndDeploy (mocked), not by the diff flow
+      expect(p.confirm).not.toHaveBeenCalled();
       expect(config.applyFn).toHaveBeenCalled();
       expect(confirmAndDeploy).toHaveBeenCalled();
+    });
+
+    it("should cancel when user presses Ctrl+C at confirmation", async () => {
+      const diffResult = makeDiffResult([{ type: "modified", name: "test" }]);
+      const detectDiff = vi.fn().mockResolvedValue(diffResult);
+      const printResult = vi.fn();
+      const config = makeConfig({
+        diffPreview: { detectDiff, printResult },
+      });
+      vi.mocked(p.confirm).mockResolvedValue(Symbol.for("cancel") as never);
+      vi.mocked(p.isCancel).mockReturnValue(true);
+      const command = createApplyCommand(config);
+
+      await command.run({ values: {} } as never);
+
+      expect(p.cancel).toHaveBeenCalledWith("Apply cancelled.");
+      expect(config.applyFn).not.toHaveBeenCalled();
+      expect(confirmAndDeploy).not.toHaveBeenCalled();
     });
 
     it("should handle detectDiff error and stop spinner", async () => {
@@ -422,6 +440,42 @@ describe("createApplyCommand", () => {
       );
       expect(p.cancel).toHaveBeenCalledWith("Apply cancelled.");
       expect(config.applyFn).not.toHaveBeenCalled();
+    });
+
+    it("should handle detectDiff error in multiApp path", async () => {
+      const plan = { orderedApps: [mockApp] };
+
+      vi.mocked(routeMultiApp).mockImplementationOnce(
+        async (
+          _values: unknown,
+          handlers: {
+            multiApp: (
+              plan: { orderedApps: readonly AppEntry[] },
+              config: ProjectConfig,
+            ) => Promise<void>;
+          },
+        ) => {
+          await handlers.multiApp(plan, mockProjectConfig);
+        },
+      );
+
+      const error = new Error("diff detection failed in multiApp");
+      const detectDiff = vi.fn().mockRejectedValue(error);
+      const printResult = vi.fn();
+      const config = makeConfig({
+        diffPreview: { detectDiff, printResult },
+      });
+      const command = createApplyCommand(config);
+
+      await command.run({ values: {} } as never);
+
+      const spinnerInstance = vi.mocked(p.spinner).mock.results[0].value as {
+        start: ReturnType<typeof vi.fn>;
+        stop: ReturnType<typeof vi.fn>;
+      };
+      expect(spinnerInstance.stop).toHaveBeenCalledWith("Comparison failed.");
+      expect(config.applyFn).not.toHaveBeenCalled();
+      expect(handleCliError).toHaveBeenCalledWith(error);
     });
   });
 });

@@ -146,4 +146,15 @@ describe("customize apply コマンド", () => {
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });
+
+  it("エラー発生時にデプロイは行われない", async () => {
+    const error = new Error("Customization failed");
+    vi.mocked(applyCustomization).mockRejectedValue(error);
+
+    await command.run({ values: { yes: true } } as never);
+
+    const container = vi.mocked(createCustomizationCliContainer).mock.results[0]
+      ?.value;
+    expect(container.appDeployer.deploy).not.toHaveBeenCalled();
+  });
 });

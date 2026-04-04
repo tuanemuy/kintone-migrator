@@ -8,6 +8,7 @@ import {
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import { applyCustomization } from "@/core/application/customization/applyCustomization";
 import { detectCustomizationDiff } from "@/core/application/customization/detectCustomizationDiff";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { AppEntry } from "@/core/domain/projectConfig/entity";
 import { confirmArgs, type WithConfirm } from "../../config";
 import {
@@ -41,10 +42,15 @@ async function runCustomizationApply(
 ): Promise<void> {
   const s = p.spinner();
   s.start("Applying customization...");
-  await applyCustomization({
-    container,
-    input: { basePath },
-  });
+  try {
+    await applyCustomization({
+      container,
+      input: { basePath },
+    });
+  } catch (error) {
+    s.stop("Apply failed.");
+    throw error;
+  }
   s.stop("Customization applied.");
 }
 
@@ -184,7 +190,14 @@ export default define({
           await runMultiAppWithHeaders(plan, async (app) => {
             const entry = appDiffResults.find((a) => a.app.name === app.name);
 
-            if (!entry?.hasChanges) {
+            if (!entry) {
+              throw new SystemError(
+                SystemErrorCode.InternalServerError,
+                `App container not found for "${app.name}"`,
+              );
+            }
+
+            if (!entry.hasChanges) {
               p.log.info("No changes. Skipping.");
               return;
             }

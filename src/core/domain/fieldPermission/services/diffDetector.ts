@@ -62,12 +62,12 @@ export const FieldPermissionDiffDetector = {
       }
     }
 
-    for (const code of remoteMap.keys()) {
+    for (const [code, remoteRight] of remoteMap) {
       if (!localMap.has(code)) {
         entries.push({
           type: "deleted",
           fieldCode: code,
-          details: "removed",
+          details: `entities: ${describeEntities(remoteRight.entities)}`,
         });
       }
     }

@@ -1,5 +1,6 @@
 import * as p from "@clack/prompts";
 import { type Args, define } from "gunshi";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
 import type { DiffResult } from "@/core/domain/diff";
 import type {
   AppEntry,
@@ -227,7 +228,14 @@ export function createApplyCommand<
                   (a) => a.app.name === app.name,
                 );
 
-                if (!entry?.hasChanges) {
+                if (!entry) {
+                  throw new SystemError(
+                    SystemErrorCode.InternalServerError,
+                    `App container not found for "${app.name}"`,
+                  );
+                }
+
+                if (!entry.hasChanges) {
                   p.log.info("No changes. Skipping.");
                   return;
                 }

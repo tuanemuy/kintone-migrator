@@ -59,6 +59,7 @@ describe("FieldPermissionDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].fieldCode).toBe("field1");
+      expect(result.entries[0].details).toContain("USER:user1(read)");
       expect(result.summary.deleted).toBe(1);
     });
   });
