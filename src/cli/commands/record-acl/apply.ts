@@ -1,5 +1,7 @@
 import { createRecordPermissionCliContainer } from "@/core/application/container/recordPermissionCli";
 import { applyRecordPermission } from "@/core/application/recordPermission/applyRecordPermission";
+import { detectRecordPermissionDiff } from "@/core/application/recordPermission/detectRecordPermissionDiff";
+import { printRecordPermissionDiffResult } from "../../output";
 import {
   recordAclArgs,
   resolveRecordAclAppContainerConfig,
@@ -15,6 +17,10 @@ export default createApplyCommand({
   successMessage: "Record access permissions applied successfully.",
   createContainer: createRecordPermissionCliContainer,
   applyFn: applyRecordPermission,
+  diffPreview: {
+    detectDiff: detectRecordPermissionDiff,
+    printResult: printRecordPermissionDiffResult,
+  },
   resolveContainerConfig: resolveRecordAclContainerConfig,
   resolveAppContainerConfig: resolveRecordAclAppContainerConfig,
 });

@@ -1,10 +1,12 @@
 import { createFieldPermissionCliContainer } from "@/core/application/container/fieldPermissionCli";
 import { applyFieldPermission } from "@/core/application/fieldPermission/applyFieldPermission";
+import { detectFieldPermissionDiff } from "@/core/application/fieldPermission/detectFieldPermissionDiff";
 import {
   fieldAclArgs,
   resolveFieldAclAppContainerConfig,
   resolveFieldAclContainerConfig,
 } from "../../fieldAclConfig";
+import { printFieldPermissionDiffResult } from "../../output";
 import { createApplyCommand } from "../applyCommandFactory";
 
 export default createApplyCommand({
@@ -15,6 +17,10 @@ export default createApplyCommand({
   successMessage: "Field access permissions applied successfully.",
   createContainer: createFieldPermissionCliContainer,
   applyFn: applyFieldPermission,
+  diffPreview: {
+    detectDiff: detectFieldPermissionDiff,
+    printResult: printFieldPermissionDiffResult,
+  },
   resolveContainerConfig: resolveFieldAclContainerConfig,
   resolveAppContainerConfig: resolveFieldAclAppContainerConfig,
 });

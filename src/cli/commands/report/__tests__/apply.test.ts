@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/reportConfig", () => ({
@@ -55,6 +57,15 @@ vi.mock("@/core/application/container/reportCli", () => ({
 
 vi.mock("@/core/application/report/applyReport");
 
+vi.mock("@/core/application/report/detectReportDiff", () => ({
+  detectReportDiff: vi.fn().mockResolvedValue({
+    entries: [{ type: "added", reportName: "test", details: "new report" }],
+    summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +82,7 @@ afterEach(() => {
 describe("report apply コマンド", () => {
   it("レポート設定の適用に成功し、成功メッセージが表示される", async () => {
     vi.mocked(applyReport).mockResolvedValue(undefined);
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +98,15 @@ describe("report apply コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("デプロイをキャンセルした場合、警告メッセージが表示される", async () => {
     vi.mocked(applyReport).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,7 +129,7 @@ describe("report apply コマンド", () => {
     const error = new Error("Report apply failed");
     vi.mocked(applyReport).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

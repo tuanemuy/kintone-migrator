@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/viewConfig", () => ({
@@ -55,6 +57,15 @@ vi.mock("@/core/application/container/viewCli", () => ({
 
 vi.mock("@/core/application/view/applyView");
 
+vi.mock("@/core/application/view/detectViewDiff", () => ({
+  detectViewDiff: vi.fn().mockResolvedValue({
+    entries: [{ type: "added", viewName: "test", details: "new LIST view" }],
+    summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +82,7 @@ afterEach(() => {
 describe("view apply command", () => {
   it("should apply views and show success message", async () => {
     vi.mocked(applyView).mockResolvedValue({ skippedBuiltinViews: [] });
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +98,15 @@ describe("view apply command", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("should show warning when deploy is cancelled", async () => {
     vi.mocked(applyView).mockResolvedValue({ skippedBuiltinViews: [] });
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,6 +129,7 @@ describe("view apply command", () => {
     vi.mocked(applyView).mockResolvedValue({
       skippedBuiltinViews: ["assignee", "history"],
     });
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -128,7 +143,7 @@ describe("view apply command", () => {
     const error = new Error("View apply failed");
     vi.mocked(applyView).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

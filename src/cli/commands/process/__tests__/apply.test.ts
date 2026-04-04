@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/processConfig", () => ({
@@ -55,6 +57,25 @@ vi.mock("@/core/application/container/processManagementCli", () => ({
 
 vi.mock("@/core/application/processManagement/applyProcessManagement");
 
+vi.mock(
+  "@/core/application/processManagement/detectProcessManagementDiff",
+  () => ({
+    detectProcessManagementDiff: vi.fn().mockResolvedValue({
+      entries: [
+        {
+          type: "modified",
+          category: "status",
+          name: "test",
+          details: "changed",
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    }),
+  }),
+);
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -74,6 +95,7 @@ describe("process apply コマンド", () => {
       enableChanged: false,
       newEnable: true,
     });
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -92,7 +114,7 @@ describe("process apply コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
@@ -101,7 +123,9 @@ describe("process apply コマンド", () => {
       enableChanged: false,
       newEnable: true,
     });
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -128,6 +152,7 @@ describe("process apply コマンド", () => {
       enableChanged: true,
       newEnable: true,
     });
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -139,6 +164,7 @@ describe("process apply コマンド", () => {
       enableChanged: true,
       newEnable: false,
     });
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -169,7 +195,7 @@ describe("process apply コマンド", () => {
     const error = new Error("Process apply failed");
     vi.mocked(applyProcessManagement).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

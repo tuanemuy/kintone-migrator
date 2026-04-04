@@ -2,6 +2,8 @@ import * as p from "@clack/prompts";
 import { createProcessManagementCliContainer } from "@/core/application/container/processManagementCli";
 import type { ApplyProcessManagementOutput } from "@/core/application/processManagement/applyProcessManagement";
 import { applyProcessManagement } from "@/core/application/processManagement/applyProcessManagement";
+import { detectProcessManagementDiff } from "@/core/application/processManagement/detectProcessManagementDiff";
+import { printProcessDiffResult } from "../../output";
 import {
   processArgs,
   resolveProcessAppContainerConfig,
@@ -30,6 +32,10 @@ export default createApplyCommand<
           : "Process management will be DISABLED. This deactivates workflow processing for this app.",
       );
     }
+  },
+  diffPreview: {
+    detectDiff: detectProcessManagementDiff,
+    printResult: printProcessDiffResult,
   },
   resolveContainerConfig: resolveProcessContainerConfig,
   resolveAppContainerConfig: resolveProcessAppContainerConfig,
