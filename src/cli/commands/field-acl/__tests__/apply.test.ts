@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/fieldAclConfig", () => ({
@@ -55,6 +57,15 @@ vi.mock("@/core/application/container/fieldPermissionCli", () => ({
 
 vi.mock("@/core/application/fieldPermission/applyFieldPermission");
 
+vi.mock("@/core/application/fieldPermission/detectFieldPermissionDiff", () => ({
+  detectFieldPermissionDiff: vi.fn().mockResolvedValue({
+    entries: [{ type: "added", fieldCode: "field1", details: "1 entity" }],
+    summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +82,7 @@ afterEach(() => {
 describe("field-acl apply コマンド", () => {
   it("フィールド権限の適用に成功し、成功メッセージが表示される", async () => {
     vi.mocked(applyFieldPermission).mockResolvedValue(undefined);
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +98,15 @@ describe("field-acl apply コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("デプロイをキャンセルした場合、警告メッセージが表示される", async () => {
     vi.mocked(applyFieldPermission).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,7 +129,7 @@ describe("field-acl apply コマンド", () => {
     const error = new Error("Permission apply failed");
     vi.mocked(applyFieldPermission).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

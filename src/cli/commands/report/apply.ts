@@ -1,5 +1,7 @@
 import { createReportCliContainer } from "@/core/application/container/reportCli";
 import { applyReport } from "@/core/application/report/applyReport";
+import { detectReportDiff } from "@/core/application/report/detectReportDiff";
+import { printReportDiffResult } from "../../output";
 import {
   reportArgs,
   resolveReportAppContainerConfig,
@@ -15,6 +17,10 @@ export default createApplyCommand({
   successMessage: "Report settings applied successfully.",
   createContainer: createReportCliContainer,
   applyFn: applyReport,
+  diffPreview: {
+    detectDiff: detectReportDiff,
+    printResult: printReportDiffResult,
+  },
   resolveContainerConfig: resolveReportContainerConfig,
   resolveAppContainerConfig: resolveReportAppContainerConfig,
 });

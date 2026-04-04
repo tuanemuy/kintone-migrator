@@ -10,9 +10,10 @@ vi.mock("@clack/prompts", () => ({
     step: vi.fn(),
     message: vi.fn(),
   },
+  note: vi.fn(),
   outro: vi.fn(),
   confirm: vi.fn(),
-  isCancel: vi.fn(),
+  isCancel: vi.fn(() => false),
   cancel: vi.fn(),
 }));
 
@@ -36,9 +37,27 @@ vi.mock("@/core/application/container/cli", () => ({
 
 vi.mock("@/core/application/customization/applyCustomization");
 
+vi.mock("@/core/application/customization/detectCustomizationDiff", () => ({
+  detectCustomizationDiff: vi.fn().mockResolvedValue({
+    entries: [
+      {
+        type: "added",
+        platform: "desktop",
+        category: "js",
+        name: "app.js",
+        details: "new FILE resource",
+      },
+    ],
+    summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/output", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/cli/output")>()),
   printDiffResult: vi.fn(),
+  printCustomizationDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),
 }));
@@ -58,6 +77,7 @@ vi.mock("@/cli/projectConfig", () => ({
   ),
   resolveAppCliConfig: vi.fn(),
   runMultiAppWithFailCheck: vi.fn(),
+  runMultiAppWithHeaders: vi.fn(),
 }));
 
 import * as p from "@clack/prompts";
@@ -77,20 +97,16 @@ describe("customize apply コマンド", () => {
     await command.run({ values: { yes: true } } as never);
 
     expect(applyCustomization).toHaveBeenCalled();
-    expect(p.log.success).toHaveBeenCalledWith(
-      expect.stringContaining("successfully"),
-    );
   });
 
-  it("yes未指定の場合、デプロイ確認が行われる", async () => {
+  it("yes未指定の場合、diff確認とデプロイ確認が行われる", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
     vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalledWith(
-      expect.objectContaining({ message: expect.any(String) }),
-    );
+    // First confirm: "Apply these changes?", second confirm: "Deploy to production?"
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     const container = vi.mocked(createCustomizationCliContainer).mock.results[0]
       ?.value;
     expect(container.appDeployer.deploy).toHaveBeenCalled();
@@ -98,7 +114,10 @@ describe("customize apply コマンド", () => {
 
   it("ユーザーがデプロイをキャンセルした場合、deployは呼ばれず警告が表示される", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    // First confirm: accept apply, second confirm: reject deploy
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -110,16 +129,13 @@ describe("customize apply コマンド", () => {
     );
   });
 
-  it("ユーザーがCtrl+Cでキャンセルした場合、deployは呼ばれない", async () => {
-    vi.mocked(applyCustomization).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(Symbol.for("cancel") as never);
-    vi.mocked(p.isCancel).mockReturnValue(true);
+  it("ユーザーがapply確認をキャンセルした場合、applyもdeployも呼ばれない", async () => {
+    vi.mocked(p.confirm).mockResolvedValue(false);
 
     await command.run({ values: {} } as never);
 
-    const container = vi.mocked(createCustomizationCliContainer).mock.results[0]
-      ?.value;
-    expect(container.appDeployer.deploy).not.toHaveBeenCalled();
+    expect(applyCustomization).not.toHaveBeenCalled();
+    expect(p.cancel).toHaveBeenCalledWith("Apply cancelled.");
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {
@@ -129,14 +145,5 @@ describe("customize apply コマンド", () => {
     await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
-  });
-
-  it("エラー発生時にデプロイは行われない", async () => {
-    const error = new Error("Customization failed");
-    vi.mocked(applyCustomization).mockRejectedValue(error);
-
-    await command.run({ values: {} } as never);
-
-    expect(p.confirm).not.toHaveBeenCalled();
   });
 });

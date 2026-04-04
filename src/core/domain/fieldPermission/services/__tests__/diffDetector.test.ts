@@ -88,7 +88,8 @@ describe("FieldPermissionDiffDetector", () => {
       const result = FieldPermissionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toContain("entities changed");
+      expect(result.entries[0].details).toContain("entities:");
+      expect(result.entries[0].details).toContain("USER:user1(write)");
     });
 
     it("should detect includeSubs change", () => {
@@ -117,7 +118,7 @@ describe("FieldPermissionDiffDetector", () => {
       const result = FieldPermissionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toContain("entities changed");
+      expect(result.entries[0].details).toContain("entities:");
     });
 
     it("should detect entity order change", () => {
@@ -153,7 +154,7 @@ describe("FieldPermissionDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].fieldCode).toBe("field1");
-      expect(result.entries[0].details).toContain("entities changed");
+      expect(result.entries[0].details).toContain("entities:");
     });
 
     it("should not report diff between includeSubs undefined and false", () => {

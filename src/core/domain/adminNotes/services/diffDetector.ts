@@ -2,6 +2,13 @@ import { buildDiffResult } from "../../diff";
 import type { AdminNotesConfig } from "../entity";
 import type { AdminNotesDiff, AdminNotesDiffEntry } from "../valueObject";
 
+const CONTENT_TRUNCATE_LENGTH = 30;
+
+function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  return `${text.slice(0, maxLength)}...`;
+}
+
 function compareConfigs(
   local: AdminNotesConfig,
   remote: AdminNotesConfig,
@@ -12,7 +19,7 @@ function compareConfigs(
     entries.push({
       type: "modified",
       field: "content",
-      details: "content changed",
+      details: `"${truncate(remote.content, CONTENT_TRUNCATE_LENGTH)}" -> "${truncate(local.content, CONTENT_TRUNCATE_LENGTH)}"`,
     });
   }
 

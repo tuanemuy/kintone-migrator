@@ -32,6 +32,8 @@ describe("AdminNotesDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].field).toBe("content");
+      expect(result.entries[0].details).toContain('"old content"');
+      expect(result.entries[0].details).toContain('"new content"');
     });
 
     it("should detect includeInTemplateAndDuplicates change", () => {

@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/actionConfig", () => ({
@@ -55,6 +57,15 @@ vi.mock("@/core/application/container/actionCli", () => ({
 
 vi.mock("@/core/application/action/applyAction");
 
+vi.mock("@/core/application/action/detectActionDiff", () => ({
+  detectActionDiff: vi.fn().mockResolvedValue({
+    entries: [{ type: "added", actionName: "test", details: "new action" }],
+    summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +82,7 @@ afterEach(() => {
 describe("action apply コマンド", () => {
   it("アクション設定の適用に成功し、成功メッセージが表示される", async () => {
     vi.mocked(applyAction).mockResolvedValue(undefined);
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +98,17 @@ describe("action apply コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    // First confirm: "Apply these changes?", second confirm: "Deploy to production?"
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("デプロイをキャンセルした場合、警告メッセージが表示される", async () => {
     vi.mocked(applyAction).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    // First confirm: accept apply, second confirm: reject deploy
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,7 +131,7 @@ describe("action apply コマンド", () => {
     const error = new Error("Action apply failed");
     vi.mocked(applyAction).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

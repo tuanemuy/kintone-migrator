@@ -7,6 +7,8 @@ import {
 } from "@/core/application/container/cli";
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import { applyCustomization } from "@/core/application/customization/applyCustomization";
+import { detectCustomizationDiff } from "@/core/application/customization/detectCustomizationDiff";
+import type { AppEntry } from "@/core/domain/projectConfig/entity";
 import { confirmArgs, type WithConfirm } from "../../config";
 import {
   type CustomizeCliValues,
@@ -15,17 +17,28 @@ import {
   resolveCustomizeConfig,
 } from "../../customizeConfig";
 import { handleCliError } from "../../handleError";
-import { confirmAndDeploy, type Deployable } from "../../output";
+import {
+  confirmAndDeploy,
+  type Deployable,
+  printAppHeader,
+  printCustomizationDiffResult,
+} from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
 import { deriveFilePrefix } from "./capture";
 
-async function applyCustomizationForApp(
+function createCustomizationContainer(
   config: CustomizationCliContainerConfig,
-): Promise<CustomizationContainer> {
+): { container: CustomizationContainer; basePath: string } {
   const container = createCustomizationCliContainer(config);
   const filePrefix = deriveFilePrefix(config.customizeFilePath);
   const basePath = join(dirname(resolve(config.customizeFilePath)), filePrefix);
+  return { container, basePath };
+}
 
+async function runCustomizationApply(
+  container: CustomizationContainer,
+  basePath: string,
+): Promise<void> {
   const s = p.spinner();
   s.start("Applying customization...");
   await applyCustomization({
@@ -33,8 +46,31 @@ async function applyCustomizationForApp(
     input: { basePath },
   });
   s.stop("Customization applied.");
+}
 
-  return container;
+async function runDiffPreview(
+  config: CustomizationCliContainerConfig,
+): Promise<{
+  container: CustomizationContainer;
+  basePath: string;
+  hasChanges: boolean;
+}> {
+  const { container, basePath } = createCustomizationContainer(config);
+
+  const s = p.spinner();
+  s.start("Detecting changes...");
+  let result: Awaited<ReturnType<typeof detectCustomizationDiff>>;
+  try {
+    result = await detectCustomizationDiff({ container });
+  } catch (error) {
+    s.stop("Comparison failed.");
+    throw error;
+  }
+  s.stop("Comparison complete.");
+
+  printCustomizationDiffResult(result);
+
+  return { container, basePath, hasChanges: !result.isEmpty };
 }
 
 export default define({
@@ -49,7 +85,26 @@ export default define({
       await routeMultiApp(values, {
         singleLegacy: async () => {
           const config = resolveCustomizeConfig(values);
-          const container = await applyCustomizationForApp(config);
+          const { container, basePath, hasChanges } =
+            await runDiffPreview(config);
+
+          if (!hasChanges) {
+            p.log.success("No changes detected.");
+            return;
+          }
+
+          if (!skipConfirm) {
+            const shouldContinue = await p.confirm({
+              message: "Apply these changes?",
+            });
+
+            if (p.isCancel(shouldContinue) || !shouldContinue) {
+              p.cancel("Apply cancelled.");
+              return;
+            }
+          }
+
+          await runCustomizationApply(container, basePath);
           await confirmAndDeploy(
             [container],
             skipConfirm,
@@ -58,7 +113,26 @@ export default define({
         },
         singleApp: async (app, projectConfig) => {
           const config = resolveCustomizeAppConfig(app, projectConfig, values);
-          const container = await applyCustomizationForApp(config);
+          const { container, basePath, hasChanges } =
+            await runDiffPreview(config);
+
+          if (!hasChanges) {
+            p.log.success("No changes detected.");
+            return;
+          }
+
+          if (!skipConfirm) {
+            const shouldContinue = await p.confirm({
+              message: "Apply these changes?",
+            });
+
+            if (p.isCancel(shouldContinue) || !shouldContinue) {
+              p.cancel("Apply cancelled.");
+              return;
+            }
+          }
+
+          await runCustomizationApply(container, basePath);
           await confirmAndDeploy(
             [container],
             skipConfirm,
@@ -66,19 +140,63 @@ export default define({
           );
         },
         multiApp: async (plan, projectConfig) => {
-          const containers: Deployable[] = [];
-          await runMultiAppWithHeaders(plan, async (app) => {
+          // Phase 1: Detect diffs for all apps
+          const appDiffResults: Array<{
+            app: AppEntry;
+            container: CustomizationContainer;
+            basePath: string;
+            hasChanges: boolean;
+          }> = [];
+
+          for (const app of plan.orderedApps) {
             const config = resolveCustomizeAppConfig(
               app,
               projectConfig,
               values,
             );
-            const container = await applyCustomizationForApp(config);
+            printAppHeader(app.name, app.appId);
+            const { container, basePath, hasChanges } =
+              await runDiffPreview(config);
+            appDiffResults.push({ app, container, basePath, hasChanges });
+          }
+
+          // Phase 2: Check if any app has changes
+          const hasAnyChanges = appDiffResults.some((a) => a.hasChanges);
+          if (!hasAnyChanges) {
+            p.log.success("No changes detected in any app.");
+            return;
+          }
+
+          // Phase 3: Confirm
+          if (!skipConfirm) {
+            const shouldContinue = await p.confirm({
+              message: "Apply these changes to all apps?",
+            });
+
+            if (p.isCancel(shouldContinue) || !shouldContinue) {
+              p.cancel("Apply cancelled.");
+              return;
+            }
+          }
+
+          // Phase 4: Apply only changed apps
+          const containers: Deployable[] = [];
+          await runMultiAppWithHeaders(plan, async (app) => {
+            const entry = appDiffResults.find((a) => a.app.name === app.name);
+
+            if (!entry?.hasChanges) {
+              p.log.info("No changes. Skipping.");
+              return;
+            }
+
+            await runCustomizationApply(entry.container, entry.basePath);
             containers.push({
-              appDeployer: container.appDeployer,
+              appDeployer: entry.container.appDeployer,
               appName: app.name,
             });
           });
+
+          // Phase 5: Deploy
           await confirmAndDeploy(
             containers,
             skipConfirm,

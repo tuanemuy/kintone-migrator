@@ -1,5 +1,7 @@
 import { createGeneralSettingsCliContainer } from "@/core/application/container/generalSettingsCli";
 import { applyGeneralSettings } from "@/core/application/generalSettings/applyGeneralSettings";
+import { detectGeneralSettingsDiff } from "@/core/application/generalSettings/detectGeneralSettingsDiff";
+import { printGeneralSettingsDiffResult } from "../../output";
 import {
   resolveSettingsAppContainerConfig,
   resolveSettingsContainerConfig,
@@ -15,6 +17,10 @@ export default createApplyCommand({
   successMessage: "General settings applied successfully.",
   createContainer: createGeneralSettingsCliContainer,
   applyFn: applyGeneralSettings,
+  diffPreview: {
+    detectDiff: detectGeneralSettingsDiff,
+    printResult: printGeneralSettingsDiffResult,
+  },
   resolveContainerConfig: resolveSettingsContainerConfig,
   resolveAppContainerConfig: resolveSettingsAppContainerConfig,
 });

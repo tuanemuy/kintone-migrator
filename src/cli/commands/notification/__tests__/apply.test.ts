@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/notificationConfig", () => ({
@@ -55,6 +57,17 @@ vi.mock("@/core/application/container/notificationCli", () => ({
 
 vi.mock("@/core/application/notification/applyNotification");
 
+vi.mock("@/core/application/notification/detectNotificationDiff", () => ({
+  detectNotificationDiff: vi.fn().mockResolvedValue({
+    entries: [
+      { type: "added", section: "general", name: "test", details: "new" },
+    ],
+    summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +84,7 @@ afterEach(() => {
 describe("notification apply コマンド", () => {
   it("通知設定の適用に成功し、成功メッセージが表示される", async () => {
     vi.mocked(applyNotification).mockResolvedValue(undefined);
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +100,15 @@ describe("notification apply コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("デプロイをキャンセルした場合、警告メッセージが表示される", async () => {
     vi.mocked(applyNotification).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,7 +131,7 @@ describe("notification apply コマンド", () => {
     const error = new Error("Notification apply failed");
     vi.mocked(applyNotification).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/adminNotesConfig", () => ({
@@ -55,6 +57,15 @@ vi.mock("@/core/application/container/adminNotesCli", () => ({
 
 vi.mock("@/core/application/adminNotes/applyAdminNotes");
 
+vi.mock("@/core/application/adminNotes/detectAdminNotesDiff", () => ({
+  detectAdminNotesDiff: vi.fn().mockResolvedValue({
+    entries: [{ type: "modified", field: "content", details: "changed" }],
+    summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +82,7 @@ afterEach(() => {
 describe("admin-notes apply コマンド", () => {
   it("管理者用メモの適用に成功し、成功メッセージが表示される", async () => {
     vi.mocked(applyAdminNotes).mockResolvedValue(undefined);
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +98,15 @@ describe("admin-notes apply コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("デプロイをキャンセルした場合、警告メッセージが表示される", async () => {
     vi.mocked(applyAdminNotes).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,7 +129,7 @@ describe("admin-notes apply コマンド", () => {
     const error = new Error("Admin notes apply failed");
     vi.mocked(applyAdminNotes).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });
