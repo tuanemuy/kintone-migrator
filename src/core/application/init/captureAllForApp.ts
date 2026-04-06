@@ -8,9 +8,7 @@ import type { CaptureAllContainers } from "@/core/application/container/captureA
 import { captureCustomization } from "@/core/application/customization/captureCustomization";
 import { saveCustomization } from "@/core/application/customization/saveCustomization";
 import {
-  isForbiddenError,
-  isSystemError,
-  isUnauthenticatedError,
+  isFatalError,
   SystemError,
   SystemErrorCode,
 } from "@/core/application/error";
@@ -36,6 +34,7 @@ import { captureView } from "@/core/application/view/captureView";
 import { saveView } from "@/core/application/view/saveView";
 
 export type { CaptureAllContainers } from "@/core/application/container/captureAll";
+export { isFatalError } from "@/core/application/error";
 
 export type CaptureDomain =
   | "customize"
@@ -206,15 +205,6 @@ function buildCaptureTasks(args: CaptureAllForAppArgs): readonly CaptureTask[] {
       (p, text) => savePlugin({ container: p, input: { configText: text } }),
     ),
   ];
-}
-
-export function isFatalError(error: unknown): boolean {
-  if (isUnauthenticatedError(error)) return true;
-  if (isForbiddenError(error)) return true;
-  if (isSystemError(error) && error.code === SystemErrorCode.NetworkError) {
-    return true;
-  }
-  return false;
 }
 
 /** Number of domains to capture concurrently within each batch. */

@@ -7,6 +7,7 @@ import actionGroup from "./commands/action";
 import adminNotesGroup from "./commands/admin-notes";
 import appAclGroup from "./commands/app-acl";
 import customizeGroup from "./commands/customize";
+import diffCommand from "./commands/diff";
 import fieldAclGroup from "./commands/field-acl";
 import initCommand from "./commands/init";
 import notificationGroup from "./commands/notification";
@@ -41,6 +42,7 @@ await cli(process.argv.slice(2), main, {
   version: loadVersion(),
   subCommands: {
     init: initCommand,
+    diff: diffCommand,
     schema: schemaGroup,
     seed: seedGroup,
     customize: customizeGroup,

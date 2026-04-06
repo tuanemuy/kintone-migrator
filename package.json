@@ -31,6 +31,7 @@
   "scripts": {
     "dev": "tsx src/cli/index.ts",
     "dev:diff": "tsx src/cli/index.ts schema diff",
+    "dev:diff-all": "tsx src/cli/index.ts diff",
     "dev:migrate": "tsx src/cli/index.ts schema migrate",
     "dev:override": "tsx src/cli/index.ts schema override",
     "dev:capture": "tsx src/cli/index.ts schema capture",

@@ -178,3 +178,16 @@ export class SystemError extends ApplicationError {
 export function isSystemError(error: unknown): error is SystemError {
   return error instanceof SystemError;
 }
+
+/**
+ * Determines whether an error is fatal and should abort all remaining tasks.
+ * Fatal errors are authentication failures, permission failures, or network errors.
+ */
+export function isFatalError(error: unknown): boolean {
+  if (isUnauthenticatedError(error)) return true;
+  if (isForbiddenError(error)) return true;
+  if (isSystemError(error) && error.code === SystemErrorCode.NetworkError) {
+    return true;
+  }
+  return false;
+}
