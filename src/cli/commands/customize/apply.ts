@@ -1,4 +1,3 @@
-import { dirname, join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import {
@@ -25,14 +24,13 @@ import {
   printCustomizationDiffResult,
 } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
-import { deriveFilePrefix } from "./capture";
+import { computeBasePath } from "./capture";
 
 function createCustomizationContainer(
   config: CustomizationCliContainerConfig,
 ): { container: CustomizationContainer; basePath: string } {
   const container = createCustomizationCliContainer(config);
-  const filePrefix = deriveFilePrefix(config.customizeFilePath);
-  const basePath = join(dirname(resolve(config.customizeFilePath)), filePrefix);
+  const basePath = computeBasePath(config.customizeFilePath);
   return { container, basePath };
 }
 

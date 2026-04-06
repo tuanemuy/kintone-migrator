@@ -1,4 +1,3 @@
-import { dirname, join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import {
@@ -15,12 +14,7 @@ import {
 import { handleCliError } from "../../handleError";
 import { printAppHeader, printCustomizationDiffResult } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
-import { deriveFilePrefix } from "./capture";
-
-function computeBasePath(customizeFilePath: string): string {
-  const filePrefix = deriveFilePrefix(customizeFilePath);
-  return join(dirname(resolve(customizeFilePath)), filePrefix);
-}
+import { computeBasePath } from "./capture";
 
 async function runDiff(
   containerConfig: CustomizationCliContainerConfig,

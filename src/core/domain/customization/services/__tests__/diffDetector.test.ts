@@ -276,8 +276,9 @@ describe("CustomizationDiffDetector", () => {
         },
         modifiedFileNames,
       );
-      // The basename matches so it's treated as matched (not add/delete).
-      // But since remote type is URL, no modified entry should be emitted.
+      // Same basename but different resource types (local=FILE, remote=URL) are
+      // treated as matched (no add/delete). Since remote is URL, no file content
+      // comparison applies and no modified entry should be emitted.
       expect(
         result.entries.some((e) => e.details === "file content changed"),
       ).toBe(false);

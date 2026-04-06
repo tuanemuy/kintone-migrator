@@ -1,4 +1,4 @@
-import { basename, dirname, extname, resolve } from "node:path";
+import { basename, dirname, extname, join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import pc from "picocolors";
@@ -17,6 +17,11 @@ import {
 import { handleCliError } from "../../handleError";
 import { printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
+
+export function computeBasePath(customizeFilePath: string): string {
+  const filePrefix = deriveFilePrefix(customizeFilePath);
+  return join(dirname(resolve(customizeFilePath)), filePrefix);
+}
 
 export function deriveFilePrefix(customizeFilePath: string): string {
   const resolved = resolve(customizeFilePath);
