@@ -6,6 +6,7 @@ import { cli, define } from "gunshi";
 import actionGroup from "./commands/action";
 import adminNotesGroup from "./commands/admin-notes";
 import appAclGroup from "./commands/app-acl";
+import captureCommand from "./commands/capture";
 import customizeGroup from "./commands/customize";
 import diffCommand from "./commands/diff";
 import fieldAclGroup from "./commands/field-acl";
@@ -42,6 +43,7 @@ await cli(process.argv.slice(2), main, {
   version: loadVersion(),
   subCommands: {
     init: initCommand,
+    capture: captureCommand,
     diff: diffCommand,
     schema: schemaGroup,
     seed: seedGroup,
