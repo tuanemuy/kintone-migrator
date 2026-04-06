@@ -90,8 +90,8 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("customize apply コマンド", () => {
-  it("カスタマイズ適用成功時、成功メッセージが表示される", async () => {
+describe("customize apply command", () => {
+  it("should apply customization on success", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
 
     await command.run({ values: { yes: true } } as never);
@@ -99,7 +99,7 @@ describe("customize apply コマンド", () => {
     expect(applyCustomization).toHaveBeenCalled();
   });
 
-  it("yes未指定の場合、diff確認とデプロイ確認が行われる", async () => {
+  it("should prompt for diff confirmation and deploy confirmation when --yes is not set", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
     vi.mocked(p.confirm).mockResolvedValue(true);
 
@@ -112,7 +112,7 @@ describe("customize apply コマンド", () => {
     expect(container.appDeployer.deploy).toHaveBeenCalled();
   });
 
-  it("ユーザーがデプロイをキャンセルした場合、deployは呼ばれず警告が表示される", async () => {
+  it("should not deploy when user cancels deploy confirmation", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
     // First confirm: accept apply, second confirm: reject deploy
     vi.mocked(p.confirm)
@@ -129,7 +129,7 @@ describe("customize apply コマンド", () => {
     );
   });
 
-  it("ユーザーがapply確認をキャンセルした場合、applyもdeployも呼ばれない", async () => {
+  it("should not apply or deploy when user cancels apply confirmation", async () => {
     vi.mocked(p.confirm).mockResolvedValue(false);
 
     await command.run({ values: {} } as never);
@@ -138,7 +138,7 @@ describe("customize apply コマンド", () => {
     expect(p.cancel).toHaveBeenCalledWith("Apply cancelled.");
   });
 
-  it("エラー発生時にhandleCliErrorで処理される", async () => {
+  it("should handle errors through handleCliError", async () => {
     const error = new Error("Customization failed");
     vi.mocked(applyCustomization).mockRejectedValue(error);
 
@@ -147,7 +147,7 @@ describe("customize apply コマンド", () => {
     expect(handleCliError).toHaveBeenCalledWith(error);
   });
 
-  it("エラー発生時にデプロイは行われない", async () => {
+  it("should not deploy when apply fails", async () => {
     const error = new Error("Customization failed");
     vi.mocked(applyCustomization).mockRejectedValue(error);
 
@@ -158,31 +158,8 @@ describe("customize apply コマンド", () => {
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
   });
 
-  describe("FILEリソースの内容変更が検出できない制約", () => {
-    // FILE resources are compared by name only; content changes are not detected.
-    // customize apply must NOT skip when matched FILE resources exist,
-    // because their contents may have changed even though the diff reports no entries.
-
-    it("名前が一致するFILEリソースが存在する場合、diffエントリが空でもapplyを実行する", async () => {
-      const { detectCustomizationDiff } = await import(
-        "@/core/application/customization/detectCustomizationDiff"
-      );
-      vi.mocked(detectCustomizationDiff).mockResolvedValueOnce({
-        entries: [],
-        summary: { added: 0, modified: 0, deleted: 0, total: 0 },
-        isEmpty: true,
-        warnings: [
-          "[desktop.js] FILE resources are compared by name only; content changes are not detected",
-        ],
-      });
-      vi.mocked(applyCustomization).mockResolvedValue(undefined);
-
-      await command.run({ values: { yes: true } } as never);
-
-      expect(applyCustomization).toHaveBeenCalled();
-    });
-
-    it("URLリソースのみで構成されdiffが空の場合はapplyをスキップする", async () => {
+  describe("diff-based skip detection", () => {
+    it("should skip apply when diff reports no changes (isEmpty is true)", async () => {
       const { detectCustomizationDiff } = await import(
         "@/core/application/customization/detectCustomizationDiff"
       );
@@ -197,6 +174,31 @@ describe("customize apply コマンド", () => {
 
       expect(applyCustomization).not.toHaveBeenCalled();
       expect(p.log.success).toHaveBeenCalledWith("No changes detected.");
+    });
+
+    it("should apply when diff reports modified FILE content", async () => {
+      const { detectCustomizationDiff } = await import(
+        "@/core/application/customization/detectCustomizationDiff"
+      );
+      vi.mocked(detectCustomizationDiff).mockResolvedValueOnce({
+        entries: [
+          {
+            type: "modified",
+            platform: "desktop",
+            category: "js",
+            name: "app.js",
+            details: "file content changed",
+          },
+        ],
+        summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+        isEmpty: false,
+        warnings: [],
+      });
+      vi.mocked(applyCustomization).mockResolvedValue(undefined);
+
+      await command.run({ values: { yes: true } } as never);
+
+      expect(applyCustomization).toHaveBeenCalled();
     });
   });
 });

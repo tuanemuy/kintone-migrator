@@ -67,7 +67,10 @@ async function runDiffPreview(
   s.start("Detecting changes...");
   let result: Awaited<ReturnType<typeof detectCustomizationDiff>>;
   try {
-    result = await detectCustomizationDiff({ container });
+    result = await detectCustomizationDiff({
+      container,
+      input: { basePath },
+    });
   } catch (error) {
     s.stop("Comparison failed.");
     throw error;
@@ -76,17 +79,10 @@ async function runDiffPreview(
 
   printCustomizationDiffResult(result);
 
-  // FILE resources are compared by name only — content changes are not detected.
-  // When the diff detector emits this warning, there may be undetectable content
-  // changes, so we must NOT skip apply even if isEmpty is true.
-  const hasFileContentWarning = result.warnings.some((w) =>
-    w.includes("content changes are not detected"),
-  );
-
   return {
     container,
     basePath,
-    hasChanges: !result.isEmpty || hasFileContentWarning,
+    hasChanges: !result.isEmpty,
   };
 }
 

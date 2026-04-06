@@ -1,5 +1,6 @@
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
+import type { FileContentReader } from "@/core/domain/customization/ports/fileContentReader";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
@@ -25,16 +26,19 @@ export type CustomizationCaptureContainer = {
   fileWriter: FileWriter;
 };
 
-/** Ports needed by customize diff (subset of apply) */
+/** Ports needed by customize diff */
 export type CustomizationDiffContainer = {
   configCodec: ConfigCodec;
   customizationConfigurator: CustomizationConfigurator;
   customizationStorage: CustomizationStorage;
+  fileDownloader: FileDownloader;
+  fileContentReader: FileContentReader;
 };
 
-/** Full container satisfying both apply and capture */
+/** Full container satisfying apply, capture, and diff */
 export type CustomizationContainer = CustomizationApplyContainer &
-  CustomizationCaptureContainer;
+  CustomizationCaptureContainer &
+  CustomizationDiffContainer;
 
 export type CustomizationApplyServiceArgs<T = undefined> = ServiceArgs<
   CustomizationApplyContainer,
