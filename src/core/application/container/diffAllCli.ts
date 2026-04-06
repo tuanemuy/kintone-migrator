@@ -1,0 +1,103 @@
+import {
+  type AppFilePaths,
+  buildAppFilePaths,
+} from "@/core/domain/projectConfig/appFilePaths";
+import type { AppName } from "@/core/domain/projectConfig/valueObject";
+import { createActionCliContainer } from "./actionCli";
+import { createAdminNotesCliContainer } from "./adminNotesCli";
+import { createAppPermissionCliContainer } from "./appPermissionCli";
+import {
+  createCliContainer,
+  createCustomizationCliContainer,
+  type KintoneAuth,
+} from "./cli";
+import type { DiffAllContainers } from "./diffAll";
+import { createFieldPermissionCliContainer } from "./fieldPermissionCli";
+import { createGeneralSettingsCliContainer } from "./generalSettingsCli";
+import { createKintoneClient } from "./kintoneClient";
+import { createNotificationCliContainer } from "./notificationCli";
+import { createPluginCliContainer } from "./pluginCli";
+import { createProcessManagementCliContainer } from "./processManagementCli";
+import { createRecordPermissionCliContainer } from "./recordPermissionCli";
+import { createReportCliContainer } from "./reportCli";
+import { createViewCliContainer } from "./viewCli";
+
+export type CreateDiffAllContainersInput = Readonly<{
+  baseUrl: string;
+  auth: KintoneAuth;
+  appId: string;
+  guestSpaceId?: string;
+  appName: AppName;
+  baseDir?: string;
+}>;
+
+export type CreateDiffAllContainersResult = Readonly<{
+  containers: DiffAllContainers;
+  paths: AppFilePaths;
+}>;
+
+export function createCliDiffAllContainers(
+  input: CreateDiffAllContainersInput,
+): CreateDiffAllContainersResult {
+  const client = createKintoneClient(input);
+  const base = {
+    baseUrl: input.baseUrl,
+    auth: input.auth,
+    appId: input.appId,
+    guestSpaceId: input.guestSpaceId,
+    client,
+  };
+  const paths = buildAppFilePaths(input.appName, input.baseDir);
+
+  return {
+    paths,
+    containers: {
+      schema: createCliContainer({ ...base, schemaFilePath: paths.schema }),
+      customization: createCustomizationCliContainer({
+        ...base,
+        customizeFilePath: paths.customize,
+      }),
+      view: createViewCliContainer({ ...base, viewFilePath: paths.view }),
+      settings: createGeneralSettingsCliContainer({
+        ...base,
+        settingsFilePath: paths.settings,
+      }),
+      notification: createNotificationCliContainer({
+        ...base,
+        notificationFilePath: paths.notification,
+      }),
+      report: createReportCliContainer({
+        ...base,
+        reportFilePath: paths.report,
+      }),
+      action: createActionCliContainer({
+        ...base,
+        actionFilePath: paths.action,
+      }),
+      process: createProcessManagementCliContainer({
+        ...base,
+        processFilePath: paths.process,
+      }),
+      fieldPermission: createFieldPermissionCliContainer({
+        ...base,
+        fieldAclFilePath: paths.fieldAcl,
+      }),
+      appPermission: createAppPermissionCliContainer({
+        ...base,
+        appAclFilePath: paths.appAcl,
+      }),
+      recordPermission: createRecordPermissionCliContainer({
+        ...base,
+        recordAclFilePath: paths.recordAcl,
+      }),
+      adminNotes: createAdminNotesCliContainer({
+        ...base,
+        adminNotesFilePath: paths.adminNotes,
+      }),
+      plugin: createPluginCliContainer({
+        ...base,
+        pluginFilePath: paths.plugin,
+      }),
+    },
+  };
+}
