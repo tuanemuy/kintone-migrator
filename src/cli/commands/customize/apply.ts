@@ -76,7 +76,18 @@ async function runDiffPreview(
 
   printCustomizationDiffResult(result);
 
-  return { container, basePath, hasChanges: !result.isEmpty };
+  // FILE resources are compared by name only — content changes are not detected.
+  // When the diff detector emits this warning, there may be undetectable content
+  // changes, so we must NOT skip apply even if isEmpty is true.
+  const hasFileContentWarning = result.warnings.some((w) =>
+    w.includes("content changes are not detected"),
+  );
+
+  return {
+    container,
+    basePath,
+    hasChanges: !result.isEmpty || hasFileContentWarning,
+  };
 }
 
 export default define({
