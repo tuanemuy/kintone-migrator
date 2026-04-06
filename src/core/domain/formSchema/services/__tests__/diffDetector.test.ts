@@ -197,6 +197,7 @@ describe("DiffDetector", () => {
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
       expect(diff.entries[0].details).toContain("fields:");
+      expect(diff.entries[0].details).toContain("->");
     });
 
     it("SUBTABLE 内部フィールドが同一の場合、差分なしとなる", () => {
@@ -265,6 +266,8 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
+      expect(diff.entries[0].details).toContain("referenceTable.relatedApp:");
+      expect(diff.entries[0].details).toContain("->");
     });
 
     it("REFERENCE_TABLE が同一の場合、差分なしとなる", () => {
@@ -447,6 +450,8 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
+      expect(diff.entries[0].details).toContain("referenceTable.condition:");
+      expect(diff.entries[0].details).toContain("->");
     });
 
     it("RADIO_BUTTON の defaultValue 文字列が異なる場合、modified として検出される", () => {

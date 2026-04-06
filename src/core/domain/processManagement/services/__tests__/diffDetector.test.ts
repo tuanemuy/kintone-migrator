@@ -176,6 +176,8 @@ describe("ProcessManagementDiffDetector", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("assignee.entities:");
+      expect(result.entries[0].details).toContain("->");
+      expect(result.entries[0].details).toContain('"group1"');
     });
 
     it("should detect entities change when entity count differs", () => {

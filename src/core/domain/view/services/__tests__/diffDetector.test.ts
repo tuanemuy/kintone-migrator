@@ -124,6 +124,7 @@ describe("ViewDiffDetector", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("filterCond:");
+      expect(result.entries[0].details).toContain('"" -> "a = b"');
     });
 
     it("should detect html change", () => {
@@ -146,6 +147,9 @@ describe("ViewDiffDetector", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("html:");
+      expect(result.entries[0].details).toContain(
+        '"<div>old</div>" -> "<div>new</div>"',
+      );
     });
 
     it("should detect pager change", () => {
@@ -176,6 +180,7 @@ describe("ViewDiffDetector", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("sort:");
+      expect(result.entries[0].details).toContain('"f1 desc" -> "f1 asc"');
     });
 
     it("should detect date change", () => {

@@ -47,7 +47,9 @@ function describePropertiesChanges(
   after: FieldDefinition,
 ): string[] {
   if (before.type !== after.type) {
-    return [`properties changed (type: "${before.type}" -> "${after.type}")`];
+    // Type mismatch makes property-level comparison meaningless;
+    // the type change is already reported by describeChanges.
+    return [];
   }
 
   if (before.type === "SUBTABLE" && after.type === "SUBTABLE") {
@@ -79,7 +81,7 @@ function describePropertiesChanges(
         );
       }
     }
-    return subChanges;
+    return subChanges.length > 0 ? subChanges : ["referenceTable changed"];
   }
 
   // Normal fields: compare properties as Record<string, unknown>
