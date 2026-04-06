@@ -30,6 +30,9 @@ function formatTaskResult(result: ApplyTaskResult): string {
   if (result.success) {
     return `  ${pc.green("\u2713")} ${name}`;
   }
+  if (result.skipped) {
+    return `  ${pc.yellow("\u2298")} ${name} ${pc.dim("\u2014")} ${pc.yellow("skipped")}`;
+  }
   return `  ${pc.red("\u2717")} ${name} ${pc.dim("\u2014")} ${pc.red(`failed (${formatErrorForDisplay(result.error)})`)}`;
 }
 
@@ -57,11 +60,18 @@ export function printApplyAllResults(output: ApplyAllForAppOutput): void {
 
   const allResults = output.phases.flatMap((pr) => pr.results);
   const succeeded = allResults.filter((r) => r.success).length;
-  const failed = allResults.filter((r) => !r.success).length;
+  const failed = allResults.filter((r) => !r.success && !r.skipped).length;
+  const skipped = allResults.filter((r) => !r.success && r.skipped).length;
 
   if (output.deployed) {
     p.log.success("Deployed to production.");
-  } else if (succeeded > 0 && failed > 0) {
+  } else if (output.deployError) {
+    p.log.warn(
+      `Deployment failed: ${formatErrorForDisplay(output.deployError)}`,
+    );
+  } else if (succeeded === 0) {
+    p.log.warn("Not deployed due to errors.");
+  } else if (succeeded > 0 && (failed > 0 || skipped > 0)) {
     p.log.warn(
       "Some domains were applied but deployment may not have completed. Check app status in kintone.",
     );
@@ -71,5 +81,8 @@ export function printApplyAllResults(output: ApplyAllForAppOutput): void {
   const parts: string[] = [];
   if (succeeded > 0) parts.push(pc.green(`${succeeded} succeeded`));
   if (failed > 0) parts.push(pc.red(`${failed} failed`));
-  p.log.message(`  Summary: ${parts.join(pc.dim(" | "))}`);
+  if (skipped > 0) parts.push(pc.yellow(`${skipped} skipped`));
+  p.log.message(
+    `  Summary: ${parts.length > 0 ? parts.join(pc.dim(" | ")) : "No domains processed"}`,
+  );
 }

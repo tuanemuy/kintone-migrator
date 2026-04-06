@@ -45,7 +45,12 @@ export type ApplyPhaseName =
 
 export type ApplyTaskResult =
   | Readonly<{ domain: ApplyDomain; success: true }>
-  | Readonly<{ domain: ApplyDomain; success: false; error: Error }>;
+  | Readonly<{
+      domain: ApplyDomain;
+      success: false;
+      error: Error;
+      skipped: boolean;
+    }>;
 
 export type ApplyPhaseResult = Readonly<{
   phase: ApplyPhaseName;
@@ -55,6 +60,7 @@ export type ApplyPhaseResult = Readonly<{
 export type ApplyAllForAppOutput = Readonly<{
   phases: readonly ApplyPhaseResult[];
   deployed: boolean;
+  deployError?: Error;
 }>;
 
 export type ApplyAllForAppInput = Readonly<{
@@ -216,6 +222,7 @@ function buildSkippedPhaseResult(
       domain: task.domain,
       success: false as const,
       error: skipError,
+      skipped: true,
     })),
   };
 }
@@ -224,6 +231,9 @@ function toError(error: unknown): Error {
   return error instanceof Error ? error : new Error(String(error));
 }
 
+// Schema phase always has exactly one task (executeMigration).
+// Deploy is called after the task to ensure schema changes are deployed
+// before subsequent phases depend on them.
 async function executeSchemaPhase(
   phase: PhaseDefinition,
   containers: ApplyAllContainers,
@@ -237,7 +247,12 @@ async function executeSchemaPhase(
       results.push({ domain: task.domain, success: true });
     } catch (error) {
       const err = toError(error);
-      results.push({ domain: task.domain, success: false, error: err });
+      results.push({
+        domain: task.domain,
+        success: false,
+        error: err,
+        skipped: false,
+      });
       state.aborted = true;
       state.reason = err;
       state.phaseName = phase.name;
@@ -257,6 +272,7 @@ async function executeStandardPhase(
         domain: task.domain,
         success: false,
         error: createSkipError(state),
+        skipped: true,
       });
       continue;
     }
@@ -266,7 +282,12 @@ async function executeStandardPhase(
       results.push({ domain: task.domain, success: true });
     } catch (error) {
       const err = toError(error);
-      results.push({ domain: task.domain, success: false, error: err });
+      results.push({
+        domain: task.domain,
+        success: false,
+        error: err,
+        skipped: false,
+      });
       if (isFatalError(err)) {
         state.aborted = true;
         state.reason = err;
@@ -277,12 +298,14 @@ async function executeStandardPhase(
   return { phase: phase.name, results };
 }
 
-async function tryDeploy(containers: ApplyAllContainers): Promise<boolean> {
+async function tryDeploy(
+  containers: ApplyAllContainers,
+): Promise<{ deployed: boolean; error?: Error }> {
   try {
     await deployApp({ container: containers.schema });
-    return true;
-  } catch {
-    return false;
+    return { deployed: true };
+  } catch (error) {
+    return { deployed: false, error: toError(error) };
   }
 }
 
@@ -332,7 +355,13 @@ export async function applyAllForApp(
       pr.results.some((r) => r.success),
   );
 
-  const deployed = needsDeploy ? await tryDeploy(args.containers) : false;
+  const deployResult = needsDeploy
+    ? await tryDeploy(args.containers)
+    : { deployed: false };
 
-  return { phases: phaseResults, deployed };
+  return {
+    phases: phaseResults,
+    deployed: deployResult.deployed,
+    deployError: deployResult.error,
+  };
 }

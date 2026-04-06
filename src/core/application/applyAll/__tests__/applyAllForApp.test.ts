@@ -165,8 +165,11 @@ describe("applyAllForApp", () => {
 
     const output = await applyAllForApp(baseArgs);
 
-    // Phase 1 fails
+    // Phase 1 fails (not skipped — it actually ran and failed)
     expect(output.phases[0].results[0].success).toBe(false);
+    if (!output.phases[0].results[0].success) {
+      expect(output.phases[0].results[0].skipped).toBe(false);
+    }
 
     // All subsequent phases should be skipped
     for (const phase of output.phases.slice(1)) {
@@ -174,6 +177,7 @@ describe("applyAllForApp", () => {
         expect(result.success).toBe(false);
         if (!result.success) {
           expect(result.error.message).toContain("Skipped due to fatal error");
+          expect(result.skipped).toBe(true);
         }
       }
     }
@@ -191,13 +195,19 @@ describe("applyAllForApp", () => {
 
     const output = await applyAllForApp(baseArgs);
 
-    // Phase 1 schema should fail
+    // Phase 1 schema should fail (not skipped)
     expect(output.phases[0].results[0].success).toBe(false);
+    if (!output.phases[0].results[0].success) {
+      expect(output.phases[0].results[0].skipped).toBe(false);
+    }
 
     // All subsequent phases should be skipped
     for (const phase of output.phases.slice(1)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.skipped).toBe(true);
+        }
       }
     }
   });
@@ -216,10 +226,13 @@ describe("applyAllForApp", () => {
     // Phase 1 succeeds
     expect(output.phases[0].results[0].success).toBe(true);
 
-    // Phase 2: customize fails, view succeeds
+    // Phase 2: customize fails (not skipped), view succeeds
     const phase2 = output.phases[1];
     expect(phase2.results[0].domain).toBe("customize");
     expect(phase2.results[0].success).toBe(false);
+    if (!phase2.results[0].success) {
+      expect(phase2.results[0].skipped).toBe(false);
+    }
     expect(phase2.results[1].domain).toBe("view");
     expect(phase2.results[1].success).toBe(true);
 
@@ -251,20 +264,27 @@ describe("applyAllForApp", () => {
     // Phase 2 succeeds
     expect(output.phases[1].results.every((r) => r.success)).toBe(true);
 
-    // Phase 3: field-acl fails fatally, app-acl and record-acl are skipped
+    // Phase 3: field-acl fails fatally (not skipped), app-acl and record-acl are skipped
     const phase3 = output.phases[2];
     expect(phase3.results[0].domain).toBe("field-acl");
     expect(phase3.results[0].success).toBe(false);
+    if (!phase3.results[0].success) {
+      expect(phase3.results[0].skipped).toBe(false);
+    }
     expect(phase3.results[1].domain).toBe("app-acl");
     expect(phase3.results[1].success).toBe(false);
     if (!phase3.results[1].success) {
       expect(phase3.results[1].error.message).toContain("Skipped");
+      expect(phase3.results[1].skipped).toBe(true);
     }
 
     // Phase 4 and 5 are all skipped
     for (const phase of output.phases.slice(3)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.skipped).toBe(true);
+        }
       }
     }
   });
@@ -281,7 +301,15 @@ describe("applyAllForApp", () => {
 
     const output = await applyAllForApp(baseArgs);
 
-    // customize failed fatally -> view is skipped
+    // customize failed fatally (not skipped) -> view is skipped
+    const phase2 = output.phases[1];
+    if (!phase2.results[0].success) {
+      expect(phase2.results[0].skipped).toBe(false);
+    }
+    if (!phase2.results[1].success) {
+      expect(phase2.results[1].skipped).toBe(true);
+    }
+
     // All Phase 3, 4, 5 are skipped
     // Phase 2 has customize (failed) and view (skipped) — no successes in Phase 2-4
     const phase2And3And4Successes = output.phases
@@ -308,7 +336,7 @@ describe("applyAllForApp", () => {
     expect(deployCallCount.count).toBe(2);
   });
 
-  it("Phase 2-4 一括 deploy が失敗した場合に deployed が false になること", async () => {
+  it("Phase 2-4 一括 deploy が失敗した場合に deployed が false で deployError が設定されること", async () => {
     setupAllMocksToSucceed();
     let deployCount = 0;
     vi.mocked(deployApp).mockImplementation(async () => {
@@ -331,8 +359,10 @@ describe("applyAllForApp", () => {
       expect(result.success).toBe(true);
     }
 
-    // But deployed should be false
+    // But deployed should be false with error
     expect(output.deployed).toBe(false);
+    expect(output.deployError).toBeInstanceOf(SystemError);
+    expect(output.deployError?.message).toBe("Deploy failed");
   });
 
   it("フェーズ内のタスクが直列実行されること（実行順序の検証）", async () => {
@@ -447,6 +477,16 @@ describe("applyAllForApp", () => {
 
     const output = await applyAllForApp(baseArgs);
 
+    // All Phase 2-4 failures should have skipped: false (they actually ran)
+    for (const phase of output.phases.slice(1, 4)) {
+      for (const result of phase.results) {
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.skipped).toBe(false);
+        }
+      }
+    }
+
     // Seed still succeeds
     const seedResult = output.phases[4].results[0];
     expect(seedResult.domain).toBe("seed");
@@ -457,5 +497,31 @@ describe("applyAllForApp", () => {
 
     // deployApp should only be called once (Phase 1 schema)
     expect(vi.mocked(deployApp)).toHaveBeenCalledTimes(1);
+  });
+
+  it("Phase 2-4 で致命的エラー (NetworkError) が発生すると後続タスク・フェーズが中止されること", async () => {
+    setupAllMocksToSucceed();
+    vi.mocked(applyView).mockRejectedValue(
+      new SystemError(SystemErrorCode.NetworkError, "Network timeout"),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    // Phase 2: customize succeeds, view fails fatally
+    expect(output.phases[1].results[0].success).toBe(true);
+    expect(output.phases[1].results[1].success).toBe(false);
+    if (!output.phases[1].results[1].success) {
+      expect(output.phases[1].results[1].skipped).toBe(false);
+    }
+
+    // Phase 3+ should be skipped
+    for (const phase of output.phases.slice(2, 4)) {
+      for (const result of phase.results) {
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.skipped).toBe(true);
+        }
+      }
+    }
   });
 });

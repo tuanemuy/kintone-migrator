@@ -132,6 +132,7 @@ describe("printApplyAllResults", () => {
               domain: "schema",
               success: false,
               error: new Error("migration failed"),
+              skipped: false,
             },
           ],
         },
@@ -164,6 +165,7 @@ describe("printApplyAllResults", () => {
               domain: "customize",
               success: false,
               error: new Error("API error"),
+              skipped: false,
             },
             { domain: "view", success: true },
           ],
@@ -206,6 +208,7 @@ describe("printApplyAllResults", () => {
               domain: "view",
               success: false,
               error: new Error("view failed"),
+              skipped: false,
             },
           ],
         },
@@ -218,5 +221,95 @@ describe("printApplyAllResults", () => {
     expect(p.log.warn).toHaveBeenCalledWith(
       expect.stringContaining("deployment may not have completed"),
     );
+  });
+
+  it("skipped 結果に yellow marker と skipped が表示されること", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("Skipped due to fatal error"),
+              skipped: true,
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    const messageCalls = vi.mocked(p.log.message).mock.calls;
+    const schemaLine = messageCalls[0][0] as string;
+    expect(schemaLine).toContain("\u2298");
+    expect(schemaLine).toContain("skipped");
+    expect(schemaLine).not.toContain("failed");
+
+    // Summary should show skipped count
+    const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
+    expect(summaryLine).toContain("1");
+    expect(summaryLine).toContain("skipped");
+  });
+
+  it("deployed が false で deployError がある場合にエラー詳細が表示されること", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: true }],
+        },
+      ],
+      deployed: false,
+      deployError: new Error("Deploy API timeout"),
+    };
+
+    printApplyAllResults(output);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Deployment failed"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("Deploy API timeout"),
+    );
+  });
+
+  it("deployed が false で succeeded が 0 の場合に 'Not deployed due to errors.' が表示されること", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("failed"),
+              skipped: false,
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    expect(p.log.warn).toHaveBeenCalledWith("Not deployed due to errors.");
+  });
+
+  it("空の phases の場合に 'No domains processed' が表示されること", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    const messageCalls = vi.mocked(p.log.message).mock.calls;
+    const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
+    expect(summaryLine).toContain("No domains processed");
   });
 });

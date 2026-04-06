@@ -5,12 +5,7 @@ import { applyAllForApp } from "@/core/application/applyAll/applyAllForApp";
 import { createCliApplyAllContainers } from "@/core/application/container/applyAllCli";
 import { diffAllForApp } from "@/core/application/diffAll/diffAllForApp";
 import { printApplyAllResults } from "../applyAllOutput";
-import {
-  confirmArgs,
-  kintoneArgs,
-  multiAppArgs,
-  type WithConfirm,
-} from "../config";
+import { confirmArgs, kintoneArgs, multiAppArgs } from "../config";
 import { printDiffAllResults } from "../diffAllOutput";
 import { handleCliError } from "../handleError";
 import { printAppHeader } from "../output";
@@ -89,7 +84,12 @@ async function runApplyAll(
 
   // Step 2: Dry run exits here
   if (options.dryRun) {
-    p.log.info("Dry run complete. No changes applied.");
+    p.log.info("Dry run complete. No changes will be applied.");
+    if (!hasChanges) {
+      p.log.info(
+        "Note: Seed data would still be upserted when running without --dry-run.",
+      );
+    }
     return;
   }
 
@@ -131,7 +131,7 @@ export default define({
   run: async (ctx) => {
     try {
       const values = ctx.values as ApplyCliValues;
-      const skipConfirm = (values as WithConfirm<ApplyCliValues>).yes === true;
+      const skipConfirm = values.yes === true;
       const dryRun = values["dry-run"] === true;
 
       await routeMultiApp(values, {

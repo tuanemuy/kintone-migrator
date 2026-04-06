@@ -201,7 +201,7 @@ describe("apply command", () => {
     expect(printDiffAllResults).toHaveBeenCalled();
     expect(applyAllForApp).not.toHaveBeenCalled();
     expect(p.log.info).toHaveBeenCalledWith(
-      "Dry run complete. No changes applied.",
+      "Dry run complete. No changes will be applied.",
     );
   });
 
@@ -263,6 +263,60 @@ describe("apply command", () => {
     await applyCommand.run({ values: {} } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(testError);
+  });
+
+  it("singleApp で Ctrl+C でキャンセルした場合は apply されないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.isCancel).mockReturnValueOnce(true);
+    vi.mocked(p.confirm).mockResolvedValueOnce(undefined as never);
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(p.cancel).toHaveBeenCalled();
+    expect(applyAllForApp).not.toHaveBeenCalled();
+  });
+
+  it("singleApp で diff 変更がない場合でも apply が実行されること（seed のため）", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(diffAllForApp).mockResolvedValueOnce([
+      {
+        domain: "schema",
+        success: true,
+        result: {
+          isEmpty: true,
+          entries: [],
+          schemaFields: [],
+          summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+          hasLayoutChanges: false,
+        },
+      },
+    ]);
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(p.log.success).toHaveBeenCalledWith(
+      "No changes detected. Seed data will still be upserted.",
+    );
+    expect(applyAllForApp).toHaveBeenCalled();
   });
 
   it("seed data のメッセージが表示されること", async () => {
