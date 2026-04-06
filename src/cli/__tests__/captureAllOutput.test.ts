@@ -67,9 +67,7 @@ const mockPaths: AppFilePaths = {
 
 describe("printCaptureAllResults", () => {
   it("ヘッダーに 'Capture Results:' が表示されること", () => {
-    const results: CaptureResult[] = [
-      { domain: "schema", success: true },
-    ];
+    const results: CaptureResult[] = [{ domain: "schema", success: true }];
 
     printCaptureAllResults(results, mockPaths);
 

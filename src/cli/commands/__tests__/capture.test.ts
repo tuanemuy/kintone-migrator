@@ -68,9 +68,7 @@ vi.mock("@/core/application/container/captureAllCli", () => ({
 }));
 
 vi.mock("@/core/application/init/captureAllForApp", () => ({
-  captureAllForApp: vi.fn(async () => [
-    { domain: "schema", success: true },
-  ]),
+  captureAllForApp: vi.fn(async () => [{ domain: "schema", success: true }]),
 }));
 
 import * as p from "@clack/prompts";
