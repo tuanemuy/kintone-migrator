@@ -25,7 +25,7 @@ import type {
 } from "@/core/application/init/captureAllForApp";
 import type { AppFilePaths } from "@/core/domain/projectConfig/appFilePaths";
 import { printCaptureAllResults } from "../captureAllOutput";
-import { logError } from "../handleError";
+import { formatErrorForDisplay, logError } from "../handleError";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -66,6 +66,22 @@ const mockPaths: AppFilePaths = {
 };
 
 describe("printCaptureAllResults", () => {
+  it("ヘッダーに 'Capture Results:' が表示されること", () => {
+    const results: CaptureResult[] = [
+      { domain: "schema", success: true },
+    ];
+
+    printCaptureAllResults(results, mockPaths);
+
+    expect(p.log.step).toHaveBeenCalledWith(
+      expect.stringContaining("Capture Results"),
+    );
+  });
+
+  it("空の結果配列でもクラッシュしないこと", () => {
+    expect(() => printCaptureAllResults([], mockPaths)).not.toThrow();
+  });
+
   it("全14ドメインが成功した場合、全てに ✓ を表示し Summary に succeeded を含む", () => {
     const results: CaptureResult[] = ALL_DOMAINS.map((domain) => ({
       domain,
@@ -111,6 +127,13 @@ describe("printCaptureAllResults", () => {
 
     // logError should be called for each failure
     expect(logError).toHaveBeenCalledTimes(14);
+
+    // formatErrorForDisplay should be called for each failure
+    expect(formatErrorForDisplay).toHaveBeenCalledTimes(14);
+
+    // Verify error messages are included in the output
+    const firstLine = messageCalls[0][0] as string;
+    expect(firstLine).toContain("schema failed");
 
     const summaryLine = messageCalls[14][0] as string;
     expect(summaryLine).toContain("14");

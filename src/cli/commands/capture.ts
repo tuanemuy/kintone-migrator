@@ -68,7 +68,7 @@ export default define({
       await routeMultiApp(values, {
         singleLegacy: async () => {
           p.log.error(
-            "This command requires a project config file.\nRun 'kintone-migrator init' to create one, or use individual capture commands (e.g. 'schema capture').",
+            "The 'capture' command requires a project config file.\nRun 'kintone-migrator init' to create one, or use individual capture commands (e.g. 'schema capture').",
           );
           process.exitCode = 1;
         },
