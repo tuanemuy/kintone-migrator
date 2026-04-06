@@ -10,17 +10,16 @@ import {
   type RemoteResource,
 } from "../valueObject";
 
-// FILE resources are compared by basename only; content-level diff is not supported.
 // The trailing-slash case (e.g. "src/lib/") is safe here: split("/") produces an
 // empty last element, but such paths should never appear since CustomizationResource
 // paths always refer to files, not directories.
-function resourceName(resource: CustomizationResource): string {
+export function resourceName(resource: CustomizationResource): string {
   if (resource.type === "URL") return resource.url;
   const parts = resource.path.replace(/\\/g, "/").split("/").filter(Boolean);
   return parts[parts.length - 1];
 }
 
-function remoteResourceName(resource: RemoteResource): string {
+export function remoteResourceName(resource: RemoteResource): string {
   if (resource.type === "URL") return resource.url;
   return resource.file.name;
 }
@@ -31,6 +30,7 @@ function compareResourceLists(
   platform: "desktop" | "mobile",
   resourceType: "js" | "css",
   warnings: string[],
+  modifiedFileNames: ReadonlySet<string>,
 ): CustomizationDiffEntry[] {
   const entries: CustomizationDiffEntry[] = [];
 
@@ -88,15 +88,22 @@ function compareResourceLists(
     }
   }
 
-  // FILE resources matched by basename are not compared at content level.
-  // Warn users that content changes within matched files won't appear in the diff.
-  const matchedFiles = [...localNameSet].filter((n) => remoteNameSet.has(n));
-  const hasLocalFiles = localResources.some((r) => r.type === "FILE");
-  const hasRemoteFiles = remoteResources.some((r) => r.type === "FILE");
-  if (matchedFiles.length > 0 && hasLocalFiles && hasRemoteFiles) {
-    warnings.push(
-      `[${platform}.${resourceType}] FILE resources are compared by name only; content changes are not detected`,
-    );
+  // Matched FILE resources whose content has changed are reported as modified.
+  for (const name of localNameSet) {
+    if (
+      remoteNameSet.has(name) &&
+      localTypeMap.get(name) === "FILE" &&
+      remoteTypeMap.get(name) === "FILE" &&
+      modifiedFileNames.has(name)
+    ) {
+      entries.push({
+        type: "modified",
+        platform,
+        category: resourceType,
+        name,
+        details: "file content changed",
+      });
+    }
   }
 
   // Detect order changes among shared resources.
@@ -128,10 +135,25 @@ function comparePlatform(
   remote: RemotePlatform,
   platform: "desktop" | "mobile",
   warnings: string[],
+  modifiedFileNames: ReadonlySet<string>,
 ): CustomizationDiffEntry[] {
   return [
-    ...compareResourceLists(localJs, remote.js, platform, "js", warnings),
-    ...compareResourceLists(localCss, remote.css, platform, "css", warnings),
+    ...compareResourceLists(
+      localJs,
+      remote.js,
+      platform,
+      "js",
+      warnings,
+      modifiedFileNames,
+    ),
+    ...compareResourceLists(
+      localCss,
+      remote.css,
+      platform,
+      "css",
+      warnings,
+      modifiedFileNames,
+    ),
   ];
 }
 
@@ -143,6 +165,7 @@ export const CustomizationDiffDetector = {
   detect: (
     local: CustomizationConfig,
     remote: RemoteCustomization,
+    modifiedFileNames: ReadonlySet<string>,
   ): CustomizationDiff => {
     const entries: CustomizationDiffEntry[] = [];
     const warnings: string[] = [];
@@ -165,6 +188,7 @@ export const CustomizationDiffDetector = {
         remote.desktop,
         "desktop",
         warnings,
+        modifiedFileNames,
       ),
     );
 
@@ -175,6 +199,7 @@ export const CustomizationDiffDetector = {
         remote.mobile,
         "mobile",
         warnings,
+        modifiedFileNames,
       ),
     );
 

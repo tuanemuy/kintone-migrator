@@ -2,6 +2,7 @@ import type { CustomizationContainer } from "@/core/application/container/custom
 import { SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
+import type { FileContentReader } from "@/core/domain/customization/ports/fileContentReader";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
 import type { FileWriter } from "@/core/domain/customization/ports/fileWriter";
@@ -98,6 +99,30 @@ export class InMemoryFileUploader extends FakeBase implements FileUploader {
   }
 }
 
+export class InMemoryFileContentReader
+  extends FakeBase
+  implements FileContentReader
+{
+  private files: Map<string, ArrayBuffer> = new Map();
+
+  constructor() {
+    super(SystemErrorCode.StorageError);
+  }
+
+  async read(filePath: string): Promise<ArrayBuffer> {
+    this.trackCall("read");
+    const data = this.files.get(filePath);
+    if (data === undefined) {
+      return new TextEncoder().encode(`local-content-of-${filePath}`).buffer;
+    }
+    return data;
+  }
+
+  setFile(filePath: string, data: ArrayBuffer): void {
+    this.files.set(filePath, data);
+  }
+}
+
 export class InMemoryCustomizationStorage
   extends InMemoryFileStorage
   implements CustomizationStorage {}
@@ -137,6 +162,7 @@ export type TestCustomizationContainer = CustomizationContainer & {
   customizationStorage: InMemoryCustomizationStorage;
   fileUploader: InMemoryFileUploader;
   fileDownloader: InMemoryFileDownloader;
+  fileContentReader: InMemoryFileContentReader;
   fileWriter: InMemoryFileWriter;
   appDeployer: InMemoryAppDeployer;
 };
@@ -148,6 +174,7 @@ export function createTestCustomizationContainer(): TestCustomizationContainer {
     customizationStorage: new InMemoryCustomizationStorage(),
     fileUploader: new InMemoryFileUploader(),
     fileDownloader: new InMemoryFileDownloader(),
+    fileContentReader: new InMemoryFileContentReader(),
     fileWriter: new InMemoryFileWriter(),
     appDeployer: new InMemoryAppDeployer(),
   };

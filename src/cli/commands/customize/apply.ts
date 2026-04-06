@@ -1,4 +1,3 @@
-import { dirname, join, resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import {
@@ -25,14 +24,13 @@ import {
   printCustomizationDiffResult,
 } from "../../output";
 import { routeMultiApp, runMultiAppWithHeaders } from "../../projectConfig";
-import { deriveFilePrefix } from "./capture";
+import { computeBasePath } from "./capture";
 
 function createCustomizationContainer(
   config: CustomizationCliContainerConfig,
 ): { container: CustomizationContainer; basePath: string } {
   const container = createCustomizationCliContainer(config);
-  const filePrefix = deriveFilePrefix(config.customizeFilePath);
-  const basePath = join(dirname(resolve(config.customizeFilePath)), filePrefix);
+  const basePath = computeBasePath(config.customizeFilePath);
   return { container, basePath };
 }
 
@@ -67,7 +65,10 @@ async function runDiffPreview(
   s.start("Detecting changes...");
   let result: Awaited<ReturnType<typeof detectCustomizationDiff>>;
   try {
-    result = await detectCustomizationDiff({ container });
+    result = await detectCustomizationDiff({
+      container,
+      input: { basePath },
+    });
   } catch (error) {
     s.stop("Comparison failed.");
     throw error;
@@ -76,17 +77,10 @@ async function runDiffPreview(
 
   printCustomizationDiffResult(result);
 
-  // FILE resources are compared by name only — content changes are not detected.
-  // When the diff detector emits this warning, there may be undetectable content
-  // changes, so we must NOT skip apply even if isEmpty is true.
-  const hasFileContentWarning = result.warnings.some((w) =>
-    w.includes("content changes are not detected"),
-  );
-
   return {
     container,
     basePath,
-    hasChanges: !result.isEmpty || hasFileContentWarning,
+    hasChanges: !result.isEmpty,
   };
 }
 

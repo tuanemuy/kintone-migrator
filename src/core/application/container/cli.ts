@@ -6,6 +6,7 @@ import { KintoneFileUploader } from "@/core/adapters/kintone/fileUploader";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
 import { createLocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
+import { LocalFileContentReader } from "@/core/adapters/local/fileContentReader";
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
 import { createLocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { createLocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
@@ -101,6 +102,7 @@ export function createCustomizationCliContainer(
     ),
     fileUploader: new KintoneFileUploader(client, process.cwd()),
     fileDownloader: new KintoneFileDownloader(client),
+    fileContentReader: new LocalFileContentReader(),
     fileWriter: new LocalFileWriter(process.cwd()),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
