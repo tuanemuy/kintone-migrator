@@ -109,7 +109,7 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("fields changed");
+      expect(result.entries[0].details).toContain("fields:");
     });
 
     it("should detect filterCond change", () => {
@@ -123,7 +123,8 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("filterCond changed");
+      expect(result.entries[0].details).toContain("filterCond:");
+      expect(result.entries[0].details).toContain('"" -> "a = b"');
     });
 
     it("should detect html change", () => {
@@ -145,7 +146,10 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("html changed");
+      expect(result.entries[0].details).toContain("html:");
+      expect(result.entries[0].details).toContain(
+        '"<div>old</div>" -> "<div>new</div>"',
+      );
     });
 
     it("should detect pager change", () => {
@@ -175,7 +179,8 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("sort changed");
+      expect(result.entries[0].details).toContain("sort:");
+      expect(result.entries[0].details).toContain('"f1 desc" -> "f1 asc"');
     });
 
     it("should detect date change", () => {
@@ -197,7 +202,7 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("date changed");
+      expect(result.entries[0].details).toContain("date:");
     });
 
     it("should detect title change", () => {
@@ -211,7 +216,7 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("title changed");
+      expect(result.entries[0].details).toContain("title:");
     });
 
     it("should detect device change", () => {
@@ -225,7 +230,7 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("device changed");
+      expect(result.entries[0].details).toContain("device:");
     });
 
     it("should describe 'no visible changes' when views are not equal but no properties differ visibly", () => {
@@ -262,10 +267,10 @@ describe("ViewDiffDetector", () => {
       const result = ViewDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("sort changed");
-      expect(result.entries[0].details).toContain("date changed");
-      expect(result.entries[0].details).toContain("title changed");
-      expect(result.entries[0].details).toContain("device changed");
+      expect(result.entries[0].details).toContain("sort:");
+      expect(result.entries[0].details).toContain("date:");
+      expect(result.entries[0].details).toContain("title:");
+      expect(result.entries[0].details).toContain("device:");
     });
 
     it("should treat undefined and empty string as equal for optional string fields", () => {

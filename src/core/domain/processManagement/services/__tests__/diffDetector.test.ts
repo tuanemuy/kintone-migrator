@@ -175,7 +175,9 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("assignee.entities changed");
+      expect(result.entries[0].details).toContain("assignee.entities:");
+      expect(result.entries[0].details).toContain("->");
+      expect(result.entries[0].details).toContain('"group1"');
     });
 
     it("should detect entities change when entity count differs", () => {
@@ -206,7 +208,7 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("assignee.entities changed");
+      expect(result.entries[0].details).toContain("assignee.entities:");
     });
 
     it("should detect multiple state property changes simultaneously", () => {
@@ -239,7 +241,7 @@ describe("ProcessManagementDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("index");
       expect(result.entries[0].details).toContain("assignee.type");
-      expect(result.entries[0].details).toContain("assignee.entities changed");
+      expect(result.entries[0].details).toContain("assignee.entities:");
     });
 
     it("should detect entities change when includeSubs differs", () => {
@@ -271,7 +273,7 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("assignee.entities changed");
+      expect(result.entries[0].details).toContain("assignee.entities:");
     });
   });
 
@@ -385,7 +387,7 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("executableUser changed");
+      expect(result.entries[0].details).toContain("executableUser:");
     });
 
     it("should detect executableUser change when one is undefined", () => {
@@ -405,7 +407,7 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("executableUser changed");
+      expect(result.entries[0].details).toContain("executableUser:");
     });
 
     it("should detect executableUser change between undefined and empty entities", () => {
@@ -419,7 +421,7 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("executableUser changed");
+      expect(result.entries[0].details).toContain("executableUser:");
     });
 
     it("should report no change when both executableUser are undefined", () => {

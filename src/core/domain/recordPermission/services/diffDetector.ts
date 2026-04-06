@@ -73,7 +73,7 @@ function compareRightsForFilter(
         const detail =
           localRight.entities.length !== remoteRight.entities.length
             ? `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`
-            : `entities: ${describeRight(localRight)}`;
+            : `entities: ${describeRight(remoteRight)} -> ${describeRight(localRight)}`;
         entries.push({
           type: "modified",
           filterCond,

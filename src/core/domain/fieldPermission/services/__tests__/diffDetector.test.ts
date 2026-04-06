@@ -90,7 +90,9 @@ describe("FieldPermissionDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("entities:");
+      expect(result.entries[0].details).toContain("USER:user1(read)");
       expect(result.entries[0].details).toContain("USER:user1(write)");
+      expect(result.entries[0].details).toContain("->");
     });
 
     it("should detect includeSubs change", () => {

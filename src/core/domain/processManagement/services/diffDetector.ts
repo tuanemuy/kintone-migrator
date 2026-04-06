@@ -1,4 +1,5 @@
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type { ProcessManagementConfig } from "../entity";
 import type {
   ProcessAction,
@@ -61,7 +62,9 @@ function compareActions(
       remoteAction.executableUser,
     )
   ) {
-    diffs.push("executableUser changed");
+    diffs.push(
+      `executableUser: ${formatValue(remoteAction.executableUser)} -> ${formatValue(localAction.executableUser)}`,
+    );
   }
   return diffs;
 }
@@ -101,7 +104,9 @@ function compareStates(
           remoteState.assignee.entities,
         )
       ) {
-        stateDiffs.push("assignee.entities changed");
+        stateDiffs.push(
+          `assignee.entities: ${formatValue(remoteState.assignee.entities)} -> ${formatValue(localState.assignee.entities)}`,
+        );
       }
 
       if (stateDiffs.length > 0) {

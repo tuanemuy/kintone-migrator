@@ -57,7 +57,7 @@ export const FieldPermissionDiffDetector = {
         entries.push({
           type: "modified",
           fieldCode: code,
-          details: `entities: ${describeEntities(localRight.entities)}`,
+          details: `entities: ${describeEntities(remoteRight.entities)} -> ${describeEntities(localRight.entities)}`,
         });
       }
     }

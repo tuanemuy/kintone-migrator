@@ -88,7 +88,9 @@ describe("ReportDiffDetector", () => {
       const remote = makeConfig({ r1: makeReport({ groups: [] }) });
       const result = ReportDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("groups");
+      expect(result.entries[0].details).toContain("groups:");
+      expect(result.entries[0].details).toContain("[] ->");
+      expect(result.entries[0].details).toContain('"field1"');
     });
 
     it("should detect aggregations change", () => {
@@ -98,7 +100,9 @@ describe("ReportDiffDetector", () => {
       const remote = makeConfig({ r1: makeReport({ aggregations: [] }) });
       const result = ReportDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("aggregations");
+      expect(result.entries[0].details).toContain("aggregations:");
+      expect(result.entries[0].details).toContain("[] ->");
+      expect(result.entries[0].details).toContain('"COUNT"');
     });
 
     it("should detect sorts change", () => {
@@ -108,7 +112,8 @@ describe("ReportDiffDetector", () => {
       const remote = makeConfig({ r1: makeReport({ sorts: [] }) });
       const result = ReportDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("sorts");
+      expect(result.entries[0].details).toContain("sorts:");
+      expect(result.entries[0].details).toContain("[] ->");
     });
 
     it("should detect filterCond change", () => {
@@ -118,7 +123,8 @@ describe("ReportDiffDetector", () => {
       const remote = makeConfig({ r1: makeReport({ filterCond: "" }) });
       const result = ReportDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("filterCond");
+      expect(result.entries[0].details).toContain("filterCond:");
+      expect(result.entries[0].details).toContain('"" -> "status = 1"');
     });
 
     it("should detect periodicReport change", () => {
@@ -133,7 +139,8 @@ describe("ReportDiffDetector", () => {
       const remote = makeConfig({ r1: makeReport() });
       const result = ReportDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("periodicReport");
+      expect(result.entries[0].details).toContain("periodicReport:");
+      expect(result.entries[0].details).toContain("->");
     });
 
     it("should detect index change", () => {

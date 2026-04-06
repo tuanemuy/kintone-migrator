@@ -151,7 +151,9 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
-      expect(diff.entries[0].details).toContain("properties changed");
+      expect(diff.entries[0].details).toContain("required:");
+      expect(diff.entries[0].details).toContain("false");
+      expect(diff.entries[0].details).toContain("true");
     });
 
     it("noLabel が変更された場合、変更として検出する", () => {
@@ -194,7 +196,8 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
-      expect(diff.entries[0].details).toContain("properties changed");
+      expect(diff.entries[0].details).toContain("fields:");
+      expect(diff.entries[0].details).toContain("->");
     });
 
     it("SUBTABLE 内部フィールドが同一の場合、差分なしとなる", () => {
@@ -246,7 +249,9 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
-      expect(diff.entries[0].details).toContain("properties changed");
+      expect(diff.entries[0].details).toContain(
+        "referenceTable.displayFields:",
+      );
     });
 
     it("REFERENCE_TABLE の relatedApp が変更された場合、変更として検出する", () => {
@@ -261,6 +266,8 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
+      expect(diff.entries[0].details).toContain("referenceTable.relatedApp:");
+      expect(diff.entries[0].details).toContain("->");
     });
 
     it("REFERENCE_TABLE が同一の場合、差分なしとなる", () => {
@@ -422,7 +429,7 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
-      expect(diff.entries[0].details).toContain("properties changed");
+      expect(diff.entries[0].details).toContain("referenceTable.sort:");
     });
 
     it("REFERENCE_TABLE の condition が変更された場合、modified として検出される", () => {
@@ -443,6 +450,8 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
+      expect(diff.entries[0].details).toContain("referenceTable.condition:");
+      expect(diff.entries[0].details).toContain("->");
     });
 
     it("RADIO_BUTTON の defaultValue 文字列が異なる場合、modified として検出される", () => {
@@ -598,7 +607,8 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
-      expect(diff.entries[0].details).toContain("properties changed");
+      expect(diff.entries[0].details).toContain("required:");
+      expect(diff.entries[0].details).toContain("unique:");
     });
   });
 

@@ -95,7 +95,9 @@ describe("RecordPermissionDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("entities:");
+      expect(result.entries[0].details).toContain("USER:user1(view)");
       expect(result.entries[0].details).toContain("USER:user1(view/edit)");
+      expect(result.entries[0].details).toContain("->");
     });
 
     it("should detect entity count change", () => {

@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ActionConfig, ActionsConfig } from "../entity";
 import type { ActionDiff, ActionDiffEntry } from "../valueObject";
@@ -11,22 +12,22 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
     diffs.push(`index: ${remote.index} -> ${local.index}`);
   }
   if (!deepEqual(local.destApp, remote.destApp)) {
-    diffs.push("destApp changed");
+    diffs.push(
+      `destApp: ${formatValue(remote.destApp)} -> ${formatValue(local.destApp)}`,
+    );
   }
   if (local.filterCond !== remote.filterCond) {
-    diffs.push("filterCond changed");
+    diffs.push(`filterCond: "${remote.filterCond}" -> "${local.filterCond}"`);
   }
   if (!deepEqual(local.mappings, remote.mappings)) {
-    if (local.mappings.length !== remote.mappings.length) {
-      diffs.push(
-        `mappings: ${remote.mappings.length} -> ${local.mappings.length}`,
-      );
-    } else {
-      diffs.push("mappings changed");
-    }
+    diffs.push(
+      `mappings: ${formatValue(remote.mappings)} -> ${formatValue(local.mappings)}`,
+    );
   }
   if (!deepEqual(local.entities, remote.entities)) {
-    diffs.push("entities changed");
+    diffs.push(
+      `entities: ${formatValue(remote.entities)} -> ${formatValue(local.entities)}`,
+    );
   }
 
   return diffs;

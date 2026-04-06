@@ -82,7 +82,10 @@ describe("ActionDiffDetector", () => {
       const remote = makeConfig({ a: makeAction({ destApp: { app: "1" } }) });
       const result = ActionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("destApp");
+      expect(result.entries[0].details).toContain("destApp:");
+      expect(result.entries[0].details).toContain("->");
+      expect(result.entries[0].details).toContain('"app":"1"');
+      expect(result.entries[0].details).toContain('"app":"2"');
     });
 
     it("should detect filterCond change", () => {
@@ -92,7 +95,8 @@ describe("ActionDiffDetector", () => {
       const remote = makeConfig({ a: makeAction({ filterCond: "" }) });
       const result = ActionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("filterCond");
+      expect(result.entries[0].details).toContain("filterCond:");
+      expect(result.entries[0].details).toContain('"" -> "field = 1"');
     });
 
     it("should detect mappings change", () => {
@@ -104,7 +108,8 @@ describe("ActionDiffDetector", () => {
       const remote = makeConfig({ a: makeAction({ mappings: [] }) });
       const result = ActionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("mappings");
+      expect(result.entries[0].details).toContain("mappings:");
+      expect(result.entries[0].details).toContain("[] ->");
     });
 
     it("should detect entities change", () => {
@@ -116,7 +121,9 @@ describe("ActionDiffDetector", () => {
       const remote = makeConfig({ a: makeAction({ entities: [] }) });
       const result = ActionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("entities");
+      expect(result.entries[0].details).toContain("entities:");
+      expect(result.entries[0].details).toContain("[] ->");
+      expect(result.entries[0].details).toContain('"user1"');
     });
   });
 
