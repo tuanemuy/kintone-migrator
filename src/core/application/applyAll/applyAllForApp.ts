@@ -246,6 +246,8 @@ async function executeSchemaPhase(
       await deployApp({ container: containers.schema });
       results.push({ domain: task.domain, success: true });
     } catch (error) {
+      // Schema phase failure is always fatal regardless of isFatalError check.
+      // Without a deployed schema, subsequent phases cannot function correctly.
       const err = toError(error);
       results.push({
         domain: task.domain,

@@ -41,7 +41,7 @@ function printPhaseResult(phaseResult: ApplyPhaseResult): void {
 
   for (const result of phaseResult.results) {
     p.log.message(formatTaskResult(result));
-    if (!result.success) {
+    if (!result.success && !result.skipped) {
       logError(result.error);
     }
   }

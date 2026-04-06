@@ -253,6 +253,9 @@ describe("printApplyAllResults", () => {
     const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
     expect(summaryLine).toContain("1");
     expect(summaryLine).toContain("skipped");
+
+    // logError should NOT be called for skipped results
+    expect(logError).not.toHaveBeenCalled();
   });
 
   it("deployed が false で deployError がある場合にエラー詳細が表示されること", () => {

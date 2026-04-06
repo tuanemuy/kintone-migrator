@@ -514,8 +514,8 @@ describe("applyAllForApp", () => {
       expect(output.phases[1].results[1].skipped).toBe(false);
     }
 
-    // Phase 3+ should be skipped
-    for (const phase of output.phases.slice(2, 4)) {
+    // Phase 3+ should be skipped (including Phase 5 Seed)
+    for (const phase of output.phases.slice(2)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
         if (!result.success) {

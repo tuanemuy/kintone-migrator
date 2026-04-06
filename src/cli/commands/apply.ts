@@ -121,6 +121,14 @@ async function runApplyAll(
 
   // Step 5: Print results
   printApplyAllResults(output);
+
+  // Set exit code if any domains failed or deploy failed
+  const hasFailures = output.phases
+    .flatMap((pr) => pr.results)
+    .some((r) => !r.success);
+  if (hasFailures || !output.deployed) {
+    process.exitCode = 1;
+  }
 }
 
 export default define({
