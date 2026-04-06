@@ -158,22 +158,45 @@ describe("customize apply コマンド", () => {
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
   });
 
-  it("FILEリソースのcontent変更警告がある場合、diffが空でもapplyをスキップしない", async () => {
-    const { detectCustomizationDiff } = await import(
-      "@/core/application/customization/detectCustomizationDiff"
-    );
-    vi.mocked(detectCustomizationDiff).mockResolvedValueOnce({
-      entries: [],
-      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
-      isEmpty: true,
-      warnings: [
-        "[desktop.js] FILE resources are compared by name only; content changes are not detected",
-      ],
+  describe("FILEリソースの内容変更が検出できない制約", () => {
+    // FILE resources are compared by name only; content changes are not detected.
+    // customize apply must NOT skip when matched FILE resources exist,
+    // because their contents may have changed even though the diff reports no entries.
+
+    it("名前が一致するFILEリソースが存在する場合、diffエントリが空でもapplyを実行する", async () => {
+      const { detectCustomizationDiff } = await import(
+        "@/core/application/customization/detectCustomizationDiff"
+      );
+      vi.mocked(detectCustomizationDiff).mockResolvedValueOnce({
+        entries: [],
+        summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+        isEmpty: true,
+        warnings: [
+          "[desktop.js] FILE resources are compared by name only; content changes are not detected",
+        ],
+      });
+      vi.mocked(applyCustomization).mockResolvedValue(undefined);
+
+      await command.run({ values: { yes: true } } as never);
+
+      expect(applyCustomization).toHaveBeenCalled();
     });
-    vi.mocked(applyCustomization).mockResolvedValue(undefined);
 
-    await command.run({ values: { yes: true } } as never);
+    it("URLリソースのみで構成されdiffが空の場合はapplyをスキップする", async () => {
+      const { detectCustomizationDiff } = await import(
+        "@/core/application/customization/detectCustomizationDiff"
+      );
+      vi.mocked(detectCustomizationDiff).mockResolvedValueOnce({
+        entries: [],
+        summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+        isEmpty: true,
+        warnings: [],
+      });
 
-    expect(applyCustomization).toHaveBeenCalled();
+      await command.run({ values: { yes: true } } as never);
+
+      expect(applyCustomization).not.toHaveBeenCalled();
+      expect(p.log.success).toHaveBeenCalledWith("No changes detected.");
+    });
   });
 });
