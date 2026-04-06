@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type { FormLayout, Schema } from "../entity";
 import type {
   FieldCode,
@@ -41,6 +42,61 @@ function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   return isPropertiesEqual(a, b);
 }
 
+function describePropertiesChanges(
+  before: FieldDefinition,
+  after: FieldDefinition,
+): string[] {
+  if (before.type !== after.type) {
+    return [`properties changed (type: "${before.type}" -> "${after.type}")`];
+  }
+
+  if (before.type === "SUBTABLE" && after.type === "SUBTABLE") {
+    const beforeObj = Object.fromEntries(
+      Array.from(before.properties.fields.entries()),
+    );
+    const afterObj = Object.fromEntries(
+      Array.from(after.properties.fields.entries()),
+    );
+    return [`fields: ${formatValue(beforeObj)} -> ${formatValue(afterObj)}`];
+  }
+
+  if (before.type === "REFERENCE_TABLE" && after.type === "REFERENCE_TABLE") {
+    const bRef = before.properties.referenceTable;
+    const aRef = after.properties.referenceTable;
+    const subChanges: string[] = [];
+    const subProps = [
+      "relatedApp",
+      "condition",
+      "filterCond",
+      "displayFields",
+      "sort",
+      "size",
+    ] as const;
+    for (const key of subProps) {
+      if (!deepEqual(bRef[key], aRef[key])) {
+        subChanges.push(
+          `referenceTable.${key}: ${formatValue(bRef[key])} -> ${formatValue(aRef[key])}`,
+        );
+      }
+    }
+    return subChanges;
+  }
+
+  // Normal fields: compare properties as Record<string, unknown>
+  const bProps = before.properties as Record<string, unknown>;
+  const aProps = after.properties as Record<string, unknown>;
+  const allKeys = new Set([...Object.keys(bProps), ...Object.keys(aProps)]);
+  const propChanges: string[] = [];
+  for (const key of allKeys) {
+    if (!deepEqual(bProps[key], aProps[key])) {
+      propChanges.push(
+        `${key}: ${formatValue(bProps[key])} -> ${formatValue(aProps[key])}`,
+      );
+    }
+  }
+  return propChanges;
+}
+
 function describeChanges(
   before: FieldDefinition,
   after: FieldDefinition,
@@ -62,7 +118,7 @@ function describeChanges(
   }
 
   if (!isPropertiesEqual(before, after)) {
-    changes.push("properties changed");
+    changes.push(...describePropertiesChanges(before, after));
   }
 
   return changes.length > 0 ? changes.join(", ") : "no visible changes";

@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type { GeneralSettingsConfig } from "../entity";
 import type {
   GeneralSettingsDiff,
@@ -67,10 +68,6 @@ function compareConfigs(
         details: `${rv} -> ${lv}`,
       });
     }
-  }
-
-  function formatValue(v: unknown): string {
-    return v === undefined ? "(none)" : JSON.stringify(v);
   }
 
   function compareDeepEqual(

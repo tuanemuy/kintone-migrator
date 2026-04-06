@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ReportConfig, ReportsConfig } from "../entity";
 import type { ReportDiff, ReportDiffEntry } from "../valueObject";
@@ -22,19 +23,27 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
     diffs.push(`index: ${remote.index} -> ${local.index}`);
   }
   if (local.filterCond !== remote.filterCond) {
-    diffs.push("filterCond changed");
+    diffs.push(`filterCond: "${remote.filterCond}" -> "${local.filterCond}"`);
   }
   if (!deepEqual(local.groups, remote.groups)) {
-    diffs.push("groups changed");
+    diffs.push(
+      `groups: ${formatValue(remote.groups)} -> ${formatValue(local.groups)}`,
+    );
   }
   if (!deepEqual(local.aggregations, remote.aggregations)) {
-    diffs.push("aggregations changed");
+    diffs.push(
+      `aggregations: ${formatValue(remote.aggregations)} -> ${formatValue(local.aggregations)}`,
+    );
   }
   if (!deepEqual(local.sorts, remote.sorts)) {
-    diffs.push("sorts changed");
+    diffs.push(
+      `sorts: ${formatValue(remote.sorts)} -> ${formatValue(local.sorts)}`,
+    );
   }
   if (!deepEqual(local.periodicReport ?? null, remote.periodicReport ?? null)) {
-    diffs.push("periodicReport changed");
+    diffs.push(
+      `periodicReport: ${formatValue(remote.periodicReport ?? null)} -> ${formatValue(local.periodicReport ?? null)}`,
+    );
   }
 
   return diffs;

@@ -1,5 +1,6 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import { detectRecordDiff } from "../../services/recordDiffDetector";
 import type { ViewConfig } from "../entity";
 import type { ViewDiff, ViewDiffEntry } from "../valueObject";
@@ -11,7 +12,7 @@ function checkOptionalStringChange(
   remoteVal: string | undefined,
 ): void {
   if ((localVal ?? "") !== (remoteVal ?? "")) {
-    changes.push(`${field} changed`);
+    changes.push(`${field}: "${remoteVal ?? ""}" -> "${localVal ?? ""}"`);
   }
 }
 
@@ -54,7 +55,9 @@ function describeChanges(local: ViewConfig, remote: ViewConfig): string[] {
   checkOptionalStringChange(changes, "device", local.device, remote.device);
 
   if (!deepEqual(local.fields ?? [], remote.fields ?? [])) {
-    changes.push("fields changed");
+    changes.push(
+      `fields: ${formatValue(remote.fields ?? [])} -> ${formatValue(local.fields ?? [])}`,
+    );
   }
 
   return changes;

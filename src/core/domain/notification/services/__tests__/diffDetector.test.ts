@@ -390,9 +390,8 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].section).toBe("reminder");
       expect(result.entries[0].name).toBe("reminder1");
-      expect(result.entries[0].details).toBe(
-        "title changed, daysLater changed",
-      );
+      expect(result.entries[0].details).toContain("title:");
+      expect(result.entries[0].details).toContain("daysLater:");
     });
 
     it("should detect hoursLater change in reminder", () => {
@@ -409,7 +408,8 @@ describe("NotificationDiffDetector", () => {
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toBe("hoursLater changed");
+      expect(result.entries[0].details).toContain("hoursLater:");
+      expect(result.entries[0].details).toContain("1 -> 3");
     });
 
     it("should detect time change in reminder", () => {
@@ -426,7 +426,8 @@ describe("NotificationDiffDetector", () => {
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toBe("time changed");
+      expect(result.entries[0].details).toContain("time:");
+      expect(result.entries[0].details).toContain('"18:00" -> "09:00"');
     });
 
     it("should detect targets change in reminder", () => {
@@ -453,7 +454,7 @@ describe("NotificationDiffDetector", () => {
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toBe("targets changed");
+      expect(result.entries[0].details).toContain("targets:");
     });
 
     it("should detect targets change in perRecord notification", () => {
@@ -474,7 +475,7 @@ describe("NotificationDiffDetector", () => {
       const result = NotificationDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toBe("targets changed");
+      expect(result.entries[0].details).toContain("targets:");
     });
 
     it("should detect deleted reminder notification", () => {

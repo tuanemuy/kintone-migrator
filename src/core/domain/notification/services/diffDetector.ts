@@ -1,6 +1,7 @@
 import { deepEqual } from "@/lib/deepEqual";
 import { groupByKey } from "@/lib/groupByKey";
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type {
   GeneralNotification,
   GeneralNotificationConfig,
@@ -125,9 +126,13 @@ function describePerRecordChanges(
   remote: PerRecordNotification,
 ): string {
   const diffs: string[] = [];
-  if (local.title !== remote.title) diffs.push("title changed");
+  if (local.title !== remote.title)
+    diffs.push(`title: "${remote.title}" -> "${local.title}"`);
   // filterCond is the grouping key — matched pairs always share the same value.
-  if (!deepEqual(local.targets, remote.targets)) diffs.push("targets changed");
+  if (!deepEqual(local.targets, remote.targets))
+    diffs.push(
+      `targets: ${formatValue(remote.targets)} -> ${formatValue(local.targets)}`,
+    );
   // Fallback "changed" covers the case where deepEqual detects a difference
   // but no individual field check above caught it (should not happen in practice).
   return diffs.length > 0 ? diffs.join(", ") : "changed";
@@ -140,13 +145,22 @@ function describeReminderChanges(
 ): string {
   const diffs: string[] = [];
   // code is the Map key — matched pairs always share the same value.
-  if (local.title !== remote.title) diffs.push("title changed");
-  if (local.daysLater !== remote.daysLater) diffs.push("daysLater changed");
+  if (local.title !== remote.title)
+    diffs.push(`title: "${remote.title}" -> "${local.title}"`);
+  if (local.daysLater !== remote.daysLater)
+    diffs.push(`daysLater: ${remote.daysLater} -> ${local.daysLater}`);
   if ((local.hoursLater ?? 0) !== (remote.hoursLater ?? 0))
-    diffs.push("hoursLater changed");
-  if ((local.time ?? "") !== (remote.time ?? "")) diffs.push("time changed");
-  if (local.filterCond !== remote.filterCond) diffs.push("filterCond changed");
-  if (!deepEqual(local.targets, remote.targets)) diffs.push("targets changed");
+    diffs.push(
+      `hoursLater: ${remote.hoursLater ?? 0} -> ${local.hoursLater ?? 0}`,
+    );
+  if ((local.time ?? "") !== (remote.time ?? ""))
+    diffs.push(`time: "${remote.time ?? ""}" -> "${local.time ?? ""}"`);
+  if (local.filterCond !== remote.filterCond)
+    diffs.push(`filterCond: "${remote.filterCond}" -> "${local.filterCond}"`);
+  if (!deepEqual(local.targets, remote.targets))
+    diffs.push(
+      `targets: ${formatValue(remote.targets)} -> ${formatValue(local.targets)}`,
+    );
   return diffs.length > 0 ? diffs.join(", ") : "changed";
 }
 
