@@ -157,4 +157,23 @@ describe("customize apply コマンド", () => {
       ?.value;
     expect(container.appDeployer.deploy).not.toHaveBeenCalled();
   });
+
+  it("FILEリソースのcontent変更警告がある場合、diffが空でもapplyをスキップしない", async () => {
+    const { detectCustomizationDiff } = await import(
+      "@/core/application/customization/detectCustomizationDiff"
+    );
+    vi.mocked(detectCustomizationDiff).mockResolvedValueOnce({
+      entries: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      warnings: [
+        "[desktop.js] FILE resources are compared by name only; content changes are not detected",
+      ],
+    });
+    vi.mocked(applyCustomization).mockResolvedValue(undefined);
+
+    await command.run({ values: { yes: true } } as never);
+
+    expect(applyCustomization).toHaveBeenCalled();
+  });
 });
