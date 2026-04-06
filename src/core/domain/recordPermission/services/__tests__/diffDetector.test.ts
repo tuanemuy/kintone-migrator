@@ -94,7 +94,8 @@ describe("RecordPermissionDiffDetector", () => {
       const result = RecordPermissionDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
-      expect(result.entries[0].details).toContain("entities changed");
+      expect(result.entries[0].details).toContain("entities:");
+      expect(result.entries[0].details).toContain("USER:user1(view/edit)");
     });
 
     it("should detect entity count change", () => {

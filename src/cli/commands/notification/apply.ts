@@ -1,10 +1,12 @@
 import { createNotificationCliContainer } from "@/core/application/container/notificationCli";
 import { applyNotification } from "@/core/application/notification/applyNotification";
+import { detectNotificationDiff } from "@/core/application/notification/detectNotificationDiff";
 import {
   notificationArgs,
   resolveNotificationAppContainerConfig,
   resolveNotificationContainerConfig,
 } from "../../notificationConfig";
+import { printNotificationDiffResult } from "../../output";
 import { createApplyCommand } from "../applyCommandFactory";
 
 export default createApplyCommand({
@@ -15,6 +17,10 @@ export default createApplyCommand({
   successMessage: "Notification settings applied successfully.",
   createContainer: createNotificationCliContainer,
   applyFn: applyNotification,
+  diffPreview: {
+    detectDiff: detectNotificationDiff,
+    printResult: printNotificationDiffResult,
+  },
   resolveContainerConfig: resolveNotificationContainerConfig,
   resolveAppContainerConfig: resolveNotificationAppContainerConfig,
 });

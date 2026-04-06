@@ -46,6 +46,7 @@ describe("ViewDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].viewName).toBe("view1");
+      expect(result.entries[0].details).toBe("new LIST view");
       expect(result.summary.added).toBe(1);
     });
   });
@@ -61,6 +62,7 @@ describe("ViewDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].viewName).toBe("view1");
+      expect(result.entries[0].details).toBe("removed LIST view");
       expect(result.summary.deleted).toBe(1);
     });
   });

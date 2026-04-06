@@ -4,6 +4,7 @@ import type { FieldPermissionConfig, FieldRight } from "../entity";
 import type {
   FieldPermissionDiff,
   FieldPermissionDiffEntry,
+  FieldRightEntity,
 } from "../valueObject";
 
 function isEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
@@ -21,6 +22,15 @@ function isEntitiesEqual(a: FieldRight, b: FieldRight): boolean {
       includeSubs: e.includeSubs ?? false,
     })),
   );
+}
+
+function describeEntities(entities: readonly FieldRightEntity[]): string {
+  if (entities.length === 0) return "no entities";
+  const perEntity = entities.map((e) => {
+    const access = e.accessibility.toLowerCase();
+    return `${e.entity.type}:${e.entity.code}(${access})`;
+  });
+  return perEntity.join(", ");
 }
 
 export const FieldPermissionDiffDetector = {
@@ -41,23 +51,23 @@ export const FieldPermissionDiffDetector = {
         entries.push({
           type: "added",
           fieldCode: code,
-          details: `${localRight.entities.length} entities`,
+          details: `entities: ${describeEntities(localRight.entities)}`,
         });
       } else if (!isEntitiesEqual(localRight, remoteRight)) {
         entries.push({
           type: "modified",
           fieldCode: code,
-          details: "entities changed",
+          details: `entities: ${describeEntities(localRight.entities)}`,
         });
       }
     }
 
-    for (const code of remoteMap.keys()) {
+    for (const [code, remoteRight] of remoteMap) {
       if (!localMap.has(code)) {
         entries.push({
           type: "deleted",
           fieldCode: code,
-          details: "removed",
+          details: `entities: ${describeEntities(remoteRight.entities)}`,
         });
       }
     }

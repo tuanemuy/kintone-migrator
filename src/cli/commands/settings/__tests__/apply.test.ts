@@ -13,6 +13,8 @@ vi.mock("@clack/prompts", () => ({
   confirm: vi.fn(() => true),
   outro: vi.fn(),
   isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/settingsConfig", () => ({
@@ -55,6 +57,15 @@ vi.mock("@/core/application/container/generalSettingsCli", () => ({
 
 vi.mock("@/core/application/generalSettings/applyGeneralSettings");
 
+vi.mock("@/core/application/generalSettings/detectGeneralSettingsDiff", () => ({
+  detectGeneralSettingsDiff: vi.fn().mockResolvedValue({
+    entries: [{ type: "modified", field: "name", details: "changed" }],
+    summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+    isEmpty: false,
+    warnings: [],
+  }),
+}));
+
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
@@ -71,6 +82,7 @@ afterEach(() => {
 describe("settings apply command", () => {
   it("should show success message after applying general settings", async () => {
     vi.mocked(applyGeneralSettings).mockResolvedValue(undefined);
+    vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
 
@@ -86,13 +98,15 @@ describe("settings apply command", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.confirm).toHaveBeenCalled();
+    expect(p.confirm).toHaveBeenCalledTimes(2);
     expect(mockDeploy).toHaveBeenCalled();
   });
 
   it("should show warning when deploy is cancelled", async () => {
     vi.mocked(applyGeneralSettings).mockResolvedValue(undefined);
-    vi.mocked(p.confirm).mockResolvedValue(false);
+    vi.mocked(p.confirm)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
 
     await command.run({ values: {} } as never);
 
@@ -115,7 +129,7 @@ describe("settings apply command", () => {
     const error = new Error("Settings apply failed");
     vi.mocked(applyGeneralSettings).mockRejectedValue(error);
 
-    await command.run({ values: {} } as never);
+    await command.run({ values: { yes: true } } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
   });

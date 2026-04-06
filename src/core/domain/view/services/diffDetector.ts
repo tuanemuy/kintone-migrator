@@ -69,10 +69,10 @@ export const ViewDiffDetector = {
       localViews,
       remoteViews,
       {
-        onAdded: (name) => ({
+        onAdded: (name, localView) => ({
           type: "added",
           viewName: name,
-          details: "new view",
+          details: `new ${localView.type} view`,
         }),
         onModified: (name, localView, remoteView) => {
           const changes = describeChanges(localView, remoteView);
@@ -85,10 +85,10 @@ export const ViewDiffDetector = {
           }
           return undefined;
         },
-        onDeleted: (name) => ({
+        onDeleted: (name, remoteView) => ({
           type: "deleted",
           viewName: name,
-          details: "removed",
+          details: `removed ${remoteView.type} view`,
         }),
       },
     );

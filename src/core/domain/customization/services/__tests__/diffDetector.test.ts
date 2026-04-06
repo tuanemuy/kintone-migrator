@@ -90,6 +90,7 @@ describe("CustomizationDiffDetector", () => {
       expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].platform).toBe("desktop");
       expect(result.entries[0].category).toBe("js");
+      expect(result.entries[0].details).toBe("new URL resource");
     });
 
     it("should detect deleted mobile CSS resource", () => {
@@ -105,6 +106,7 @@ describe("CustomizationDiffDetector", () => {
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].platform).toBe("mobile");
       expect(result.entries[0].category).toBe("css");
+      expect(result.entries[0].details).toBe("removed URL resource");
     });
 
     it("should detect FILE resource by basename", () => {

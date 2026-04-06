@@ -2,6 +2,8 @@ import * as p from "@clack/prompts";
 import { createViewCliContainer } from "@/core/application/container/viewCli";
 import type { ApplyViewOutput } from "@/core/application/view/applyView";
 import { applyView } from "@/core/application/view/applyView";
+import { detectViewDiff } from "@/core/application/view/detectViewDiff";
+import { printViewDiffResult } from "../../output";
 import {
   resolveViewAppContainerConfig,
   resolveViewContainerConfig,
@@ -28,6 +30,10 @@ export default createApplyCommand<
         `Skipped built-in views: ${result.skippedBuiltinViews.join(", ")}`,
       );
     }
+  },
+  diffPreview: {
+    detectDiff: detectViewDiff,
+    printResult: printViewDiffResult,
   },
   resolveContainerConfig: resolveViewContainerConfig,
   resolveAppContainerConfig: resolveViewAppContainerConfig,

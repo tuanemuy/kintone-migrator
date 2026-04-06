@@ -52,26 +52,38 @@ function compareResourceLists(
     );
   }
 
+  // Build name-to-type maps for details
+  const localTypeMap = new Map<string, "FILE" | "URL">();
+  for (const r of localResources) {
+    localTypeMap.set(resourceName(r), r.type);
+  }
+  const remoteTypeMap = new Map<string, "FILE" | "URL">();
+  for (const r of remoteResources) {
+    remoteTypeMap.set(remoteResourceName(r), r.type);
+  }
+
   for (const name of localNameSet) {
     if (!remoteNameSet.has(name)) {
+      const resType = localTypeMap.get(name) ?? "FILE";
       entries.push({
         type: "added",
         platform,
         category: resourceType,
         name,
-        details: "new resource",
+        details: `new ${resType} resource`,
       });
     }
   }
 
   for (const name of remoteNameSet) {
     if (!localNameSet.has(name)) {
+      const resType = remoteTypeMap.get(name) ?? "FILE";
       entries.push({
         type: "deleted",
         platform,
         category: resourceType,
         name,
-        details: "removed",
+        details: `removed ${resType} resource`,
       });
     }
   }
