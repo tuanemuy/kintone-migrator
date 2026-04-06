@@ -193,7 +193,7 @@ describe("printApplyAllResults", () => {
     expect(() => printApplyAllResults(output)).not.toThrow();
   });
 
-  it("deployed が false で成功ドメインがある場合に警告が表示されること", () => {
+  it("deployed が false で失敗ドメインがある場合にスキップメッセージが表示されること", () => {
     const output: ApplyAllForAppOutput = {
       phases: [
         {
@@ -218,8 +218,8 @@ describe("printApplyAllResults", () => {
 
     printApplyAllResults(output);
 
-    expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("deployment may not have completed"),
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("Deployment skipped"),
     );
   });
 

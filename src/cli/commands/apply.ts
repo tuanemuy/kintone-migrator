@@ -122,7 +122,10 @@ async function runApplyAll(
   // Step 5: Print results
   printApplyAllResults(output);
 
-  // Set exit code if any domains failed or deploy failed
+  // Set non-zero exit code for CI/CD pipelines.
+  // Triggered when any domain failed/skipped OR deploy was not completed.
+  // When needsDeploy is false (no Phase 2-4 successes), deployed=false
+  // but hasFailures is also true, so the condition is correct.
   const hasFailures = output.phases
     .flatMap((pr) => pr.results)
     .some((r) => !r.success);

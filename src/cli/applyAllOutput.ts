@@ -71,9 +71,11 @@ export function printApplyAllResults(output: ApplyAllForAppOutput): void {
     );
   } else if (succeeded === 0) {
     p.log.warn("Not deployed due to errors.");
-  } else if (succeeded > 0 && (failed > 0 || skipped > 0)) {
-    p.log.warn(
-      "Some domains were applied but deployment may not have completed. Check app status in kintone.",
+  } else if (failed > 0 || skipped > 0) {
+    // Deploy was intentionally skipped because no Phase 2-4 domains succeeded.
+    // Schema was already deployed in Phase 1, and seed doesn't need deploy.
+    p.log.info(
+      "Deployment skipped (no Phase 2-4 changes applied successfully).",
     );
   }
 
