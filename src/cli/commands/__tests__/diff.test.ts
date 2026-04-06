@@ -97,6 +97,7 @@ import diffCommand from "../diff";
 
 afterEach(() => {
   vi.clearAllMocks();
+  process.exitCode = undefined;
 });
 
 const mockApp: AppEntry = {
@@ -111,12 +112,13 @@ const mockProjectConfig: ProjectConfig = {
 };
 
 describe("diff command", () => {
-  it("singleLegacy ではエラーメッセージを表示すること", async () => {
+  it("singleLegacy ではエラーメッセージを表示し exitCode を 1 にすること", async () => {
     await diffCommand.run({ values: {} } as never);
 
     expect(p.log.error).toHaveBeenCalledWith(
       expect.stringContaining("requires a project config file"),
     );
+    expect(process.exitCode).toBe(1);
   });
 
   it("singleApp では diffAllForApp と printDiffAllResults が呼ばれること", async () => {

@@ -131,10 +131,41 @@ describe("diffAllForApp", () => {
     }
   });
 
+  it("変更ありドメインの isEmpty が false で結果に反映されること", async () => {
+    setupAllMocksToSucceed();
+
+    const nonEmptyResult: DiffResult<never> = {
+      entries: [],
+      summary: { added: 2, modified: 1, deleted: 0, total: 3 },
+      isEmpty: false,
+      warnings: [],
+    };
+    vi.mocked(detectViewDiff).mockResolvedValue(nonEmptyResult);
+
+    const results = await diffAllForApp(baseArgs);
+
+    const viewResult = results.find((r) => r.domain === "view");
+    expect(viewResult?.success).toBe(true);
+    if (viewResult?.success) {
+      expect(viewResult.result.isEmpty).toBe(false);
+      expect(viewResult.result.summary.added).toBe(2);
+    }
+
+    // Other domains should still be empty
+    const otherResults = results.filter(
+      (r) => r.domain !== "view" && r.success,
+    );
+    for (const result of otherResults) {
+      if (result.success) {
+        expect(result.result.isEmpty).toBe(true);
+      }
+    }
+  });
+
   it("非致命的エラーでは後続ドメインが継続すること", async () => {
     setupAllMocksToSucceed();
 
-    // Make schema fail with a non-fatal error (ValidationError)
+    // Make schema fail with a non-fatal error (ExternalApiError)
     vi.mocked(detectDiff).mockRejectedValue(
       new SystemError(SystemErrorCode.ExternalApiError, "API error"),
     );

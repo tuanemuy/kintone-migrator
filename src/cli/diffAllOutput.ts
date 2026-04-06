@@ -87,9 +87,12 @@ function isResultEmpty(result: DiffTaskResult & { success: true }): boolean {
   return result.result.isEmpty;
 }
 
+const SUMMARY_PAD_WIDTH =
+  Math.max(...Object.values(domainDisplayName).map((n) => n.length)) + 2;
+
 function formatSummaryLine(result: DiffTaskResult): string {
   const name = domainDisplayName[result.domain];
-  const padded = `${name}:`.padEnd(22);
+  const padded = `${name}:`.padEnd(SUMMARY_PAD_WIDTH);
 
   if (!result.success) {
     return `  ${padded}${pc.red(`failed (${formatErrorForDisplay(result.error)})`)}`;

@@ -48,51 +48,67 @@ export type DiffDomain =
   | "plugin";
 
 export type DiffTaskSuccess =
-  | { domain: "schema"; success: true; result: DetectDiffOutput }
-  | {
+  | Readonly<{ domain: "schema"; success: true; result: DetectDiffOutput }>
+  | Readonly<{
       domain: "customize";
       success: true;
       result: DiffResult<CustomizationDiffEntry>;
-    }
-  | { domain: "view"; success: true; result: DiffResult<ViewDiffEntry> }
-  | {
+    }>
+  | Readonly<{
+      domain: "view";
+      success: true;
+      result: DiffResult<ViewDiffEntry>;
+    }>
+  | Readonly<{
       domain: "settings";
       success: true;
       result: DiffResult<GeneralSettingsDiffEntry>;
-    }
-  | {
+    }>
+  | Readonly<{
       domain: "notification";
       success: true;
       result: DiffResult<NotificationDiffEntry>;
-    }
-  | { domain: "report"; success: true; result: DiffResult<ReportDiffEntry> }
-  | { domain: "action"; success: true; result: DiffResult<ActionDiffEntry> }
-  | {
+    }>
+  | Readonly<{
+      domain: "report";
+      success: true;
+      result: DiffResult<ReportDiffEntry>;
+    }>
+  | Readonly<{
+      domain: "action";
+      success: true;
+      result: DiffResult<ActionDiffEntry>;
+    }>
+  | Readonly<{
       domain: "process";
       success: true;
       result: DiffResult<ProcessManagementDiffEntry>;
-    }
-  | {
+    }>
+  | Readonly<{
       domain: "field-acl";
       success: true;
       result: DiffResult<FieldPermissionDiffEntry>;
-    }
-  | {
+    }>
+  | Readonly<{
       domain: "app-acl";
       success: true;
       result: DiffResult<AppPermissionDiffEntry>;
-    }
-  | {
+    }>
+  | Readonly<{
       domain: "record-acl";
       success: true;
       result: DiffResult<RecordPermissionDiffEntry>;
-    }
-  | {
+    }>
+  | Readonly<{
       domain: "admin-notes";
       success: true;
       result: DiffResult<AdminNotesDiffEntry>;
-    }
-  | { domain: "plugin"; success: true; result: DiffResult<PluginDiffEntry> };
+    }>
+  | Readonly<{
+      domain: "plugin";
+      success: true;
+      result: DiffResult<PluginDiffEntry>;
+    }>;
 
 export type DiffTaskFailure = Readonly<{
   domain: DiffDomain;
