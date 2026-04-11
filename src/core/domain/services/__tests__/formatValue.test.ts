@@ -24,11 +24,13 @@ describe("formatValue", () => {
   });
 
   it("should return JSON string for an object", () => {
-    expect(formatValue({ a: 1, b: "two" })).toBe('{"a":1,"b":"two"}');
+    expect(formatValue({ a: 1, b: "two" })).toBe(
+      '{\n  "a": 1,\n  "b": "two"\n}',
+    );
   });
 
   it("should return JSON string for an array", () => {
-    expect(formatValue([1, 2, 3])).toBe("[1,2,3]");
+    expect(formatValue([1, 2, 3])).toBe("[\n  1,\n  2,\n  3\n]");
   });
 
   it("should return JSON string for an empty object", () => {
@@ -37,5 +39,13 @@ describe("formatValue", () => {
 
   it("should return JSON string for an empty array", () => {
     expect(formatValue([])).toBe("[]");
+  });
+
+  it("should return indented JSON string for a nested object", () => {
+    const nested = {
+      option1: { label: "選択肢1", index: 0 },
+      option2: { label: "選択肢2", index: 1 },
+    };
+    expect(formatValue(nested)).toBe(JSON.stringify(nested, null, 2));
   });
 });

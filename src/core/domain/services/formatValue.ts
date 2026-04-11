@@ -1,3 +1,5 @@
 export function formatValue(v: unknown): string {
-  return v === undefined ? "(none)" : JSON.stringify(v);
+  if (v === undefined) return "(none)";
+  if (v === null || typeof v !== "object") return JSON.stringify(v);
+  return JSON.stringify(v, null, 2);
 }
