@@ -42,10 +42,24 @@ describe("formatValue", () => {
   });
 
   it("should return indented JSON string for a nested object", () => {
-    const nested = {
-      option1: { label: "選択肢1", index: 0 },
-      option2: { label: "選択肢2", index: 1 },
-    };
-    expect(formatValue(nested)).toBe(JSON.stringify(nested, null, 2));
+    expect(
+      formatValue({
+        option1: { label: "選択肢1", index: 0 },
+        option2: { label: "選択肢2", index: 1 },
+      }),
+    ).toBe(
+      '{\n  "option1": {\n    "label": "選択肢1",\n    "index": 0\n  },\n  "option2": {\n    "label": "選択肢2",\n    "index": 1\n  }\n}',
+    );
+  });
+
+  it("should return indented JSON string for an array of objects", () => {
+    expect(
+      formatValue([
+        { type: "USER", code: "user1" },
+        { type: "USER", code: "user2" },
+      ]),
+    ).toBe(
+      '[\n  {\n    "type": "USER",\n    "code": "user1"\n  },\n  {\n    "type": "USER",\n    "code": "user2"\n  }\n]',
+    );
   });
 });
