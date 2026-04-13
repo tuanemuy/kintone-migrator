@@ -84,8 +84,8 @@ describe("ActionDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("destApp:");
       expect(result.entries[0].details).toContain("->");
-      expect(result.entries[0].details).toContain('"app":"1"');
-      expect(result.entries[0].details).toContain('"app":"2"');
+      expect(result.entries[0].details).toContain('"app": "1"');
+      expect(result.entries[0].details).toContain('"app": "2"');
     });
 
     it("should detect filterCond change", () => {
