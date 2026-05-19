@@ -1,5 +1,5 @@
-onlyBuiltDependencies:
-  - core-js
-  - esbuild
-  - msw
-  - unrs-resolver
+allowBuilds:
+  core-js: true
+  esbuild: true
+  msw: true
+  unrs-resolver: true
