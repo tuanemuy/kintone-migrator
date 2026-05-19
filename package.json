@@ -63,10 +63,6 @@
     "yaml": "^2.8.2"
   },
   "pnpm": {
-    "onlyBuiltDependencies": [
-      "core-js",
-      "esbuild"
-    ],
     "overrides": {
       "rollup": ">=4.59.0"
     }
