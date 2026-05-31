@@ -490,6 +490,34 @@ type SystemFieldLayout = Readonly<{
 }>;
 ```
 
+### SubtableInnerField
+
+サブテーブル（SUBTABLE）内に配置可能なフィールド要素。kintone のサブテーブル内には限られた入力フィールドしか配置できず、ネスト SUBTABLE / GROUP / REFERENCE_TABLE・システムフィールド（CATEGORY/STATUS 等）・装飾要素（HR/SPACER/LABEL）は配置できない。これらを型レベルで排除し、不正スキーマがパース・生成段階を通過して API 適用時に初めて失敗する事態を防ぐ。
+
+```typescript
+// サブテーブル内に配置可能なフィールド定義（入力フィールドのみ）。
+// GROUP / SUBTABLE / REFERENCE_TABLE は配置不可のため FieldDefinition から除外する。
+type SubtableInnerFieldDefinition =
+  | SingleLineTextFieldDefinition
+  | MultiLineTextFieldDefinition
+  | RichTextFieldDefinition
+  | NumberFieldDefinition
+  | CalcFieldDefinition
+  | SelectionFieldDefinition
+  | DateFieldDefinition
+  | TimeFieldDefinition
+  | DateTimeFieldDefinition
+  | LinkFieldDefinition
+  | UserSelectFieldDefinition
+  | FileFieldDefinition;
+
+// サブテーブル内のフィールド要素。装飾要素・システムフィールドは含まない。
+type SubtableInnerField = Readonly<{
+  field: SubtableInnerFieldDefinition;
+  size?: ElementSize;
+}>;
+```
+
 ### LayoutElement
 
 レイアウト行内の個別要素。フィールド、装飾要素、システムフィールドのユニオン型。
@@ -522,7 +550,9 @@ type SubtableLayoutItem = Readonly<{
   code: FieldCode;
   label: string;
   noLabel?: boolean;
-  fields: readonly LayoutElement[];
+  // サブテーブル内は入力フィールドのみ配置可能。LayoutElement（装飾要素・
+  // システムフィールド・ネスト構造を含む）ではなく SubtableInnerField に限定する。
+  fields: readonly SubtableInnerField[];
 }>;
 
 type ReferenceTableLayoutItem = Readonly<{
@@ -570,25 +600,25 @@ const DiffDetector = {
 
 ### SchemaParser
 
-スキーマテキストをパースする純粋関数。
+パース済みのスキーマデータ（`unknown`）を検証し、`Schema` に変換する純粋関数。YAMLテキストのパースはアプリケーション層（ConfigCodec）が担い、本関数はその結果である pre-parsed な `unknown` を受け取る。
 
 ```typescript
 const SchemaParser = {
-  parse: (rawText: string): Schema;
+  parse: (parsed: unknown): Schema;
 };
 ```
 
-- パースに失敗した場合は `BusinessRuleError` をスローする
-- 空テキストの場合は `BusinessRuleError` をスローする
+- 入力がオブジェクトでない場合は `BusinessRuleError` をスローする
+- 検証に失敗した場合は `BusinessRuleError` をスローする
 - 重複するFieldCodeが存在する場合は `BusinessRuleError` をスローする
 
-#### スキーマテキストのフォーマット
+#### スキーマデータのフォーマット
 
 [スキーマ仕様](../fileFormats/schema.md) を参照。
 
-- SchemaSerializerが生成するテキストとラウンドトリップ整合性を保つ
-- YAMLとして不正な文字列の場合は `BusinessRuleError` をスローする
-- 旧フォーマット（`fields` キーのみ）が検出された場合はエラーメッセージで新フォーマットへの移行を案内する
+- SchemaSerializerが生成するデータとラウンドトリップ整合性を保つ
+- YAMLテキスト → `unknown` への変換はアプリケーション層が行い、YAMLとして不正な文字列の場合の検出もアプリケーション層の責務とする
+- 旧フォーマット（`fields` キーのみで `layout` キーを持たない）が検出された場合はエラーメッセージで新フォーマットへの移行を案内する
 
 ### SchemaSerializer
 
@@ -730,8 +760,9 @@ interface SchemaStorage {
     4. スキーマにあり現在のフォームにないフィールドを `FormConfigurator.addFields()` で追加する
     5. 両方に存在するフィールドを `FormConfigurator.updateFields()` で上書きする（差分有無にかかわらず）
     6. スキーマにないフィールドを `FormConfigurator.deleteFields()` で削除する
-- **操作順序**: 追加 → 上書き → 削除の順に逐次実行する。executeMigration と同様の理由で、フィールド間の依存関係を考慮した順序とする
-- **部分失敗時の方針**: executeMigration と同様。いずれかの操作でAPI通信に失敗した場合、残りの操作は実行せず即座にエラーを返す
+    7. フィールド操作後、`FormConfigurator.updateLayout()` で**常にレイアウトを更新する**（差分の有無にかかわらず）
+- **操作順序**: 追加 → 上書き → 削除 → レイアウト更新の順に逐次実行する。executeMigration と同様の理由で、フィールド間の依存関係を考慮した順序とする。レイアウト更新はフィールドの追加・削除を反映させるため最後に実行する
+- **部分失敗時の方針**: executeMigration と同様。いずれかの操作（レイアウト更新を含む）でAPI通信に失敗した場合、残りの操作は実行せず即座にエラーを返す
 - **エラー**:
     - パース失敗 → `BusinessRuleError` を `ValidationError` に変換
     - API通信失敗 → `SystemError`

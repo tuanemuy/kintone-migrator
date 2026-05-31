@@ -42,9 +42,9 @@ type UpsertPlan = Readonly<{
 }>;
 ```
 
-### UpsertResult
+### UpsertSeedOutput
 
-Upsert操作の実行結果。ドメイン層では `UpsertPlan` までを責務とし、実行結果の集計はアプリケーション層の `UpsertSeedOutput` として管理する。
+Upsert操作の実行結果。ドメイン層では `UpsertPlan` までを責務とし、実行結果の集計はアプリケーション層の `UpsertSeedOutput`（`dto.ts` で定義）として管理する。本型はエンティティではなくアプリケーション層のDTO（出力データ）であり、ドメイン層には存在しない。
 
 ```typescript
 // アプリケーション層 (dto.ts) で定義
@@ -88,6 +88,8 @@ SeedData → YAMLテキストへのシリアライズ。capture用。
 フラットSeedRecord形式 ↔ kintone `{ field_code: { value: ... } }` 形式の双方向変換。
 システムフィールド（`$id`, `$revision`, `RECORD_NUMBER`, `CREATOR`, `CREATED_TIME`, `MODIFIER`, `UPDATED_TIME`, `STATUS`, `STATUS_ASSIGNEE`, `CATEGORY`）は除外。
 
+**配置**: RecordConverter は kintone 型との変換を担うため、ポート境界には現れず**アダプター層（`RecordManager` の実装）内で完結する**。`RecordManager` ポートはドメイン型（`SeedRecord`/`SeedRecordWithId`）のみを入出力し、Kintone 型（`KintoneRecordForResponse`/`KintoneRecordForParameter`）はポート境界の外に露出しない。これにより、アプリケーション層・ドメイン層は kintone の型に依存しない。
+
 ### UpsertPlanner
 
 既存レコードとシードデータを比較し、UpsertPlanを生成。キーフィールド値でマッチング、深い比較でunchangedを検出。
@@ -98,15 +100,19 @@ SeedData → YAMLテキストへのシリアライズ。capture用。
 
 kintoneレコード操作の抽象化インターフェース。
 
+ポート境界では**ドメイン型のみ**を扱う。Kintone 型との変換は実装（アダプター）内の RecordConverter が担う。
+
 ```typescript
 interface RecordManager {
-  getAllRecords(condition?: string): Promise<readonly KintoneRecordForResponse[]>;
-  addRecords(records: readonly KintoneRecordForParameter[]): Promise<void>;
-  updateRecords(records: readonly { id: string; record: KintoneRecordForParameter }[]): Promise<void>;
+  getAllRecords(condition?: string): Promise<readonly SeedRecordWithId[]>;
+  addRecords(records: readonly SeedRecord[]): Promise<void>;
+  updateRecords(records: readonly SeedRecordWithId[]): Promise<void>;
   deleteAllRecords(): Promise<{ deletedCount: number }>;
 }
 ```
 
+- `getAllRecords()` は取得した kintone レコードをアダプター内で `SeedRecordWithId`（id 付きフラット形式）へ変換して返す。アプリケーション層で別途 `RecordConverter.fromKintoneRecord` を呼ぶ必要はない。
+- `addRecords()` / `updateRecords()` はドメインの `SeedRecord` / `SeedRecordWithId` を受け取り、アダプター内で kintone 形式へ変換して送信する。
 - `deleteAllRecords()` は全レコードを削除し、削除件数を返す。`--clean` モードで使用される
 
 ### SeedStorage

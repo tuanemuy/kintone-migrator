@@ -112,7 +112,7 @@ type SaveFieldPermissionInput = {
 - `FieldPermissionStorage` → `LocalFileFieldPermissionStorage`（ローカルYAMLファイル）
 - `FieldPermissionConfigurator` → `KintoneFieldPermissionConfigurator`
 - 設定ファイルパス → `--field-acl-file` / `FIELD_ACL_FILE_PATH` から取得（デフォルト: `field-acl.yaml`）
-- アクセス権反映後、`promptDeploy` で運用環境への反映を確認する
+- アクセス権反映後、`confirmAndDeploy` で運用環境への反映を確認する
 
 ### capture-field-aclコマンド
 

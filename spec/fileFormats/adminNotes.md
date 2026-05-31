@@ -22,5 +22,23 @@ content: |
 includeInTemplateAndDuplicates: true
 ```
 
-- `content` はメモの内容（HTML形式）
-- `includeInTemplateAndDuplicates` はテンプレートやアプリ複製時にメモを含めるか
+## フィールド定義
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `content` | string | 必須 | メモの内容（HTML形式） |
+| `includeInTemplateAndDuplicates` | boolean | 必須 | テンプレート・アプリ複製時にメモを含めるか |
+
+## バリデーション
+
+パース時に以下を検証する。詳細は [AdminNotes ドメイン仕様](../domains/adminNotes.md) を参照。
+
+| エラーコード | 条件 |
+| --- | --- |
+| `AN_INVALID_CONFIG_STRUCTURE` | ルート構造が不正（オブジェクトでない、`content` / `includeInTemplateAndDuplicates` の型不一致 等） |
+
+## エラーコード
+
+| 定数 | コード |
+| --- | --- |
+| `AnInvalidConfigStructure` | `AN_INVALID_CONFIG_STRUCTURE` |

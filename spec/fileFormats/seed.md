@@ -25,7 +25,7 @@ records:
     tags:                              # CHECK_BOX / MULTI_SELECT
       - "VIP"
       - "長期"
-    assignee:                          # USER_SELECT / ORG_SELECT / GROUP_SELECT
+    assignee:                          # USER_SELECT / ORGANIZATION_SELECT / GROUP_SELECT
       - code: "user1"
     start_date: "2025-01-15"           # DATE
     order_items:                       # SUBTABLE
@@ -84,23 +84,25 @@ kintone-migrator seed --clean --yes   # 確認プロンプトをスキップ
 | TIME | string (HH:mm) | `"09:00"` |
 | DATETIME | string (ISO 8601) | `"2025-01-15T09:00:00Z"` |
 | LINK | string | `"https://example.com"` |
-| USER_SELECT, ORG_SELECT, GROUP_SELECT | object[] with `code` | `[{code: "user1"}]` |
+| USER_SELECT, ORGANIZATION_SELECT, GROUP_SELECT | object[] with `code` | `[{code: "user1"}]` |
 | SUBTABLE | object[] | `[{field1: "val1"}]` |
 
 ## システムフィールド
 
-以下のシステムフィールドはkintoneが自動で管理するため、シードデータに含める必要はない。含めた場合でも `capture` 時に自動的に除外される。
+以下のシステムフィールドはkintoneが自動で管理するため、シードデータに含める必要はない。含めた場合でも `capture` 時にアダプター内の `RecordConverter` が自動的に除外し、`apply`（追加・更新）時も送信対象から除外される。除外はフィールドコードと kintone のフィールド型の両方で判定される（`RecordConverter` の除外一覧と一致）。
 
-| type | 説明 |
-| --- | --- |
-| `RECORD_NUMBER` | レコード番号 |
-| `CREATOR` | 作成者 |
-| `CREATED_TIME` | 作成日時 |
-| `MODIFIER` | 更新者 |
-| `UPDATED_TIME` | 更新日時 |
-| `CATEGORY` | カテゴリー |
-| `STATUS` | ステータス |
-| `STATUS_ASSIGNEE` | 作業者 |
+| フィールドコード | 対応する kintone フィールド型 | 説明 |
+| --- | --- | --- |
+| `$id` | `__ID__` | レコードID |
+| `$revision` | `__REVISION__` | リビジョン番号 |
+| `RECORD_NUMBER` | `RECORD_NUMBER` | レコード番号 |
+| `CREATOR` | `CREATOR` | 作成者 |
+| `CREATED_TIME` | `CREATED_TIME` | 作成日時 |
+| `MODIFIER` | `MODIFIER` | 更新者 |
+| `UPDATED_TIME` | `UPDATED_TIME` | 更新日時 |
+| `STATUS` | `STATUS` | ステータス |
+| `STATUS_ASSIGNEE` | `STATUS_ASSIGNEE` | 作業者 |
+| `CATEGORY` | `CATEGORY` | カテゴリー |
 
 ## バリデーションルール
 

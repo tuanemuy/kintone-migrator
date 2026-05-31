@@ -100,7 +100,15 @@ layout:
 | --- | --- | --- | --- |
 | `code` | string | Yes | サブテーブルのフィールドコード |
 | `label` | string | Yes | サブテーブルの表示ラベル |
-| `fields` | LayoutElement[] | Yes | サブテーブル内のフィールド配列 |
+| `fields` | SubtableInnerField[] | Yes | サブテーブル内のフィールド配列（入力フィールドのみ） |
+
+**サブテーブル内に配置できるフィールド**: SINGLE_LINE_TEXT / MULTI_LINE_TEXT / RICH_TEXT / NUMBER / CALC / CHECK_BOX / RADIO_BUTTON / MULTI_SELECT / DROP_DOWN / DATE / TIME / DATETIME / LINK / USER_SELECT / ORGANIZATION_SELECT / GROUP_SELECT / FILE。
+
+**サブテーブル内に配置できないフィールド**: 以下は kintone 仕様上配置不可であり、型レベル（`SubtableInnerField`）でも排除される。
+
+- ネスト構造: `SUBTABLE` / `GROUP` / `REFERENCE_TABLE`
+- システムフィールド: `CATEGORY` / `STATUS` / `RECORD_NUMBER` / `CREATOR` / `CREATED_TIME` / `MODIFIER` / `UPDATED_TIME` 等
+- 装飾要素: `LABEL` / `SPACER` / `HR`
 
 ## フィールド定義
 
@@ -613,35 +621,12 @@ ROW 内の `fields` 配列に、フィールドと並べて装飾要素を配置
 | `INVALID_DECORATION_ELEMENT` | 装飾要素の構造が不正（`elementId` の欠落等） |
 | `DUPLICATE_FIELD_CODE` | 同一の `code` を持つフィールドが複数存在する |
 
-## JSON フォーマット（参考）
+## 旧 `fields` キー形式について（廃止）
 
-YAML の代替として JSON 形式も使用可能。JSON 形式ではフラット構造の `fields` オブジェクトで定義し、フィールド固有プロパティを `properties` キーでラップする。
+かつてルートキー `fields`（フラットなフィールド一覧、フィールド固有プロパティを `properties` でラップ）の形式が存在したが、**この形式は廃止され、現在はサポートされない**。
 
-```json
-{
-  "fields": {
-    "customer_name": {
-      "type": "SINGLE_LINE_TEXT",
-      "label": "顧客名",
-      "properties": {
-        "required": true,
-        "unique": true,
-        "maxLength": "100"
-      }
-    }
-  }
-}
-```
+スキーマは必ず `layout` 配列をルートに持つ形式で記述する。SchemaParser は `fields` キーを検出し `layout` が無いスキーマを受け取ると、以下のエラーで拒否する。
 
-### YAML との主な違い
+> `"fields" key detected. Schema format has changed. Please use "capture" to generate a new format schema.`
 
-| 観点 | YAML（推奨） | JSON |
-| --- | --- | --- |
-| ルートキー | `layout` | `fields` |
-| 構造 | レイアウトベース（行・グループ・サブテーブル） | フラットなフィールド一覧 |
-| プロパティ | フラット（`required: true`） | `properties` でラップ |
-| レイアウト情報 | `size` を含む | レイアウト情報なし |
-| 装飾要素 | `LABEL`、`HR`、`SPACER` を含む | 含まない |
-| システムフィールド | レイアウト上に配置可能 | 含まない |
-
-> JSON フォーマットはレイアウト情報を持たないため、`captureSchema` で生成される YAML フォーマットの使用を推奨する。
+旧形式のスキーマファイルを保持している場合は、`schema capture` で現行フォーマットの YAML を再生成すること。旧 `fields` 形式はレイアウト情報・装飾要素・システムフィールド配置を表現できず、本仕様の `layout` ベース形式とは互換性がない。
