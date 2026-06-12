@@ -402,6 +402,39 @@ describe("apply command", () => {
     expect(p.log.success).toHaveBeenCalledWith("No changes detected.");
   });
 
+  it("seed.yaml が存在し --dry-run かつ差分なしの場合は dry-run の seed 注記が表示されること", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(diffAllForApp).mockResolvedValueOnce([
+      {
+        domain: "schema",
+        success: true,
+        result: {
+          isEmpty: true,
+          entries: [],
+          schemaFields: [],
+          summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+          hasLayoutChanges: false,
+        },
+      },
+    ]);
+
+    await applyCommand.run({ values: { "dry-run": true } } as never);
+
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Note: Seed data would still be upserted when running without --dry-run.",
+    );
+    expect(applyAllForApp).not.toHaveBeenCalled();
+  });
+
   it("seed.yaml が存在せず --dry-run かつ差分なしの場合は dry-run の seed 注記が表示されないこと", async () => {
     vi.mocked(routeMultiApp).mockImplementationOnce(
       async (
