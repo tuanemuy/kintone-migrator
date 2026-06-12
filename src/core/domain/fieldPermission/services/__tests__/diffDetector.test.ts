@@ -158,6 +158,9 @@ describe("FieldPermissionDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].fieldCode).toBe("field1");
       expect(result.entries[0].details).toContain("entities:");
+      expect(result.entries[0].details).toContain(
+        "USER:user1(read), GROUP:group1(write)",
+      );
     });
 
     it("should not report diff between includeSubs undefined and false", () => {

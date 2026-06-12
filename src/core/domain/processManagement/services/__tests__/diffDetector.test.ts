@@ -242,6 +242,9 @@ describe("ProcessManagementDiffDetector", () => {
       expect(result.entries[0].details).toContain("index");
       expect(result.entries[0].details).toContain("assignee.type");
       expect(result.entries[0].details).toContain("assignee.entities:");
+      expect(result.entries[0].details).toContain(
+        "index: 0 -> 5\nassignee.type: ONE -> ALL\nassignee.entities:",
+      );
     });
 
     it("should detect entities change when includeSubs differs", () => {
@@ -334,6 +337,22 @@ describe("ProcessManagementDiffDetector", () => {
 
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("to");
+    });
+
+    it("should separate multiple action property changes by newline", () => {
+      const local = makeConfig({
+        actions: [makeAction({ from: "処理中", to: "完了" })],
+      });
+      const remote = makeConfig({
+        actions: [makeAction({ from: "未処理", to: "処理中" })],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("from:");
+      expect(result.entries[0].details).toContain("to:");
+      expect(result.entries[0].details.split("\n")).toHaveLength(2);
     });
 
     it("should detect action filterCond change", () => {

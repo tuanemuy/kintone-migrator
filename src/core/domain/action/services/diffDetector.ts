@@ -54,7 +54,7 @@ export const ActionDiffDetector = {
             return {
               type: "modified",
               actionName: name,
-              details: diffs.join(", "),
+              details: diffs.join("\n"),
             };
           }
           return undefined;

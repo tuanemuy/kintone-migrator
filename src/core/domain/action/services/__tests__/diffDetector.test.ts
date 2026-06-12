@@ -125,6 +125,19 @@ describe("ActionDiffDetector", () => {
       expect(result.entries[0].details).toContain("[] ->");
       expect(result.entries[0].details).toContain('"user1"');
     });
+
+    it("should separate multiple property changes by newline", () => {
+      const local = makeConfig({
+        a: makeAction({ index: 1, destApp: { app: "2" } }),
+      });
+      const remote = makeConfig({
+        a: makeAction({ index: 0, destApp: { app: "1" } }),
+      });
+      const result = ActionDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("index: 0 -> 1\ndestApp:");
+      expect(result.entries[0].details).toContain('"app": "2"');
+    });
   });
 
   describe("multiple changes", () => {

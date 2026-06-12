@@ -158,6 +158,20 @@ describe("ReportDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("chartMode");
     });
+
+    it("should separate multiple property changes by newline", () => {
+      const local = makeConfig({
+        r1: makeReport({ chartType: "PIE", index: 1 }),
+      });
+      const remote = makeConfig({
+        r1: makeReport({ chartType: "BAR", index: 0 }),
+      });
+      const result = ReportDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain("chartType:");
+      expect(result.entries[0].details).toContain("index:");
+      expect(result.entries[0].details.split("\n")).toHaveLength(2);
+    });
   });
 
   describe("multiple changes", () => {

@@ -245,6 +245,7 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toContain("recordAdded");
       expect(result.entries[0].details).toContain("recordEdited");
+      expect(result.entries[0].details.split("\n")).toHaveLength(2);
     });
 
     it("should detect general section added", () => {
@@ -308,6 +309,28 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].section).toBe("perRecord");
+    });
+
+    it("should separate multiple perRecord property changes by newline", () => {
+      const local: NotificationConfig = {
+        perRecord: [
+          makePerRecord({
+            title: "New title",
+            targets: [
+              { entity: { type: "USER", code: "user1" }, includeSubs: false },
+            ],
+          }),
+        ],
+      };
+      const remote: NotificationConfig = {
+        perRecord: [makePerRecord({ title: "Old title", targets: [] })],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain(
+        'title: "Old title" -> "New title"\ntargets:',
+      );
+      expect(result.entries[0].details).toContain('"user1"');
     });
   });
 
@@ -392,6 +415,7 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries[0].name).toBe("reminder1");
       expect(result.entries[0].details).toContain("title:");
       expect(result.entries[0].details).toContain("daysLater:");
+      expect(result.entries[0].details.split("\n")).toHaveLength(2);
     });
 
     it("should detect hoursLater change in reminder", () => {

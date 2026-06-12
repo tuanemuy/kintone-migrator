@@ -83,7 +83,7 @@ export const ViewDiffDetector = {
             return {
               type: "modified",
               viewName: name,
-              details: changes.join(", "),
+              details: changes.join("\n"),
             };
           }
           return undefined;

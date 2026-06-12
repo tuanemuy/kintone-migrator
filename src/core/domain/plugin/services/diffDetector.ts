@@ -31,7 +31,7 @@ export const PluginDiffDetector = {
           entries.push({
             type: "modified",
             pluginId: id,
-            details: diffs.join(", "),
+            details: diffs.join("\n"),
           });
         }
       }

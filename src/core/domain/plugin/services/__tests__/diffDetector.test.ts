@@ -71,6 +71,20 @@ describe("PluginDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("name");
     });
+
+    it("should separate multiple property changes by newline", () => {
+      const local = makeConfig([
+        makePlugin({ name: "New Name", enabled: false }),
+      ]);
+      const remote = makeConfig([
+        makePlugin({ name: "Old Name", enabled: true }),
+      ]);
+      const result = PluginDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toBe(
+        'name: "Old Name" -> "New Name"\nenabled: true -> false',
+      );
+    });
   });
 
   describe("multiple changes", () => {

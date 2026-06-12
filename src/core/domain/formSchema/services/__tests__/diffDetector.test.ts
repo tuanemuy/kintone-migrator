@@ -352,6 +352,7 @@ describe("DiffDetector", () => {
       const diff = DiffDetector.detect(schema, current);
       expect(diff.entries[0].details).toContain("type:");
       expect(diff.entries[0].details).toContain("label:");
+      expect(diff.entries[0].details.split("\n")).toHaveLength(2);
     });
 
     it("全く同一のフィールドは差分として検出されない", () => {
