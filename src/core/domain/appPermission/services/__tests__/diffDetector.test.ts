@@ -49,6 +49,15 @@ describe("AppPermissionDiffDetector", () => {
       expect(result.entries[0].entityKey).toBe("USER:user1");
       expect(result.summary.added).toBe(1);
     });
+
+    it("should keep comma separator within permission flag summaries", () => {
+      const local = makeConfig([
+        makeRight({ recordViewable: true, recordAddable: true }),
+      ]);
+      const result = AppPermissionDiffDetector.detect(local, makeConfig());
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toBe("recordViewable, recordAddable");
+    });
   });
 
   describe("deleted entities", () => {
@@ -91,6 +100,7 @@ describe("AppPermissionDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("recordAddable");
       expect(result.entries[0].details).toContain("recordEditable");
+      expect(result.entries[0].details.split("\n")).toHaveLength(2);
     });
   });
 

@@ -66,7 +66,7 @@ export const ReportDiffDetector = {
             return {
               type: "modified",
               reportName: name,
-              details: diffs.join(", "),
+              details: diffs.join("\n"),
             };
           }
           return undefined;

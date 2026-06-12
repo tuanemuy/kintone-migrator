@@ -271,6 +271,41 @@ describe("ViewDiffDetector", () => {
       expect(result.entries[0].details).toContain("date:");
       expect(result.entries[0].details).toContain("title:");
       expect(result.entries[0].details).toContain("device:");
+      expect(result.entries[0].details).toBe(
+        [
+          'sort: "f2 desc" -> "f1 asc"',
+          'date: "d2" -> "d1"',
+          'title: "t2" -> "t1"',
+          'device: "ANY" -> "DESKTOP"',
+        ].join("\n"),
+      );
+    });
+
+    it("should separate changes by newline when combined with multiline values", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "LIST",
+          name: "view1",
+          sort: "f1 asc",
+          fields: ["f1", "f2"],
+        }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "LIST",
+          name: "view1",
+          sort: "f2 desc",
+          fields: ["f1"],
+        }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain(
+        'sort: "f2 desc" -> "f1 asc"\nfields:',
+      );
+      expect(result.entries[0].details).toContain('"f2"');
     });
 
     it("should treat undefined and empty string as equal for optional string fields", () => {

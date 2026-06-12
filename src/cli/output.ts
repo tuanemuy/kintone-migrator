@@ -37,6 +37,17 @@ function colorizeDiffEntry(type: "added" | "modified" | "deleted"): {
   return { colorize, prefix };
 }
 
+// Entry details may contain newlines (one property change per line, or
+// multiline JSON values). Indent continuation lines so they visually hang
+// under the entry heading (e.g. "~ name:").
+export function indentContinuationLines(text: string, indent = "    "): string {
+  if (!text.includes("\n")) {
+    return text;
+  }
+  const [first, ...rest] = text.split("\n");
+  return [first, ...rest.map((line) => `${indent}${line}`)].join("\n");
+}
+
 function printGenericDiffResult<
   E extends { type: "added" | "modified" | "deleted" },
 >(
@@ -61,7 +72,7 @@ function printGenericDiffResult<
 
   const lines = result.entries.map((entry) => {
     const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return formatEntry(entry, colorize, prefix);
+    return indentContinuationLines(formatEntry(entry, colorize, prefix));
   });
 
   p.note(lines.join("\n"), title, { format: (v) => v });
@@ -130,7 +141,9 @@ export function printDiffResult(result: DetectDiffOutput): void {
 
   const lines = result.entries.map((entry) => {
     const { colorize, prefix } = colorizeDiffEntry(entry.type);
-    return `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")} ${entry.fieldLabel}${pc.dim(":")} ${entry.details}`;
+    return indentContinuationLines(
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.fieldCode)}${pc.dim("]")} ${entry.fieldLabel}${pc.dim(":")} ${entry.details}`,
+    );
   });
 
   p.note(lines.join("\n"), "Diff Details", { format: (v) => v });

@@ -114,7 +114,7 @@ function compareStates(
           type: "modified",
           category: "state",
           name,
-          details: stateDiffs.join(", "),
+          details: stateDiffs.join("\n"),
         });
       }
     }
@@ -156,7 +156,7 @@ function compareActionEntries(
           type: "modified",
           category: "action",
           name,
-          details: actionDiffs.join(", "),
+          details: actionDiffs.join("\n"),
         });
       }
     }

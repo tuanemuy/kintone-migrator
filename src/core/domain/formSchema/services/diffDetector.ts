@@ -123,7 +123,7 @@ function describeChanges(
     changes.push(...describePropertiesChanges(before, after));
   }
 
-  return changes.length > 0 ? changes.join(", ") : "no visible changes";
+  return changes.length > 0 ? changes.join("\n") : "no visible changes";
 }
 
 function isLayoutEqual(a: FormLayout, b: FormLayout): boolean {

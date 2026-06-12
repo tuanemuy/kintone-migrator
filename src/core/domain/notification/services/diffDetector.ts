@@ -83,7 +83,7 @@ function compareGeneralSection(
           type: "modified",
           section: "general",
           name: key,
-          details: diffs.join(", "),
+          details: diffs.join("\n"),
         });
       }
     }
@@ -135,7 +135,7 @@ function describePerRecordChanges(
     );
   // Fallback "changed" covers the case where deepEqual detects a difference
   // but no individual field check above caught it (should not happen in practice).
-  return diffs.length > 0 ? diffs.join(", ") : "changed";
+  return diffs.length > 0 ? diffs.join("\n") : "changed";
 }
 
 // Covers all ReminderNotification fields except code (used as Map key).
@@ -161,7 +161,7 @@ function describeReminderChanges(
     diffs.push(
       `targets: ${formatValue(remote.targets)} -> ${formatValue(local.targets)}`,
     );
-  return diffs.length > 0 ? diffs.join(", ") : "changed";
+  return diffs.length > 0 ? diffs.join("\n") : "changed";
 }
 
 function comparePerRecordSection(

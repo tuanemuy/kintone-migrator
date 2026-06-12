@@ -59,7 +59,7 @@ export const AppPermissionDiffDetector = {
           entries.push({
             type: "modified",
             entityKey: key,
-            details: diffs.join(", "),
+            details: diffs.join("\n"),
           });
         }
       }

@@ -39,6 +39,7 @@ import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { logError } from "../handleError";
 import {
   confirmAndDeploy,
+  indentContinuationLines,
   printActionDiffResult,
   printAdminNotesDiffResult,
   printAppHeader,
@@ -279,6 +280,30 @@ describe("printDiffResult", () => {
       expect.objectContaining({ format: expect.any(Function) }),
     );
   });
+
+  it("details に改行を含む場合、2行目以降がインデントされて出力される", () => {
+    const result: DetectDiffOutput = {
+      entries: [
+        {
+          type: "modified",
+          fieldCode: "email" as FieldCode,
+          fieldLabel: "メール",
+          details: "type: SINGLE_LINE_TEXT -> NUMBER\nlabel: 旧 -> 新",
+        },
+      ],
+      schemaFields: [],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      hasLayoutChanges: false,
+    };
+
+    printDiffResult(result);
+
+    const noteBody = vi.mocked(p.note).mock.calls[0][0] as string;
+    const lines = noteBody.split("\n");
+    expect(lines[0]).toContain("type: SINGLE_LINE_TEXT -> NUMBER");
+    expect(lines[1]).toBe("    label: 旧 -> 新");
+  });
 });
 
 describe("printViewDiffResult", () => {
@@ -356,6 +381,29 @@ describe("printViewDiffResult", () => {
     expect(changeLine).toContain("+1 added");
     expect(changeLine).toContain("~1 modified");
     expect(changeLine).toContain("-1 deleted");
+  });
+
+  it("details に改行を含む場合、2行目以降がインデントされて出力される", () => {
+    const result: DiffResult<ViewDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          viewName: "一覧",
+          details:
+            'sort: "f2 desc" -> "f1 asc"\nfields: [\n  "f1"\n] -> [\n  "f2"\n]',
+        },
+      ],
+      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printViewDiffResult(result);
+    const noteBody = vi.mocked(p.note).mock.calls[0][0] as string;
+    const lines = noteBody.split("\n");
+    expect(lines[0]).toContain('sort: "f2 desc" -> "f1 asc"');
+    expect(lines[1]).toBe("    fields: [");
+    expect(lines[2]).toBe('      "f1"');
+    expect(lines[3]).toBe("    ] -> [");
   });
 
   it("warnings がある場合、p.log.warn で出力される", () => {
@@ -1018,5 +1066,25 @@ describe("printReportDiffResult", () => {
       "Report Diff Details",
       expect.objectContaining({ format: expect.any(Function) }),
     );
+  });
+});
+
+describe("indentContinuationLines", () => {
+  it("改行を含まない文字列はそのまま返す", () => {
+    expect(indentContinuationLines("single line")).toBe("single line");
+  });
+
+  it("2行目以降にデフォルトのインデントを付与する", () => {
+    expect(indentContinuationLines("first\nsecond\nthird")).toBe(
+      "first\n    second\n    third",
+    );
+  });
+
+  it("インデント幅を指定できる", () => {
+    expect(indentContinuationLines("a\nb", "  ")).toBe("a\n  b");
+  });
+
+  it("空文字列はそのまま返す", () => {
+    expect(indentContinuationLines("")).toBe("");
   });
 });

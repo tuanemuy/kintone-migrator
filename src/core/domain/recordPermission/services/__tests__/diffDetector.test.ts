@@ -127,6 +127,55 @@ describe("RecordPermissionDiffDetector", () => {
       expect(result.entries[0].type).toBe("modified");
       expect(result.entries[0].details).toContain("1 -> 2");
     });
+
+    it("should keep comma separator within entity summaries", () => {
+      const local = makeConfig([
+        makeRight({
+          entities: [
+            {
+              entity: { type: "USER", code: "user1" },
+              viewable: true,
+              editable: true,
+              deletable: false,
+              includeSubs: false,
+            },
+            {
+              entity: { type: "GROUP", code: "group1" },
+              viewable: true,
+              editable: false,
+              deletable: false,
+              includeSubs: false,
+            },
+          ],
+        }),
+      ]);
+      const remote = makeConfig([
+        makeRight({
+          entities: [
+            {
+              entity: { type: "USER", code: "user1" },
+              viewable: true,
+              editable: false,
+              deletable: false,
+              includeSubs: false,
+            },
+            {
+              entity: { type: "GROUP", code: "group1" },
+              viewable: true,
+              editable: false,
+              deletable: false,
+              includeSubs: false,
+            },
+          ],
+        }),
+      ]);
+      const result = RecordPermissionDiffDetector.detect(local, remote);
+      expect(result.entries).toHaveLength(1);
+      expect(result.entries[0].details).toContain(
+        "USER:user1(view/edit), GROUP:group1(view)",
+      );
+      expect(result.entries[0].details).not.toContain("\n");
+    });
   });
 
   describe("filterCond-based comparison (order independent)", () => {
