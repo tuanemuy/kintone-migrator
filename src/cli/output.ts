@@ -45,7 +45,10 @@ export function indentContinuationLines(text: string, indent = "    "): string {
     return text;
   }
   const [first, ...rest] = text.split("\n");
-  return [first, ...rest.map((line) => `${indent}${line}`)].join("\n");
+  return [
+    first,
+    ...rest.map((line) => (line.length > 0 ? `${indent}${line}` : line)),
+  ].join("\n");
 }
 
 function printGenericDiffResult<

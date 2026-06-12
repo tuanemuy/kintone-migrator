@@ -404,6 +404,32 @@ describe("printViewDiffResult", () => {
     expect(lines[1]).toBe("    fields: [");
     expect(lines[2]).toBe('      "f1"');
     expect(lines[3]).toBe("    ] -> [");
+    expect(lines[4]).toBe('      "f2"');
+    expect(lines[5]).toBe("    ]");
+  });
+
+  it("マルチライン details のエントリの次のエントリは行頭から出力される", () => {
+    const result: DiffResult<ViewDiffEntry> = {
+      entries: [
+        {
+          type: "modified",
+          viewName: "一覧",
+          details: 'sort: "f2 desc" -> "f1 asc"\nindex: 0 -> 1',
+        },
+        { type: "added", viewName: "新規", details: "LIST view を追加" },
+      ],
+      summary: { added: 1, modified: 1, deleted: 0, total: 2 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printViewDiffResult(result);
+    const noteBody = vi.mocked(p.note).mock.calls[0][0] as string;
+    const lines = noteBody.split("\n");
+    expect(lines).toHaveLength(3);
+    expect(lines[1]).toBe("    index: 0 -> 1");
+    // 2 エントリ目の見出し行はインデントされない
+    expect(lines[2]).not.toMatch(/^\s/);
+    expect(lines[2]).toContain("新規");
   });
 
   it("warnings がある場合、p.log.warn で出力される", () => {
@@ -1082,6 +1108,11 @@ describe("indentContinuationLines", () => {
 
   it("インデント幅を指定できる", () => {
     expect(indentContinuationLines("a\nb", "  ")).toBe("a\n  b");
+  });
+
+  it("空の継続行にはインデントを付与しない", () => {
+    expect(indentContinuationLines("a\n\nb")).toBe("a\n\n    b");
+    expect(indentContinuationLines("a\n")).toBe("a\n");
   });
 
   it("空文字列はそのまま返す", () => {

@@ -81,8 +81,9 @@ describe("PluginDiffDetector", () => {
       ]);
       const result = PluginDiffDetector.detect(local, remote);
       expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].details).toContain("\n");
-      expect(result.entries[0].details.split("\n")).toHaveLength(2);
+      expect(result.entries[0].details).toBe(
+        'name: "Old Name" -> "New Name"\nenabled: true -> false',
+      );
     });
   });
 
