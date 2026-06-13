@@ -23,7 +23,7 @@ export const seedPushArgs = {
   clean: {
     type: "boolean" as const,
     description:
-      "Delete all existing records before applying seed data (clean apply)",
+      "Delete all existing records before upserting seed data (clean push)",
   },
   "seed-file": {
     type: "string" as const,
@@ -57,13 +57,13 @@ async function confirmClean(
 ): Promise<boolean> {
   if (showWarning) {
     p.log.warn(
-      `${pc.bold(pc.red("WARNING:"))} This will delete ALL existing records before applying seed data.`,
+      `${pc.bold(pc.red("WARNING:"))} This will delete ALL existing records before upserting seed data.`,
     );
   }
 
   if (!skipConfirm) {
     const shouldContinue = await p.confirm({
-      message: "Are you sure you want to clean and re-apply seed data?",
+      message: "Are you sure you want to clean and re-push seed data?",
     });
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
@@ -90,10 +90,10 @@ async function runUpsert(
 
   const s = p.spinner();
   s.start(
-    clean ? "Cleaning and applying seed data..." : "Applying seed data...",
+    clean ? "Cleaning and upserting seed data..." : "Upserting seed data...",
   );
   const result = await upsertSeed({ container, input: { clean } });
-  s.stop(clean ? "Clean seed applied." : "Seed data applied.");
+  s.stop(clean ? "Clean seed upserted." : "Seed data upserted.");
 
   printUpsertResult(result);
 }
@@ -131,7 +131,7 @@ export async function runSeedPush(ctx: CommandContext): Promise<void> {
             printAppHeader(app.name, app.appId);
             await runUpsert(config, clean, true, false);
           },
-          "All seed applications completed successfully.",
+          "All seed pushes completed successfully.",
         );
       },
     });
