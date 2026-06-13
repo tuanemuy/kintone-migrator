@@ -210,8 +210,10 @@ describe("runMultiAppWithFailCheck", () => {
 
     expect(p.log.warn).toHaveBeenCalledTimes(1);
     const warnMessage = vi.mocked(p.log.warn).mock.calls[0][0];
-    expect(warnMessage).toContain(
-      "1 app(s) completed before execution stopped",
+    // Pin the full message so any drift (including a regression to the old
+    // preview/deploy wording) is caught.
+    expect(warnMessage).toBe(
+      "1 app(s) completed before execution stopped. Check their status in kintone.",
     );
     // The wording must stay deploy-model agnostic: this warning also fires for
     // read-only and per-app-deploy commands, where "preview"/"deployed" is wrong.
