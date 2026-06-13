@@ -71,8 +71,8 @@ export type ApplySchemaChangesContext = Readonly<{
 /**
  * Applies a {@link Schema} to the remote form (preview).
  *
- * This is the shared application core extracted from `executeMigration`
- * (ADR-009): it computes the diff against the current form, classifies
+ * This is the shared application core (ADR-009): it computes the diff against
+ * the current form, classifies
  * add/update/delete/layout changes, rejects field type changes and additions
  * to existing subtables with a {@link ValidationError} (AC-13), and applies the
  * changes via the configurator. `migrate` (via local YAML) and `push` (via a

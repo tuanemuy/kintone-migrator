@@ -104,7 +104,6 @@ async function runPull(
     return;
   }
 
-  // merged
   const { merge } = result;
   if (!merge.hasConflict) {
     const resolution: MergeResolution = {
