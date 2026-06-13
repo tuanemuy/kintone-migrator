@@ -2,10 +2,10 @@ import * as p from "@clack/prompts";
 import { define } from "gunshi";
 import { createCliContainer } from "@/core/application/container/cli";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
-import { detectDiff } from "@/core/application/formSchema/detectDiff";
+import { detectThreeWayDiff } from "@/core/application/formSchema/detectThreeWayDiff";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
 import { handleCliError } from "../../handleError";
-import { printAppHeader, printDiffResult } from "../../output";
+import { printAppHeader, printThreeWayDiffResult } from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
@@ -15,16 +15,16 @@ import {
 async function runDiff(container: FormSchemaContainer): Promise<void> {
   const s = p.spinner();
   s.start("Comparing schema...");
-  let result: Awaited<ReturnType<typeof detectDiff>>;
+  let result: Awaited<ReturnType<typeof detectThreeWayDiff>>;
   try {
-    result = await detectDiff({ container });
+    result = await detectThreeWayDiff({ container });
   } catch (error) {
     s.stop("Comparison failed.");
     throw error;
   }
   s.stop("Comparison complete.");
 
-  printDiffResult(result);
+  printThreeWayDiffResult(result);
 }
 
 export default define({

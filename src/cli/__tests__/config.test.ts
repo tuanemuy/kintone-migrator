@@ -18,6 +18,7 @@ describe("resolveConfig", () => {
       auth: { type: "password", username: "user", password: "pass" },
       appId: "42",
       schemaFilePath: "schema.yaml",
+      stateSchemaFilePath: "state/schema.yaml",
     });
   });
 
@@ -32,6 +33,7 @@ describe("resolveConfig", () => {
       auth: { type: "apiToken", apiToken: "my-token" },
       appId: "42",
       schemaFilePath: "schema.yaml",
+      stateSchemaFilePath: "state/schema.yaml",
     });
   });
 
@@ -130,6 +132,7 @@ describe("resolveConfig", () => {
       auth: { type: "password", username: "cli-user", password: "cli-pass" },
       appId: "99",
       schemaFilePath: "custom.yaml",
+      stateSchemaFilePath: "state/schema.yaml",
     });
   });
 });

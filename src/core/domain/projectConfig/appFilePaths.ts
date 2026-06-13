@@ -41,3 +41,26 @@ export function buildAppFilePaths(
     plugin: prefix(`${appName}/plugin.yaml`),
   };
 }
+
+/**
+ * Resolves the path to the schema state (base snapshot) file.
+ *
+ * State uses an app-scoped directory layout (`state/<appName>/schema.yaml`)
+ * whose hierarchy is the inverse of {@link buildAppFilePaths} (`<appName>/...`).
+ * They are intentionally kept as separate functions: the state convention is
+ * chosen so that future per-app revision unification (e.g.
+ * `state/<appName>/revision.yaml`) can live alongside without churn.
+ */
+export function buildStateFilePath(appName: AppName, baseDir?: string): string {
+  const path = `state/${appName}/schema.yaml`;
+  return baseDir ? join(baseDir, path) : path;
+}
+
+/**
+ * Resolves the path to the legacy single-app schema state file
+ * (`state/schema.yaml`).
+ */
+export function buildLegacyStateFilePath(baseDir?: string): string {
+  const path = "state/schema.yaml";
+  return baseDir ? join(baseDir, path) : path;
+}

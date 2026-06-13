@@ -1,6 +1,7 @@
 import { BusinessRuleError } from "@/core/domain/error";
 import { hasControlChars, sanitizeForDisplay } from "@/lib/charValidation";
-import type { DiffResult } from "../diff";
+import type { DiffResult, ThreeWayEntry } from "../diff";
+import type { FormLayout } from "./entity";
 import { FormSchemaErrorCode } from "./errorCode";
 
 // Lookup
@@ -367,3 +368,56 @@ export type SystemFieldLayout = Readonly<{
 }>;
 
 export type LayoutElement = LayoutField | DecorationElement | SystemFieldLayout;
+
+// --- 3-way merge value objects ---
+
+/**
+ * Result of a formSchema 3-way merge.
+ *
+ * Fields are merged per-entity (subtable counts as a single entity; subtable
+ * inner fields and GROUP definitions are excluded from the field channel and
+ * handled via the layout channel). Layout is coarse-grained: a single
+ * `layoutConflict` flag rather than per-element merge (ADR-003).
+ */
+export type FormSchemaThreeWayMerge = Readonly<{
+  /** Per-field 3-way classification (normalized field channel). */
+  fieldEntries: readonly ThreeWayEntry<FieldCode, FieldDefinition>[];
+  /** Subset of `fieldEntries` that are conflicts (both sides changed). */
+  fieldConflicts: readonly ThreeWayEntry<FieldCode, FieldDefinition>[];
+  /** True when both local and remote changed the layout from base. */
+  layoutConflict: boolean;
+  baseLayout: FormLayout;
+  localLayout: FormLayout;
+  remoteLayout: FormLayout;
+  /**
+   * Auto-resolved layout when there is no conflict (the changed side, or base
+   * when neither changed). `undefined` when `layoutConflict` is true.
+   */
+  mergedLayout?: FormLayout;
+  /**
+   * Which side the auto-merged layout was taken from when there is no conflict:
+   * the changed side, or `"base"` when neither side changed (base == local ==
+   * remote). Set explicitly so `resolveMerge` does not rely on reference
+   * equality of `mergedLayout`. `"base"` is undefined-of-side and treated as
+   * `"local"` for field-map reconstruction (all three sides agree).
+   */
+  layoutAutoSide?: "local" | "remote" | "base";
+  /** True when any side diverged (field or layout). */
+  hasConflict: boolean;
+  /** Field maps used to reconstruct GROUP/subtable-inner from layout. */
+  baseFields: ReadonlyMap<FieldCode, FieldDefinition>;
+  localFields: ReadonlyMap<FieldCode, FieldDefinition>;
+  remoteFields: ReadonlyMap<FieldCode, FieldDefinition>;
+}>;
+
+/**
+ * Conflict resolution choices for {@link FormSchemaThreeWayMerge}.
+ *
+ * `fields` must cover every entry in `fieldConflicts`. `layout` must be
+ * `"local"` or `"remote"` when `layoutConflict` is true, otherwise
+ * `"noConflict"`. The type forces the caller to address both channels.
+ */
+export type MergeResolution = Readonly<{
+  fields: ReadonlyMap<FieldCode, "local" | "remote">;
+  layout: "local" | "remote" | "noConflict";
+}>;

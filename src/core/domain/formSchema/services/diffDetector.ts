@@ -34,7 +34,7 @@ function isPropertiesEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   return deepEqual(a.properties, b.properties);
 }
 
-function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
+export function isFieldEqual(a: FieldDefinition, b: FieldDefinition): boolean {
   if (a.type !== b.type) return false;
   if (a.label !== b.label) return false;
   if (a.code !== b.code) return false;
@@ -126,7 +126,7 @@ function describeChanges(
   return changes.length > 0 ? changes.join("\n") : "no visible changes";
 }
 
-function isLayoutEqual(a: FormLayout, b: FormLayout): boolean {
+export function isLayoutEqual(a: FormLayout, b: FormLayout): boolean {
   return deepEqual(a, b);
 }
 

@@ -4,6 +4,8 @@ import diffCommand from "./diff";
 import dumpCommand from "./dump";
 import migrateCommand from "./migrate";
 import overrideCommand from "./override";
+import pullCommand from "./pull";
+import pushCommand from "./push";
 import validateCommand from "./validate";
 
 export default define({
@@ -16,6 +18,8 @@ export default define({
     capture: captureCommand,
     validate: validateCommand,
     dump: dumpCommand,
+    pull: pullCommand,
+    push: pushCommand,
   },
   run: () => {},
 });

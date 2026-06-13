@@ -1,6 +1,7 @@
 import {
   type AppFilePaths,
   buildAppFilePaths,
+  buildStateFilePath,
 } from "@/core/domain/projectConfig/appFilePaths";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { createActionCliContainer } from "./actionCli";
@@ -53,7 +54,11 @@ export function createCliCaptureContainers(
   return {
     paths,
     containers: {
-      schema: createCliContainer({ ...base, schemaFilePath: paths.schema }),
+      schema: createCliContainer({
+        ...base,
+        schemaFilePath: paths.schema,
+        stateSchemaFilePath: buildStateFilePath(input.appName, input.baseDir),
+      }),
       seed: createSeedCliContainer({ ...base, seedFilePath: paths.seed }),
       customization: createCustomizationCliContainer({
         ...base,
