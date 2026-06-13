@@ -758,4 +758,37 @@ describe("applyAllForApp", () => {
       expect(customizeResult.skipped).toBe(false);
     }
   });
+
+  it("標準フェーズで probe が exists:true でも run が内容エラーで失敗する場合は not-found skip ではなく skipped:false の failure になること", async () => {
+    setupAllMocksToSucceed();
+    // AC-4: the config file exists (probe exists:true), but the usecase fails
+    // with an ordinary content error (e.g. parse failure). This stays a regular
+    // failure (skipped:false) and must not be confused with a not-found skip.
+    // It is also non-fatal, so other domains keep running.
+    vi.mocked(applyCustomization).mockRejectedValue(
+      new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        "Customization config is invalid",
+      ),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    // customize ran and failed -> skipped: false (failure), not not-found
+    const customizeResult = output.phases[1].results[0];
+    expect(customizeResult.domain).toBe("customize");
+    expect(customizeResult.success).toBe(false);
+    if (!customizeResult.success) {
+      expect(customizeResult.skipped).toBe(false);
+    }
+
+    // The failure is non-fatal: other domains still succeed and deploy runs
+    const otherResults = output.phases
+      .flatMap((ph) => ph.results)
+      .filter((r) => r.domain !== "customize");
+    for (const result of otherResults) {
+      expect(result.success).toBe(true);
+    }
+    expect(output.deployed).toBe(true);
+  });
 });

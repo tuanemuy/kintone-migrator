@@ -537,6 +537,41 @@ describe("apply command", () => {
     expect(process.exitCode).toBeUndefined();
   });
 
+  it("success がありつつ deploy 不要 (deployed:false・deployError なし) の場合は exitCode が 1 にならないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    // At least one success, but no deploy was needed (deployed:false) and no
+    // deployError. Under the old `!output.deployed` rule this would have wrongly
+    // raised exitCode to 1; the new `hasFailures || output.deployError` rule
+    // must keep it unset.
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Seed Data",
+          results: [{ domain: "seed", success: true }],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBeUndefined();
+  });
+
   it("一部 success だが末尾 deploy が失敗した場合は exitCode が 1 になること", async () => {
     vi.mocked(routeMultiApp).mockImplementationOnce(
       async (
