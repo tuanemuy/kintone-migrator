@@ -1,5 +1,6 @@
 import type { ThreeWayEntry } from "@/core/domain/diff";
 import type { RecordThreeWayMerge } from "@/core/domain/recordMerge";
+import type { SingleThreeWayMerge } from "@/core/domain/singleMerge";
 
 /**
  * One entry of a generic 3-way diff: a stable key, a human label, and which
@@ -101,6 +102,55 @@ export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
     remoteDrift,
     conflicts,
     extras,
+    isEmpty,
+  };
+}
+
+/**
+ * Builds the three-way portion of a {@link ThreeWayDiffResult} from a single
+ * whole-entity merge (settings / process / admin-notes — ADR-188-014). The
+ * config is one value, so the merge produces at most one diff entry under a
+ * fixed `key` / `label` (e.g. "settings"). `bothSame` / `unchanged` produce no
+ * entry (empty diff), matching the record-keyed behaviour.
+ */
+export function buildSingleThreeWayDiff<V, TTwoWay = unknown>(
+  merge: SingleThreeWayMerge<V>,
+  key: string,
+): ThreeWayDiffResult<TTwoWay> {
+  const localChanges: ThreeWayDiffEntry[] = [];
+  const remoteDrift: ThreeWayDiffEntry[] = [];
+  const conflicts: ThreeWayDiffEntry[] = [];
+
+  const entry: ThreeWayDiffEntry = {
+    key,
+    label: key,
+    kind: "localOnly",
+  };
+  switch (merge.change.kind) {
+    case "localOnly":
+      localChanges.push(entry);
+      break;
+    case "remoteOnly":
+      remoteDrift.push({ ...entry, kind: "remoteOnly" });
+      break;
+    case "conflict":
+      conflicts.push({ ...entry, kind: "conflict" });
+      break;
+    default:
+      break;
+  }
+
+  const isEmpty =
+    localChanges.length === 0 &&
+    remoteDrift.length === 0 &&
+    conflicts.length === 0;
+
+  return {
+    mode: "three-way",
+    localChanges,
+    remoteDrift,
+    conflicts,
+    extras: [],
     isEmpty,
   };
 }

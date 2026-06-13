@@ -79,6 +79,12 @@ export function createCliApplyAllContainers(
   const settings = createGeneralSettingsCliContainer({
     ...base,
     settingsFilePath: paths.settings,
+    settingsStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "settings.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const notification = createNotificationCliContainer({
     ...base,
@@ -107,6 +113,12 @@ export function createCliApplyAllContainers(
   const process = createProcessManagementCliContainer({
     ...base,
     processFilePath: paths.process,
+    processStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "process.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const fieldPermission = createFieldPermissionCliContainer({
     ...base,
@@ -123,6 +135,12 @@ export function createCliApplyAllContainers(
   const adminNotes = createAdminNotesCliContainer({
     ...base,
     adminNotesFilePath: paths.adminNotes,
+    adminNotesStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "admin-notes.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const plugin = createPluginCliContainer({
     ...base,

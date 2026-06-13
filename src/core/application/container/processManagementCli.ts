@@ -1,6 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
+import { KintoneAppRevisionReader } from "@/core/adapters/kintone/appRevisionReader";
 import { KintoneProcessManagementConfigurator } from "@/core/adapters/kintone/processManagementConfigurator";
+import { createLocalFileAppRevisionStorage } from "@/core/adapters/local/appRevisionStorage";
+import { createLocalFileProcessManagementStateStorage } from "@/core/adapters/local/processManagementStateStorage";
 import { createLocalFileProcessManagementStorage } from "@/core/adapters/local/processManagementStorage";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { KintoneAuth } from "./cli";
@@ -13,6 +16,8 @@ export type ProcessManagementCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   processFilePath: string;
+  processStateFilePath: string;
+  appRevisionFilePath: string;
   client?: KintoneRestAPIClient;
 };
 
@@ -30,6 +35,13 @@ export function createProcessManagementCliContainer(
     processManagementStorage: createLocalFileProcessManagementStorage(
       config.processFilePath,
     ),
+    processManagementStateStorage: createLocalFileProcessManagementStateStorage(
+      config.processStateFilePath,
+    ),
+    appRevisionStorage: createLocalFileAppRevisionStorage(
+      config.appRevisionFilePath,
+    ),
+    appRevisionReader: new KintoneAppRevisionReader(client, config.appId),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

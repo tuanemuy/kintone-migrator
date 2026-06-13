@@ -1,7 +1,15 @@
 import type { AdminNotesCliContainerConfig } from "@/core/application/container/adminNotesCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const ADMIN_NOTES_STATE_FILE = "admin-notes.yaml";
 
 export const adminNotesArgs = {
   ...kintoneArgs,
@@ -26,9 +34,18 @@ const {
   appFileField: (a) => a.adminNotesFile,
   defaultDir: "admin-notes",
   defaultFileName: "admin-notes.yaml",
-  buildConfig: (base, filePath): AdminNotesCliContainerConfig => ({
+  buildConfig: (base, filePath, app): AdminNotesCliContainerConfig => ({
     ...base,
     adminNotesFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode
+    // (ADR-188-001).
+    adminNotesStateFilePath: app
+      ? buildDomainStateFilePath(app.name, ADMIN_NOTES_STATE_FILE)
+      : buildLegacyDomainStateFilePath(ADMIN_NOTES_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

@@ -1,10 +1,13 @@
 import type { ProcessManagementContainer } from "@/core/application/container/processManagement";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import type { ProcessManagementConfigurator } from "@/core/domain/processManagement/ports/processManagementConfigurator";
+import type { ProcessManagementStateStorage } from "@/core/domain/processManagement/ports/processManagementStateStorage";
 import type { ProcessManagementStorage } from "@/core/domain/processManagement/ports/processManagementStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -54,9 +57,16 @@ export class InMemoryProcessManagementStorage
   extends InMemoryFileStorage
   implements ProcessManagementStorage {}
 
+export class InMemoryProcessManagementStateStorage
+  extends InMemoryFileStorage
+  implements ProcessManagementStateStorage {}
+
 export type TestProcessManagementContainer = ProcessManagementContainer & {
   processManagementConfigurator: InMemoryProcessManagementConfigurator;
   processManagementStorage: InMemoryProcessManagementStorage;
+  processManagementStateStorage: InMemoryProcessManagementStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -65,6 +75,9 @@ export function createTestProcessManagementContainer(): TestProcessManagementCon
     configCodec: testConfigCodec,
     processManagementConfigurator: new InMemoryProcessManagementConfigurator(),
     processManagementStorage: new InMemoryProcessManagementStorage(),
+    processManagementStateStorage: new InMemoryProcessManagementStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

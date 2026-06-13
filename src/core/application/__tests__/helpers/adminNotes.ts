@@ -1,10 +1,13 @@
 import type { AdminNotesContainer } from "@/core/application/container/adminNotes";
 import type { AdminNotesConfig } from "@/core/domain/adminNotes/entity";
 import type { AdminNotesConfigurator } from "@/core/domain/adminNotes/ports/adminNotesConfigurator";
+import type { AdminNotesStateStorage } from "@/core/domain/adminNotes/ports/adminNotesStateStorage";
 import type { AdminNotesStorage } from "@/core/domain/adminNotes/ports/adminNotesStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -53,9 +56,16 @@ export class InMemoryAdminNotesStorage
   extends InMemoryFileStorage
   implements AdminNotesStorage {}
 
+export class InMemoryAdminNotesStateStorage
+  extends InMemoryFileStorage
+  implements AdminNotesStateStorage {}
+
 export type TestAdminNotesContainer = AdminNotesContainer & {
   adminNotesConfigurator: InMemoryAdminNotesConfigurator;
   adminNotesStorage: InMemoryAdminNotesStorage;
+  adminNotesStateStorage: InMemoryAdminNotesStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -64,6 +74,9 @@ export function createTestAdminNotesContainer(): TestAdminNotesContainer {
     configCodec: testConfigCodec,
     adminNotesConfigurator: new InMemoryAdminNotesConfigurator(),
     adminNotesStorage: new InMemoryAdminNotesStorage(),
+    adminNotesStateStorage: new InMemoryAdminNotesStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }
