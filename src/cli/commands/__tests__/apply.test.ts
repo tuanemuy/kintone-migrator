@@ -407,6 +407,125 @@ describe("apply command", () => {
     expect(capturedOutcome).toEqual({ ok: true });
   });
 
+  it("multiApp で --dry-run の早期 return のとき executor が {ok:true} を return すること（fail-fast 誤発火しない・AC-6）", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockProjectConfig);
+      },
+    );
+
+    // Capture the dry-run early-return outcome. A regression that returns
+    // { ok: false } for dry-run would make executeMultiApp mark this app failed
+    // and fail-fast the rest; pinning { ok: true } prevents that (AC-6).
+    let capturedOutcome: unknown;
+    vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
+      async (_plan, executor) => {
+        capturedOutcome = await executor(mockApp);
+      },
+    );
+
+    await applyCommand.run({ values: { "dry-run": true } } as never);
+
+    expect(applyAllForApp).not.toHaveBeenCalled();
+    expect(capturedOutcome).toEqual({ ok: true });
+  });
+
+  it("multiApp で確認キャンセルの早期 return のとき executor が {ok:true} を return すること（fail-fast 誤発火しない・AC-6）", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockProjectConfig);
+      },
+    );
+
+    // Capture the confirm-cancel early-return outcome. Cancelling is not a
+    // failure, so the executor must return { ok: true }; a regression to
+    // { ok: false } would trigger spurious fail-fast in multiApp (AC-6).
+    let capturedOutcome: unknown;
+    vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
+      async (_plan, executor) => {
+        capturedOutcome = await executor(mockApp);
+      },
+    );
+
+    vi.mocked(p.confirm).mockResolvedValueOnce(false);
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(applyAllForApp).not.toHaveBeenCalled();
+    expect(capturedOutcome).toEqual({ ok: true });
+  });
+
+  it("multiApp で全ドメイン not-found skip のとき executor が {ok:true} を return すること（fail-fast を誘発しない・AC-5）", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockProjectConfig);
+      },
+    );
+
+    // #179 graceful skip × multi crossing: an app whose config files are all
+    // absent produces not-found-only output (skipped:"not-found", no genuine
+    // failure). runApplyAll's hasFailures excludes not-found, so the executor
+    // must return { ok: true } and not induce fail-fast for the rest (AC-5).
+    let capturedOutcome: unknown;
+    vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
+      async (_plan, executor) => {
+        capturedOutcome = await executor(mockApp);
+      },
+    );
+
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            { domain: "customize", success: false, skipped: "not-found" },
+            { domain: "view", success: false, skipped: "not-found" },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(capturedOutcome).toEqual({ ok: true });
+  });
+
   it("エラー発生時に handleCliError が呼ばれること", async () => {
     const testError = new Error("test error");
     vi.mocked(routeMultiApp).mockRejectedValueOnce(testError);
