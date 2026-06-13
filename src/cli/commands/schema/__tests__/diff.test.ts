@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
+import type { DetectThreeWayDiffOutput } from "@/core/application/formSchema/dto";
 import type { FieldCode } from "@/core/domain/formSchema/valueObject";
 
 vi.mock("@clack/prompts", () => ({
@@ -23,6 +23,7 @@ vi.mock("@/cli/config", () => ({
     password: "pass",
     appId: "1",
     schemaFilePath: "schema.yaml",
+    stateSchemaFilePath: "state/schema.yaml",
   })),
 }));
 
@@ -45,10 +46,10 @@ vi.mock("@/core/application/container/cli", () => ({
   createCliContainer: vi.fn(() => ({})),
 }));
 
-vi.mock("@/core/application/formSchema/detectDiff");
+vi.mock("@/core/application/formSchema/detectThreeWayDiff");
 
 vi.mock("@/cli/output", () => ({
-  printDiffResult: vi.fn(),
+  printThreeWayDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),
 }));
@@ -58,76 +59,69 @@ vi.mock("@/cli/handleError", () => ({
 }));
 
 import { handleCliError } from "@/cli/handleError";
-import { printDiffResult } from "@/cli/output";
-import { detectDiff } from "@/core/application/formSchema/detectDiff";
+import { printThreeWayDiffResult } from "@/cli/output";
+import { detectThreeWayDiff } from "@/core/application/formSchema/detectThreeWayDiff";
 import command from "../diff";
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-function emptyDiffResult(): DetectDiffOutput {
+function twoWayResult(): DetectThreeWayDiffOutput {
   return {
-    entries: [],
-    schemaFields: [],
-    summary: { added: 0, modified: 0, deleted: 0, total: 0 },
-    isEmpty: true,
-    hasLayoutChanges: false,
+    mode: "two-way",
+    diff: {
+      entries: [],
+      schemaFields: [],
+      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+      isEmpty: true,
+      hasLayoutChanges: false,
+    },
+  };
+}
+
+function threeWayResult(): DetectThreeWayDiffOutput {
+  return {
+    mode: "three-way",
+    localChanges: [
+      { fieldCode: "name" as FieldCode, fieldLabel: "名前", kind: "localOnly" },
+    ],
+    remoteDrift: [],
+    conflicts: [],
+    layoutLocalChanged: false,
+    layoutRemoteChanged: false,
+    layoutConflict: false,
+    isEmpty: false,
   };
 }
 
 describe("diff コマンド", () => {
-  it("スキーマとフォームの差分を検出し結果を表示する", async () => {
-    const mockResult = emptyDiffResult();
-    vi.mocked(detectDiff).mockResolvedValue(mockResult);
+  it("state がない場合、2-way 結果が printer に渡される", async () => {
+    const mockResult = twoWayResult();
+    vi.mocked(detectThreeWayDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    expect(detectDiff).toHaveBeenCalled();
-    expect(printDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(detectThreeWayDiff).toHaveBeenCalled();
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(mockResult);
   });
 
-  it("差分がある場合もprintDiffResultに結果が渡される", async () => {
-    const mockResult: DetectDiffOutput = {
-      entries: [
-        {
-          type: "added",
-          fieldCode: "name" as FieldCode,
-          fieldLabel: "名前",
-          details: "新規追加",
-          after: {
-            code: "name" as FieldCode,
-            type: "SINGLE_LINE_TEXT",
-            label: "名前",
-            properties: {},
-          },
-        },
-      ],
-      schemaFields: [
-        {
-          fieldCode: "name" as FieldCode,
-          fieldLabel: "名前",
-          fieldType: "SINGLE_LINE_TEXT",
-        },
-      ],
-      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
-      isEmpty: false,
-      hasLayoutChanges: false,
-    };
-    vi.mocked(detectDiff).mockResolvedValue(mockResult);
+  it("state がある場合、3-way 結果が printer に渡される", async () => {
+    const mockResult = threeWayResult();
+    vi.mocked(detectThreeWayDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    expect(printDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(mockResult);
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {
     const error = new Error("API connection failed");
-    vi.mocked(detectDiff).mockRejectedValue(error);
+    vi.mocked(detectThreeWayDiff).mockRejectedValue(error);
 
     await command.run({ values: {} } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
-    expect(printDiffResult).not.toHaveBeenCalled();
+    expect(printThreeWayDiffResult).not.toHaveBeenCalled();
   });
 });

@@ -7,6 +7,7 @@ export const FormSchemaErrorCode = {
   FsInvalidLayoutStructure: "FS_INVALID_LAYOUT_STRUCTURE",
   FsInvalidDecorationElement: "FS_INVALID_DECORATION_ELEMENT",
   FsEmptyFields: "FS_EMPTY_FIELDS",
+  FsInvalidStateStructure: "FS_INVALID_STATE_STRUCTURE",
 } as const;
 
 export type FormSchemaErrorCode =

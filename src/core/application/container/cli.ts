@@ -8,6 +8,7 @@ import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
 import { createLocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
 import { LocalFileContentReader } from "@/core/adapters/local/fileContentReader";
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
+import { createLocalFileSchemaStateStorage } from "@/core/adapters/local/schemaStateStorage";
 import { createLocalFileSchemaStorage } from "@/core/adapters/local/schemaStorage";
 import { createLocalFileSeedStorage } from "@/core/adapters/local/seedStorage";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
@@ -40,6 +41,7 @@ export type CliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   schemaFilePath: string;
+  stateSchemaFilePath: string;
   client?: KintoneRestAPIClient;
 };
 
@@ -61,6 +63,9 @@ export function createCliContainer(
     configCodec,
     formConfigurator: new KintoneFormConfigurator(client, config.appId),
     schemaStorage: createLocalFileSchemaStorage(config.schemaFilePath),
+    schemaStateStorage: createLocalFileSchemaStateStorage(
+      config.stateSchemaFilePath,
+    ),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

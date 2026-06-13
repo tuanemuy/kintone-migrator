@@ -562,18 +562,49 @@ export class KintoneFormConfigurator implements FormConfigurator {
     }
   }
 
-  async addFields(fields: readonly FieldDefinition[]): Promise<void> {
+  async getRevision(): Promise<string> {
+    try {
+      const { revision } = await this.client.app.getFormFields({
+        app: this.appId,
+        preview: true,
+      });
+      if (!revision) {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          "kintone API did not return a form revision",
+        );
+      }
+      this.revisionTracker.track(revision);
+      return revision;
+    } catch (error) {
+      throw wrapKintoneError(error, "Failed to get form revision");
+    }
+  }
+
+  // Resolves the revision to send to a mutation API. When an explicit expected
+  // revision is provided (push, ADR-005), it takes precedence over the
+  // monotonic tracker so the observed remote revision is sent as-is. When
+  // omitted, fall back to the tracked revision (existing migrate behaviour).
+  private resolveMutationRevision(
+    expectedRevision: string | undefined,
+  ): string | undefined {
+    return expectedRevision ?? this.revisionTracker.current;
+  }
+
+  async addFields(
+    fields: readonly FieldDefinition[],
+    expectedRevision?: string,
+  ): Promise<void> {
     try {
       const properties: Record<string, Record<string, unknown>> = {};
       for (const field of fields) {
         properties[field.code as string] = toKintoneProperty(field);
       }
+      const revision = this.resolveMutationRevision(expectedRevision);
       const response = await this.client.app.addFormFields({
         app: this.appId,
         properties,
-        ...(this.revisionTracker.current !== undefined
-          ? { revision: this.revisionTracker.current }
-          : {}),
+        ...(revision !== undefined ? { revision } : {}),
       });
       if (response.revision) {
         this.revisionTracker.track(response.revision);
@@ -583,18 +614,20 @@ export class KintoneFormConfigurator implements FormConfigurator {
     }
   }
 
-  async updateFields(fields: readonly FieldDefinition[]): Promise<void> {
+  async updateFields(
+    fields: readonly FieldDefinition[],
+    expectedRevision?: string,
+  ): Promise<void> {
     try {
       const properties: Record<string, Record<string, unknown>> = {};
       for (const field of fields) {
         properties[field.code as string] = toKintoneProperty(field);
       }
+      const revision = this.resolveMutationRevision(expectedRevision);
       const response = await this.client.app.updateFormFields({
         app: this.appId,
         properties,
-        ...(this.revisionTracker.current !== undefined
-          ? { revision: this.revisionTracker.current }
-          : {}),
+        ...(revision !== undefined ? { revision } : {}),
       });
       if (response.revision) {
         this.revisionTracker.track(response.revision);
@@ -604,17 +637,19 @@ export class KintoneFormConfigurator implements FormConfigurator {
     }
   }
 
-  async deleteFields(fieldCodes: readonly FieldCode[]): Promise<void> {
+  async deleteFields(
+    fieldCodes: readonly FieldCode[],
+    expectedRevision?: string,
+  ): Promise<void> {
     try {
+      const revision = this.resolveMutationRevision(expectedRevision);
       // The SDK's type definition for deleteFormFields() does not include the `revision`
       // property in its return type, but the kintone API does return it at runtime.
       // We cast to access the revision for optimistic concurrency tracking.
       const response = (await this.client.app.deleteFormFields({
         app: this.appId,
         fields: fieldCodes.map((code) => code as string),
-        ...(this.revisionTracker.current !== undefined
-          ? { revision: this.revisionTracker.current }
-          : {}),
+        ...(revision !== undefined ? { revision } : {}),
       })) as { revision?: string };
       if (response.revision) {
         this.revisionTracker.track(response.revision);
@@ -642,20 +677,22 @@ export class KintoneFormConfigurator implements FormConfigurator {
     }
   }
 
-  async updateLayout(layout: FormLayout): Promise<void> {
+  async updateLayout(
+    layout: FormLayout,
+    expectedRevision?: string,
+  ): Promise<void> {
     try {
       const kintoneLayout = layout.map(toKintoneLayoutItem);
+      const revision = this.resolveMutationRevision(expectedRevision);
       const response = await this.client.app.updateFormLayout({
         app: this.appId,
         layout: kintoneLayout as Parameters<
           typeof this.client.app.updateFormLayout
         >[0]["layout"],
         // kintone API treats revision=-1 as "skip revision check", used as
-        // fallback when no prior revision is tracked (e.g. first layout update).
-        revision:
-          this.revisionTracker.current !== undefined
-            ? Number(this.revisionTracker.current)
-            : -1,
+        // fallback when no expected/tracked revision is available (e.g. first
+        // layout update, or --force push which sends no expected revision).
+        revision: revision !== undefined ? Number(revision) : -1,
       });
       if (response.revision) {
         this.revisionTracker.track(response.revision);

@@ -1,6 +1,7 @@
 import * as v from "valibot";
 import type { KintoneAuth } from "@/core/application/container/cli";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+import { buildLegacyStateFilePath } from "@/core/domain/projectConfig/appFilePaths";
 
 export {
   buildKintoneAuth,
@@ -23,6 +24,7 @@ export type CliConfig = {
   appId: string;
   guestSpaceId?: string;
   schemaFilePath: string;
+  stateSchemaFilePath: string;
 };
 
 export const kintoneArgs = {
@@ -161,6 +163,7 @@ export function resolveConfig(cliValues: {
     appId: output.KINTONE_APP_ID,
     guestSpaceId: output.KINTONE_GUEST_SPACE_ID,
     schemaFilePath: output.SCHEMA_FILE_PATH,
+    stateSchemaFilePath: buildLegacyStateFilePath(),
   };
 }
 
