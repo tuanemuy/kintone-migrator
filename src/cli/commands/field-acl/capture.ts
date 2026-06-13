@@ -12,6 +12,10 @@ export default createCaptureCommand({
   description:
     "Capture current field access permissions from kintone app to file",
   args: fieldAclArgs,
+  deprecation: {
+    commandName: "field-acl capture",
+    replacement: "field-acl pull",
+  },
   spinnerMessage: "Capturing field access permissions...",
   spinnerStopMessage: "Field access permissions captured.",
   domainLabel: "Field ACL",

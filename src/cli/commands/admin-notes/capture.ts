@@ -11,6 +11,10 @@ import { createCaptureCommand } from "../captureCommandFactory";
 export default createCaptureCommand({
   description: "Capture current admin notes from kintone app to file",
   args: adminNotesArgs,
+  deprecation: {
+    commandName: "admin-notes capture",
+    replacement: "admin-notes pull",
+  },
   spinnerMessage: "Capturing admin notes...",
   spinnerStopMessage: "Admin notes captured.",
   domainLabel: "Admin notes",

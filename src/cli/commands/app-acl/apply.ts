@@ -12,6 +12,10 @@ import { createApplyCommand } from "../applyCommandFactory";
 export default createApplyCommand({
   description: "Apply app access permissions from YAML to kintone app",
   args: appAclArgs,
+  deprecation: {
+    commandName: "app-acl apply",
+    replacement: "app-acl push",
+  },
   spinnerMessage: "Applying app access permissions...",
   spinnerStopMessage: "App access permissions applied.",
   successMessage: "App access permissions applied successfully.",

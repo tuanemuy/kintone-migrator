@@ -6,6 +6,7 @@ import type { FormSchemaContainer } from "@/core/application/container/formSchem
 import { captureSchema } from "@/core/application/formSchema/captureSchema";
 import { saveSchema } from "@/core/application/formSchema/saveSchema";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
+import { printDeprecationWarning } from "../../deprecation";
 import { handleCliError } from "../../handleError";
 import { printAppHeader } from "../../output";
 import {
@@ -41,6 +42,12 @@ export default define({
   args: { ...kintoneArgs, ...multiAppArgs },
   run: async (ctx) => {
     try {
+      printDeprecationWarning({
+        oldCommand: "schema capture",
+        replacement: "schema pull",
+        note: "`schema pull` does a 3-way merge; use `schema pull --force` for the legacy overwrite behavior. Legacy commands do not update local state; run schema pull/push to keep state in sync.",
+      });
+
       await routeMultiApp(ctx.values, {
         singleLegacy: async () => {
           const config = resolveConfig(ctx.values);

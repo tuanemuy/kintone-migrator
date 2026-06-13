@@ -12,6 +12,10 @@ import { createApplyCommand } from "../applyCommandFactory";
 export default createApplyCommand({
   description: "Apply field access permissions from YAML to kintone app",
   args: fieldAclArgs,
+  deprecation: {
+    commandName: "field-acl apply",
+    replacement: "field-acl push",
+  },
   spinnerMessage: "Applying field access permissions...",
   spinnerStopMessage: "Field access permissions applied.",
   successMessage: "Field access permissions applied successfully.",

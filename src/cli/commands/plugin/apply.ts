@@ -12,6 +12,10 @@ import { createApplyCommand } from "../applyCommandFactory";
 export default createApplyCommand({
   description: "Apply plugins from YAML to kintone app",
   args: pluginArgs,
+  deprecation: {
+    commandName: "plugin apply",
+    replacement: "plugin push",
+  },
   spinnerMessage: "Applying plugins...",
   spinnerStopMessage: "Plugins applied.",
   successMessage: "Plugins applied successfully.",

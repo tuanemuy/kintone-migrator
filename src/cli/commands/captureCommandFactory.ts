@@ -6,6 +6,7 @@ import type {
   AppEntry,
   ProjectConfig,
 } from "@/core/domain/projectConfig/entity";
+import { printDeprecationWarning } from "../deprecation";
 import { handleCliError } from "../handleError";
 import { printAppHeader } from "../output";
 import type { MultiAppCliValues } from "../projectConfig";
@@ -18,6 +19,7 @@ type CaptureCommandConfig<
 > = {
   readonly description: string;
   readonly args: Args;
+  readonly deprecation: { commandName: string; replacement: string };
   readonly spinnerMessage: string;
   readonly spinnerStopMessage: string;
   readonly domainLabel: string;
@@ -80,6 +82,11 @@ export function createCaptureCommand<
     args: config.args,
     run: async (ctx) => {
       try {
+        printDeprecationWarning({
+          oldCommand: config.deprecation.commandName,
+          replacement: config.deprecation.replacement,
+        });
+
         const values = ctx.values as TCliValues;
 
         await routeMultiApp(values, {

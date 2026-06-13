@@ -5,6 +5,7 @@ import { createCliCaptureContainers } from "@/core/application/container/capture
 import { captureAllForApp } from "@/core/application/init/captureAllForApp";
 import { printCaptureAllResults } from "../captureAllOutput";
 import { kintoneArgs, multiAppArgs } from "../config";
+import { printDeprecationWarning } from "../deprecation";
 import { handleCliError } from "../handleError";
 import { printAppHeader } from "../output";
 import {
@@ -63,12 +64,18 @@ export default define({
   args: captureArgs,
   run: async (ctx) => {
     try {
+      printDeprecationWarning({
+        oldCommand: "capture",
+        replacement: "pull",
+        note: "`pull` does a 3-way merge; use `pull --force` for the legacy overwrite behavior. Legacy commands do not update local state; run pull/push to keep state in sync.",
+      });
+
       const values = ctx.values as CaptureCliValues;
 
       await routeMultiApp(values, {
         singleLegacy: async () => {
           p.log.error(
-            "The 'capture' command requires a project config file.\nRun 'kintone-migrator init' to create one, or use individual capture commands (e.g. 'schema capture').",
+            "The 'capture' command requires a project config file.\nRun 'kintone-migrator init' to create one, or use individual pull commands (e.g. 'schema pull').",
           );
           process.exitCode = 1;
         },

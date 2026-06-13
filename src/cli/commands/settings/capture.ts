@@ -11,6 +11,10 @@ import { createCaptureCommand } from "../captureCommandFactory";
 export default createCaptureCommand({
   description: "Capture current general settings from kintone app to file",
   args: settingsArgs,
+  deprecation: {
+    commandName: "settings capture",
+    replacement: "settings pull",
+  },
   spinnerMessage: "Capturing general settings...",
   spinnerStopMessage: "General settings captured.",
   domainLabel: "General settings",

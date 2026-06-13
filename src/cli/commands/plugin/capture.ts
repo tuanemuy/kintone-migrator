@@ -11,6 +11,10 @@ import { createCaptureCommand } from "../captureCommandFactory";
 export default createCaptureCommand({
   description: "Capture current plugins from kintone app to file",
   args: pluginArgs,
+  deprecation: {
+    commandName: "plugin capture",
+    replacement: "plugin pull",
+  },
   spinnerMessage: "Capturing plugins...",
   spinnerStopMessage: "Plugins captured.",
   domainLabel: "Plugins",

@@ -11,6 +11,10 @@ import { createCaptureCommand } from "../captureCommandFactory";
 export default createCaptureCommand({
   description: "Capture current report settings from kintone app to file",
   args: reportArgs,
+  deprecation: {
+    commandName: "report capture",
+    replacement: "report pull",
+  },
   spinnerMessage: "Capturing report settings...",
   spinnerStopMessage: "Report settings captured.",
   domainLabel: "Reports",

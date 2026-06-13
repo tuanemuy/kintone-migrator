@@ -11,6 +11,7 @@ import type { AppEntry } from "@/core/domain/projectConfig/entity";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { printApplyAllResults } from "../applyAllOutput";
 import { confirmArgs, kintoneArgs, multiAppArgs } from "../config";
+import { printDeprecationWarning } from "../deprecation";
 import { printDiffAllResults } from "../diffAllOutput";
 import { handleCliError } from "../handleError";
 import { printAppHeader } from "../output";
@@ -218,6 +219,12 @@ export default define({
   args: applyArgs,
   run: async (ctx) => {
     try {
+      printDeprecationWarning({
+        oldCommand: "apply",
+        replacement: "push",
+        note: "Use `push --force` for the legacy overwrite behavior. Legacy commands do not update local state; run pull/push to keep state in sync.",
+      });
+
       const values = ctx.values as ApplyCliValues;
       const skipConfirm = values.yes === true;
       const dryRun = values["dry-run"] === true;
@@ -225,7 +232,7 @@ export default define({
       await routeMultiApp(values, {
         singleLegacy: async () => {
           p.log.error(
-            "The 'apply' command requires a project config file.\nRun 'kintone-migrator init' to create one, or use individual apply commands (e.g. 'schema migrate').",
+            "The 'apply' command requires a project config file.\nRun 'kintone-migrator init' to create one, or use individual push commands (e.g. 'schema push').",
           );
           process.exitCode = 1;
         },

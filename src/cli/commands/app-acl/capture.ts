@@ -12,6 +12,10 @@ export default createCaptureCommand({
   description:
     "Capture current app access permissions from kintone app to file",
   args: appAclArgs,
+  deprecation: {
+    commandName: "app-acl capture",
+    replacement: "app-acl pull",
+  },
   spinnerMessage: "Capturing app access permissions...",
   spinnerStopMessage: "App access permissions captured.",
   domainLabel: "App ACL",

@@ -19,6 +19,10 @@ export default createApplyCommand<
 >({
   description: "Apply process management settings from YAML to kintone app",
   args: processArgs,
+  deprecation: {
+    commandName: "process apply",
+    replacement: "process push",
+  },
   spinnerMessage: "Applying process management settings...",
   spinnerStopMessage: "Process management settings applied.",
   successMessage: "Process management settings applied successfully.",

@@ -16,6 +16,7 @@ import {
   resolveCustomizeAppConfig,
   resolveCustomizeConfig,
 } from "../../customizeConfig";
+import { printDeprecationWarning } from "../../deprecation";
 import { handleCliError } from "../../handleError";
 import {
   confirmAndDeploy,
@@ -90,6 +91,12 @@ export default define({
   args: { ...customizeArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
+      printDeprecationWarning({
+        oldCommand: "customize apply",
+        replacement: "customize push",
+        note: "Legacy commands do not update local state; run customize pull/push to keep state in sync.",
+      });
+
       const values = ctx.values as WithConfirm<CustomizeCliValues>;
       const skipConfirm = values.yes === true;
 

@@ -11,6 +11,10 @@ import { createCaptureCommand } from "../captureCommandFactory";
 export default createCaptureCommand({
   description: "Capture current view settings from kintone app to file",
   args: viewArgs,
+  deprecation: {
+    commandName: "view capture",
+    replacement: "view pull",
+  },
   spinnerMessage: "Capturing views...",
   spinnerStopMessage: "Views captured.",
   domainLabel: "Views",
