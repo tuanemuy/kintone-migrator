@@ -1,5 +1,6 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import type { Schema } from "@/core/domain/formSchema/entity";
+import type { ExpectedRevision } from "@/core/domain/formSchema/ports/formConfigurator";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import {
   collectSubtableInnerFieldCodes,
@@ -57,10 +58,14 @@ export type ApplySchemaChangesContext = Readonly<{
   container: FormSchemaContainer;
   /**
    * Expected app (preview) revision to enforce on mutations (TOCTOU guard,
-   * ADR-005). When omitted (e.g. migrate, or `--force` push), no expected
-   * revision is enforced.
+   * ADR-005 / ADR-010). Three states (see {@link ExpectedRevision}):
+   * - a revision string: enforce it (push non-force).
+   * - {@link SKIP_REVISION_CHECK}: skip the revision check (`--force` push /
+   *   first run).
+   * - omitted/`undefined`: fall back to the adapter's tracked revision
+   *   (migrate, behaviour unchanged).
    */
-  expectedRevision?: string;
+  expectedRevision?: ExpectedRevision;
 }>;
 
 /**

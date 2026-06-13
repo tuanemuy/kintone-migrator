@@ -1,5 +1,7 @@
+import { BusinessRuleError } from "@/core/domain/error";
 import { classifyThreeWay } from "../../diff";
 import { Schema } from "../entity";
+import { FormSchemaErrorCode } from "../errorCode";
 import type {
   FieldCode,
   FieldDefinition,
@@ -84,18 +86,23 @@ export function computeThreeWayMerge(
 
   let layoutConflict = false;
   let mergedLayout: Schema["layout"] | undefined;
+  let layoutAutoSide: "local" | "remote" | "base" | undefined;
   if (layoutLocalChanged && layoutRemoteChanged) {
     if (isLayoutEqual(enrichedLocalLayout, enrichedRemoteLayout)) {
       mergedLayout = enrichedLocalLayout;
+      layoutAutoSide = "local";
     } else {
       layoutConflict = true;
     }
   } else if (layoutLocalChanged) {
     mergedLayout = enrichedLocalLayout;
+    layoutAutoSide = "local";
   } else if (layoutRemoteChanged) {
     mergedLayout = enrichedRemoteLayout;
+    layoutAutoSide = "remote";
   } else {
     mergedLayout = enrichedBaseLayout;
+    layoutAutoSide = "base";
   }
 
   return {
@@ -106,6 +113,7 @@ export function computeThreeWayMerge(
     localLayout: enrichedLocalLayout,
     remoteLayout: enrichedRemoteLayout,
     ...(mergedLayout !== undefined ? { mergedLayout } : {}),
+    ...(layoutAutoSide !== undefined ? { layoutAutoSide } : {}),
     hasConflict: fieldResult.hasConflict || layoutConflict,
     baseFields: base.fields,
     localFields: local.fields,
@@ -160,9 +168,14 @@ function assertResolutionCovers(
   merge: FormSchemaThreeWayMerge,
   resolution: MergeResolution,
 ): void {
+  // These are programmer invariants (the CLI must produce a resolution that
+  // covers every conflict). They are domain-rule violations, so throw a
+  // BusinessRuleError that the application layer translates to a ValidationError
+  // via wrapBusinessRuleError (CLAUDE.md error policy).
   for (const conflict of merge.fieldConflicts) {
     if (!resolution.fields.has(conflict.key)) {
-      throw new Error(
+      throw new BusinessRuleError(
+        FormSchemaErrorCode.FsInvalidMergeResolution,
         `Merge resolution missing field conflict: ${conflict.key}`,
       );
     }
@@ -172,7 +185,8 @@ function assertResolutionCovers(
     resolution.layout !== "local" &&
     resolution.layout !== "remote"
   ) {
-    throw new Error(
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.FsInvalidMergeResolution,
       "Merge resolution must choose a layout side for the layout conflict",
     );
   }
@@ -211,10 +225,11 @@ function overlayFieldEntry(
 }
 
 function layoutAutoSide(merge: FormSchemaThreeWayMerge): "local" | "remote" {
-  // When there is no layout conflict, mergedLayout equals one of the enriched
-  // layouts. Prefer the side that matches mergedLayout so the field map aligns.
-  if (merge.mergedLayout === merge.remoteLayout) return "remote";
-  return "local";
+  // Read the explicit side flag set by computeThreeWayMerge rather than relying
+  // on reference equality of mergedLayout (W-001). When neither side changed
+  // ("base"), all three layouts are equal, so "local" reconstructs an
+  // equivalent field map.
+  return merge.layoutAutoSide === "remote" ? "remote" : "local";
 }
 
 function resolveFieldEntry(

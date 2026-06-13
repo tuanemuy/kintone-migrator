@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { Schema } from "../../entity";
-import { FieldCode, type MergeResolution } from "../../valueObject";
+import { Schema } from "../../entity";
+import {
+  FieldCode,
+  type FieldDefinition,
+  type MergeResolution,
+} from "../../valueObject";
 import { SchemaParser } from "../schemaParser";
 import {
   computeThreeWayMerge,
@@ -24,6 +28,23 @@ function schemaOf(rows: Record<string, unknown>[][]): Schema {
 }
 
 const base = schemaOf([[fieldRow("name", "SINGLE_LINE_TEXT", "名前")]]);
+
+/**
+ * Rebuilds a schema so its field map mimics `getFields()` output: GROUP
+ * definitions are removed from the top-level field map (kintone's
+ * field-properties API does not return GROUP), while every other field —
+ * including the group's inner fields — stays at the top level. The layout is
+ * preserved unchanged. This reproduces the real base/local-vs-remote asymmetry
+ * that normalizeForThreeWay must absorb (ADR-007).
+ */
+function asRemoteGetFields(schema: Schema): Schema {
+  const fields = new Map<FieldCode, FieldDefinition>();
+  for (const [code, def] of schema.fields) {
+    if (def.type === "GROUP") continue;
+    fields.set(code, def);
+  }
+  return Schema.create(fields, schema.layout);
+}
 
 describe("normalizeForThreeWay", () => {
   it("GROUP と subtable inner を field チャネルから除外する", () => {
@@ -79,8 +100,12 @@ describe("computeThreeWayMerge", () => {
     expect(merge.fieldConflicts).toHaveLength(1);
   });
 
-  it("GROUP は field チャネルで remote 削除と誤検出されない", () => {
-    // base/local have a GROUP; remote (getFields-like) lacks GROUP definitions.
+  it("remote だけ GROUP 定義が欠落しても grp が remote 削除と誤検出されない（非対称再現）", () => {
+    // base/local carry the GROUP definition in their field map (SchemaParser
+    // puts `grp` at the top level). remote mimics getFields(): the GROUP
+    // definition is absent but its inner field stays top-level. Without
+    // normalization, grp would classify as remoteOnly (a remote deletion) and
+    // be reported as drift; normalizeForThreeWay must drop it from all three.
     const withGroup = SchemaParser.parse({
       layout: [
         { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
@@ -97,10 +122,52 @@ describe("computeThreeWayMerge", () => {
         },
       ],
     });
-    const merge = computeThreeWayMerge(withGroup, withGroup, withGroup);
-    // grp must not appear as a field-channel entry at all.
+    // Sanity: the asymmetry is real — base has the GROUP def, remote does not.
+    expect(withGroup.fields.has(FieldCode.create("grp"))).toBe(true);
+    const remote = asRemoteGetFields(withGroup);
+    expect(remote.fields.has(FieldCode.create("grp"))).toBe(false);
+
+    const merge = computeThreeWayMerge(withGroup, withGroup, remote);
+
+    // grp must not appear as a field-channel entry at all, and must not be
+    // reported as a remoteOnly deletion / conflict.
     expect(
       merge.fieldEntries.some((e) => e.key === FieldCode.create("grp")),
+    ).toBe(false);
+    expect(
+      merge.fieldEntries.some(
+        (e) => e.change.kind === "remoteOnly" || e.change.kind === "conflict",
+      ),
+    ).toBe(false);
+    expect(merge.hasConflict).toBe(false);
+  });
+
+  it("subtable inner の非対称（remote は inner を top-level flatten）でも subtable 単位で一致扱い", () => {
+    // base/local: SchemaParser puts the subtable definition plus its inner
+    // field `col` at the top level. remote mimics getFields(): same shape. The
+    // subtable is compared whole, so no inner field surfaces as a separate
+    // (mis-classified) entry, and there is no drift.
+    const withSub = SchemaParser.parse({
+      layout: [
+        {
+          type: "SUBTABLE",
+          code: "items",
+          label: "明細",
+          fields: [fieldRow("col", "SINGLE_LINE_TEXT", "列")],
+        },
+      ],
+    });
+    const remote = asRemoteGetFields(withSub);
+
+    const merge = computeThreeWayMerge(withSub, withSub, remote);
+
+    expect(
+      merge.fieldEntries.some((e) => e.key === FieldCode.create("col")),
+    ).toBe(false);
+    expect(
+      merge.fieldEntries.some(
+        (e) => e.change.kind === "remoteOnly" || e.change.kind === "conflict",
+      ),
     ).toBe(false);
     expect(merge.hasConflict).toBe(false);
   });
@@ -212,5 +279,142 @@ describe("resolveMerge", () => {
       layout: "noConflict",
     });
     expect(merged.fields.get(FieldCode.create("name"))?.label).toBe("名前_新");
+  });
+
+  // W-004 (ADR-012): the most complex resolveMerge path — a subtable conflict
+  // whose inner construction differs between sides — must reconstruct the
+  // chosen side's inner fields as top-level entries (and drop the rejected
+  // side's). Fixtures include a GROUP and a subtable so the reconstruction from
+  // the chosen layout is genuinely exercised, not just a single SINGLE_LINE.
+  describe("GROUP/subtable-inner 再構成", () => {
+    const subtableBase = SchemaParser.parse({
+      layout: [
+        { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
+        {
+          type: "GROUP",
+          code: "grp",
+          label: "G",
+          layout: [
+            {
+              type: "ROW",
+              fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+            },
+          ],
+        },
+        {
+          type: "SUBTABLE",
+          code: "items",
+          label: "明細",
+          fields: [fieldRow("col_a", "SINGLE_LINE_TEXT", "列A")],
+        },
+      ],
+    });
+
+    // local: subtable inner has col_b (renamed/replaced inner construction).
+    const subtableLocal = SchemaParser.parse({
+      layout: [
+        { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
+        {
+          type: "GROUP",
+          code: "grp",
+          label: "G",
+          layout: [
+            {
+              type: "ROW",
+              fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+            },
+          ],
+        },
+        {
+          type: "SUBTABLE",
+          code: "items",
+          label: "明細",
+          fields: [fieldRow("col_b", "SINGLE_LINE_TEXT", "列B")],
+        },
+      ],
+    });
+
+    // remote: subtable inner has col_c (a third, different construction).
+    const subtableRemote = SchemaParser.parse({
+      layout: [
+        { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
+        {
+          type: "GROUP",
+          code: "grp",
+          label: "G",
+          layout: [
+            {
+              type: "ROW",
+              fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+            },
+          ],
+        },
+        {
+          type: "SUBTABLE",
+          code: "items",
+          label: "明細",
+          fields: [fieldRow("col_c", "SINGLE_LINE_TEXT", "列C")],
+        },
+      ],
+    });
+
+    it("subtable conflict を local 採用すると採用側 inner が top-level に展開され他方は落ちる", () => {
+      const merge = computeThreeWayMerge(
+        subtableBase,
+        subtableLocal,
+        subtableRemote,
+      );
+      // The subtable diverged on both sides => conflict over `items`.
+      expect(
+        merge.fieldConflicts.some((c) => c.key === FieldCode.create("items")),
+      ).toBe(true);
+
+      const merged = resolveMerge(merge, {
+        fields: new Map([[FieldCode.create("items"), "local"]]),
+        layout: "local",
+      });
+
+      const subtable = merged.fields.get(FieldCode.create("items"));
+      expect(subtable?.type).toBe("SUBTABLE");
+      if (subtable?.type === "SUBTABLE") {
+        expect(subtable.properties.fields.has(FieldCode.create("col_b"))).toBe(
+          true,
+        );
+        expect(subtable.properties.fields.has(FieldCode.create("col_c"))).toBe(
+          false,
+        );
+      }
+      // The chosen inner field is reconstructed at top level...
+      expect(merged.fields.has(FieldCode.create("col_b"))).toBe(true);
+      // ...and the rejected side's inner field is not present.
+      expect(merged.fields.has(FieldCode.create("col_c"))).toBe(false);
+      expect(merged.fields.has(FieldCode.create("col_a"))).toBe(false);
+      // GROUP inner field stays top-level (reconstructed from the chosen side).
+      expect(merged.fields.has(FieldCode.create("g_inner"))).toBe(true);
+    });
+
+    it("subtable conflict を remote 採用すると採用側 inner が top-level に展開される", () => {
+      const merge = computeThreeWayMerge(
+        subtableBase,
+        subtableLocal,
+        subtableRemote,
+      );
+
+      const merged = resolveMerge(merge, {
+        fields: new Map([[FieldCode.create("items"), "remote"]]),
+        layout: "remote",
+      });
+
+      const subtable = merged.fields.get(FieldCode.create("items"));
+      expect(subtable?.type).toBe("SUBTABLE");
+      if (subtable?.type === "SUBTABLE") {
+        expect(subtable.properties.fields.has(FieldCode.create("col_c"))).toBe(
+          true,
+        );
+      }
+      expect(merged.fields.has(FieldCode.create("col_c"))).toBe(true);
+      expect(merged.fields.has(FieldCode.create("col_b"))).toBe(false);
+      expect(merged.fields.has(FieldCode.create("g_inner"))).toBe(true);
+    });
   });
 });

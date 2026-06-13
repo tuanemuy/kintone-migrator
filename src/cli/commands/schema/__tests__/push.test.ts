@@ -120,10 +120,10 @@ describe("push コマンド", () => {
     });
   });
 
-  it("drift 由来 ConflictError はそのままのメッセージで処理される", async () => {
+  it("drift 由来 ConflictError（SchemaDrift）はそのままのメッセージで処理される", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     const driftError = new ConflictError(
-      ConflictErrorCode.Conflict,
+      ConflictErrorCode.SchemaDrift,
       PUSH_DRIFT_MESSAGE,
     );
     vi.mocked(pushSchema).mockRejectedValue(driftError);
@@ -145,8 +145,8 @@ describe("push コマンド", () => {
 
     const handled = vi.mocked(handleCliError).mock.calls[0]?.[0];
     expect(handled).toBeInstanceOf(ConflictError);
-    expect((handled as ConflictError).message).toContain(
-      "適用中に実環境が変更されました",
+    expect((handled as ConflictError).message).toBe(
+      "The remote changed while applying. Run `schema pull` and retry.",
     );
     expect((handled as ConflictError).message).not.toBe(PUSH_DRIFT_MESSAGE);
   });

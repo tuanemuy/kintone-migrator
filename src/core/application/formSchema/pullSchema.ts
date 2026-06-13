@@ -1,3 +1,4 @@
+import { wrapBusinessRuleError } from "@/core/application/error";
 import type { Schema } from "@/core/domain/formSchema/entity";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import { SchemaSerializer } from "@/core/domain/formSchema/services/schemaSerializer";
@@ -11,6 +12,7 @@ import type {
 } from "@/core/domain/formSchema/valueObject";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { stringifyConfig } from "../stringifyConfig";
+import { assertSchemaValid } from "./assertSchemaValid";
 import type { PullSchemaOutput } from "./dto";
 import { loadThreeWayInputs } from "./loadThreeWayInputs";
 import { saveState } from "./schemaStateIo";
@@ -50,6 +52,11 @@ export async function pullSchema({
   const { state, local, remote, remoteRevision } =
     await loadThreeWayInputs(container);
 
+  // force / firstTime intentionally trust the remote without assertSchemaValid:
+  // these are capture-equivalent one-way overwrites (ADR-006/ADR-007, "base =
+  // capture result"), and the remote is the source of truth. The merged path
+  // (applyPulledMerge), by contrast, validates before writing because the
+  // merged schema is locally synthesized and benefits from early feedback.
   if (input.force) {
     const schemaText = serializeSchema(container, remote);
     await container.schemaStorage.update(schemaText);
@@ -101,7 +108,15 @@ export async function applyPulledMerge({
 }: FormSchemaServiceArgs<ApplyPulledMergeInput>): Promise<{
   readonly schemaText: string;
 }> {
-  const merged = resolveMerge(input.merge, input.resolution);
+  // resolveMerge throws a BusinessRuleError when the resolution does not cover
+  // every conflict (programmer invariant); translate it to a ValidationError per
+  // the CLAUDE.md error policy (domain → application).
+  const merged = wrapBusinessRuleError(() =>
+    resolveMerge(input.merge, input.resolution),
+  );
+  // Validate the locally synthesized merged schema before writing for early
+  // feedback (unlike force/firstTime which trust the remote as-is).
+  assertSchemaValid(merged);
   const schemaText = serializeSchema(container, merged);
   await container.schemaStorage.update(schemaText);
   await saveState(

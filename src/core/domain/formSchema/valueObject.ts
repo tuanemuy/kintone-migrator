@@ -394,6 +394,14 @@ export type FormSchemaThreeWayMerge = Readonly<{
    * when neither changed). `undefined` when `layoutConflict` is true.
    */
   mergedLayout?: FormLayout;
+  /**
+   * Which side the auto-merged layout was taken from when there is no conflict:
+   * the changed side, or `"base"` when neither side changed (base == local ==
+   * remote). Set explicitly so `resolveMerge` does not rely on reference
+   * equality of `mergedLayout`. `"base"` is undefined-of-side and treated as
+   * `"local"` for field-map reconstruction (all three sides agree).
+   */
+  layoutAutoSide?: "local" | "remote" | "base";
   /** True when any side diverged (field or layout). */
   hasConflict: boolean;
   /** Field maps used to reconstruct GROUP/subtable-inner from layout. */

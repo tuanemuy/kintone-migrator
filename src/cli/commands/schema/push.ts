@@ -9,10 +9,7 @@ import {
   ValidationError,
   ValidationErrorCode,
 } from "@/core/application/error";
-import {
-  PUSH_DRIFT_MESSAGE,
-  pushSchema,
-} from "@/core/application/formSchema/pushSchema";
+import { pushSchema } from "@/core/application/formSchema/pushSchema";
 import {
   confirmArgs,
   kintoneArgs,
@@ -27,7 +24,7 @@ import { resolveAppCliConfig, routeMultiApp } from "../../projectConfig";
 // re-wrapped with a TOCTOU-specific message, distinct from the snapshot-drift
 // rejection message (ADR-008).
 const PUSH_TOCTOU_MESSAGE =
-  "適用中に実環境が変更されました。`schema pull` 後に再実行してください。";
+  "The remote changed while applying. Run `schema pull` and retry.";
 
 async function runPush(
   container: FormSchemaContainer,
@@ -48,12 +45,18 @@ async function runPush(
 
   const s = p.spinner();
   s.start("Pushing schema to kintone...");
+  let result: Awaited<ReturnType<typeof pushSchema>>;
   try {
-    await pushSchema({ container, input: { force } });
+    result = await pushSchema({ container, input: { force } });
   } catch (error) {
     s.stop("Push failed.");
-    // Distinguish API optimistic-lock (TOCTOU) conflicts from snapshot drift.
-    if (isConflictError(error) && error.message !== PUSH_DRIFT_MESSAGE) {
+    // Distinguish API optimistic-lock (TOCTOU) conflicts from snapshot drift by
+    // error code (ADR-008): pushSchema tags snapshot drift with SchemaDrift,
+    // while the kintone adapter uses Conflict for API 409 (revision) conflicts.
+    if (
+      isConflictError(error) &&
+      error.code !== ConflictErrorCode.SchemaDrift
+    ) {
       throw new ConflictError(
         ConflictErrorCode.Conflict,
         PUSH_TOCTOU_MESSAGE,
@@ -64,8 +67,17 @@ async function runPush(
   }
   s.stop("Schema pushed to preview.");
 
+  if (result.mode === "firstTime") {
+    p.log.warn(
+      "No base snapshot found. Applied without drift guard and initialized state.",
+    );
+  }
   p.log.success("Push completed successfully.");
 
+  // confirmAndDeploy is intentionally outside the try above: a 409 during deploy
+  // is a separate concurrency event from the push apply, so it should surface as
+  // the adapter's standard ConflictError rather than be re-wrapped as a push
+  // apply TOCTOU.
   await confirmAndDeploy([container], skipConfirm);
 }
 

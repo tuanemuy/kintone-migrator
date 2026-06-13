@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { type AppFilePaths, buildAppFilePaths } from "../appFilePaths";
+import {
+  type AppFilePaths,
+  buildAppFilePaths,
+  buildLegacyStateFilePath,
+  buildStateFilePath,
+} from "../appFilePaths";
 import { AppName } from "../valueObject";
 
 describe("buildAppFilePaths", () => {
@@ -63,5 +68,34 @@ describe("buildAppFilePaths", () => {
     ];
 
     expect(Object.keys(paths).sort()).toEqual([...expectedKeys].sort());
+  });
+});
+
+// W-002 (ADR-002 / arch-r2-S002): state uses an app-scoped directory layout
+// (`state/<appName>/schema.yaml`, appName INSIDE) whose hierarchy is the inverse
+// of buildAppFilePaths (`<appName>/...`, appName OUTSIDE). These tests pin the
+// direction so a regression to `state/schema.yaml` (collapse) or
+// `<appName>/state/schema.yaml` (direction flip) is caught.
+describe("buildStateFilePath", () => {
+  const appName = AppName.create("customer");
+
+  it("appName 内側の state/<appName>/schema.yaml を返す", () => {
+    expect(buildStateFilePath(appName)).toBe("state/customer/schema.yaml");
+  });
+
+  it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
+    expect(buildStateFilePath(appName, "output")).toBe(
+      "output/state/customer/schema.yaml",
+    );
+  });
+});
+
+describe("buildLegacyStateFilePath", () => {
+  it("legacy 単一アプリは state/schema.yaml を返す", () => {
+    expect(buildLegacyStateFilePath()).toBe("state/schema.yaml");
+  });
+
+  it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
+    expect(buildLegacyStateFilePath("output")).toBe("output/state/schema.yaml");
   });
 });

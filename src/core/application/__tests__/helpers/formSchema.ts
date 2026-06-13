@@ -1,6 +1,10 @@
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
+import { ConflictError, ConflictErrorCode } from "@/core/application/error";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
-import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
+import type {
+  ExpectedRevision,
+  FormConfigurator,
+} from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStateStorage } from "@/core/domain/formSchema/ports/schemaStateStorage";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
 import type {
@@ -23,7 +27,34 @@ export class InMemoryFormConfigurator
   private layout: FormLayout = [];
   private revision = "1";
   /** Records the expected revision passed to each mutation method, in order. */
-  readonly expectedRevisions: Array<string | undefined> = [];
+  readonly expectedRevisions: Array<ExpectedRevision> = [];
+  /**
+   * When set, the next mutation (add/update/delete/layout) throws this error
+   * before mutating. Used to simulate the kintone adapter translating an API
+   * optimistic-lock failure (409 / GAIA_CO02) into a ConflictError mid-apply
+   * (TOCTOU), which the in-memory double cannot otherwise reproduce.
+   */
+  private pendingMutationError: Error | undefined = undefined;
+
+  /**
+   * Arms the test double so the next mutation throws an API optimistic-lock
+   * ConflictError (ConflictErrorCode.Conflict — distinct from the push-drift
+   * SchemaDrift code), as the real adapter would on a 409.
+   */
+  failNextMutationWithOptimisticLock(): void {
+    this.pendingMutationError = new ConflictError(
+      ConflictErrorCode.Conflict,
+      "The form was modified concurrently (revision conflict — GAIA_CO02). Please retry the operation.",
+    );
+  }
+
+  private consumeMutationError(): void {
+    if (this.pendingMutationError !== undefined) {
+      const error = this.pendingMutationError;
+      this.pendingMutationError = undefined;
+      throw error;
+    }
+  }
 
   async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
     this.trackCall("getFields");
@@ -37,9 +68,10 @@ export class InMemoryFormConfigurator
 
   async addFields(
     fields: readonly FieldDefinition[],
-    expectedRevision?: string,
+    expectedRevision?: ExpectedRevision,
   ): Promise<void> {
     this.trackCall("addFields");
+    this.consumeMutationError();
     this.expectedRevisions.push(expectedRevision);
     for (const field of fields) {
       this.fields.set(field.code, field);
@@ -48,9 +80,10 @@ export class InMemoryFormConfigurator
 
   async updateFields(
     fields: readonly FieldDefinition[],
-    expectedRevision?: string,
+    expectedRevision?: ExpectedRevision,
   ): Promise<void> {
     this.trackCall("updateFields");
+    this.consumeMutationError();
     this.expectedRevisions.push(expectedRevision);
     for (const field of fields) {
       if (field.type === "SUBTABLE") {
@@ -73,9 +106,10 @@ export class InMemoryFormConfigurator
 
   async deleteFields(
     fieldCodes: readonly FieldCode[],
-    expectedRevision?: string,
+    expectedRevision?: ExpectedRevision,
   ): Promise<void> {
     this.trackCall("deleteFields");
+    this.consumeMutationError();
     this.expectedRevisions.push(expectedRevision);
     for (const code of fieldCodes) {
       const field = this.fields.get(code);
@@ -95,9 +129,10 @@ export class InMemoryFormConfigurator
 
   async updateLayout(
     layout: FormLayout,
-    expectedRevision?: string,
+    expectedRevision?: ExpectedRevision,
   ): Promise<void> {
     this.trackCall("updateLayout");
+    this.consumeMutationError();
     this.expectedRevisions.push(expectedRevision);
     this.layout = [...layout];
   }

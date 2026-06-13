@@ -2,6 +2,7 @@ import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneRestAPIError } from "@kintone/rest-api-client";
 import { describe, expect, it, vi } from "vitest";
 import { ConflictError, SystemError } from "@/core/application/error";
+import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigurator";
 import type {
   FieldCode,
   FieldDefinition,
@@ -2081,6 +2082,156 @@ describe("KintoneFormConfigurator", () => {
       expect(refTable).not.toHaveProperty("filterCond");
       expect(refTable).not.toHaveProperty("sort");
       expect(refTable).not.toHaveProperty("size");
+    });
+  });
+
+  // AC-2 (W-001): getRevision reads the current preview revision in a single
+  // API call and throws a SystemError when the API omits the revision.
+  describe("getRevision", () => {
+    it("preview: true で現在の revision を取得する", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "42" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      const revision = await adapter.getRevision();
+
+      expect(revision).toBe("42");
+      expect(client.app.getFormFields).toHaveBeenCalledWith({
+        app: APP_ID,
+        preview: true,
+      });
+    });
+
+    it("revision が欠落している場合 SystemError をスローする", async () => {
+      const client = createMockClient({
+        getFormFields: () => Promise.resolve({ properties: {} }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getRevision()).rejects.toThrow(SystemError);
+    });
+
+    it("取得した revision は tracker に track され後続 mutation に渡される", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "42" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getRevision();
+      await adapter.addFields([]);
+
+      expect(client.app.addFormFields).toHaveBeenCalledWith(
+        expect.objectContaining({ revision: "42" }),
+      );
+    });
+  });
+
+  // B-001 (ADR-005 / ADR-013): the expected revision must be resolved against
+  // the real adapter's mutation path, not just the in-memory fake. These tests
+  // exercise resolveMutationRevision through the kintone client mock so a
+  // regression where the monotonic tracker (max-採用) overrides the fixed
+  // expected revision — or where SKIP_REVISION_CHECK falls back to the tracker —
+  // is actually caught.
+  describe("expectedRevision の送出（B-001）", () => {
+    function addFieldsRevision(client: KintoneRestAPIClient): unknown {
+      const calls = (client.app.addFormFields as ReturnType<typeof vi.fn>).mock
+        .calls;
+      const lastArg = calls[calls.length - 1][0] as Record<string, unknown>;
+      return "revision" in lastArg ? lastArg.revision : undefined;
+    }
+
+    it("push 非force相当: 固定 revision 文字列は tracker が別 revision を track しても上書きされない", async () => {
+      // getFields tracks a LARGER revision ("99") after the push observed "7".
+      // The monotonic RevisionTracker would advance to 99, but the explicit
+      // expected revision "7" must take precedence (no max-tracker fallback).
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "99" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      // Simulate the push flow: drift snapshot fetch tracks "99"...
+      await adapter.getFields();
+      // ...then the apply sends the fixed observed revision "7".
+      await adapter.addFields([], "7");
+
+      expect(addFieldsRevision(client)).toBe("7");
+    });
+
+    it("push 非force相当: updateLayout も固定 revision を送り tracker に引っ張られない", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "99" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields();
+      await adapter.updateLayout([], "7");
+
+      expect(client.app.updateFormLayout).toHaveBeenCalledWith(
+        expect.objectContaining({ revision: 7 }),
+      );
+    });
+
+    it("--force相当 (SKIP_REVISION_CHECK): field mutation は revision を送らない (tracker にフォールバックしない)", async () => {
+      // The tracker is populated with a current revision by the drift snapshot
+      // fetch. SKIP_REVISION_CHECK must NOT fall back to it, otherwise force
+      // could 409 when the remote drifted (B-001).
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "99" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields(); // tracker now holds "99"
+      await adapter.addFields([], SKIP_REVISION_CHECK);
+      await adapter.updateFields([], SKIP_REVISION_CHECK);
+      await adapter.deleteFields(["x" as FieldCode], SKIP_REVISION_CHECK);
+
+      const addArg = (client.app.addFormFields as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as Record<string, unknown>;
+      const updArg = (client.app.updateFormFields as ReturnType<typeof vi.fn>)
+        .mock.calls[0][0] as Record<string, unknown>;
+      const delArg = (client.app.deleteFormFields as ReturnType<typeof vi.fn>)
+        .mock.calls[0][0] as Record<string, unknown>;
+      expect(addArg).not.toHaveProperty("revision");
+      expect(updArg).not.toHaveProperty("revision");
+      expect(delArg).not.toHaveProperty("revision");
+    });
+
+    it("--force相当 (SKIP_REVISION_CHECK): updateLayout は -1 を送る (tracker にフォールバックしない)", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "99" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields(); // tracker now holds "99"
+      await adapter.updateLayout([], SKIP_REVISION_CHECK);
+
+      expect(client.app.updateFormLayout).toHaveBeenCalledWith(
+        expect.objectContaining({ revision: -1 }),
+      );
+    });
+
+    it("migrate相当 (undefined): 従来どおり tracker 既定値が送られる", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "12" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields(); // tracker holds "12"
+      await adapter.addFields([]); // undefined => fall back to tracker
+      await adapter.updateLayout([]);
+
+      expect(addFieldsRevision(client)).toBe("12");
+      expect(client.app.updateFormLayout).toHaveBeenCalledWith(
+        expect.objectContaining({ revision: 12 }),
+      );
     });
   });
 });

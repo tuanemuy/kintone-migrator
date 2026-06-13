@@ -45,6 +45,16 @@ export async function loadThreeWayInputs(
     remoteLayout,
     remoteFields,
   );
+  // base/local are layout-derived (round-tripped through SchemaSerializer /
+  // SchemaParser, which serialize layout only), so their field maps contain only
+  // layout-placed fields. The remote field map (getFields) is the full set and
+  // is NOT re-derived from layout here, so it could in principle retain a
+  // layout-non-placed field that base/local lack. In kintone, however, every
+  // field is always placed in the form layout, so getFields and the layout-
+  // derived field set coincide and no asymmetry arises in practice. The 3-way
+  // normalization (normalizeForThreeWay) only drops GROUP / subtable-inner, not
+  // layout-non-placed fields, so this relies on that kintone invariant rather
+  // than re-deriving remote fields from layout (documented in ADR-013).
   const remote = Schema.create(remoteFields, enrichedRemoteLayout);
 
   return { state, local, remote, remoteRevision };
