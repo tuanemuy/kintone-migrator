@@ -38,7 +38,7 @@ function serializeProcess(
 }
 
 /**
- * First stage of `process pull` (AC-11). Same shape as the other single-config
+ * First stage of `process pull`. Same shape as the other single-config
  * pulls: force / first run overwrite local from remote; otherwise compute the
  * whole-entity merge and return it for CLI conflict resolution without touching
  * local/state (side-effect free when aborted).
@@ -88,7 +88,7 @@ export type ApplyPulledProcessManagementMergeInput = {
 /**
  * Second stage of `process pull`: applies a resolved whole-entity merge, writing
  * the merged config to local YAML and advancing the base to the remote
- * snapshot/revision. Never invoked when the user aborts resolution (AC-11).
+ * snapshot/revision. Never invoked when the user aborts resolution.
  */
 export async function applyPulledProcessManagementMerge({
   container,

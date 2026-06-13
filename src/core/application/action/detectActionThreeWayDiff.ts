@@ -11,7 +11,7 @@ import { loadActionThreeWayInputs } from "./loadActionThreeWayInputs";
 export type DetectActionThreeWayDiffOutput = ThreeWayDiffResult<ActionDiff>;
 
 /**
- * Detects action differences with 3-way awareness (AC-5).
+ * Detects action differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies changes into local-only,
  * remote drift, and conflicts via the record-keyed merge. When no state exists,

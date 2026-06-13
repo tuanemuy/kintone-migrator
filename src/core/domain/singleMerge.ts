@@ -5,7 +5,7 @@ import { BusinessRuleError, type BusinessRuleErrorCode } from "./error";
  * Domain-agnostic 3-way merge for single (whole-entity) configs.
  *
  * This is the shared primitive for the single-config domain type (settings /
- * process / admin-notes — ADR-188-003 / ADR-188-014). Unlike the record-keyed
+ * process / admin-notes). Unlike the record-keyed
  * merge ({@link computeRecordThreeWayMerge}), the entire config is one value, so
  * there is exactly one classification:
  *
@@ -16,7 +16,7 @@ import { BusinessRuleError, type BusinessRuleErrorCode } from "./error";
  * - both changed to different values → `conflict` (1 conflict).
  *
  * The caller supplies a domain-specific `eq` (the diffDetector's equality
- * logic), so the generic primitive stays unchanged (#175 ADR-001).
+ * logic), so the generic primitive stays unchanged.
  */
 export type SingleThreeWayMerge<V> = Readonly<{
   change: ThreeWayChange;

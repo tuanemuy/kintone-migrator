@@ -38,14 +38,14 @@ function serializeNotification(
 }
 
 /**
- * First stage of `notification pull` (AC-6 / AC-11).
+ * First stage of `notification pull`.
  *
  * - `force`: returns the remote snapshot for local overwrite (capture-equiv).
  * - first run (no state): returns remote for one-way overwrite.
  * - otherwise: computes the bundled 3-way merge and returns it for conflict
  *   resolution by the CLI. The local YAML / state are NOT written here — that
  *   happens in {@link applyPulledNotificationMerge} after resolution, so an
- *   aborted resolution leaves local and state untouched (AC-11).
+ *   aborted resolution leaves local and state untouched.
  *
  * This stage never writes to the remote (pull is read-only against kintone).
  */
@@ -95,7 +95,7 @@ export type ApplyPulledNotificationMergeInput = {
  * Writes the merged config to the local YAML and updates the base to the remote
  * snapshot/revision. Called only after the CLI has fully resolved all conflicts;
  * if the user aborts resolution this is never invoked, so local and state remain
- * unchanged (AC-11).
+ * unchanged.
  */
 export async function applyPulledNotificationMerge({
   container,

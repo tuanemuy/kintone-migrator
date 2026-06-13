@@ -4,7 +4,7 @@
  *
  * revision is an app-scoped value (shared by every config domain of one app),
  * so it is stored once per app in `state/<appName>/revision.yaml` rather than
- * inside each domain's snapshot state (ADR-188-001). The base snapshot of each
+ * inside each domain's snapshot state. The base snapshot of each
  * domain (`<domain>State`) carries only its config, never the revision.
  */
 export type AppRevision = Readonly<{

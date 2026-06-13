@@ -13,7 +13,7 @@ import { ProcessManagementDiffDetector } from "./diffDetector";
  * diffDetector's "no changes" semantics (`enable` + order-sensitive entity
  * comparison for states/actions). Two configs are equal exactly when the
  * detector reports no differences, so the whole-entity 3-way merge granularity
- * matches `process diff` (ADR-188-014).
+ * matches `process diff`.
  *
  * Note: `ProcessManagementDiffDetector.detect` is not symmetric in its output
  * text, but it IS symmetric in `isEmpty` — it enumerates added/modified/deleted

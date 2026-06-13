@@ -22,7 +22,7 @@ export type RecordPermissionThreeWayInputs = ThreeWayInputs<
  * Loads the four inputs of a 3-way record permission sync (base snapshot, base
  * app revision, local YAML, remote config + revision) via the generic
  * {@link loadThreeWayInputs}. The rights list is keyed by `filterCond#i`
- * (record-keyed), so it loads thinly on top of the generic helper (ADR-188-016).
+ * (record-keyed), so it loads thinly on top of the generic helper.
  */
 export async function loadRecordPermissionThreeWayInputs(
   container: RecordPermissionDiffContainer,

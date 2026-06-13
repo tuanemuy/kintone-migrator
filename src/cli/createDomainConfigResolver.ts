@@ -37,7 +37,7 @@ export function createDomainConfigResolver<
   /**
    * Builds the domain container config. `app` is the resolved {@link AppEntry}
    * for `--app` / `--all` modes, or undefined for legacy single-app mode; it
-   * lets domains derive app-scoped state/revision paths (ADR-188-001).
+   * lets domains derive app-scoped state/revision paths.
    */
   buildConfig: (
     base: BaseContainerConfig,

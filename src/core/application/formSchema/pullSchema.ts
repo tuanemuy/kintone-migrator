@@ -37,8 +37,8 @@ function serializeSchema(
 /**
  * Persists the new base: the schema snapshot (state file) and the app revision
  * (`state/<appName>/revision.yaml`) together. revision lives in its own
- * app-scoped store now (ADR-188-001), so the two writes are kept side by side
- * so they always advance together.
+ * app-scoped store, so the two writes are kept side by side so they always
+ * advance together.
  */
 async function saveSnapshotAndRevision(
   container: FormSchemaServiceArgs["container"],
@@ -54,14 +54,14 @@ async function saveSnapshotAndRevision(
 }
 
 /**
- * First stage of `schema pull` (AC-4, AC-5, AC-6, AC-11).
+ * First stage of `schema pull`.
  *
  * - `force`: returns the remote snapshot for local overwrite (capture-equiv).
  * - first run (no state): returns remote for one-way overwrite.
  * - otherwise: computes the 3-way merge and returns it for conflict resolution
  *   by the CLI. The local YAML / state are NOT written here — that happens in
  *   {@link applyPulledMerge} after resolution, so an aborted resolution leaves
- *   local and state untouched (AC-15).
+ *   local and state untouched.
  *
  * This stage never writes to the remote (pull is read-only against kintone).
  */
@@ -73,7 +73,7 @@ export async function pullSchema({
     await loadThreeWayInputs(container);
 
   // force / firstTime intentionally trust the remote without assertSchemaValid:
-  // these are capture-equivalent one-way overwrites (ADR-006/ADR-007, "base =
+  // these are capture-equivalent one-way overwrites ("base =
   // capture result"), and the remote is the source of truth. The merged path
   // (applyPulledMerge), by contrast, validates before writing because the
   // merged schema is locally synthesized and benefits from early feedback.
@@ -110,7 +110,7 @@ export type ApplyPulledMergeInput = {
  * Writes the merged schema to the local YAML and updates the state to the
  * remote snapshot/revision. Called only after the CLI has fully resolved all
  * conflicts; if the user aborts resolution this is never invoked, so local and
- * state remain unchanged (AC-15).
+ * state remain unchanged.
  */
 export async function applyPulledMerge({
   container,

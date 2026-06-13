@@ -84,7 +84,7 @@ describe("printPullAllResults", () => {
     expect(notFound).toContain("file not found");
     expect(conflict).toContain("conflict");
     // The conflict hint embeds the real CLI subcommand name, not a literal
-    // `<domain>` placeholder (W-001).
+    // `<domain>` placeholder.
     expect(conflict).toContain("`view pull`");
     expect(conflict).not.toContain("<domain>");
     expect(failed).toContain("failed");
@@ -107,7 +107,7 @@ describe("printPullAllResults", () => {
       expect.stringContaining("had conflicts"),
     );
     // The aggregate warning embeds the real conflicting subcommand names, not a
-    // literal `<domain>` placeholder (W-001).
+    // literal `<domain>` placeholder.
     const warn = vi.mocked(p.log.warn).mock.calls[0][0] as string;
     expect(warn).toContain("`view pull`");
     expect(warn).toContain("`report pull`");

@@ -13,7 +13,7 @@ import { GeneralSettingsDiffDetector } from "./diffDetector";
  * diffDetector's "no changes" semantics (kintone-default normalization of
  * optional fields). Two configs are equal exactly when the detector reports no
  * differences, so the whole-entity 3-way merge granularity matches
- * `settings diff` (ADR-188-014).
+ * `settings diff`.
  */
 export function isGeneralSettingsConfigEqual(
   a: GeneralSettingsConfig,

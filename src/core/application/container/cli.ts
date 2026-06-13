@@ -96,7 +96,7 @@ export type CustomizationCliContainerConfig = {
   guestSpaceId?: string;
   customizeFilePath: string;
   // Optional so capture/apply/diff callers need not supply 3-way paths; pull/push
-  // resolve them via customizeConfig (ADR-188-001).
+  // resolve them via customizeConfig.
   customizeStateFilePath?: string;
   appRevisionFilePath?: string;
   client?: KintoneRestAPIClient;

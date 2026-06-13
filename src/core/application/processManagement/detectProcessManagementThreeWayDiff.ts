@@ -8,14 +8,14 @@ import {
 import { detectProcessManagementDiff } from "./detectProcessManagementDiff";
 import { loadProcessManagementThreeWayInputs } from "./loadProcessManagementThreeWayInputs";
 
-/** Fixed key/label for the whole-entity process diff entry (ADR-188-014). */
+/** Fixed key/label for the whole-entity process diff entry. */
 const PROCESS_DIFF_KEY = "process";
 
 export type DetectProcessManagementThreeWayDiffOutput =
   ThreeWayDiffResult<ProcessManagementDiff>;
 
 /**
- * Detects process management differences with 3-way awareness (AC-4). When a
+ * Detects process management differences with 3-way awareness. When a
  * state exists, classifies the whole config into a single local-only /
  * remote-drift / conflict entry; otherwise falls back to the existing 2-way
  * diff.

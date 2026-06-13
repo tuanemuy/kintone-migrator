@@ -10,7 +10,7 @@ import type { RecordPermissionConfig, RecordRight } from "../entity";
 import { RecordPermissionErrorCode } from "../errorCode";
 
 /**
- * 3-way merge for the record permission domain (record-acl — ADR-188-016).
+ * 3-way merge for the record permission domain (record-acl).
  *
  * `rights` has no stable per-entry key: the 2-way `RecordPermissionDiffDetector`
  * groups by `filterCond` and matches positionally within each group. This merge

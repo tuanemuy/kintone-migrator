@@ -60,20 +60,20 @@ import {
 } from "@/core/application/view/pullView";
 
 /**
- * `pull --all` aggregation for a single app (ステップ 13 / AC-13).
+ * `pull --all` aggregation for a single app.
  *
  * Reuses the per-app phased structure of `applyAllForApp` but runs each domain's
  * 3-way `pull<Domain>` usecase (read-only against kintone; writes only to local
  * files + base state, no deploy). Two `--all`-specific behaviors:
  *
- * - **revision early-skip (AC-13)**: the remote app (preview) revision is read
+ * - **revision early-skip**: the remote app (preview) revision is read
  *   once via {@link getCurrentRemoteRevision}. When it equals the locally stored
  *   base appRevision, the remote is unchanged so every per-domain snapshot
  *   comparison is skipped (`revisionSkip: true`). Only on a mismatch (or when no
  *   base revision exists) does each domain run its 3-way comparison. Skipping on
  *   a match never misses drift: an unrelated change advances the app revision, so
- *   a match means no remote change at all (over-detection-safe — ADR-188-005).
- * - **non-interactive conflict handling (ADR-188-005)**: a domain whose merge has
+ *   a match means no remote change at all (over-detection-safe).
+ * - **non-interactive conflict handling**: a domain whose merge has
  *   conflicts is left unwritten and recorded as `skipped: "conflict"`; the run
  *   continues. Resolve such domains with the individual `<domain> pull`.
  */
@@ -557,7 +557,7 @@ function buildTasks(args: PullAllForAppInput): readonly PullTask[] {
 }
 
 /**
- * Reads the locally stored base appRevision (shared per app — ADR-188-001).
+ * Reads the locally stored base appRevision (shared per app).
  * Returns undefined when no base revision exists yet (first run), in which case
  * the early-skip is disabled and every domain runs its 3-way comparison.
  */
@@ -574,7 +574,7 @@ async function loadBaseRevision(
 }
 
 /**
- * Pull all domains for a single app (AC-13). Performs the remote-revision
+ * Pull all domains for a single app. Performs the remote-revision
  * early-skip, then runs each domain's 3-way pull, auto-applying non-conflict
  * merges and skipping conflicting domains (non-interactive). Fatal errors
  * (auth/network) abort the remaining domains.
@@ -584,7 +584,7 @@ export async function pullAllForApp(
 ): Promise<PullAllForAppOutput> {
   const containers = args.containers;
 
-  // AC-13 early-skip: read remote (preview) revision once and compare with the
+  // Early-skip: read remote (preview) revision once and compare with the
   // stored base. A match means the remote is unchanged, so skip all per-domain
   // comparisons. A mismatch (or absent base) falls through to full 3-way.
   const [remoteRevision, baseRevision] = await Promise.all([

@@ -8,7 +8,7 @@ import { SchemaParser } from "./schemaParser";
  * This is the inverse of {@link SchemaStateSerializer}. The captured `layout`
  * is parsed via {@link SchemaParser}.
  *
- * Backward compatibility (ADR-188-001): older state files embedded a top-level
+ * Backward compatibility: older state files embedded a top-level
  * `revision` field alongside the captured `layout`. revision is now stored
  * separately in `state/<appName>/revision.yaml`, so any residual top-level
  * `revision` is stripped and ignored here — the snapshot is parsed from the

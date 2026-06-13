@@ -41,7 +41,7 @@ describe("isReportConfigEqual", () => {
     ).toBe(true);
   });
 
-  it("compares name (matches the 2-way diffDetector granularity, W-dom-001)", () => {
+  it("compares name (matches the 2-way diffDetector granularity)", () => {
     // Same record key, but the parsed `name` (a `name:` override) differs.
     // The 2-way compareReports detects this; the eq must too, otherwise a
     // hand-edited name-only change is silently dropped in the 3-way merge.

@@ -8,14 +8,14 @@ import {
 import { detectGeneralSettingsDiff } from "./detectGeneralSettingsDiff";
 import { loadGeneralSettingsThreeWayInputs } from "./loadGeneralSettingsThreeWayInputs";
 
-/** Fixed key/label for the whole-entity settings diff entry (ADR-188-014). */
+/** Fixed key/label for the whole-entity settings diff entry. */
 const SETTINGS_DIFF_KEY = "settings";
 
 export type DetectGeneralSettingsThreeWayDiffOutput =
   ThreeWayDiffResult<GeneralSettingsDiff>;
 
 /**
- * Detects general settings differences with 3-way awareness (AC-4).
+ * Detects general settings differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies the whole config into a single
  * local-only / remote-drift / conflict entry. When no state exists, returns a

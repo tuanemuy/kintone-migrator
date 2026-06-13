@@ -21,11 +21,11 @@ const NOTIFICATION_PULL_COMMAND = "notification pull";
 
 /**
  * Applies the local notification config to the remote with drift detection and
- * optimistic concurrency control (AC-6 / AC-10).
+ * optimistic concurrency control.
  *
  * Notification bundles three sub-configs (general / perRecord / reminder) that
  * kintone updates via three independent APIs but that share a single app-scoped
- * revision (ADR-188-004). The flow is:
+ * revision. The flow is:
  *
  * 1. Load base/local/remote once and compute the bundled 3-way merge.
  * 2. drift (any `remoteOnly`/`conflict` entry, or a `remoteOnly`/`conflict`
@@ -35,7 +35,7 @@ const NOTIFICATION_PULL_COMMAND = "notification pull";
  *    update is sent the previous response's revision (TOCTOU within the
  *    sequence). `--force` / first run send no revision (kintone skips the check).
  *
- * **Partial-application residue (ADR-188-004):** if a later `update*` drifts or
+ * **Partial-application residue:** if a later `update*` drifts or
  * fails, the earlier applies are already committed on kintone and cannot be
  * rolled back. To keep re-runs idempotent, the base/state is updated **only
  * after all three updates succeed**: on a mid-sequence failure the base is left
@@ -68,7 +68,7 @@ export async function pushNotification({
     // config omits (e.g. local has no `reminder`) is not this push's concern —
     // it is taken into the base verbatim and surfaced later by `pull`. Scoping
     // the drift check to managed sections avoids blocking a push because of a
-    // remote change in an unmanaged section (W-app-004).
+    // remote change in an unmanaged section.
     const isManaged = (key: string): boolean => {
       if (key.startsWith("general:")) return local.general !== undefined;
       if (key.startsWith("perRecord:")) return local.perRecord !== undefined;
@@ -90,7 +90,7 @@ export async function pushNotification({
     }
   }
 
-  // Expected revision (ADR-188-004): the observed remote revision guards the
+  // Expected revision: the observed remote revision guards the
   // first update against TOCTOU; `--force` / first run omit it. Each successful
   // update advances the revision, which is threaded into the next update.
   const sendRevision = !(input.force || firstTime);

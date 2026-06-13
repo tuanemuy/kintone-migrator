@@ -52,7 +52,7 @@ vi.mock("../../pushAllOutput", () => ({
 vi.mock("@/core/application/container/applyAllCli", () => ({
   createCliApplyAllContainers: vi.fn((config: { appName?: string }) => ({
     // Tag containers with the app name so per-app pushAllForApp calls can be
-    // identified by argument and their order asserted (AC-14).
+    // identified by argument and their order asserted.
     containers: { appName: config?.appName },
     paths: { customize: "test-app/customize.yaml" },
   })),
@@ -193,7 +193,7 @@ describe("push command (top-level dispatcher)", () => {
     );
     vi.mocked(p.confirm).mockResolvedValueOnce(true);
     // Per-app push + deploy stays inside pushAllForApp, driven per app by
-    // runMultiAppWithFailCheck (mirrors apply.ts — AC-14).
+    // runMultiAppWithFailCheck (mirrors apply.ts).
     vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
       async (_plan, executor) => {
         for (const app of plan.orderedApps) {

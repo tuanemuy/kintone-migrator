@@ -20,7 +20,7 @@ export type ReportThreeWayInputs = ThreeWayInputs<ReportsConfig, ReportRemote>;
  * revision, local YAML, remote config + revision) via the generic
  * {@link loadThreeWayInputs}. Report is a record-keyed domain like view: the
  * remote is fetched with a single getter that carries its own revision, so it
- * loads thinly on top of the generic helper (ADR-188-008).
+ * loads thinly on top of the generic helper.
  */
 export async function loadReportThreeWayInputs(
   container: ReportDiffContainer,

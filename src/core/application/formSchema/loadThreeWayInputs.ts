@@ -21,9 +21,8 @@ export type ThreeWayInputs = Readonly<{
  * local YAML schema, and the remote schema, plus the current remote revision.
  *
  * The remote schema is reconstructed via the same enrichment path as `capture`
- * so it compares like-with-like against base/local after normalization
- * (ADR-007). `getRevision` is read for the drift signal / expected revision but
- * never short-circuits snapshot fetching (ADR-004).
+ * so it compares like-with-like against base/local after normalization. `getRevision` is read for the drift signal / expected revision but
+ * never short-circuits snapshot fetching.
  */
 export async function loadThreeWayInputs(
   container: FormSchemaDiffContainer,
@@ -54,7 +53,7 @@ export async function loadThreeWayInputs(
   // derived field set coincide and no asymmetry arises in practice. The 3-way
   // normalization (normalizeForThreeWay) only drops GROUP / subtable-inner, not
   // layout-non-placed fields, so this relies on that kintone invariant rather
-  // than re-deriving remote fields from layout (documented in ADR-013).
+  // than re-deriving remote fields from layout.
   const remote = Schema.create(remoteFields, enrichedRemoteLayout);
 
   return { state, local, remote, remoteRevision };

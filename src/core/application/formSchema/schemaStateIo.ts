@@ -24,8 +24,7 @@ export async function loadState(
 /**
  * Serializes and persists the schema snapshot via the codec port.
  *
- * The app revision is persisted separately via `saveAppRevision`
- * (ADR-188-001), so it is no longer written into the state file here.
+ * The app revision is persisted separately via `saveAppRevision`, so it is no longer written into the state file here.
  */
 export async function saveState(
   storage: SchemaStateStorage,

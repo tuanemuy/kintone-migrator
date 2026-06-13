@@ -110,7 +110,7 @@ describe("view pull command", () => {
     expect(pullView).not.toHaveBeenCalled();
   });
 
-  // Regression guard (Issue #188, symmetrical to the push factory --force test):
+  // Regression guard, symmetrical to the push factory --force test:
   // `--ours` / `--theirs` / `--force` must be declared on the pull factory's
   // args so gunshi parses them into `ctx.values`. Driving the command through
   // gunshi's real parser (not a hand-built `values` object) is what catches a

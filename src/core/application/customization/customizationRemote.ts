@@ -44,7 +44,7 @@ function toResource(resource: RemoteResource): CustomizationResource {
  * Computes the set of same-name FILE basenames whose local content differs from
  * the remote content, across all platforms/categories — the same signal the
  * 2-way `detectCustomizationDiff` uses for the `modified` entries. Reused here so
- * the 3-way merge marks divergent same-name files as conflicts (AC-9).
+ * the 3-way merge marks divergent same-name files as conflicts.
  */
 export async function computeModifiedFileNames(
   local: CustomizationConfig,

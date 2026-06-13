@@ -24,14 +24,14 @@ import { getCurrentRemoteRevision } from "@/core/application/threeWay/remoteRevi
 import { pushView } from "@/core/application/view/pushView";
 
 /**
- * `push --all` aggregation for a single app (ステップ 13 / AC-14).
+ * `push --all` aggregation for a single app.
  *
  * Mirrors {@link import("../applyAll/applyAllForApp").applyAllForApp}'s phased
  * structure and per-app dependency-ordered deploy, but swaps each `apply<Domain>`
  * for the drift-guarded `push<Domain>` usecase. Seed is excluded (3-way push does
  * not cover record data).
  *
- * Conflict handling in `--all` (ADR-188-005): snapshot drift (a push rejected
+ * Conflict handling in `--all`: snapshot drift (a push rejected
  * with `ConfigDrift`) is treated as a non-fatal, skippable outcome — the domain
  * is recorded as `skipped: "drift"` and the remaining domains continue. Use the
  * individual `<domain> pull` then `<domain> push` to resolve a drifted domain.
@@ -296,7 +296,7 @@ function toError(error: unknown): Error {
 
 // Snapshot drift (a push rejected because the remote changed since the base)
 // surfaces as a ConflictError tagged with ConfigDrift. In `--all` we treat it as
-// a skippable, non-fatal outcome so other domains still push (ADR-188-005).
+// a skippable, non-fatal outcome so other domains still push.
 function isDrift(error: Error): boolean {
   return isConflictError(error) && error.code === ConflictErrorCode.ConfigDrift;
 }
@@ -420,8 +420,7 @@ async function tryDeploy(
 }
 
 /**
- * Push all domains for a single app in phased, dependency-ordered fashion
- * (AC-14). Schema is pushed + deployed first; phases 2-4 push to preview and a
+ * Push all domains for a single app in phased, dependency-ordered fashion. Schema is pushed + deployed first; phases 2-4 push to preview and a
  * single deploy follows. Drift on any domain is recorded as `skipped: "drift"`
  * and does not block other domains (except schema drift, which aborts since
  * later phases depend on the schema). Fatal errors (auth/network) abort the rest.
@@ -463,10 +462,10 @@ export async function pushAllForApp(
     : { deployed: false };
 
   // Re-sync the shared base app revision to the actual post-deploy remote
-  // revision (W-app-001). Each push<Domain> saved its own `update*` response
+  // revision. Each push<Domain> saved its own `update*` response
   // revision, but deploy (schema phase and/or the final deploy) advances the
   // app revision further, so those per-domain bases are stale the moment a
-  // deploy runs. Without this re-sync the next `pull --all` early-skip (AC-13)
+  // deploy runs. Without this re-sync the next `pull --all` early-skip
   // would always miss (base != remote) and fall through to a full 3-way for
   // every domain. We re-read once after all deploys so the saved base matches
   // the revision the early-skip later reads. Only re-synced when at least one
@@ -488,8 +487,8 @@ export async function pushAllForApp(
 
 /**
  * Re-reads the current remote (preview) revision and saves it as the shared base
- * app revision, so the next `pull --all` early-skip (AC-13) can engage after a
- * push that deployed. The app revision is shared across domains (ADR-188-001);
+ * app revision, so the next `pull --all` early-skip can engage after a
+ * push that deployed. The app revision is shared across domains;
  * the view container exposes the reader + storage + codec used for it, mirroring
  * `pullAllForApp`'s revision path.
  */

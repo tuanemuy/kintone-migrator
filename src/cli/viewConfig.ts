@@ -38,8 +38,7 @@ const {
     ...base,
     viewFilePath: filePath,
     // State (base snapshot) and the app-scoped revision live under
-    // state/<appName>/ for project apps, or state/ for legacy single-app mode
-    // (ADR-188-001).
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode.
     viewStateFilePath: app
       ? buildDomainStateFilePath(app.name, VIEW_STATE_FILE)
       : buildLegacyDomainStateFilePath(VIEW_STATE_FILE),

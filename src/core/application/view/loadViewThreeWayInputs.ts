@@ -20,7 +20,7 @@ export type ViewThreeWayInputs = ThreeWayInputs<ViewsConfig, ViewRemote>;
  * local YAML, remote config + revision) via the generic
  * {@link loadThreeWayInputs}. View is the record-keyed reference domain: the
  * remote is fetched with a single getter that carries its own revision, so it
- * loads thinly on top of the generic helper (ADR-188-008).
+ * loads thinly on top of the generic helper.
  */
 export async function loadViewThreeWayInputs(
   container: ViewDiffContainer,

@@ -1,7 +1,7 @@
 import type { NotificationConfig } from "./entity";
 
 /**
- * Base snapshot used as the common ancestor for 3-way merge (ADR-188-001).
+ * Base snapshot used as the common ancestor for 3-way merge.
  *
  * A `NotificationState` is the notification config (general / perRecord /
  * reminder bundled into one snapshot) at the time the local YAML was last
@@ -11,8 +11,8 @@ import type { NotificationConfig } from "./entity";
  * detect drift.
  *
  * The three sub-configs are bundled here even though kintone updates them via
- * three independent APIs, because they share a single app-scoped revision
- * (ADR-188-001 / ADR-188-004). The app (preview) revision is NOT stored here:
+ * three independent APIs, because they share a single app-scoped revision.
+ * The app (preview) revision is NOT stored here:
  * it lives in `state/<appName>/revision.yaml` via `AppRevisionStorage`. The
  * snapshot YAML is the same format as `capture`, so the capture
  * serializer/parser are reused for round-trip compatibility.

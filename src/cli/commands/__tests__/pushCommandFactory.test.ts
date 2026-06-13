@@ -111,7 +111,7 @@ function makeConfig(
 describe("createPushCommand — singleApp route (CLI per-app deploy)", () => {
   it("runs the push usecase and deploys per app (confirmAndDeploy) on the singleApp route", async () => {
     // The all-command tests fix routeMultiApp to singleLegacy; this exercises the
-    // singleApp branch so the factory's CLI-layer per-app deploy (AC-14) is run.
+    // singleApp branch so the factory's CLI-layer per-app deploy is run.
     vi.mocked(routeMultiApp).mockImplementationOnce(
       async (
         _values: unknown,

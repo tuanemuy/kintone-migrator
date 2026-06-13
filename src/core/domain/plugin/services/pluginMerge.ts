@@ -8,7 +8,7 @@ import type { PluginConfig, PluginsConfig } from "../entity";
 import { PluginErrorCode } from "../errorCode";
 
 /**
- * 3-way merge for the plugin domain (plugin id keyed — ADR-188-003 / AC-8).
+ * 3-way merge for the plugin domain (plugin id keyed).
  *
  * Plugins are keyed by `id`, so this reuses the record-keyed primitive. The
  * `eq` matches the 2-way `PluginDiffDetector`: `name` and `enabled` are
@@ -19,7 +19,7 @@ import { PluginErrorCode } from "../errorCode";
  * NOTE: the merge classification is identical to the other record-keyed
  * domains; the plugin-specific API constraint (add-only — deletions and
  * disables cannot be applied via `addPlugins`) is enforced in the application
- * layer (`pushPlugin`), not here (AC-16).
+ * layer (`pushPlugin`), not here.
  */
 export function isPluginConfigEqual(a: PluginConfig, b: PluginConfig): boolean {
   return a.name === b.name && a.enabled === b.enabled;

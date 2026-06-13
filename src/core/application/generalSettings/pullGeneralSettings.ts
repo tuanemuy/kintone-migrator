@@ -38,14 +38,14 @@ function serializeSettings(
 }
 
 /**
- * First stage of `settings pull` (AC-11).
+ * First stage of `settings pull`.
  *
  * - `force`: returns the remote snapshot for local overwrite (capture-equiv).
  * - first run (no state): returns remote for one-way overwrite.
  * - otherwise: computes the whole-entity 3-way merge and returns it for conflict
  *   resolution by the CLI. The local YAML / state are NOT written here — that
  *   happens in {@link applyPulledGeneralSettingsMerge} after resolution, so an
- *   aborted resolution leaves local and state untouched (AC-11).
+ *   aborted resolution leaves local and state untouched.
  *
  * This stage never writes to the remote (pull is read-only against kintone).
  */
@@ -97,7 +97,7 @@ export type ApplyPulledGeneralSettingsMergeInput = {
  * Writes the merged config to the local YAML and updates the base to the remote
  * snapshot/revision. Called only after the CLI has fully resolved the conflict;
  * if the user aborts resolution this is never invoked, so local and state remain
- * unchanged (AC-11).
+ * unchanged.
  */
 export async function applyPulledGeneralSettingsMerge({
   container,

@@ -1,8 +1,7 @@
 import type { GeneralSettingsConfig } from "./entity";
 
 /**
- * Base snapshot used as the common ancestor for whole-entity 3-way merge
- * (ADR-188-001 / ADR-188-014).
+ * Base snapshot used as the common ancestor for whole-entity 3-way merge.
  *
  * A `GeneralSettingsState` is the general settings config at the time the local
  * YAML was last synchronized with the remote app. It is persisted to a state

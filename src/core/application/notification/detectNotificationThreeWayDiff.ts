@@ -137,7 +137,7 @@ function buildThreeWay(
 }
 
 /**
- * Detects notification differences with 3-way awareness (AC-5 / AC-6).
+ * Detects notification differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies changes into local-only,
  * remote drift, and conflicts via the bundled merge (the three sub-configs each

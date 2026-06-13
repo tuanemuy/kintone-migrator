@@ -57,7 +57,7 @@ function setState(
 ): void {
   const data = SchemaStateSerializer.serialize({ schema });
   container.schemaStateStorage.setContent(configCodec.stringify(data));
-  // revision is now persisted separately (ADR-188-001).
+  // revision is now persisted separately.
   container.appRevisionStorage.setContent(configCodec.stringify({ revision }));
 }
 

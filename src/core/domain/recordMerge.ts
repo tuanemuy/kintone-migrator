@@ -9,10 +9,10 @@ import { BusinessRuleError, type BusinessRuleErrorCode } from "./error";
  * Domain-agnostic 3-way merge for record-keyed configs (`Record<string, V>`).
  *
  * This is the shared primitive for the record-keyed domain type (view / report
- * / action / plugin — ADR-188-003). Each side is a `Record<name, V>`; entries
- * are classified key-by-key via {@link classifyThreeWay}. The caller supplies a
- * domain-specific `eq` (the diffDetector's equality logic), so the generic
- * `diff.ts` primitive stays unchanged (ADR-188-001 / #175 ADR-001).
+ * / action / plugin). Each side is a `Record<name, V>`; entries are classified
+ * key-by-key via {@link classifyThreeWay}. The caller supplies a domain-specific
+ * `eq` (the diffDetector's equality logic), so the generic `diff.ts` primitive
+ * stays unchanged.
  */
 export type RecordThreeWayMerge<V> = ThreeWayMergeResult<string, V>;
 

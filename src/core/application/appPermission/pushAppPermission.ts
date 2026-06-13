@@ -20,14 +20,14 @@ const APP_ACL_PULL_COMMAND = "app-acl pull";
 
 /**
  * Applies the local app permission config to the remote with drift detection
- * and optimistic concurrency control (AC-10).
+ * and optimistic concurrency control.
  *
  * - Loads base/local/remote (the remote carries its own revision).
  * - drift (remoteOnly or conflict entries) && !force → {@link buildDriftConflict}
  *   tagged with `ConfigDrift`, distinguished from API optimistic-lock conflicts
- *   by error code (ADR-188-006).
+ *   by error code.
  * - otherwise replaces the rights, sending the observed remote revision as the
- *   expected revision (TOCTOU guard, ADR-188-004). `--force` / first run send
+ *   expected revision (TOCTOU guard). `--force` / first run send
  *   no revision (kintone skips the revision check).
  */
 export async function pushAppPermission({

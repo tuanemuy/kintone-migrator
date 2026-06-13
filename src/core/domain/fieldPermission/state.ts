@@ -1,8 +1,7 @@
 import type { FieldPermissionConfig } from "./entity";
 
 /**
- * Base snapshot used as the common ancestor for 3-way merge (ADR-188-001 /
- * ADR-188-016).
+ * Base snapshot used as the common ancestor for 3-way merge.
  *
  * A `FieldPermissionState` is the field permission config at the time the local
  * YAML was last synchronized with the remote app. It is persisted to a state

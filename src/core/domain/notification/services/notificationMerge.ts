@@ -18,8 +18,7 @@ import type {
 import { NotificationErrorCode } from "../errorCode";
 
 /**
- * 3-way merge for the notification domain (general / perRecord / reminder —
- * ADR-188-003 round-2 / ADR-188-015).
+ * 3-way merge for the notification domain (general / perRecord / reminder).
  *
  * The three sub-configs are bundled into one snapshot but each has a different
  * stable-key strategy, taken verbatim from the existing 2-way

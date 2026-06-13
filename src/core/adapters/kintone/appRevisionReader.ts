@@ -4,7 +4,7 @@ import type { AppRevisionReader } from "@/core/domain/appRevision/ports/appRevis
 import { wrapKintoneError } from "./wrapKintoneError";
 
 /**
- * Reads the current remote app (preview) revision in one place (ADR-188-007).
+ * Reads the current remote app (preview) revision in one place.
  *
  * kintone has no dedicated revision endpoint, so this calls the lightest config
  * getter that carries a revision — `getFormFields({ app, preview: true })` —

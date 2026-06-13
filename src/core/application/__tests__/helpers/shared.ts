@@ -71,12 +71,12 @@ export class InMemoryFileStorage extends FakeBase {
 
 /**
  * In-memory app-scoped base revision storage (`state/<appName>/revision.yaml`).
- * Shared across domains since the app revision is app-scoped (ADR-188-001).
+ * Shared across domains since the app revision is app-scoped.
  */
 export class InMemoryAppRevisionStorage extends InMemoryFileStorage {}
 
 /**
- * In-memory reader of the current *remote* app revision (ADR-188-007). Shared
+ * In-memory reader of the current *remote* app revision. Shared
  * across record-keyed domains (view / report / action) whose containers wire
  * the reader for the `--all` early-skip path.
  */

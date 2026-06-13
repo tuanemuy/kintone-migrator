@@ -8,10 +8,10 @@ import { SchemaSerializer } from "./schemaSerializer";
  *
  * The schema portion is serialized through the exact same path as `capture`
  * (`enrichLayoutWithFields` -> `SchemaSerializer.serialize`) so that the state
- * snapshot is round-trip compatible with the captured schema (ADR-007).
+ * snapshot is round-trip compatible with the captured schema.
  *
  * The app revision is NOT written here anymore: it is persisted separately in
- * `state/<appName>/revision.yaml` via `AppRevisionStorage` (ADR-188-001). The
+ * `state/<appName>/revision.yaml` via `AppRevisionStorage`. The
  * state file therefore contains only the captured snapshot.
  */
 export const SchemaStateSerializer = {

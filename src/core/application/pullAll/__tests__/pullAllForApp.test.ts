@@ -230,15 +230,15 @@ describe("pullAllForApp — conflict 時挙動（ADR-188-005）", () => {
 });
 
 /**
- * W-app-002 (plan ステップ 13): the early-skip drops every per-domain 3-way when
- * the remote (preview) revision equals the locally stored base revision. These
- * tests pin *why that skip cannot miss drift* rather than merely re-asserting the
- * happy path: kintone advances the app revision monotonically on any change, so
- * `remote === base` means the remote is genuinely unchanged. The edge the review
- * flagged is "revision matches but the actual snapshot differs" — under monotonic
- * revisions that state is unreachable for the remote, and the tests below fix the
- * two halves of the guarantee (skip is taken from the revision alone; a forced
- * full comparison against an unchanged remote yields no remoteOnly/conflict).
+ * The early-skip drops every per-domain 3-way when the remote (preview) revision
+ * equals the locally stored base revision. These tests pin *why that skip cannot
+ * miss drift* rather than merely re-asserting the happy path: kintone advances
+ * the app revision monotonically on any change, so `remote === base` means the
+ * remote is genuinely unchanged. The edge case "revision matches but the actual
+ * snapshot differs" is unreachable for the remote under monotonic revisions, and
+ * the tests below fix the two halves of the guarantee (skip is taken from the
+ * revision alone; a forced full comparison against an unchanged remote yields no
+ * remoteOnly/conflict).
  */
 describe("pullAllForApp — 早期スキップの安全性（W-app-002）", () => {
   it("revision 一致時はどのドメインの pull も構築・実行されない（snapshot を一切読まずに skip する）", async () => {

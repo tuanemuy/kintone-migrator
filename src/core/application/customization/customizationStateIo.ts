@@ -7,8 +7,7 @@ import { saveSnapshotState } from "../threeWay/stateIo";
 /**
  * Persists the new base: the customization snapshot (state file) and the app
  * revision (`state/<appName>/revision.yaml`) side by side. The two writes are
- * kept together so they always advance as a pair (snapshot → revision,
- * ADR-188-009).
+ * kept together so they always advance as a pair (snapshot → revision).
  */
 export async function saveCustomizationSnapshotAndRevision(
   container: CustomizationThreeWayContainer,

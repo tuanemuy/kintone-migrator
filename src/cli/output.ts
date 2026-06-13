@@ -185,7 +185,7 @@ function formatThreeWayExtra(extra: ThreeWayDiffExtra): string {
 }
 
 // Prints a generic 3-way diff (state-aware) distinguishing local changes,
-// remote drift, and conflicts. Domain-agnostic (AC-2): each domain supplies a
+// remote drift, and conflicts. Domain-agnostic: each domain supplies a
 // ThreeWayDiffResult and a `printTwoWay` fallback for the no-state case.
 export function printThreeWayDiffResult<TTwoWay>(
   result: ThreeWayDiffResult<TTwoWay>,

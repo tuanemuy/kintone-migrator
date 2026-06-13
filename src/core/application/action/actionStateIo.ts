@@ -7,7 +7,7 @@ import { saveSnapshotState } from "../threeWay/stateIo";
 /**
  * Persists the new base: the actions snapshot (state file) and the app revision
  * (`state/<appName>/revision.yaml`) side by side. The two writes are kept
- * together so they always advance as a pair (snapshot → revision, ADR-188-009).
+ * together so they always advance as a pair (snapshot → revision).
  */
 export async function saveActionSnapshotAndRevision(
   container: ActionDiffContainer,

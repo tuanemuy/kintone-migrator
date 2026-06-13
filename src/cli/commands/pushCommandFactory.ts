@@ -56,7 +56,7 @@ type PushCommandConfig<
 };
 
 /**
- * Factory for `push` commands (ADR-188-002).
+ * Factory for `push` commands.
  *
  * Absorbs the boilerplate shared by every config domain: confirm prompt, drift
  * vs. TOCTOU re-wrapping by error code (`ConfigDrift` → snapshot drift surfaced
@@ -107,8 +107,8 @@ export function createPushCommand<
     } catch (error) {
       s.stop("Push failed.");
       // Distinguish snapshot drift (tagged ConfigDrift, surfaced as-is) from
-      // API optimistic-lock (TOCTOU) conflicts by error code (ADR-188-006). Only
-      // the latter is re-wrapped with the TOCTOU message.
+      // API optimistic-lock (TOCTOU) conflicts by error code. Only the latter
+      // is re-wrapped with the TOCTOU message.
       if (
         isConflictError(error) &&
         error.code !== ConflictErrorCode.ConfigDrift

@@ -11,7 +11,7 @@ export type PushPluginInput = {
   readonly force?: boolean;
 };
 
-/** A local→remote operation that `addPlugins` cannot express (AC-16). */
+/** A local→remote operation that `addPlugins` cannot express. */
 export type SkippedPluginOp = Readonly<{
   pluginId: string;
   /**
@@ -36,30 +36,27 @@ export type PushPluginOutput = {
 const PLUGIN_PULL_COMMAND = "plugin pull";
 
 /**
- * Applies the local plugin config to the remote with drift detection (AC-8 /
- * AC-16).
+ * Applies the local plugin config to the remote with drift detection.
  *
  * The plugin API is **add-only**: `addPlugins` can only install a plugin id
  * that is not yet on the app. It has no remove API and cannot control the
  * `enabled` flag (MEMORY: plugin-enabled-no-disable-api). So this push:
  *
  * - Loads base/local/remote and rejects on drift (remoteOnly / conflict) unless
- *   `--force` (ADR-188-006 / AC-10).
+ *   `--force`.
  * - Adds only the plugin ids that are present locally but missing on the remote.
  * - Surfaces every requested-but-inexpressible operation (a local deletion of a
  *   remote plugin, or a name/enabled change to an existing plugin) as a
- *   `skipped` warning instead of applying it — the only horizontal AC-16 case.
+ *   `skipped` warning instead of applying it — the only inexpressible case.
  *
  * The expected revision (the observed remote revision) is sent to `addPlugins`
- * as a TOCTOU guard on a normal push; `--force` / first run omit it
- * (ADR-188-004). When there is nothing to add, the remote is not touched but
+ * as a TOCTOU guard on a normal push; `--force` / first run omit it. When there is nothing to add, the remote is not touched but
  * the base snapshot is still re-synchronized so the local intent is recorded.
  *
- * The new base snapshot is the **actual post-push remote state**, not `local`
- * (W-app-003): it is the remote plugin set plus the ids actually added. Skipped
+ * The new base snapshot is the **actual post-push remote state**, not `local`: it is the remote plugin set plus the ids actually added. Skipped
  * `modify`/`delete` ops were NOT applied, so the remote keeps its own value;
  * baking `local` into the base would hide those still-pending differences from
- * future drift detection (the snapshot is the drift source of truth, ADR-188-009).
+ * future drift detection (the snapshot is the drift source of truth).
  */
 export async function pushPlugin({
   container,
@@ -98,7 +95,7 @@ export async function pushPlugin({
     .filter((p) => !remoteById.has(p.id))
     .map((p) => p.id);
 
-  // Inexpressible operations (AC-16): a remote plugin absent locally cannot be
+  // Inexpressible operations: a remote plugin absent locally cannot be
   // removed, and an existing plugin whose name/enabled differs cannot be
   // modified (no update API; `enabled` is REST-uncontrollable).
   const skipped: SkippedPluginOp[] = [];
@@ -133,7 +130,7 @@ export async function pushPlugin({
   // ids we added (which were missing on the remote, so this never duplicates).
   // Skipped modify/delete ops are not applied, so the base keeps the remote's
   // value for them (rather than baking in `local`), so the still-pending
-  // difference is re-detected as drift on the next push (W-app-003).
+  // difference is re-detected as drift on the next push.
   const newBasePlugins: PluginConfig[] = [
     ...remote.config.plugins,
     ...idsToAdd.flatMap((id) => {

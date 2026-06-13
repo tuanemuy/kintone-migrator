@@ -79,7 +79,7 @@ const storageProbeMap: Record<
   plugin: { containerKey: "plugin", storageProp: "pluginStorage" },
 };
 
-// Captures the base revision re-sync (W-app-001): the view container exposes
+// Captures the base revision re-sync: the view container exposes
 // the shared appRevision reader/storage + codec that `resyncBaseRevision` uses.
 type RevisionSync = {
   readonly remoteRevision: string;

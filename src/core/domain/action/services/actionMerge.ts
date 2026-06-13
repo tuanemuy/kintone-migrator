@@ -14,8 +14,8 @@ import { ActionErrorCode } from "../errorCode";
  * `filterCond` are compared directly, and `destApp` / `mappings` / `entities`
  * are deep-compared. `name` is the record key and is not compared here.
  *
- * Reused as the `eq` for the record-keyed 3-way merge (ADR-188-003 / ADR-188-011)
- * so the merge granularity matches `action diff` exactly.
+ * Reused as the `eq` for the record-keyed 3-way merge so the merge granularity
+ * matches `action diff` exactly.
  */
 export function isActionConfigEqual(a: ActionConfig, b: ActionConfig): boolean {
   return (

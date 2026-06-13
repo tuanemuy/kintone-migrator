@@ -17,7 +17,7 @@ export type DetectCustomizationThreeWayDiffInput = {
 };
 
 /**
- * Detects customization differences with 3-way awareness (AC-9).
+ * Detects customization differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies changes into local-only,
  * remote drift, and conflicts via the file-name-keyed merge. Same-name files

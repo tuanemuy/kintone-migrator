@@ -11,7 +11,7 @@ import { loadViewThreeWayInputs } from "./loadViewThreeWayInputs";
 export type DetectViewThreeWayDiffOutput = ThreeWayDiffResult<ViewDiff>;
 
 /**
- * Detects view differences with 3-way awareness (AC-3).
+ * Detects view differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies changes into local-only,
  * remote drift, and conflicts via the record-keyed merge. When no state exists,

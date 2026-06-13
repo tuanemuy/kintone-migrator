@@ -27,8 +27,8 @@ export type PullMergeView = {
 };
 
 /**
- * Discriminated result of a pull usecase's first stage (ADR-188-002). `merged`
- * carries the domain merge object `TMerged`; the factory reads its conflicts via
+ * Discriminated result of a pull usecase's first stage. `merged` carries the
+ * domain merge object `TMerged`; the factory reads its conflicts via
  * `getMergeView` and applies the resolution via `applyMerge`.
  */
 export type PullResult<TMerged> =
@@ -76,11 +76,11 @@ type PullCommandConfig<
 };
 
 /**
- * Factory for `pull` commands (ADR-188-002).
+ * Factory for `pull` commands.
  *
  * Absorbs the boilerplate shared by every config domain: the two-stage pull
- * (merge → CLI conflict resolution → apply, side-effect free when aborted —
- * AC-11), `--ours` / `--theirs` / interactive resolution, `--force`
+ * (merge → CLI conflict resolution → apply, side-effect free when aborted),
+ * `--ours` / `--theirs` / interactive resolution, `--force`
  * (capture-equivalent overwrite), and the no-state first-run fallback. Domain
  * specifics (3-way merge, snapshot persistence) live in `pullFn` / `applyMerge`.
  * `routeMultiApp` is embedded; `--all` is rejected here and handled by the
@@ -182,7 +182,7 @@ export function createPullCommand<
 
     const resolution = await resolveConflicts(merge, options);
     if (resolution === undefined) {
-      // Aborted: do not touch local YAML or state (AC-11).
+      // Aborted: do not touch local YAML or state.
       p.cancel(
         `Pull cancelled. Local ${config.subject} and state were left unchanged.`,
       );

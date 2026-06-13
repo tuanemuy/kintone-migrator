@@ -20,15 +20,14 @@ const SETTINGS_PULL_COMMAND = "settings pull";
 
 /**
  * Applies the local general settings config to the remote with drift detection
- * and optimistic concurrency control (AC-10), as a whole-entity 3-way push
- * (ADR-188-014).
+ * and optimistic concurrency control, as a whole-entity 3-way push.
  *
  * - Loads base/local/remote (the remote carries its own revision).
  * - drift (`remoteOnly` or `conflict`) && !force → {@link buildDriftConflict}
  *   tagged with `ConfigDrift`, distinguished from API optimistic-lock conflicts
- *   by error code (ADR-188-006).
+ *   by error code.
  * - otherwise replaces the settings, sending the observed remote revision as the
- *   expected revision (TOCTOU guard, ADR-188-004). `--force` / first run send no
+ *   expected revision (TOCTOU guard). `--force` / first run send no
  *   revision (kintone skips the revision check).
  */
 export async function pushGeneralSettings({

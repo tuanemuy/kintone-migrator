@@ -66,8 +66,8 @@ describe("SchemaState serialize/parse", () => {
   it("snapshot のみを round-trip できる（revision は state に含めない）", () => {
     const schema: Schema = SchemaParser.parse(realisticForm);
     const serialized = SchemaStateSerializer.serialize({ schema });
-    // revision is now stored separately (ADR-188-001); the state file must not
-    // carry it anymore.
+    // revision is now stored separately; the state file must not carry it
+    // anymore.
     expect(serialized.revision).toBeUndefined();
 
     const parsed = SchemaStateParser.parse(serialized);
@@ -87,7 +87,7 @@ describe("SchemaState serialize/parse", () => {
 
   it("旧 state（revision 同居）から後方互換で読める（revision は無視される）", () => {
     // Legacy state files embedded a top-level `revision` alongside the layout.
-    // The parser must strip and ignore it (ADR-188-001 backward compat).
+    // The parser must strip and ignore it for backward compatibility.
     const schema = SchemaParser.parse(realisticForm);
     const data = SchemaStateSerializer.serialize({ schema });
     const legacy = { revision: "42", ...data };

@@ -13,7 +13,7 @@ import { AdminNotesDiffDetector } from "./diffDetector";
  * diffDetector's "no changes" semantics (`content` + `includeInTemplateAnd
  * Duplicates`). Two configs are equal exactly when the detector reports no
  * differences, so the whole-entity 3-way merge granularity matches
- * `admin-notes diff` (ADR-188-014).
+ * `admin-notes diff`.
  */
 export function isAdminNotesConfigEqual(
   a: AdminNotesConfig,

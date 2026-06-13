@@ -52,7 +52,7 @@ export type CaptureSchemaOutput = {
 /**
  * Result of the first stage of `pull`. For the `merged` mode the merge is
  * returned (possibly with conflicts) so the CLI can resolve conflicts before
- * the local YAML / state are written by `applyPulledMerge` (AC-15).
+ * the local YAML / state are written by `applyPulledMerge`.
  */
 export type PullSchemaOutput =
   | {

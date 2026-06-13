@@ -72,7 +72,7 @@ describe("pullView", () => {
     const result = await pullView({ container, input: {} });
 
     expect(result.mode).toBe("merged");
-    // Two-stage: nothing written during the first stage (AC-11).
+    // Two-stage: nothing written during the first stage.
     expect(container.viewStorage.callLog).not.toContain("update");
     expect(container.viewStateStorage.callLog).not.toContain("update");
   });

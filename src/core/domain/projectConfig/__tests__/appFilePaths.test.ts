@@ -73,7 +73,7 @@ describe("buildAppFilePaths", () => {
   });
 });
 
-// W-002 (ADR-002 / arch-r2-S002): state uses an app-scoped directory layout
+// state uses an app-scoped directory layout
 // (`state/<appName>/schema.yaml`, appName INSIDE) whose hierarchy is the inverse
 // of buildAppFilePaths (`<appName>/...`, appName OUTSIDE). These tests pin the
 // direction so a regression to `state/schema.yaml` (collapse) or
@@ -102,7 +102,7 @@ describe("buildLegacyStateFilePath", () => {
   });
 });
 
-// ADR-188-001: revision is an app-scoped value stored once per app alongside
+// revision is an app-scoped value stored once per app alongside
 // the per-domain snapshots, with the same app-inside directory convention as
 // buildStateFilePath.
 describe("buildAppRevisionFilePath", () => {

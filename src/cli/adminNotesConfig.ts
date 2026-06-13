@@ -38,8 +38,7 @@ const {
     ...base,
     adminNotesFilePath: filePath,
     // State (base snapshot) and the app-scoped revision live under
-    // state/<appName>/ for project apps, or state/ for legacy single-app mode
-    // (ADR-188-001).
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode.
     adminNotesStateFilePath: app
       ? buildDomainStateFilePath(app.name, ADMIN_NOTES_STATE_FILE)
       : buildLegacyDomainStateFilePath(ADMIN_NOTES_STATE_FILE),

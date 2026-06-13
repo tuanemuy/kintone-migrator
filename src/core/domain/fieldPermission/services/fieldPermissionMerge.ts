@@ -9,7 +9,7 @@ import type { FieldPermissionConfig, FieldRight } from "../entity";
 import { FieldPermissionErrorCode } from "../errorCode";
 
 /**
- * 3-way merge for the field permission domain (field-acl — ADR-188-016).
+ * 3-way merge for the field permission domain (field-acl).
  *
  * Each field's rights are keyed by the field `code`, which the 2-way
  * `FieldPermissionDiffDetector` uses and the config parser guarantees is unique.

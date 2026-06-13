@@ -16,7 +16,7 @@ export interface SnapshotStateStorage {
  *
  * The caller supplies a `parse` (pre-parsed `unknown` -> snapshot, domain
  * parser) so this stays yaml-agnostic and routes codec/business errors through
- * the standard application-layer wrappers (ADR-188 ステップ3).
+ * the standard application-layer wrappers.
  */
 export async function loadSnapshotState<TSnapshot>(
   storage: SnapshotStateStorage,

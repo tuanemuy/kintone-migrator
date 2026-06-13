@@ -10,7 +10,7 @@ import type { Schema } from "./entity";
  *
  * The app (preview) revision is NOT stored here: revision is an app-scoped
  * value managed separately in `state/<appName>/revision.yaml` via
- * `AppRevisionStorage` (ADR-188-001). Older state files that still embed a
+ * `AppRevisionStorage`. Older state files that still embed a
  * top-level `revision` field are read back compatibly — the field is ignored
  * by {@link SchemaStateParser}.
  */

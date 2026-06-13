@@ -19,10 +19,10 @@ import { ReportErrorCode } from "../errorCode";
  * explicit `name` override (`raw.name`), so the map key and `ReportConfig.name`
  * can diverge on hand-edited YAML, and `name` is sent to the API on push. The
  * 2-way `compareReports` detects this divergence, so the `eq` must too to keep
- * the same granularity (W-dom-001).
+ * the same granularity.
  *
- * Reused as the `eq` for the record-keyed 3-way merge (ADR-188-003 / ADR-188-011)
- * so the merge granularity matches `report diff` exactly.
+ * Reused as the `eq` for the record-keyed 3-way merge so the merge granularity
+ * matches `report diff` exactly.
  */
 export function isReportConfigEqual(a: ReportConfig, b: ReportConfig): boolean {
   return (

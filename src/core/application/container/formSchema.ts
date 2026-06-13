@@ -15,7 +15,7 @@ export type FormSchemaDiffContainer = {
   // container so it is also injected into the full container (push/pull) via
   // inheritance. Legacy migrate/capture also receive it but never read/write it.
   schemaStateStorage: SchemaStateStorage;
-  // App-scoped base revision storage (shared across domains, ADR-188-001).
+  // App-scoped base revision storage (shared across domains).
   // The schema snapshot no longer carries the revision; it is persisted here.
   appRevisionStorage: AppRevisionStorage;
 };

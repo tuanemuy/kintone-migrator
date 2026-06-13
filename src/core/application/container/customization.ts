@@ -39,16 +39,16 @@ export type CustomizationDiffContainer = {
 };
 
 /**
- * Ports needed by customize 3-way pull/push/diff (AC-9). Combines the diff ports
+ * Ports needed by customize 3-way pull/push/diff. Combines the diff ports
  * (content comparison) with the file writer/uploader/deployer for pull/push, plus
  * the base snapshot + app revision storage and the remote revision reader.
  */
 export type CustomizationThreeWayContainer = CustomizationDiffContainer & {
-  // Base snapshot storage for 3-way diff/pull/push (ADR-188-001).
+  // Base snapshot storage for 3-way diff/pull/push.
   customizationStateStorage: CustomizationStateStorage;
-  // App-scoped base revision storage (shared across domains, ADR-188-001).
+  // App-scoped base revision storage (shared across domains).
   appRevisionStorage: AppRevisionStorage;
-  // Reads the current remote app revision in one place (ADR-188-007).
+  // Reads the current remote app revision in one place.
   appRevisionReader: AppRevisionReader;
   // Writes pulled remote files to disk.
   fileWriter: FileWriter;

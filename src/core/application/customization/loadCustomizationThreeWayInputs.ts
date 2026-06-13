@@ -30,7 +30,7 @@ export type CustomizationThreeWayInputs = ThreeWayInputs<
  * Loads the four inputs of a 3-way customization sync (base snapshot, base app
  * revision, local YAML, remote customization + revision) via the generic
  * {@link loadThreeWayInputs}. The remote is fetched once with its revision; the
- * raw form is kept for file-content download (AC-9).
+ * raw form is kept for file-content download.
  */
 export async function loadCustomizationThreeWayInputs(
   container: CustomizationThreeWayContainer,

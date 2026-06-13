@@ -13,7 +13,7 @@ export function buildDriftMessage(pullCommand: string): string {
 /**
  * Builds the drift {@link ConflictError} (tagged with {@link
  * ConflictErrorCode.ConfigDrift}) thrown when a push detects base→remote drift
- * and `--force` was not set (ADR-188-006).
+ * and `--force` was not set.
  *
  * The CLI distinguishes this snapshot drift from API optimistic-lock (TOCTOU)
  * conflicts by the `ConfigDrift` code, not by the message string, so the

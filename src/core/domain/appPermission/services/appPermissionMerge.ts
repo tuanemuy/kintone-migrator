@@ -8,7 +8,7 @@ import type { AppPermissionConfig, AppRight } from "../entity";
 import { AppPermissionErrorCode } from "../errorCode";
 
 /**
- * 3-way merge for the app permission domain (app-acl — ADR-188-016).
+ * 3-way merge for the app permission domain (app-acl).
  *
  * `rights` is modeled by the entity (`type:code`) and is order-insensitive (the
  * config parser guarantees keys are unique and the 2-way `AppPermissionDiffDetector`

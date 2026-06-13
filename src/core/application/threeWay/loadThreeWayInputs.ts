@@ -4,12 +4,12 @@ import { loadAppRevision } from "../appRevisionIo";
 import { loadSnapshotState, type SnapshotStateStorage } from "./stateIo";
 
 /**
- * The four inputs of a domain-agnostic 3-way sync (ADR-188 ステップ3):
+ * The four inputs of a domain-agnostic 3-way sync:
  *
  * - `state`: the base snapshot (common ancestor), or undefined on first run.
  * - `baseRevision`: the app (preview) revision saved alongside the base
  *   snapshot, or undefined on first run. revision is now app-scoped and read
- *   from {@link AppRevisionStorage} rather than from the snapshot (ADR-188-001).
+ *   from {@link AppRevisionStorage} rather than from the snapshot.
  * - `local`: the local config parsed from its YAML file, or undefined when the
  *   file is absent.
  * - `remote`: the current remote config (and the remote revision it carries).

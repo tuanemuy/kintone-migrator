@@ -8,14 +8,14 @@ import {
 import { detectAdminNotesDiff } from "./detectAdminNotesDiff";
 import { loadAdminNotesThreeWayInputs } from "./loadAdminNotesThreeWayInputs";
 
-/** Fixed key/label for the whole-entity admin notes diff entry (ADR-188-014). */
+/** Fixed key/label for the whole-entity admin notes diff entry. */
 const ADMIN_NOTES_DIFF_KEY = "admin-notes";
 
 export type DetectAdminNotesThreeWayDiffOutput =
   ThreeWayDiffResult<AdminNotesDiff>;
 
 /**
- * Detects admin notes differences with 3-way awareness (AC-4). When a state
+ * Detects admin notes differences with 3-way awareness. When a state
  * exists, classifies the whole config into a single local-only / remote-drift /
  * conflict entry; otherwise falls back to the existing 2-way diff.
  */

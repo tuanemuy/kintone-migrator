@@ -22,7 +22,7 @@ export type AppPermissionThreeWayInputs = ThreeWayInputs<
  * Loads the four inputs of a 3-way app permission sync (base snapshot, base app
  * revision, local YAML, remote config + revision) via the generic
  * {@link loadThreeWayInputs}. The rights list is entity-keyed (record-keyed),
- * so it loads thinly on top of the generic helper (ADR-188-016).
+ * so it loads thinly on top of the generic helper.
  */
 export async function loadAppPermissionThreeWayInputs(
   container: AppPermissionDiffContainer,

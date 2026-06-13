@@ -19,7 +19,7 @@ export type PluginThreeWayInputs = ThreeWayInputs<PluginsConfig, PluginRemote>;
  * Loads the four inputs of a 3-way plugin sync (base snapshot, base app
  * revision, local YAML, remote config + revision) via the generic
  * {@link loadThreeWayInputs}. Plugins are keyed by `id` (record-keyed), so it
- * loads thinly on top of the generic helper (ADR-188-003).
+ * loads thinly on top of the generic helper.
  */
 export async function loadPluginThreeWayInputs(
   container: PluginDiffContainer,

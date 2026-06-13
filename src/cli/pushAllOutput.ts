@@ -69,7 +69,7 @@ export function printPushAllResults(output: PushAllForAppOutput): void {
 /**
  * True when any domain genuinely failed (execution error or aborted skip) or a
  * required deploy failed. `not-found`, `drift`, and successful pushes are not
- * failures — drift is an expected, recoverable `--all` outcome (ADR-188-005).
+ * failures — drift is an expected, recoverable `--all` outcome.
  */
 export function pushAllHasFailure(output: PushAllForAppOutput): boolean {
   const taskFailure = output.phases

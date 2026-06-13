@@ -50,7 +50,7 @@ export type PullCustomizationOutput =
     };
 
 /**
- * First stage of `customize pull` (AC-9 / AC-11).
+ * First stage of `customize pull`.
  *
  * - `force` / first run (no state or no local): downloads the remote file bodies
  *   and overwrites local + initializes the base, reusing `captureCustomization`
@@ -123,7 +123,7 @@ export type ApplyPulledCustomizationMergeInput = {
  * remote-only / remote-side conflict resolutions), writes the merged config
  * YAML, and updates the base to the remote snapshot/revision. Files already on
  * disk (local-only or local-side resolutions) are left as-is. Called only after
- * the CLI has resolved all conflicts; never invoked on abort (AC-11).
+ * the CLI has resolved all conflicts; never invoked on abort.
  */
 export async function applyPulledCustomizationMerge({
   container,

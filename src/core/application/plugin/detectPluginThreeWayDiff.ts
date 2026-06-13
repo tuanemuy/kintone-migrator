@@ -11,7 +11,7 @@ import { loadPluginThreeWayInputs } from "./loadPluginThreeWayInputs";
 export type DetectPluginThreeWayDiffOutput = ThreeWayDiffResult<PluginDiff>;
 
 /**
- * Detects plugin differences with 3-way awareness (AC-8).
+ * Detects plugin differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies changes into local-only,
  * remote drift, and conflicts via the record-keyed merge (keyed by plugin id).

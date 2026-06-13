@@ -20,8 +20,7 @@ const ADMIN_NOTES_PULL_COMMAND = "admin-notes pull";
 
 /**
  * Applies the local admin notes config to the remote with drift detection and
- * optimistic concurrency control (AC-10), as a whole-entity 3-way push
- * (ADR-188-014).
+ * optimistic concurrency control, as a whole-entity 3-way push.
  */
 export async function pushAdminNotes({
   container,

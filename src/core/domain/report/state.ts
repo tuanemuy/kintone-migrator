@@ -1,7 +1,7 @@
 import type { ReportsConfig } from "./entity";
 
 /**
- * Base snapshot used as the common ancestor for 3-way merge (ADR-188-001).
+ * Base snapshot used as the common ancestor for 3-way merge.
  *
  * A `ReportState` is the reports config at the time the local YAML was last
  * synchronized with the remote app. It is persisted to a state file

@@ -46,7 +46,7 @@ type CliConfig = {
 /**
  * Pushes all domains for one app in dependency-ordered phases, then deploys.
  * Deploy stays inside `pushAllForApp`, preserving per-app dependency-ordered
- * deploy even when called per app from the multi-app flow (AC-14).
+ * deploy even when called per app from the multi-app flow.
  */
 async function runPushAll(
   cliConfig: CliConfig,
@@ -134,7 +134,7 @@ export default define({
           }
           // Push in dependency order. Deploy stays inside pushAllForApp, so use
           // runMultiAppWithFailCheck (per-app deploy) rather than an outer
-          // confirmAndDeploy — mirrors apply.ts (AC-14).
+          // confirmAndDeploy — mirrors apply.ts.
           await runMultiAppWithFailCheck(plan, async (app) => {
             const cliConfig = resolveAppCliConfig(app, projectConfig, values);
             printAppHeader(app.name, app.appId);

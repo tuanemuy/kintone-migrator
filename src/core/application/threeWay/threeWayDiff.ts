@@ -4,7 +4,7 @@ import type { SingleThreeWayMerge } from "@/core/domain/singleMerge";
 
 /**
  * One entry of a generic 3-way diff: a stable key, a human label, and which
- * side(s) changed (ADR-188-002 / AC-2). Domain-agnostic so a single CLI printer
+ * side(s) changed. Domain-agnostic so a single CLI printer
  * (`printThreeWayDiffResult`) renders every config domain.
  */
 export type ThreeWayDiffEntry = Readonly<{
@@ -108,7 +108,7 @@ export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
 
 /**
  * Builds the three-way portion of a {@link ThreeWayDiffResult} from a single
- * whole-entity merge (settings / process / admin-notes — ADR-188-014). The
+ * whole-entity merge (settings / process / admin-notes). The
  * config is one value, so the merge produces at most one diff entry under a
  * fixed `key` / `label` (e.g. "settings"). `bothSame` / `unchanged` produce no
  * entry (empty diff), matching the record-keyed behaviour.

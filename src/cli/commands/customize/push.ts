@@ -28,8 +28,8 @@ const TOCTOU_MESSAGE =
   "The remote changed while applying. Run `customize pull` and retry.";
 
 /**
- * Hand-written push command for customization (ADR-188-002): the file-entity
- * domain needs a `basePath` for file uploads, which the generic
+ * Hand-written push command for customization: the file-entity domain needs a
+ * `basePath` for file uploads, which the generic
  * `createPushCommand` does not thread through, so this mirrors the factory's
  * confirm + drift/TOCTOU re-wrap + per-app deploy locally.
  */

@@ -57,18 +57,17 @@ async function resolvePlatform(
 }
 
 /**
- * Applies the local customization config to the remote with drift detection
- * (AC-9 / AC-10).
+ * Applies the local customization config to the remote with drift detection.
  *
  * - Loads base/local/remote and computes the file-name-keyed 3-way merge. drift
  *   (remoteOnly or conflict entries) && !force → {@link buildDriftConflict}
- *   tagged with `ConfigDrift` (ADR-188-006). Same-name files whose content
+ *   tagged with `ConfigDrift`. Same-name files whose content
  *   diverges count as conflicts and block a non-forced push.
  * - Replaces the full js/css lists with the local config's resolved (uploaded)
  *   resources via `updateAppCustomize`, so renames are expressed as old-name
- *   removal + new-name add (full-list replace — NOT an AC-16 inexpressible
- *   operation, AC-9). The observed remote revision is sent as the expected
- *   revision (TOCTOU guard, ADR-188-004); `--force` / first run omit it.
+ *   removal + new-name add (full-list replace — NOT an inexpressible
+ *   operation). The observed remote revision is sent as the expected
+ *   revision (TOCTOU guard); `--force` / first run omit it.
  *
  * Deploy is performed by the CLI. State records the local config and the
  * post-apply revision as the new base (snapshot → revision).

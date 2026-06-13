@@ -10,13 +10,13 @@ import {
 import { resourceName } from "./diffDetector";
 
 /**
- * 3-way merge for the customization domain (AC-9 / ADR-188-003 special case).
+ * 3-way merge for the customization domain (file-entity special case).
  *
  * Customization is the file-entity domain: the merge is **by resource name**
  * within each (platform, category) bucket — `desktop.js`, `desktop.css`,
  * `mobile.js`, `mobile.css` — plus a single `scope` value. Renames are modeled
  * as an old-name removal + new-name addition (expressible by `updateAppCustomize`,
- * which replaces the full js/css lists — so renames are NOT an AC-16
+ * which replaces the full js/css lists — so renames are NOT an
  * "inexpressible operation").
  *
  * Same-name FILE conflicts: a file present on both sides whose **content
@@ -24,7 +24,7 @@ import { resourceName } from "./diffDetector";
  * the 2-way diffDetector) is a file-unit conflict. This is encoded by giving the
  * local and remote sides distinct content tags so {@link classifyThreeWay}
  * classifies the key as `conflict`. File contents are never merged line-by-line
- * (#175 scope) — the whole file is taken from the chosen side.
+ * — the whole file is taken from the chosen side.
  *
  * The merged value carries the original resource so resolution flattens back to
  * the platform js/css lists in a stable order.

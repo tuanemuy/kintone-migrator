@@ -20,14 +20,14 @@ const ACTION_PULL_COMMAND = "action pull";
 
 /**
  * Applies the local action config to the remote with drift detection and
- * optimistic concurrency control (AC-10).
+ * optimistic concurrency control.
  *
  * - Loads base/local/remote (the remote carries its own revision).
  * - drift (remoteOnly or conflict entries) && !force → {@link buildDriftConflict}
  *   tagged with `ConfigDrift`, distinguished from API optimistic-lock conflicts
- *   by error code (ADR-188-006).
+ *   by error code.
  * - otherwise replaces the actions, sending the observed remote revision as the
- *   expected revision (TOCTOU guard, ADR-188-004). `--force` / first run send
+ *   expected revision (TOCTOU guard). `--force` / first run send
  *   no revision (kintone skips the revision check).
  *
  * Deploy is performed by the CLI (`confirmAndDeploy`). State records the local
@@ -58,7 +58,7 @@ export async function pushAction({
     }
   }
 
-  // Expected revision (ADR-188-004): the observed remote revision guards against
+  // Expected revision: the observed remote revision guards against
   // TOCTOU on a normal push. `--force` / first run omit it so the apply does not
   // fail on an unrelated concurrent change (kintone skips the revision check
   // when revision is undefined).

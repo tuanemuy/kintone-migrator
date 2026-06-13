@@ -62,7 +62,7 @@ function setState(
 ): void {
   const data = SchemaStateSerializer.serialize({ schema });
   container.schemaStateStorage.setContent(configCodec.stringify(data));
-  // revision is now persisted separately (ADR-188-001).
+  // revision is now persisted separately.
   container.appRevisionStorage.setContent(configCodec.stringify({ revision }));
 }
 
@@ -93,7 +93,7 @@ describe("pushSchema", () => {
     await pushSchema({ container, input: {} });
 
     // expectedRevision must be the skip sentinel for firstTime (revision-skip),
-    // not undefined (which would fall back to the tracked revision — B-001).
+    // not undefined (which would fall back to the tracked revision).
     expect(container.formConfigurator.expectedRevisions.length).toBeGreaterThan(
       0,
     );
@@ -228,7 +228,7 @@ layout:
 
     expect(error).toBeInstanceOf(ConflictError);
     // It is the API optimistic-lock code, NOT the push-drift code: the CLI uses
-    // this distinction to choose the TOCTOU message (ADR-008 / ADR-014).
+    // this distinction to choose the TOCTOU message.
     expect(error.code).toBe(ConflictErrorCode.Conflict);
     expect(error.code).not.toBe(ConflictErrorCode.ConfigDrift);
   });

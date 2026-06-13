@@ -12,7 +12,7 @@ export type DetectFieldPermissionThreeWayDiffOutput =
   ThreeWayDiffResult<FieldPermissionDiff>;
 
 /**
- * Detects field permission differences with 3-way awareness (AC-7).
+ * Detects field permission differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies changes into local-only,
  * remote drift, and conflicts via the record-keyed merge (keyed by field

@@ -38,8 +38,7 @@ const {
     ...base,
     recordAclFilePath: filePath,
     // State (base snapshot) and the app-scoped revision live under
-    // state/<appName>/ for project apps, or state/ for legacy single-app mode
-    // (ADR-188-001).
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode.
     recordAclStateFilePath: app
       ? buildDomainStateFilePath(app.name, RECORD_ACL_STATE_FILE)
       : buildLegacyDomainStateFilePath(RECORD_ACL_STATE_FILE),

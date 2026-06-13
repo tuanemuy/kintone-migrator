@@ -13,8 +13,8 @@ const pushArgs = {
 };
 
 /**
- * Schema push fits the generic push factory (ADR-188-002 / ADR-188-012): single
- * drift channel (snapshot comparison), `ConfigDrift`-vs-TOCTOU re-wrap, and
+ * Schema push fits the generic push factory: single drift channel (snapshot
+ * comparison), `ConfigDrift`-vs-TOCTOU re-wrap, and
  * per-app deploy are all handled by the factory. Only the container config
  * resolution differs (schema uses `resolveConfig` / `resolveAppCliConfig` rather
  * than a `createDomainConfigResolver`), supplied via the resolver hooks.

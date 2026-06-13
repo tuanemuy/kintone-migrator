@@ -72,7 +72,7 @@ export function printPullAllResults(output: PullAllForAppOutput): void {
 /**
  * True when any domain genuinely failed (execution error or aborted skip).
  * `not-found` and `conflict` skips are expected, recoverable outcomes and are
- * not treated as failures (ADR-188-005).
+ * not treated as failures.
  */
 export function pullAllHasFailure(output: PullAllForAppOutput): boolean {
   return output.results.some(

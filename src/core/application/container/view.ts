@@ -11,11 +11,11 @@ export type ViewDiffContainer = {
   configCodec: ConfigCodec;
   viewConfigurator: ViewConfigurator;
   viewStorage: ViewStorage;
-  // Base snapshot storage for 3-way diff/pull/push (ADR-188-001).
+  // Base snapshot storage for 3-way diff/pull/push.
   viewStateStorage: ViewStateStorage;
-  // App-scoped base revision storage (shared across domains, ADR-188-001).
+  // App-scoped base revision storage (shared across domains).
   appRevisionStorage: AppRevisionStorage;
-  // Reads the current remote app revision in one place (ADR-188-007).
+  // Reads the current remote app revision in one place.
   appRevisionReader: AppRevisionReader;
 };
 

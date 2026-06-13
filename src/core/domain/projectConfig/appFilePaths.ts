@@ -71,7 +71,7 @@ export function buildLegacyStateFilePath(baseDir?: string): string {
  *
  * Generalizes {@link buildStateFilePath} (which is schema-specific) so every
  * config domain stores its base snapshot under the same `state/<appName>/`
- * convention (ADR-188-001).
+ * convention.
  */
 export function buildDomainStateFilePath(
   appName: AppName,
@@ -99,9 +99,8 @@ export function buildLegacyDomainStateFilePath(
  * (`state/<appName>/revision.yaml`).
  *
  * revision is an app-scoped value shared by every config domain, so it is
- * stored once per app alongside the per-domain snapshots in `state/<appName>/`
- * (ADR-188-001). Same app-inside directory convention as
- * {@link buildStateFilePath}.
+ * stored once per app alongside the per-domain snapshots in `state/<appName>/`.
+ * Same app-inside directory convention as {@link buildStateFilePath}.
  */
 export function buildAppRevisionFilePath(
   appName: AppName,

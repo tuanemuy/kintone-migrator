@@ -15,8 +15,8 @@ import { ViewErrorCode } from "../errorCode";
  * `false`, and `fields` defaults to `[]`. `name` is the record key and is not
  * compared here.
  *
- * Reused as the `eq` for the record-keyed 3-way merge (ADR-188-003) so the
- * merge granularity matches `view diff` exactly.
+ * Reused as the `eq` for the record-keyed 3-way merge so the merge granularity
+ * matches `view diff` exactly.
  */
 export function isViewConfigEqual(a: ViewConfig, b: ViewConfig): boolean {
   return (

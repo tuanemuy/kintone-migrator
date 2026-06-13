@@ -100,11 +100,11 @@ describe("view push command", () => {
     expect(mockDeploy).not.toHaveBeenCalled();
   });
 
-  // Regression guard for B-001 (Issue #188): the `--force` flag must be
-  // declared on the push factory's args so gunshi parses it into `ctx.values`.
-  // Driving the command through gunshi's real parser (not a hand-built `values`
-  // object) is what catches a missing arg declaration: an undeclared `--force`
-  // would be dropped, leaving `pushFn` with `force: false`.
+  // Regression guard: the `--force` flag must be declared on the push factory's
+  // args so gunshi parses it into `ctx.values`. Driving the command through
+  // gunshi's real parser (not a hand-built `values` object) is what catches a
+  // missing arg declaration: an undeclared `--force` would be dropped, leaving
+  // `pushFn` with `force: false`.
   it("forwards --force to the push usecase when parsed by gunshi", async () => {
     vi.mocked(pushView).mockResolvedValue({
       mode: "push",

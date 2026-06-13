@@ -27,8 +27,8 @@ export default createPushCommand({
     if (result.addedPluginIds.length > 0) {
       p.log.info(`Added plugins: ${result.addedPluginIds.join(", ")}`);
     }
-    // Add-only API: surface every operation that `addPlugins` could not express
-    // (AC-16). kintone has no remove API and cannot toggle `enabled` via REST.
+    // Add-only API: surface every operation that `addPlugins` could not
+    // express. kintone has no remove API and cannot toggle `enabled` via REST.
     const deletions = result.skipped
       .filter((o) => o.reason === "delete")
       .map((o) => o.pluginId);

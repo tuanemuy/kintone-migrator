@@ -20,7 +20,7 @@ export type NotificationThreeWayInputs = ThreeWayInputs<
 
 /**
  * Fetches the three remote sub-configs (general / perRecord / reminder) and
- * bundles them into a single {@link NotificationRemote} (ADR-188-003).
+ * bundles them into a single {@link NotificationRemote}.
  *
  * The three getters each carry the app (preview) revision; since the revision is
  * app-scoped and the three are fetched at (essentially) the same moment, the
@@ -56,7 +56,7 @@ async function loadNotificationRemote(
  * Loads the four inputs of a 3-way notification sync (base snapshot, base app
  * revision, local YAML, remote config + revision) via the generic
  * {@link loadThreeWayInputs}. Notification bundles three sub-configs into one
- * snapshot but shares a single app revision (ADR-188-001 / ADR-188-004), so it
+ * snapshot but shares a single app revision, so it
  * loads thinly on top of the generic helper with a custom `loadRemote` that
  * fans out to the three getters.
  */

@@ -20,8 +20,7 @@ const PROCESS_PULL_COMMAND = "process pull";
 
 /**
  * Applies the local process management config to the remote with drift detection
- * and optimistic concurrency control (AC-10), as a whole-entity 3-way push
- * (ADR-188-014). The whole config (including `enable` and all states/actions) is
+ * and optimistic concurrency control, as a whole-entity 3-way push. The whole config (including `enable` and all states/actions) is
  * sent in one `updateProcessManagement` call, matching `process apply`.
  */
 export async function pushProcessManagement({

@@ -15,13 +15,13 @@ export type DetectSchemaThreeWayDiffOutput =
   ThreeWayDiffResult<DetectDiffOutput>;
 
 /**
- * Detects differences with 3-way awareness (AC-10, AC-11).
+ * Detects differences with 3-way awareness.
  *
  * When a state (base snapshot) exists, classifies field changes into
  * local-only, remote drift, and conflicts and appends the layout status as a
  * domain-specific extra entry. When no state exists, returns a two-way result
  * carrying the existing 2-way `detectDiff`, which the CLI renders via its
- * 2-way printer (the 3-way printer stays domain-agnostic — AC-2).
+ * 2-way printer (the 3-way printer stays domain-agnostic).
  */
 export async function detectThreeWayDiff({
   container,
