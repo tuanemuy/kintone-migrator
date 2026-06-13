@@ -169,25 +169,35 @@ export function resolveMerge(
 }
 
 /**
- * Rejects merge resolutions that would produce an orphan field: a top-level
- * field present in the merged field map but absent from the chosen layout.
+ * Rejects merge resolutions whose field channel and layout channel disagree on
+ * which fields exist. The two channels are resolved independently
+ * (`resolveFieldEntry` vs `layoutSide`), so the merged field map and the chosen
+ * layout can diverge in two mirror-image ways, both of which corrupt the
+ * layout-driven write-back (`SchemaSerializer.serialize` walks the layout, not
+ * the field map):
  *
- * The field channel and the layout channel are resolved independently
- * (`resolveFieldEntry` vs `layoutSide`). A field added on one side
- * (auto-merged into `mergedFields`) can be placed only in that side's layout;
- * if the conflicting layout from the other side is chosen, the field is not
- * placed anywhere. Because schema serialization is layout-driven
- * (`SchemaSerializer.serialize` walks the layout, not the field map), such an
- * orphan field would be silently dropped on write-back. Detecting it here turns
- * a silent correctness loss into an explicit, actionable error: the chosen
- * resolution combination is internally inconsistent and the user must pick the
- * layout side that contains the adopted field.
+ * 1. **Orphan field** — a field in `mergedFields` but absent from the chosen
+ *    layout. A field added on one side (auto-merged into `mergedFields`) is
+ *    placed only in that side's layout; choosing the conflicting layout from
+ *    the other side leaves the field unplaced, so it is silently dropped on
+ *    write-back (ADR-016).
+ * 2. **Resurrected field** — a field placed in the chosen layout but absent
+ *    from `mergedFields`. A field deleted on one side (field channel resolves
+ *    to `undefined`, removed from `mergedFields`) still appears in the other
+ *    side's layout; choosing that layout makes serialization re-emit the
+ *    deleted field's full definition from the layout element, silently undoing
+ *    the deletion (ADR-017).
+ *
+ * Detecting both turns a silent correctness loss into an explicit, actionable
+ * error: the chosen resolution combination is internally inconsistent and the
+ * user must pick the layout side that matches the field-channel decisions.
  */
 function assertNoOrphanFields(
   mergedFields: ReadonlyMap<FieldCode, FieldDefinition>,
   layout: FormLayout,
 ): void {
   const placed = collectLayoutFieldCodes(layout);
+
   const orphans: FieldCode[] = [];
   for (const code of mergedFields.keys()) {
     if (!placed.has(code)) orphans.push(code);
@@ -200,12 +210,27 @@ function assertNoOrphanFields(
       )}. The adopted field exists on a different side than the chosen layout; choose the layout side that contains the field.`,
     );
   }
+
+  const resurrected: FieldCode[] = [];
+  for (const code of placed) {
+    if (!mergedFields.has(code)) resurrected.push(code);
+  }
+  if (resurrected.length > 0) {
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.FsOrphanMergedField,
+      `Merge resolution keeps field(s) placed in the chosen layout that were removed from the field set: ${resurrected.join(
+        ", ",
+      )}. The field was deleted on one side but the chosen layout still contains it; choose the layout side that omits the deleted field.`,
+    );
+  }
 }
 
-// Collects every field code that the layout places, so orphan top-level fields
-// (present in the merged field map but unplaced) can be detected. GROUP /
-// SUBTABLE / REFERENCE_TABLE items contribute their own code; ROW and nested
-// (group/subtable) field elements contribute the placed field's code.
+// Collects every field code that the layout places, so the merged field map
+// and the chosen layout can be cross-checked in both directions (orphan and
+// resurrected fields). GROUP / SUBTABLE / REFERENCE_TABLE items contribute
+// their own code; ROW and nested (group/subtable) field elements contribute the
+// placed field's code. Decoration (SPACER/HR/LABEL) and system-field elements
+// are intentionally excluded because they never appear in the field map.
 function collectLayoutFieldCodes(layout: FormLayout): ReadonlySet<FieldCode> {
   const placed = new Set<FieldCode>();
   const collectElements = (elements: readonly LayoutElement[]): void => {

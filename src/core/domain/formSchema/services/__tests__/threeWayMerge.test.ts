@@ -492,4 +492,75 @@ describe("resolveMerge", () => {
       expect(merged.fields.has(FieldCode.create("age"))).toBe(true);
     });
   });
+
+  // W-001 (round-3, ADR-017): the mirror of the orphan case. A field DELETED on
+  // one side resolves to `undefined` in the field channel and is removed from
+  // the merged field map. If the OTHER side's conflicting layout (which still
+  // contains the field) is chosen, layout-driven serialization would re-emit
+  // the deleted field's full definition from the layout element — silently
+  // undoing the deletion. resolveMerge must reject this resurrection.
+  describe("resurrected field 検出 (W-001 鏡像)", () => {
+    // base has three fields. local deletes `age` (field channel localOnly
+    // delete, and the local layout drops the `age` row). remote keeps `age` and
+    // makes a separate, field-preserving layout change (reorders name/extra),
+    // so the layouts conflict without introducing a new auto-merged field.
+    const base = schemaOf([
+      [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+      [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")],
+      [fieldRow("extra", "SINGLE_LINE_TEXT", "備考")],
+    ]);
+    const local = schemaOf([
+      [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+      [fieldRow("extra", "SINGLE_LINE_TEXT", "備考")],
+    ]);
+    const remote = schemaOf([
+      [fieldRow("extra", "SINGLE_LINE_TEXT", "備考")],
+      [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+      [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")],
+    ]);
+
+    it("片側で削除した field を含む側の layout を採用すると拒否される", () => {
+      const merge = computeThreeWayMerge(base, local, remote);
+      expect(merge.layoutConflict).toBe(true);
+      // age is auto-merged as a localOnly deletion (merged === undefined).
+      const ageEntry = merge.fieldEntries.find(
+        (e) => e.key === FieldCode.create("age"),
+      );
+      expect(ageEntry?.change.kind).toBe("localOnly");
+      expect(ageEntry?.merged).toBeUndefined();
+
+      // Choosing the remote layout (which still places age) would resurrect the
+      // deleted field via layout-driven serialization.
+      expect(() =>
+        resolveMerge(merge, {
+          fields: new Map(),
+          layout: "remote",
+        }),
+      ).toThrow(BusinessRuleError);
+
+      try {
+        resolveMerge(merge, { fields: new Map(), layout: "remote" });
+        expect.unreachable("should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(BusinessRuleError);
+        expect((error as BusinessRuleError).code).toBe(
+          FormSchemaErrorCode.FsOrphanMergedField,
+        );
+        expect((error as BusinessRuleError).message).toContain("age");
+      }
+    });
+
+    it("削除を反映する側の layout を採用すれば成立し field が消える", () => {
+      const merge = computeThreeWayMerge(base, local, remote);
+      // Choosing the local layout (which omits age) is consistent with the
+      // deletion: the field is gone and nothing is resurrected.
+      const merged = resolveMerge(merge, {
+        fields: new Map(),
+        layout: "local",
+      });
+      expect(merged.fields.has(FieldCode.create("age"))).toBe(false);
+      expect(merged.fields.has(FieldCode.create("name"))).toBe(true);
+      expect(merged.fields.has(FieldCode.create("extra"))).toBe(true);
+    });
+  });
 });
