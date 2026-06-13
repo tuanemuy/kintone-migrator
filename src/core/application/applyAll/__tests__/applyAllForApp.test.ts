@@ -5,6 +5,8 @@ import {
   SystemErrorCode,
   UnauthenticatedError,
   UnauthenticatedErrorCode,
+  ValidationError,
+  ValidationErrorCode,
 } from "@/core/application/error";
 import {
   type ApplyAllForAppInput,
@@ -45,12 +47,76 @@ import { applyReport } from "@/core/application/report/applyReport";
 import { upsertSeed } from "@/core/application/seedData/upsertSeed";
 import { applyView } from "@/core/application/view/applyView";
 
-const stubContainers = {} as ApplyAllContainers;
-
-const baseArgs: ApplyAllForAppInput = {
-  containers: stubContainers,
-  customizeBasePath: "apps/test-app",
+// Maps each ApplyDomain to the container key and storage property the
+// orchestrator probes for existence (mirrors buildPhases in applyAllForApp).
+const storageProbeMap: Record<
+  ApplyDomain,
+  { containerKey: keyof ApplyAllContainers; storageProp: string }
+> = {
+  schema: { containerKey: "schema", storageProp: "schemaStorage" },
+  customize: {
+    containerKey: "customization",
+    storageProp: "customizationStorage",
+  },
+  view: { containerKey: "view", storageProp: "viewStorage" },
+  "field-acl": {
+    containerKey: "fieldPermission",
+    storageProp: "fieldPermissionStorage",
+  },
+  "app-acl": {
+    containerKey: "appPermission",
+    storageProp: "appPermissionStorage",
+  },
+  "record-acl": {
+    containerKey: "recordPermission",
+    storageProp: "recordPermissionStorage",
+  },
+  settings: { containerKey: "settings", storageProp: "generalSettingsStorage" },
+  notification: {
+    containerKey: "notification",
+    storageProp: "notificationStorage",
+  },
+  report: { containerKey: "report", storageProp: "reportStorage" },
+  action: { containerKey: "action", storageProp: "actionStorage" },
+  process: { containerKey: "process", storageProp: "processManagementStorage" },
+  "admin-notes": {
+    containerKey: "adminNotes",
+    storageProp: "adminNotesStorage",
+  },
+  plugin: { containerKey: "plugin", storageProp: "pluginStorage" },
+  seed: { containerKey: "seed", storageProp: "seedStorage" },
 };
+
+/**
+ * Builds containers whose storage `get()` returns `{ exists: true }` for every
+ * domain. Pass `missing` to make specific domains report `{ exists: false }`.
+ */
+function makeContainers(
+  missing: ReadonlySet<ApplyDomain> = new Set(),
+): ApplyAllContainers {
+  const containers = {} as Record<string, Record<string, unknown>>;
+  for (const domain of Object.keys(storageProbeMap) as ApplyDomain[]) {
+    const { containerKey, storageProp } = storageProbeMap[domain];
+    const exists = !missing.has(domain);
+    containers[containerKey] = {
+      ...(containers[containerKey] ?? {}),
+      [storageProp]: {
+        get: async () =>
+          exists ? { exists: true, content: "stub" } : { exists: false },
+      },
+    };
+  }
+  return containers as unknown as ApplyAllContainers;
+}
+
+function makeArgs(missing?: ReadonlySet<ApplyDomain>): ApplyAllForAppInput {
+  return {
+    containers: makeContainers(missing),
+    customizeBasePath: "apps/test-app",
+  };
+}
+
+const baseArgs: ApplyAllForAppInput = makeArgs();
 
 function setupAllMocksToSucceed(): void {
   vi.mocked(executeMigration).mockResolvedValue(undefined);
@@ -171,13 +237,15 @@ describe("applyAllForApp", () => {
       expect(output.phases[0].results[0].skipped).toBe(false);
     }
 
-    // All subsequent phases should be skipped
+    // All subsequent phases should be skipped (aborted)
     for (const phase of output.phases.slice(1)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
-        if (!result.success) {
+        if (!result.success && result.skipped === "aborted") {
           expect(result.error.message).toContain("Skipped due to fatal error");
-          expect(result.skipped).toBe(true);
+        }
+        if (!result.success) {
+          expect(result.skipped).toBe("aborted");
         }
       }
     }
@@ -201,12 +269,12 @@ describe("applyAllForApp", () => {
       expect(output.phases[0].results[0].skipped).toBe(false);
     }
 
-    // All subsequent phases should be skipped
+    // All subsequent phases should be skipped (aborted)
     for (const phase of output.phases.slice(1)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.skipped).toBe(true);
+          expect(result.skipped).toBe("aborted");
         }
       }
     }
@@ -273,17 +341,19 @@ describe("applyAllForApp", () => {
     }
     expect(phase3.results[1].domain).toBe("app-acl");
     expect(phase3.results[1].success).toBe(false);
-    if (!phase3.results[1].success) {
+    if (!phase3.results[1].success && phase3.results[1].skipped === "aborted") {
       expect(phase3.results[1].error.message).toContain("Skipped");
-      expect(phase3.results[1].skipped).toBe(true);
+    }
+    if (!phase3.results[1].success) {
+      expect(phase3.results[1].skipped).toBe("aborted");
     }
 
-    // Phase 4 and 5 are all skipped
+    // Phase 4 and 5 are all skipped (aborted)
     for (const phase of output.phases.slice(3)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.skipped).toBe(true);
+          expect(result.skipped).toBe("aborted");
         }
       }
     }
@@ -307,7 +377,7 @@ describe("applyAllForApp", () => {
       expect(phase2.results[0].skipped).toBe(false);
     }
     if (!phase2.results[1].success) {
-      expect(phase2.results[1].skipped).toBe(true);
+      expect(phase2.results[1].skipped).toBe("aborted");
     }
 
     // All Phase 3, 4, 5 are skipped
@@ -514,14 +584,209 @@ describe("applyAllForApp", () => {
       expect(output.phases[1].results[1].skipped).toBe(false);
     }
 
-    // Phase 3+ should be skipped (including Phase 5 Seed)
+    // Phase 3+ should be skipped (aborted, including Phase 5 Seed)
     for (const phase of output.phases.slice(2)) {
       for (const result of phase.results) {
         expect(result.success).toBe(false);
         if (!result.success) {
-          expect(result.skipped).toBe(true);
+          expect(result.skipped).toBe("aborted");
         }
       }
     }
+  });
+
+  it("特定ドメインの設定ファイルが無い場合はそのドメインのみ not-found skip され、他は成功・abort しないこと", async () => {
+    setupAllMocksToSucceed();
+
+    const output = await applyAllForApp(makeArgs(new Set(["view", "report"])));
+
+    const allResults = output.phases.flatMap((ph) => ph.results);
+    for (const result of allResults) {
+      if (result.domain === "view" || result.domain === "report") {
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.skipped).toBe("not-found");
+        }
+      } else {
+        expect(result.success).toBe(true);
+      }
+    }
+
+    // not-found skip does not abort: deploy still runs for the successes
+    expect(output.deployed).toBe(true);
+    expect(output.deployError).toBeUndefined();
+  });
+
+  it("schema が not-found skip でも abort せず、Phase 2-4 の success により末尾 deploy が 1 回走ること", async () => {
+    setupAllMocksToSucceed();
+    const deployCount = { count: 0 };
+    vi.mocked(deployApp).mockImplementation(async () => {
+      deployCount.count++;
+    });
+
+    const output = await applyAllForApp(makeArgs(new Set(["schema"])));
+
+    const schemaResult = output.phases[0].results[0];
+    expect(schemaResult.success).toBe(false);
+    if (!schemaResult.success) {
+      expect(schemaResult.skipped).toBe("not-found");
+    }
+
+    expect(output.phases[1].results.every((r) => r.success)).toBe(true);
+
+    // Schema phase does not deploy; only the trailing batch deploy runs once
+    expect(deployCount.count).toBe(1);
+    expect(output.deployed).toBe(true);
+    expect(output.deployError).toBeUndefined();
+  });
+
+  it("schema が not-found skip かつ Phase 2-4 success がゼロの場合は deploy せず deployError も無いこと", async () => {
+    setupAllMocksToSucceed();
+
+    // schema missing + every Phase 2-4 domain missing -> no successes to deploy
+    const output = await applyAllForApp(
+      makeArgs(
+        new Set([
+          "schema",
+          "customize",
+          "view",
+          "field-acl",
+          "app-acl",
+          "record-acl",
+          "settings",
+          "notification",
+          "report",
+          "action",
+          "process",
+          "admin-notes",
+          "plugin",
+        ]),
+      ),
+    );
+
+    expect(output.deployed).toBe(false);
+    expect(output.deployError).toBeUndefined();
+    expect(vi.mocked(deployApp)).not.toHaveBeenCalled();
+  });
+
+  it("全ドメインの設定ファイルが無い場合は全て not-found skip・deploy 無し・deployError 無しになること", async () => {
+    setupAllMocksToSucceed();
+
+    const allDomains = new Set<ApplyDomain>([
+      "schema",
+      "customize",
+      "view",
+      "field-acl",
+      "app-acl",
+      "record-acl",
+      "settings",
+      "notification",
+      "report",
+      "action",
+      "process",
+      "admin-notes",
+      "plugin",
+      "seed",
+    ]);
+
+    const output = await applyAllForApp(makeArgs(allDomains));
+
+    const allResults = output.phases.flatMap((ph) => ph.results);
+    expect(allResults).toHaveLength(14);
+    for (const result of allResults) {
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.skipped).toBe("not-found");
+      }
+    }
+
+    expect(output.deployed).toBe(false);
+    expect(output.deployError).toBeUndefined();
+    expect(vi.mocked(deployApp)).not.toHaveBeenCalled();
+  });
+
+  it("schema ファイルが存在し run が fatal 失敗した場合は schema=failure・後続=aborted（同一出力に not-found と aborted が並ぶ）", async () => {
+    setupAllMocksToSucceed();
+    // schema exists but run fails fatally; mark "view" as not-found
+    vi.mocked(executeMigration).mockRejectedValue(
+      new SystemError(SystemErrorCode.ExternalApiError, "Schema run failed"),
+    );
+
+    const output = await applyAllForApp(makeArgs(new Set(["view"])));
+
+    // schema actually ran and failed -> skipped: false (failure)
+    const schemaResult = output.phases[0].results[0];
+    expect(schemaResult.success).toBe(false);
+    if (!schemaResult.success) {
+      expect(schemaResult.skipped).toBe(false);
+    }
+
+    // Subsequent domains are aborted. view would have been not-found, but the
+    // abort short-circuits before its probe, so it is recorded as aborted.
+    const phase2 = output.phases[1];
+    for (const result of phase2.results) {
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.skipped).toBe("aborted");
+      }
+    }
+
+    expect(output.deployed).toBe(false);
+  });
+
+  it("probe で exists:true 後に run が not-found ValidationError を throw した場合（TOCTOU）は not-found skip ではなく skipped:false の failure になること", async () => {
+    setupAllMocksToSucceed();
+    // TOCTOU: the probe sees the config file (exists:true), but it is deleted
+    // before run(), so the usecase throws a not-found ValidationError. The
+    // orchestrator only converts probe exists:false into a not-found skip;
+    // an in-run not-found throw stays a regular failure (skipped:false).
+    vi.mocked(applyCustomization).mockRejectedValue(
+      new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        "Customization config file not found",
+      ),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    const customizeResult = output.phases[1].results[0];
+    expect(customizeResult.domain).toBe("customize");
+    expect(customizeResult.success).toBe(false);
+    if (!customizeResult.success) {
+      expect(customizeResult.skipped).toBe(false);
+    }
+  });
+
+  it("標準フェーズで probe が exists:true でも run が内容エラーで失敗する場合は not-found skip ではなく skipped:false の failure になること", async () => {
+    setupAllMocksToSucceed();
+    // The config file exists (probe exists:true), but the usecase fails
+    // with an ordinary content error (e.g. parse failure). This stays a regular
+    // failure (skipped:false) and must not be confused with a not-found skip.
+    // It is also non-fatal, so other domains keep running.
+    vi.mocked(applyCustomization).mockRejectedValue(
+      new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        "Customization config is invalid",
+      ),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    // customize ran and failed -> skipped: false (failure), not not-found
+    const customizeResult = output.phases[1].results[0];
+    expect(customizeResult.domain).toBe("customize");
+    expect(customizeResult.success).toBe(false);
+    if (!customizeResult.success) {
+      expect(customizeResult.skipped).toBe(false);
+    }
+
+    // The failure is non-fatal: other domains still succeed and deploy runs
+    const otherResults = output.phases
+      .flatMap((ph) => ph.results)
+      .filter((r) => r.domain !== "customize");
+    for (const result of otherResults) {
+      expect(result.success).toBe(true);
+    }
+    expect(output.deployed).toBe(true);
   });
 });

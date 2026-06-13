@@ -502,4 +502,238 @@ describe("apply command", () => {
 
     expect(process.exitCode).toBe(1);
   });
+
+  it("全ドメインが not-found skip の場合は exitCode が 1 にならないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            { domain: "customize", success: false, skipped: "not-found" },
+            { domain: "view", success: false, skipped: "not-found" },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it("success がありつつ deploy 不要 (deployed:false・deployError なし) の場合は exitCode が 1 にならないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    // At least one success, but no deploy was needed (deployed:false) and no
+    // deployError. Under the old `!output.deployed` rule this would have wrongly
+    // raised exitCode to 1; the new `hasFailures || output.deployError` rule
+    // must keep it unset.
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Seed Data",
+          results: [{ domain: "seed", success: true }],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it("一部 success だが末尾 deploy が失敗した場合は exitCode が 1 になること", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [{ domain: "customize", success: true }],
+        },
+      ],
+      deployed: false,
+      deployError: new Error("Deploy failed"),
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("not-found skip は spinner の失敗カウント (N failed) に含まれないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    // One genuine failure (counts as failed) plus two not-found skips (must NOT
+    // count as failed). If applyFailCount regressed to plain `!r.success`
+    // (without the `r.skipped !== "not-found"` exclusion) the stop message would
+    // read "(3 failed)" and this assertion would fail.
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("fail"),
+              skipped: false,
+            },
+            { domain: "view", success: false, skipped: "not-found" },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    // p.spinner() is called twice: [0] = diff spinner, [1] = apply spinner.
+    // Inspect the apply spinner's stop() argument (the message string).
+    const applySpinner = vi.mocked(p.spinner).mock.results[1]
+      .value as ReturnType<typeof p.spinner>;
+    const stopMessage = vi.mocked(applySpinner.stop).mock.calls[0][0] as string;
+    expect(stopMessage).toContain("(1 failed)");
+    expect(stopMessage).not.toContain("(3 failed)");
+  });
+
+  it("全ドメイン not-found skip のとき spinner に (N failed) が表示されないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    // All not-found skips. If applyFailCount regressed to plain `!r.success`
+    // this would read "(2 failed)"; with the exclusion it must omit "failed".
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            { domain: "customize", success: false, skipped: "not-found" },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    const applySpinner = vi.mocked(p.spinner).mock.results[1]
+      .value as ReturnType<typeof p.spinner>;
+    const stopMessage = vi.mocked(applySpinner.stop).mock.calls[0][0] as string;
+    expect(stopMessage).toBe("Apply complete.");
+    expect(stopMessage).not.toContain("failed");
+  });
+
+  it("aborted skip がある場合は exitCode が 1 になること", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("fail"),
+              skipped: false,
+            },
+          ],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("Skipped due to fatal error"),
+              skipped: "aborted",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBe(1);
+  });
 });

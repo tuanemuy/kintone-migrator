@@ -45,11 +45,18 @@ export type ApplyPhaseName =
 
 export type ApplyTaskResult =
   | Readonly<{ domain: ApplyDomain; success: true }>
+  | Readonly<{ domain: ApplyDomain; success: false; skipped: "not-found" }>
   | Readonly<{
       domain: ApplyDomain;
       success: false;
       error: Error;
-      skipped: boolean;
+      skipped: "aborted";
+    }>
+  | Readonly<{
+      domain: ApplyDomain;
+      success: false;
+      error: Error;
+      skipped: false;
     }>;
 
 export type ApplyPhaseResult = Readonly<{
@@ -70,6 +77,7 @@ export type ApplyAllForAppInput = Readonly<{
 
 type ApplyTask = {
   readonly domain: ApplyDomain;
+  readonly storageExists: () => Promise<boolean>;
   readonly run: () => Promise<void>;
 };
 
@@ -87,6 +95,8 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
       tasks: [
         {
           domain: "schema",
+          storageExists: async () =>
+            (await c.schema.schemaStorage.get()).exists,
           run: async () => {
             await executeMigration({ container: c.schema });
           },
@@ -98,6 +108,8 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
       tasks: [
         {
           domain: "customize",
+          storageExists: async () =>
+            (await c.customization.customizationStorage.get()).exists,
           run: async () => {
             await applyCustomization({
               container: c.customization,
@@ -107,6 +119,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
         },
         {
           domain: "view",
+          storageExists: async () => (await c.view.viewStorage.get()).exists,
           run: async () => {
             await applyView({ container: c.view });
           },
@@ -118,18 +131,24 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
       tasks: [
         {
           domain: "field-acl",
+          storageExists: async () =>
+            (await c.fieldPermission.fieldPermissionStorage.get()).exists,
           run: async () => {
             await applyFieldPermission({ container: c.fieldPermission });
           },
         },
         {
           domain: "app-acl",
+          storageExists: async () =>
+            (await c.appPermission.appPermissionStorage.get()).exists,
           run: async () => {
             await applyAppPermission({ container: c.appPermission });
           },
         },
         {
           domain: "record-acl",
+          storageExists: async () =>
+            (await c.recordPermission.recordPermissionStorage.get()).exists,
           run: async () => {
             await applyRecordPermission({ container: c.recordPermission });
           },
@@ -141,42 +160,56 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
       tasks: [
         {
           domain: "settings",
+          storageExists: async () =>
+            (await c.settings.generalSettingsStorage.get()).exists,
           run: async () => {
             await applyGeneralSettings({ container: c.settings });
           },
         },
         {
           domain: "notification",
+          storageExists: async () =>
+            (await c.notification.notificationStorage.get()).exists,
           run: async () => {
             await applyNotification({ container: c.notification });
           },
         },
         {
           domain: "report",
+          storageExists: async () =>
+            (await c.report.reportStorage.get()).exists,
           run: async () => {
             await applyReport({ container: c.report });
           },
         },
         {
           domain: "action",
+          storageExists: async () =>
+            (await c.action.actionStorage.get()).exists,
           run: async () => {
             await applyAction({ container: c.action });
           },
         },
         {
           domain: "process",
+          storageExists: async () =>
+            (await c.process.processManagementStorage.get()).exists,
           run: async () => {
             await applyProcessManagement({ container: c.process });
           },
         },
         {
           domain: "admin-notes",
+          storageExists: async () =>
+            (await c.adminNotes.adminNotesStorage.get()).exists,
           run: async () => {
             await applyAdminNotes({ container: c.adminNotes });
           },
         },
         {
           domain: "plugin",
+          storageExists: async () =>
+            (await c.plugin.pluginStorage.get()).exists,
           run: async () => {
             await applyPlugin({ container: c.plugin });
           },
@@ -188,6 +221,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
       tasks: [
         {
           domain: "seed",
+          storageExists: async () => (await c.seed.seedStorage.get()).exists,
           run: async () => {
             await upsertSeed({ container: c.seed, input: {} });
           },
@@ -222,7 +256,7 @@ function buildSkippedPhaseResult(
       domain: task.domain,
       success: false as const,
       error: skipError,
-      skipped: true,
+      skipped: "aborted" as const,
     })),
   };
 }
@@ -241,6 +275,17 @@ async function executeSchemaPhase(
 ): Promise<ApplyPhaseResult> {
   const results: ApplyTaskResult[] = [];
   for (const task of phase.tasks) {
+    // When the schema config file is absent, skip gracefully without
+    // deploying or aborting subsequent phases (each domain decides on its own).
+    if (!(await task.storageExists())) {
+      results.push({
+        domain: task.domain,
+        success: false,
+        skipped: "not-found",
+      });
+      continue;
+    }
+
     try {
       await task.run();
       await deployApp({ container: containers.schema });
@@ -274,7 +319,20 @@ async function executeStandardPhase(
         domain: task.domain,
         success: false,
         error: createSkipError(state),
-        skipped: true,
+        skipped: "aborted",
+      });
+      continue;
+    }
+
+    // When the config file is absent, skip gracefully without aborting.
+    // This probe double-reads with the get() inside task.run(), but a shared
+    // domain-agnostic probe structurally guarantees consistent not-found skip
+    // across all domains and the extra I/O is negligible.
+    if (!(await task.storageExists())) {
+      results.push({
+        domain: task.domain,
+        success: false,
+        skipped: "not-found",
       });
       continue;
     }

@@ -223,7 +223,7 @@ describe("printApplyAllResults", () => {
     );
   });
 
-  it("skipped 結果に yellow marker と skipped が表示されること", () => {
+  it("aborted skip 結果に yellow marker と skipped が表示されること", () => {
     const output: ApplyAllForAppOutput = {
       phases: [
         {
@@ -232,8 +232,19 @@ describe("printApplyAllResults", () => {
             {
               domain: "schema",
               success: false,
+              error: new Error("migration failed"),
+              skipped: false,
+            },
+          ],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
               error: new Error("Skipped due to fatal error"),
-              skipped: true,
+              skipped: "aborted",
             },
           ],
         },
@@ -243,19 +254,143 @@ describe("printApplyAllResults", () => {
 
     printApplyAllResults(output);
 
-    const messageCalls = vi.mocked(p.log.message).mock.calls;
-    const schemaLine = messageCalls[0][0] as string;
-    expect(schemaLine).toContain("\u2298");
-    expect(schemaLine).toContain("skipped");
-    expect(schemaLine).not.toContain("failed");
+    // p.log.message is called once per task row (phase headers use p.log.step),
+    // so find the row by its domain display name instead of a positional index
+    // to stay robust against phase-structure changes.
+    const messageLines = vi
+      .mocked(p.log.message)
+      .mock.calls.map((call) => call[0] as string);
+    const abortedLine = messageLines.find((line) =>
+      line.includes("Customization"),
+    ) as string;
+    expect(abortedLine).toContain("\u2298");
+    expect(abortedLine).toContain("skipped");
+    expect(abortedLine).not.toContain("file not found");
+    expect(abortedLine).not.toContain("failed");
 
-    // Summary should show skipped count
-    const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
-    expect(summaryLine).toContain("1");
-    expect(summaryLine).toContain("skipped");
+    const summaryLine = messageLines[messageLines.length - 1];
+    expect(summaryLine).toContain("1 failed");
+    expect(summaryLine).toContain("1 skipped");
 
-    // logError should NOT be called for skipped results
+    // logError should fire only for the genuine failure (schema)
+    expect(logError).toHaveBeenCalledTimes(1);
+  });
+
+  it("not-found skip \u3068 aborted skip \u304c\u884c\u30ec\u30d9\u30eb\u3067\u533a\u5225\u8868\u793a\u3055\u308c\u308b\u3053\u3068", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("Skipped due to fatal error"),
+              skipped: "aborted",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    // p.log.message is called once per task row (phase headers use p.log.step),
+    // so find each row by its domain display name instead of a positional index
+    // to stay robust against phase-structure changes.
+    const messageLines = vi
+      .mocked(p.log.message)
+      .mock.calls.map((call) => call[0] as string);
+    const notFoundLine = messageLines.find((line) =>
+      line.includes("Schema"),
+    ) as string;
+    const abortedLine = messageLines.find((line) =>
+      line.includes("Customization"),
+    ) as string;
+
+    expect(notFoundLine).toContain("skipped (file not found)");
+    expect(abortedLine).toContain("skipped");
+    expect(abortedLine).not.toContain("file not found");
+
+    // The summary aggregates all skip kinds into a single "N skipped" count
+    // and must NOT break them down by kind. Assert the combined count
+    // ("2 skipped") and that no per-kind breakdown words leak into the summary.
+    const summaryLine = messageLines[messageLines.length - 1];
+    expect(summaryLine).toContain("2 skipped");
+    expect(summaryLine).not.toContain("not-found");
+    expect(summaryLine).not.toContain("file not found");
+    expect(summaryLine).not.toContain("aborted");
+
+    // not-found has no error -> logError never fires here
     expect(logError).not.toHaveBeenCalled();
+  });
+
+  it("\u5168\u30c9\u30e1\u30a4\u30f3\u304c not-found skip \u306e\u3068\u304d\u4e2d\u7acb\u6587\u8a00\u304c\u8868\u793a\u3055\u308c 'Not deployed due to errors.' \u306f\u51fa\u306a\u3044\u3053\u3068", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            { domain: "customize", success: false, skipped: "not-found" },
+            { domain: "view", success: false, skipped: "not-found" },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    expect(p.log.info).toHaveBeenCalledWith(
+      "No config files found. Nothing to apply.",
+    );
+    expect(p.log.warn).not.toHaveBeenCalledWith("Not deployed due to errors.");
+  });
+
+  it("aborted skip \u6df7\u5728\uff08failed > 0\uff09\u306e\u3068\u304d\u306f\u4e2d\u7acb\u6587\u8a00\u3067\u306f\u306a\u304f 'Not deployed due to errors.' \u304c\u7dad\u6301\u3055\u308c\u308b\u3053\u3068", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("migration failed"),
+              skipped: false,
+            },
+          ],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("Skipped due to fatal error"),
+              skipped: "aborted",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    expect(p.log.warn).toHaveBeenCalledWith("Not deployed due to errors.");
+    expect(p.log.info).not.toHaveBeenCalledWith(
+      "No config files found. Nothing to apply.",
+    );
   });
 
   it("deployed が false で deployError がある場合にエラー詳細が表示されること", () => {
@@ -314,5 +449,23 @@ describe("printApplyAllResults", () => {
     const messageCalls = vi.mocked(p.log.message).mock.calls;
     const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
     expect(summaryLine).toContain("No domains processed");
+  });
+
+  it("空の phases（skipped === 0）のときは中立文言には入らず 'Not deployed due to errors.' が出ること", () => {
+    // skipped === 0 boundary: phases are empty, so succeeded/failed/skipped
+    // are all 0. The neutral message guard requires skipped > 0, so this
+    // case must NOT emit "No config files found. Nothing to apply." and
+    // instead falls through to the succeeded === 0 branch.
+    const output: ApplyAllForAppOutput = {
+      phases: [],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    expect(p.log.info).not.toHaveBeenCalledWith(
+      "No config files found. Nothing to apply.",
+    );
+    expect(p.log.warn).toHaveBeenCalledWith("Not deployed due to errors.");
   });
 });
