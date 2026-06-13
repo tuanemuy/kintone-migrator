@@ -60,8 +60,11 @@ const { mockSeedStorageGet } = vi.hoisted(() => ({
 }));
 
 vi.mock("@/core/application/container/applyAllCli", () => ({
-  createCliApplyAllContainers: vi.fn(() => ({
+  createCliApplyAllContainers: vi.fn((config: { appName?: string }) => ({
     containers: {
+      // Tag containers with the app name so per-app applyAllForApp calls can be
+      // identified by argument and their order asserted (AC-3).
+      appName: config?.appName,
       seed: { seedStorage: { get: mockSeedStorageGet } },
     },
     diffContainers: {},
@@ -320,6 +323,86 @@ describe("apply command", () => {
     expect(printAppHeader).toHaveBeenCalledWith("test-app-2", "456");
     // Both apps applied in dependency order.
     expect(applyAllForApp).toHaveBeenCalledTimes(2);
+
+    // Assert the actual apply order is the dependency order (test-app first,
+    // then test-app-2), not just that apply ran twice. The container is tagged
+    // with the app name in Phase 1, so each applyAllForApp call carries the app
+    // it applies — the order of those calls is the real apply order.
+    const appliedOrder = vi
+      .mocked(applyAllForApp)
+      .mock.calls.map(
+        ([arg]) => (arg.containers as { appName?: string }).appName,
+      );
+    expect(appliedOrder).toEqual(["test-app", "test-app-2"]);
+
+    // printAppHeader (Phase 1 collection) likewise runs in dependency order.
+    const headerOrder = vi
+      .mocked(printAppHeader)
+      .mock.calls.map(([name]) => name);
+    expect(headerOrder).toEqual(["test-app", "test-app-2"]);
+  });
+
+  it("multiApp で先頭 app が失敗したら後続 app は apply されないこと（fail-fast・AC-4）", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp, mockApp2] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockMultiProjectConfig);
+      },
+    );
+
+    // Mirror real executeMultiApp fail-fast semantics at the CLI boundary: stop
+    // invoking executors once one returns { ok: false }. This exercises the
+    // genuine path where the apply command's executor reports a failure and the
+    // following app is skipped (never applied).
+    vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
+      async (_plan, executor) => {
+        for (const app of plan.orderedApps) {
+          const outcome = await executor(app);
+          if (outcome && outcome.ok === false) {
+            break;
+          }
+        }
+      },
+    );
+
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    // First app genuinely fails so its executor returns { ok: false }.
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("fail"),
+              skipped: false,
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    // Only the first app was applied; fail-fast prevented the second app's apply.
+    expect(applyAllForApp).toHaveBeenCalledTimes(1);
+    const appliedOrder = vi
+      .mocked(applyAllForApp)
+      .mock.calls.map(
+        ([arg]) => (arg.containers as { appName?: string }).appName,
+      );
+    expect(appliedOrder).toEqual(["test-app"]);
   });
 
   it("multiApp で --yes の場合は confirm をスキップして全アプリを apply すること（AC-5）", async () => {
@@ -379,6 +462,134 @@ describe("apply command", () => {
     expect(p.log.info).toHaveBeenCalledWith(
       "Dry run complete. No changes will be applied.",
     );
+  });
+
+  it("multiApp で --dry-run のとき diff 変更なし+seed ありのアプリには seed 注記を表示すること（N-001）", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp, mockApp2] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockMultiProjectConfig);
+      },
+    );
+
+    // app1: diff changes (default). app2: empty diff but seed exists, so the
+    // Phase 3 seed note branch (!hasChanges && seedExists) fires.
+    vi.mocked(diffAllForApp)
+      .mockResolvedValueOnce([
+        {
+          domain: "schema",
+          success: true,
+          result: {
+            isEmpty: false,
+            entries: [],
+            schemaFields: [],
+            summary: { added: 1, modified: 0, deleted: 0, total: 1 },
+            hasLayoutChanges: false,
+          },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          domain: "schema",
+          success: true,
+          result: {
+            isEmpty: true,
+            entries: [],
+            schemaFields: [],
+            summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+            hasLayoutChanges: false,
+          },
+        },
+      ]);
+    // Both apps have seed (default exists:true), but only app2 has no diff
+    // changes, so it is the one driving the dry-run seed note.
+    mockSeedStorageGet
+      .mockResolvedValueOnce({ exists: true, content: "records: []" })
+      .mockResolvedValueOnce({ exists: true, content: "records: []" });
+
+    await applyCommand.run({ values: { "dry-run": true } } as never);
+
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Dry run complete. No changes will be applied.",
+    );
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Note: Seed data would still be upserted when running without --dry-run.",
+    );
+    expect(runMultiAppWithFailCheck).not.toHaveBeenCalled();
+    expect(applyAllForApp).not.toHaveBeenCalled();
+  });
+
+  it("multiApp で --dry-run かつ全アプリ変更なし・seed なしのとき 'No changes' の後に 'Dry run complete.' も表示すること（W-001）", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp, mockApp2] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockMultiProjectConfig);
+      },
+    );
+
+    // Both apps: empty diff and no seed.
+    vi.mocked(diffAllForApp)
+      .mockResolvedValueOnce([
+        {
+          domain: "schema",
+          success: true,
+          result: {
+            isEmpty: true,
+            entries: [],
+            schemaFields: [],
+            summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+            hasLayoutChanges: false,
+          },
+        },
+      ])
+      .mockResolvedValueOnce([
+        {
+          domain: "schema",
+          success: true,
+          result: {
+            isEmpty: true,
+            entries: [],
+            schemaFields: [],
+            summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+            hasLayoutChanges: false,
+          },
+        },
+      ]);
+    mockSeedStorageGet
+      .mockResolvedValueOnce({ exists: false, content: "" })
+      .mockResolvedValueOnce({ exists: false, content: "" });
+
+    await applyCommand.run({ values: { "dry-run": true } } as never);
+
+    // Matches single mode: the no-changes message is emitted first, then the
+    // dry-run summary line is still surfaced.
+    expect(p.log.success).toHaveBeenCalledWith(
+      "No changes detected in any app.",
+    );
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Dry run complete. No changes will be applied.",
+    );
+    expect(p.confirm).not.toHaveBeenCalled();
+    expect(runMultiAppWithFailCheck).not.toHaveBeenCalled();
+    expect(applyAllForApp).not.toHaveBeenCalled();
   });
 
   it("multiApp で confirm をキャンセルした場合は apply されないこと", async () => {

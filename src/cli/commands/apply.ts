@@ -267,10 +267,12 @@ export default define({
           );
           if (!hasAnyChanges) {
             p.log.success("No changes detected in any app.");
-            return;
           }
 
-          // Phase 3: Dry run exits here — diffs are already shown above.
+          // Phase 3: Dry run exits here — diffs are already shown above. Mirror
+          // single mode (runApplyAll): emit the no-changes message above first,
+          // then always surface "Dry run complete." so a --dry-run invoker gets
+          // explicit dry-run confirmation even when nothing changed.
           if (dryRun) {
             p.log.info("Dry run complete. No changes will be applied.");
             if (appDiffResults.some((a) => !a.hasChanges && a.seedExists)) {
@@ -278,6 +280,11 @@ export default define({
                 "Note: Seed data would still be upserted when running without --dry-run.",
               );
             }
+            return;
+          }
+
+          // Without dry-run, no changes anywhere means there is nothing to apply.
+          if (!hasAnyChanges) {
             return;
           }
 
