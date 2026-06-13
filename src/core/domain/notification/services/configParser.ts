@@ -229,7 +229,6 @@ function parseReminderNotification(
     );
   }
 
-  // Validate that hoursLater is an integer within range when present
   if (
     hasHoursLater &&
     (typeof raw.hoursLater !== "number" ||
