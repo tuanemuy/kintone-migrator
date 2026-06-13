@@ -131,7 +131,6 @@ describe("createApplyCommand", () => {
       expect(p.log.warn).toHaveBeenCalledWith(
         expect.stringContaining("test push"),
       );
-      // Existing behavior still runs after the warning.
       expect(config.applyFn).toHaveBeenCalled();
     });
   });

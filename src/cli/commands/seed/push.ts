@@ -100,8 +100,8 @@ async function runUpsert(
 
 /**
  * Shared `run` body for `seed push` and its `seed apply` deprecation alias. seed
- * is out of scope for 3-way merge (see ADR-003); this performs a plain upsert
- * without the drift guard the other domains' push commands apply.
+ * is out of scope for 3-way merge; this performs a plain upsert without the drift
+ * guard the other domains' push commands apply.
  */
 export async function runSeedPush(ctx: CommandContext): Promise<void> {
   try {

@@ -3,10 +3,9 @@ import pc from "picocolors";
 
 /**
  * Prints a one-line deprecation warning steering users from a legacy command to
- * its pull/push successor. Emitted via `p.log.warn` (clack's default stdout
- * stream) like every other human-facing log in this CLI. It is a single human
- * note line: it does not change the exit code and does not pollute the
- * machine-readable data (saved config files, diff/JSON output).
+ * its pull/push successor. Emitted via `p.log.warn` so it stays a human-facing
+ * note: it does not change the exit code and does not pollute machine-readable
+ * output (saved config files, diff/JSON).
  */
 export function printDeprecationWarning(args: {
   oldCommand: string;

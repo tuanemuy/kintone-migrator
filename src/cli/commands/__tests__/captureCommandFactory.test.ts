@@ -75,7 +75,6 @@ describe("createCaptureCommand", () => {
     expect(p.log.warn).toHaveBeenCalledWith(
       expect.stringContaining("test pull"),
     );
-    // Existing behavior still runs after the warning.
     expect(config.captureFn).toHaveBeenCalled();
     expect(config.saveFn).toHaveBeenCalled();
   });

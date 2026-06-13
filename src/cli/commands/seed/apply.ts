@@ -4,7 +4,7 @@ import { runSeedPush, seedPushArgs } from "./push";
 
 /**
  * Deprecation alias for `seed push`. Kept so existing `seed apply` scripts keep
- * working; emits a warning and delegates to the same upsert run (ADR-002).
+ * working; emits a warning and delegates to the same upsert run.
  */
 export default define({
   name: "apply",
