@@ -33,6 +33,7 @@ vi.mock("@/core/application/projectConfig/executeMultiApp", () => ({
 
 import * as p from "@clack/prompts";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
+import { printMultiAppResult } from "../output";
 import {
   runMultiAppWithFailCheck,
   validateExclusiveArgs,
@@ -130,6 +131,51 @@ describe("runMultiAppWithFailCheck", () => {
         code: "EXECUTION_ERROR",
       }),
     );
+  });
+
+  it("executor が {ok:false} を返す場合、実体の executeMultiApp 経由で EXECUTION_ERROR の SystemError をスローする", async () => {
+    // Integration path: use the real executeMultiApp (not the mocked verdict) so
+    // the full wiring { ok: false } → "failed" → throw is exercised. Binds the
+    // seam the other (mocked) case leaves untested.
+    const { executeMultiApp: realExecuteMultiApp } = await vi.importActual<
+      typeof import("@/core/application/projectConfig/executeMultiApp")
+    >("@/core/application/projectConfig/executeMultiApp");
+    vi.mocked(executeMultiApp).mockImplementation(realExecuteMultiApp);
+
+    const plan = makePlan([makeApp("App1")]);
+
+    await expect(
+      runMultiAppWithFailCheck(plan, async () => ({
+        ok: false,
+        error: new Error("fail"),
+      })),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        code: "EXECUTION_ERROR",
+      }),
+    );
+
+    // Closes the misclassification gap end-to-end: the result handed to
+    // printMultiAppResult (called before the throw) must mark the app "failed",
+    // not "succeeded" (AC-1, Issue's core "status misclassification").
+    const multiResult = vi.mocked(printMultiAppResult).mock.calls[0][0];
+    expect(multiResult.results[0].status).toBe("failed");
+    expect(multiResult.results[0].status).not.toBe("succeeded");
+  });
+
+  it("executor が {ok:true} を返す場合、実体の executeMultiApp 経由でスローせず正常完了する", async () => {
+    // Integration mirror: real executeMultiApp with an { ok: true } executor must
+    // NOT throw (fail-fast not erroneously triggered).
+    const { executeMultiApp: realExecuteMultiApp } = await vi.importActual<
+      typeof import("@/core/application/projectConfig/executeMultiApp")
+    >("@/core/application/projectConfig/executeMultiApp");
+    vi.mocked(executeMultiApp).mockImplementation(realExecuteMultiApp);
+
+    const plan = makePlan([makeApp("App1"), makeApp("App2")]);
+
+    await expect(
+      runMultiAppWithFailCheck(plan, async () => ({ ok: true })),
+    ).resolves.toBeUndefined();
   });
 
   it("successMessage が指定されていない場合、成功ログは出力されない", async () => {

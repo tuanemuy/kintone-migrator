@@ -263,7 +263,7 @@ export async function runMultiAppWithHeaders(
     plan,
     async (app) => {
       printAppHeader(app.name, app.appId);
-      await executor(app);
+      return executor(app);
     },
     successMessage,
   );
