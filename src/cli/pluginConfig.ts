@@ -1,7 +1,15 @@
 import type { PluginCliContainerConfig } from "@/core/application/container/pluginCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const PLUGIN_STATE_FILE = "plugin.yaml";
 
 export const pluginArgs = {
   ...kintoneArgs,
@@ -26,9 +34,18 @@ const {
   appFileField: (a) => a.pluginFile,
   defaultDir: "plugin",
   defaultFileName: "plugins.yaml",
-  buildConfig: (base, filePath): PluginCliContainerConfig => ({
+  buildConfig: (base, filePath, app): PluginCliContainerConfig => ({
     ...base,
     pluginFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode
+    // (ADR-188-001).
+    pluginStateFilePath: app
+      ? buildDomainStateFilePath(app.name, PLUGIN_STATE_FILE)
+      : buildLegacyDomainStateFilePath(PLUGIN_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

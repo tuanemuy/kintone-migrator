@@ -4,7 +4,7 @@ import {
   type CustomizationCliContainerConfig,
   createCustomizationCliContainer,
 } from "@/core/application/container/cli";
-import { detectCustomizationDiff } from "@/core/application/customization/detectCustomizationDiff";
+import { detectCustomizationThreeWayDiff } from "@/core/application/customization/detectCustomizationThreeWayDiff";
 import {
   type CustomizeCliValues,
   customizeArgs,
@@ -12,7 +12,11 @@ import {
   resolveCustomizeConfig,
 } from "../../customizeConfig";
 import { handleCliError } from "../../handleError";
-import { printAppHeader, printCustomizationDiffResult } from "../../output";
+import {
+  printAppHeader,
+  printCustomizationDiffResult,
+  printThreeWayDiffResult,
+} from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
 import { computeBasePath } from "./capture";
 
@@ -24,9 +28,9 @@ async function runDiff(
 
   const s = p.spinner();
   s.start("Comparing customization settings...");
-  let result: Awaited<ReturnType<typeof detectCustomizationDiff>>;
+  let result: Awaited<ReturnType<typeof detectCustomizationThreeWayDiff>>;
   try {
-    result = await detectCustomizationDiff({
+    result = await detectCustomizationThreeWayDiff({
       container,
       input: { basePath },
     });
@@ -36,12 +40,13 @@ async function runDiff(
   }
   s.stop("Comparison complete.");
 
-  printCustomizationDiffResult(result);
+  printThreeWayDiffResult(result, printCustomizationDiffResult);
 }
 
 export default define({
   name: "diff",
-  description: "Compare local customization config with remote kintone app",
+  description:
+    "Compare local customization config with remote kintone app (3-way)",
   args: customizeArgs,
   run: async (ctx) => {
     try {
@@ -49,28 +54,19 @@ export default define({
 
       await routeMultiApp(values, {
         singleLegacy: async () => {
-          const containerConfig = resolveCustomizeConfig(values);
-          await runDiff(containerConfig);
+          await runDiff(resolveCustomizeConfig(values));
         },
         singleApp: async (app, projectConfig) => {
-          const containerConfig = resolveCustomizeAppConfig(
-            app,
-            projectConfig,
-            values,
-          );
-          await runDiff(containerConfig);
+          await runDiff(resolveCustomizeAppConfig(app, projectConfig, values));
         },
         multiApp: async (plan, projectConfig) => {
           await runMultiAppWithFailCheck(
             plan,
             async (app) => {
-              const containerConfig = resolveCustomizeAppConfig(
-                app,
-                projectConfig,
-                values,
-              );
               printAppHeader(app.name, app.appId);
-              await runDiff(containerConfig);
+              await runDiff(
+                resolveCustomizeAppConfig(app, projectConfig, values),
+              );
             },
             "All customization diffs completed successfully.",
           );

@@ -1,11 +1,13 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
+import { KintoneAppRevisionReader } from "@/core/adapters/kintone/appRevisionReader";
 import { KintoneCustomizationConfigurator } from "@/core/adapters/kintone/customizationConfigurator";
 import { KintoneFileDownloader } from "@/core/adapters/kintone/fileDownloader";
 import { KintoneFileUploader } from "@/core/adapters/kintone/fileUploader";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import { KintoneRecordManager } from "@/core/adapters/kintone/recordManager";
 import { createLocalFileAppRevisionStorage } from "@/core/adapters/local/appRevisionStorage";
+import { createLocalFileCustomizationStateStorage } from "@/core/adapters/local/customizationStateStorage";
 import { createLocalFileCustomizationStorage } from "@/core/adapters/local/customizationStorage";
 import { LocalFileContentReader } from "@/core/adapters/local/fileContentReader";
 import { LocalFileWriter } from "@/core/adapters/local/fileWriter";
@@ -93,6 +95,10 @@ export type CustomizationCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   customizeFilePath: string;
+  // Optional so capture/apply/diff callers need not supply 3-way paths; pull/push
+  // resolve them via customizeConfig (ADR-188-001).
+  customizeStateFilePath?: string;
+  appRevisionFilePath?: string;
   client?: KintoneRestAPIClient;
 };
 
@@ -110,6 +116,13 @@ export function createCustomizationCliContainer(
     customizationStorage: createLocalFileCustomizationStorage(
       config.customizeFilePath,
     ),
+    customizationStateStorage: createLocalFileCustomizationStateStorage(
+      config.customizeStateFilePath ?? `${config.customizeFilePath}.state`,
+    ),
+    appRevisionStorage: createLocalFileAppRevisionStorage(
+      config.appRevisionFilePath ?? `${config.customizeFilePath}.revision`,
+    ),
+    appRevisionReader: new KintoneAppRevisionReader(client, config.appId),
     fileUploader: new KintoneFileUploader(client, process.cwd()),
     fileDownloader: new KintoneFileDownloader(client),
     fileContentReader: new LocalFileContentReader(),

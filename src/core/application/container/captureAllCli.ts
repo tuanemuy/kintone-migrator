@@ -69,6 +69,15 @@ export function createCliCaptureContainers(
       customization: createCustomizationCliContainer({
         ...base,
         customizeFilePath: paths.customize,
+        customizeStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "customize.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       view: createViewCliContainer({
         ...base,
@@ -203,6 +212,15 @@ export function createCliCaptureContainers(
       plugin: createPluginCliContainer({
         ...base,
         pluginFilePath: paths.plugin,
+        pluginStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "plugin.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
     },
   };

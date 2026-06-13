@@ -3,6 +3,7 @@ export const CustomizationErrorCode = {
   CzInvalidScope: "CZ_INVALID_SCOPE",
   CzInvalidResourceType: "CZ_INVALID_RESOURCE_TYPE",
   CzTooManyFiles: "CZ_TOO_MANY_FILES",
+  CzUnresolvedConflict: "CZ_UNRESOLVED_CONFLICT",
 } as const;
 
 export type CustomizationErrorCode =

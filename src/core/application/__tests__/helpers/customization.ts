@@ -1,6 +1,7 @@
 import type { CustomizationContainer } from "@/core/application/container/customization";
 import { SystemErrorCode } from "@/core/application/error";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
+import type { CustomizationStateStorage } from "@/core/domain/customization/ports/customizationStateStorage";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
 import type { FileContentReader } from "@/core/domain/customization/ports/fileContentReader";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
@@ -14,6 +15,8 @@ import type {
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -127,6 +130,10 @@ export class InMemoryCustomizationStorage
   extends InMemoryFileStorage
   implements CustomizationStorage {}
 
+export class InMemoryCustomizationStateStorage
+  extends InMemoryFileStorage
+  implements CustomizationStateStorage {}
+
 export class InMemoryFileDownloader extends FakeBase implements FileDownloader {
   private files: Map<string, ArrayBuffer> = new Map();
 
@@ -160,6 +167,9 @@ export class InMemoryFileWriter extends FakeBase implements FileWriter {
 export type TestCustomizationContainer = CustomizationContainer & {
   customizationConfigurator: InMemoryCustomizationConfigurator;
   customizationStorage: InMemoryCustomizationStorage;
+  customizationStateStorage: InMemoryCustomizationStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   fileUploader: InMemoryFileUploader;
   fileDownloader: InMemoryFileDownloader;
   fileContentReader: InMemoryFileContentReader;
@@ -172,6 +182,9 @@ export function createTestCustomizationContainer(): TestCustomizationContainer {
     configCodec: testConfigCodec,
     customizationConfigurator: new InMemoryCustomizationConfigurator(),
     customizationStorage: new InMemoryCustomizationStorage(),
+    customizationStateStorage: new InMemoryCustomizationStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     fileUploader: new InMemoryFileUploader(),
     fileDownloader: new InMemoryFileDownloader(),
     fileContentReader: new InMemoryFileContentReader(),

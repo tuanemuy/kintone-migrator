@@ -67,6 +67,15 @@ export function createCliDiffAllContainers(
       customization: createCustomizationCliContainer({
         ...base,
         customizeFilePath: paths.customize,
+        customizeStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "customize.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       view: createViewCliContainer({
         ...base,
@@ -201,6 +210,15 @@ export function createCliDiffAllContainers(
       plugin: createPluginCliContainer({
         ...base,
         pluginFilePath: paths.plugin,
+        pluginStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "plugin.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
     },
   };

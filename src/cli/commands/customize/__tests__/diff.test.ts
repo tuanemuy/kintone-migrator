@@ -37,21 +37,22 @@ vi.mock("@/cli/projectConfig", () => ({
 vi.mock("@/cli/output", () => ({
   printAppHeader: vi.fn(),
   printCustomizationDiffResult: vi.fn(),
+  printThreeWayDiffResult: vi.fn(),
 }));
 
 vi.mock("@/core/application/container/cli", () => ({
   createCustomizationCliContainer: vi.fn(() => ({})),
 }));
 
-vi.mock("@/core/application/customization/detectCustomizationDiff");
+vi.mock("@/core/application/customization/detectCustomizationThreeWayDiff");
 
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
 
 import { handleCliError } from "@/cli/handleError";
-import { printCustomizationDiffResult } from "@/cli/output";
-import { detectCustomizationDiff } from "@/core/application/customization/detectCustomizationDiff";
+import { printThreeWayDiffResult } from "@/cli/output";
+import { detectCustomizationThreeWayDiff } from "@/core/application/customization/detectCustomizationThreeWayDiff";
 import command from "../diff";
 
 afterEach(() => {
@@ -59,50 +60,59 @@ afterEach(() => {
 });
 
 describe("customize diff command", () => {
-  it("should detect diff and print result", async () => {
+  it("should detect a 3-way diff and print the result", async () => {
     const mockResult = {
-      entries: [
+      mode: "three-way" as const,
+      localChanges: [
         {
-          type: "modified" as const,
-          platform: "desktop" as const,
-          category: "js" as const,
-          name: "app.js",
-          details: "file content changed",
+          key: "desktop:js:app.js",
+          label: "desktop:js:app.js",
+          kind: "localOnly" as const,
         },
       ],
-      summary: { added: 0, modified: 1, deleted: 0, total: 1 },
+      remoteDrift: [],
+      conflicts: [],
+      extras: [],
       isEmpty: false,
-      warnings: [],
     };
-    vi.mocked(detectCustomizationDiff).mockResolvedValue(mockResult);
+    vi.mocked(detectCustomizationThreeWayDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    expect(detectCustomizationDiff).toHaveBeenCalledWith(
+    expect(detectCustomizationThreeWayDiff).toHaveBeenCalledWith(
       expect.objectContaining({
         input: expect.objectContaining({ basePath: expect.any(String) }),
       }),
     );
-    expect(printCustomizationDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
-  it("should print empty result when no diff", async () => {
+  it("should fall back to a two-way result when no state exists", async () => {
     const mockResult = {
-      entries: [],
-      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
-      isEmpty: true,
-      warnings: [],
+      mode: "two-way" as const,
+      diff: {
+        entries: [],
+        summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+        isEmpty: true,
+        warnings: [],
+      },
     };
-    vi.mocked(detectCustomizationDiff).mockResolvedValue(mockResult);
+    vi.mocked(detectCustomizationThreeWayDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    expect(printCustomizationDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
   it("should handle errors with handleCliError", async () => {
     const error = new Error("Diff failed");
-    vi.mocked(detectCustomizationDiff).mockRejectedValue(error);
+    vi.mocked(detectCustomizationThreeWayDiff).mockRejectedValue(error);
 
     await command.run({ values: {} } as never);
 
@@ -111,16 +121,19 @@ describe("customize diff command", () => {
 
   it("should pass basePath derived from customizeFilePath", async () => {
     const mockResult = {
-      entries: [],
-      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
-      isEmpty: true,
-      warnings: [],
+      mode: "two-way" as const,
+      diff: {
+        entries: [],
+        summary: { added: 0, modified: 0, deleted: 0, total: 0 },
+        isEmpty: true,
+        warnings: [],
+      },
     };
-    vi.mocked(detectCustomizationDiff).mockResolvedValue(mockResult);
+    vi.mocked(detectCustomizationThreeWayDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    const call = vi.mocked(detectCustomizationDiff).mock.calls[0];
+    const call = vi.mocked(detectCustomizationThreeWayDiff).mock.calls[0];
     expect(call?.[0]).toHaveProperty("input.basePath");
     expect(typeof call?.[0]?.input?.basePath).toBe("string");
   });

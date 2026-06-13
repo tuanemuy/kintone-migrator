@@ -1,4 +1,7 @@
+import type { AppRevisionReader } from "@/core/domain/appRevision/ports/appRevisionReader";
+import type { AppRevisionStorage } from "@/core/domain/appRevision/ports/appRevisionStorage";
 import type { CustomizationConfigurator } from "@/core/domain/customization/ports/customizationConfigurator";
+import type { CustomizationStateStorage } from "@/core/domain/customization/ports/customizationStateStorage";
 import type { CustomizationStorage } from "@/core/domain/customization/ports/customizationStorage";
 import type { FileContentReader } from "@/core/domain/customization/ports/fileContentReader";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
@@ -35,10 +38,31 @@ export type CustomizationDiffContainer = {
   fileContentReader: FileContentReader;
 };
 
-/** Full container satisfying apply, capture, and diff */
+/**
+ * Ports needed by customize 3-way pull/push/diff (AC-9). Combines the diff ports
+ * (content comparison) with the file writer/uploader/deployer for pull/push, plus
+ * the base snapshot + app revision storage and the remote revision reader.
+ */
+export type CustomizationThreeWayContainer = CustomizationDiffContainer & {
+  // Base snapshot storage for 3-way diff/pull/push (ADR-188-001).
+  customizationStateStorage: CustomizationStateStorage;
+  // App-scoped base revision storage (shared across domains, ADR-188-001).
+  appRevisionStorage: AppRevisionStorage;
+  // Reads the current remote app revision in one place (ADR-188-007).
+  appRevisionReader: AppRevisionReader;
+  // Writes pulled remote files to disk.
+  fileWriter: FileWriter;
+  // Uploads local files for push.
+  fileUploader: FileUploader;
+  // Deploys after push.
+  appDeployer: AppDeployer;
+};
+
+/** Full container satisfying apply, capture, diff, and 3-way pull/push */
 export type CustomizationContainer = CustomizationApplyContainer &
   CustomizationCaptureContainer &
-  CustomizationDiffContainer;
+  CustomizationDiffContainer &
+  CustomizationThreeWayContainer;
 
 export type CustomizationApplyServiceArgs<T = undefined> = ServiceArgs<
   CustomizationApplyContainer,
@@ -52,5 +76,10 @@ export type CustomizationCaptureServiceArgs<T = undefined> = ServiceArgs<
 
 export type CustomizationDiffServiceArgs<T = undefined> = ServiceArgs<
   CustomizationDiffContainer,
+  T
+>;
+
+export type CustomizationThreeWayServiceArgs<T = undefined> = ServiceArgs<
+  CustomizationThreeWayContainer,
   T
 >;

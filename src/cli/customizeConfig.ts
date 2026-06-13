@@ -1,7 +1,15 @@
 import type { CustomizationCliContainerConfig } from "@/core/application/container/cli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const CUSTOMIZE_STATE_FILE = "customize.yaml";
 
 export const customizeArgs = {
   ...kintoneArgs,
@@ -26,9 +34,18 @@ const {
   appFileField: (a) => a.customizeFile,
   defaultDir: "customize",
   defaultFileName: "customize.yaml",
-  buildConfig: (base, filePath): CustomizationCliContainerConfig => ({
+  buildConfig: (base, filePath, app): CustomizationCliContainerConfig => ({
     ...base,
     customizeFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode
+    // (ADR-188-001).
+    customizeStateFilePath: app
+      ? buildDomainStateFilePath(app.name, CUSTOMIZE_STATE_FILE)
+      : buildLegacyDomainStateFilePath(CUSTOMIZE_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 
