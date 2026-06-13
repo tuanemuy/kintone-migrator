@@ -431,4 +431,22 @@ describe("printApplyAllResults", () => {
     const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
     expect(summaryLine).toContain("No domains processed");
   });
+
+  it("空の phases（skipped === 0）のときは中立文言には入らず 'Not deployed due to errors.' が出ること", () => {
+    // skipped === 0 boundary: phases are empty, so succeeded/failed/skipped
+    // are all 0. The neutral message guard requires skipped > 0, so this
+    // case must NOT emit "No config files found. Nothing to apply." and
+    // instead falls through to the succeeded === 0 branch.
+    const output: ApplyAllForAppOutput = {
+      phases: [],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    expect(p.log.info).not.toHaveBeenCalledWith(
+      "No config files found. Nothing to apply.",
+    );
+    expect(p.log.warn).toHaveBeenCalledWith("Not deployed due to errors.");
+  });
 });

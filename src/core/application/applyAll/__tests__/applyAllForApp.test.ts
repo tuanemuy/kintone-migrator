@@ -5,6 +5,8 @@ import {
   SystemErrorCode,
   UnauthenticatedError,
   UnauthenticatedErrorCode,
+  ValidationError,
+  ValidationErrorCode,
 } from "@/core/application/error";
 import {
   type ApplyAllForAppInput,
@@ -732,5 +734,28 @@ describe("applyAllForApp", () => {
     }
 
     expect(output.deployed).toBe(false);
+  });
+
+  it("probe で exists:true 後に run が not-found ValidationError を throw した場合（TOCTOU）は not-found skip ではなく skipped:false の failure になること", async () => {
+    setupAllMocksToSucceed();
+    // TOCTOU: the probe sees the config file (exists:true), but it is deleted
+    // before run(), so the usecase throws a not-found ValidationError. The
+    // orchestrator only converts probe exists:false into a not-found skip;
+    // an in-run not-found throw stays a regular failure (skipped:false).
+    vi.mocked(applyCustomization).mockRejectedValue(
+      new ValidationError(
+        ValidationErrorCode.InvalidInput,
+        "Customization config file not found",
+      ),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    const customizeResult = output.phases[1].results[0];
+    expect(customizeResult.domain).toBe("customize");
+    expect(customizeResult.success).toBe(false);
+    if (!customizeResult.success) {
+      expect(customizeResult.skipped).toBe(false);
+    }
   });
 });
