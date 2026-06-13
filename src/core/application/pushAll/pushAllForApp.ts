@@ -1,6 +1,7 @@
 import { pushAction } from "@/core/application/action/pushAction";
 import { pushAdminNotes } from "@/core/application/adminNotes/pushAdminNotes";
 import { pushAppPermission } from "@/core/application/appPermission/pushAppPermission";
+import { saveAppRevision } from "@/core/application/appRevisionIo";
 import type { ApplyAllContainers } from "@/core/application/container/applyAll";
 import { pushCustomization } from "@/core/application/customization/pushCustomization";
 import {
@@ -19,6 +20,7 @@ import { pushPlugin } from "@/core/application/plugin/pushPlugin";
 import { pushProcessManagement } from "@/core/application/processManagement/pushProcessManagement";
 import { pushRecordPermission } from "@/core/application/recordPermission/pushRecordPermission";
 import { pushReport } from "@/core/application/report/pushReport";
+import { getCurrentRemoteRevision } from "@/core/application/threeWay/remoteRevision";
 import { pushView } from "@/core/application/view/pushView";
 
 /**
@@ -460,9 +462,43 @@ export async function pushAllForApp(
     ? await tryDeploy(args.containers)
     : { deployed: false };
 
+  // Re-sync the shared base app revision to the actual post-deploy remote
+  // revision (W-app-001). Each push<Domain> saved its own `update*` response
+  // revision, but deploy (schema phase and/or the final deploy) advances the
+  // app revision further, so those per-domain bases are stale the moment a
+  // deploy runs. Without this re-sync the next `pull --all` early-skip (AC-13)
+  // would always miss (base != remote) and fall through to a full 3-way for
+  // every domain. We re-read once after all deploys so the saved base matches
+  // the revision the early-skip later reads. Skipped on failure so a partially
+  // failed run does not record a base the snapshots do not match.
+  const anyPushed = phaseResults.some((pr) =>
+    pr.results.some((r) => r.success),
+  );
+  if (anyPushed) {
+    await resyncBaseRevision(args.containers);
+  }
+
   return {
     phases: phaseResults,
     deployed: deployResult.deployed,
     deployError: deployResult.error,
   };
+}
+
+/**
+ * Re-reads the current remote (preview) revision and saves it as the shared base
+ * app revision, so the next `pull --all` early-skip (AC-13) can engage after a
+ * push that deployed. The app revision is shared across domains (ADR-188-001);
+ * the view container exposes the reader + storage + codec used for it, mirroring
+ * `pullAllForApp`'s revision path.
+ */
+async function resyncBaseRevision(
+  containers: ApplyAllContainers,
+): Promise<void> {
+  const revision = await getCurrentRemoteRevision(containers.view);
+  await saveAppRevision(
+    containers.view.appRevisionStorage,
+    containers.view.configCodec,
+    revision,
+  );
 }

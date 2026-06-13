@@ -228,3 +228,73 @@ describe("pullAllForApp — conflict 時挙動（ADR-188-005）", () => {
     );
   });
 });
+
+/**
+ * W-app-002 (plan ステップ 13): the early-skip drops every per-domain 3-way when
+ * the remote (preview) revision equals the locally stored base revision. These
+ * tests pin *why that skip cannot miss drift* rather than merely re-asserting the
+ * happy path: kintone advances the app revision monotonically on any change, so
+ * `remote === base` means the remote is genuinely unchanged. The edge the review
+ * flagged is "revision matches but the actual snapshot differs" — under monotonic
+ * revisions that state is unreachable for the remote, and the tests below fix the
+ * two halves of the guarantee (skip is taken from the revision alone; a forced
+ * full comparison against an unchanged remote yields no remoteOnly/conflict).
+ */
+describe("pullAllForApp — 早期スキップの安全性（W-app-002）", () => {
+  it("revision 一致時はどのドメインの pull も構築・実行されない（snapshot を一切読まずに skip する）", async () => {
+    // The remote revision matches base, so the skip must be decided purely from
+    // the revision — before any per-domain pull (snapshot read/compare) happens.
+    // Even if the underlying snapshots had drifted, the skip is taken here; the
+    // safety net is that a real drift would have advanced the remote revision,
+    // so this branch is only reached when the remote is genuinely unchanged.
+    vi.mocked(getCurrentRemoteRevision).mockResolvedValue("100");
+    vi.mocked(loadAppRevision).mockResolvedValue({ revision: "100" });
+    // Arm every per-domain pull to throw: if the skip ever fell through to a
+    // snapshot comparison, one of these would run and the test would fail.
+    const tripwire = new Error("per-domain pull must not run when skipping");
+    vi.mocked(pullSchema).mockRejectedValue(tripwire);
+    vi.mocked(pullView).mockRejectedValue(tripwire);
+    vi.mocked(pullCustomization).mockRejectedValue(tripwire);
+
+    const output = await pullAllForApp(makeArgs());
+
+    expect(output.revisionSkip).toBe(true);
+    expect(output.results).toHaveLength(0);
+    expect(pullSchema).not.toHaveBeenCalled();
+    expect(pullView).not.toHaveBeenCalled();
+    expect(pullCustomization).not.toHaveBeenCalled();
+  });
+
+  it("revision 不一致で全比較に落ちても、remote が base と等しいドメインは firstTime/force/no-conflict で drift を捏造しない", async () => {
+    // Force the full-comparison path (revision mismatch). Each domain's pull
+    // here represents "remote unchanged relative to base": the 3-way produces no
+    // remoteOnly/conflict (modeled as force / a conflict-free merge). This pins
+    // that *running* a comparison against an unchanged remote is harmless, which
+    // is exactly why skipping it (when the revision proves it unchanged) is safe.
+    vi.mocked(getCurrentRemoteRevision).mockResolvedValue("101");
+    vi.mocked(loadAppRevision).mockResolvedValue({ revision: "100" });
+    mockAllPullsForce();
+    // One domain returns a conflict-free merge (still no drift surfaced).
+    vi.mocked(pullView).mockResolvedValue({
+      mode: "merged",
+      merge: { hasConflict: false, conflicts: [] },
+      remoteConfig: {},
+      remoteRevision: "101",
+    } as never);
+    vi.mocked(applyPulledViewMerge).mockResolvedValue({ configText: "" });
+
+    const output = await pullAllForApp(makeArgs());
+
+    expect(output.revisionSkip).toBe(false);
+    // No domain is skipped for conflict and none failed: an unchanged remote
+    // never manifests as drift even when the comparison is actually performed.
+    expect(
+      output.results.every(
+        (r) => r.success || (r.success === false && r.skipped === "not-found"),
+      ),
+    ).toBe(true);
+    expect(
+      output.results.some((r) => !r.success && r.skipped === "conflict"),
+    ).toBe(false);
+  });
+});

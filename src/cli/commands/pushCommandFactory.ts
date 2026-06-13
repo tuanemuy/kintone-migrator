@@ -134,7 +134,14 @@ export function createPushCommand<
   return define({
     name: "push",
     description: config.description,
-    args: { ...config.args, ...confirmArgs },
+    args: {
+      ...config.args,
+      ...confirmArgs,
+      force: {
+        type: "boolean" as const,
+        description: "Skip drift detection and overwrite remote",
+      },
+    },
     run: async (ctx) => {
       try {
         const values = ctx.values as TCliValues;

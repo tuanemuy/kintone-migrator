@@ -79,8 +79,16 @@ const storageProbeMap: Record<
   plugin: { containerKey: "plugin", storageProp: "pluginStorage" },
 };
 
+// Captures the base revision re-sync (W-app-001): the view container exposes
+// the shared appRevision reader/storage + codec that `resyncBaseRevision` uses.
+type RevisionSync = {
+  readonly remoteRevision: string;
+  savedRevision: string | undefined;
+};
+
 function makeContainers(
   missing: ReadonlySet<PushDomain> = new Set(),
+  sync: RevisionSync = { remoteRevision: "9", savedRevision: undefined },
 ): ApplyAllContainers {
   const containers = {} as Record<string, Record<string, unknown>>;
   for (const domain of Object.keys(storageProbeMap) as PushDomain[]) {
@@ -94,15 +102,35 @@ function makeContainers(
       },
     };
   }
+  // The view container additionally carries the shared appRevision reader/
+  // storage + codec read back by the post-deploy base re-sync.
+  containers.view = {
+    ...(containers.view ?? {}),
+    configCodec: {
+      stringify: (data: unknown) => JSON.stringify(data),
+      parse: (text: string) => JSON.parse(text),
+    },
+    appRevisionReader: {
+      getCurrent: async () => sync.remoteRevision,
+    },
+    appRevisionStorage: {
+      update: async (content: string) => {
+        sync.savedRevision = (
+          JSON.parse(content) as { revision: string }
+        ).revision;
+      },
+    },
+  };
   return containers as unknown as ApplyAllContainers;
 }
 
 function makeArgs(opts?: {
   missing?: ReadonlySet<PushDomain>;
   force?: boolean;
+  sync?: RevisionSync;
 }): PushAllForAppInput {
   return {
-    containers: makeContainers(opts?.missing),
+    containers: makeContainers(opts?.missing, opts?.sync),
     customizeBasePath: "apps/test-app",
     force: opts?.force ?? false,
   };
@@ -264,5 +292,39 @@ describe("pushAllForApp", () => {
       .find((r) => r.domain === "report");
     expect(report).toMatchObject({ success: false, skipped: "not-found" });
     expect(pushReport).not.toHaveBeenCalled();
+  });
+
+  it("push 後に base appRevision を deploy 後の remote revision へ再同期する（W-app-001）", async () => {
+    mockAllPushesSucceed();
+    // The post-deploy remote revision (read back by the early-skip later) is "9",
+    // ahead of every push's "2" response — without the re-sync the next
+    // `pull --all` early-skip would always miss.
+    const sync: RevisionSync = {
+      remoteRevision: "9",
+      savedRevision: undefined,
+    };
+
+    await pushAllForApp(makeArgs({ sync }));
+
+    expect(sync.savedRevision).toBe("9");
+  });
+
+  it("何も push されなかった場合は base appRevision を再同期しない（W-app-001）", async () => {
+    mockAllPushesSucceed();
+    // All domains missing → nothing pushed → the base must stay untouched so a
+    // no-op run does not record a revision the snapshots do not match.
+    const sync: RevisionSync = {
+      remoteRevision: "9",
+      savedRevision: undefined,
+    };
+
+    await pushAllForApp(
+      makeArgs({
+        missing: new Set(Object.keys(storageProbeMap) as PushDomain[]),
+        sync,
+      }),
+    );
+
+    expect(sync.savedRevision).toBeUndefined();
   });
 });

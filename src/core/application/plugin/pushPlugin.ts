@@ -54,6 +54,12 @@ const PLUGIN_PULL_COMMAND = "plugin pull";
  * as a TOCTOU guard on a normal push; `--force` / first run omit it
  * (ADR-188-004). When there is nothing to add, the remote is not touched but
  * the base snapshot is still re-synchronized so the local intent is recorded.
+ *
+ * The new base snapshot is the **actual post-push remote state**, not `local`
+ * (W-app-003): it is the remote plugin set plus the ids actually added. Skipped
+ * `modify`/`delete` ops were NOT applied, so the remote keeps its own value;
+ * baking `local` into the base would hide those still-pending differences from
+ * future drift detection (the snapshot is the drift source of truth, ADR-188-009).
  */
 export async function pushPlugin({
   container,
@@ -123,7 +129,24 @@ export async function pushPlugin({
     newRevision = result.revision;
   }
 
-  await savePluginSnapshotAndRevision(container, local, newRevision);
+  // New base = the actual post-push remote state: the remote plugins plus the
+  // ids we added (which were missing on the remote, so this never duplicates).
+  // Skipped modify/delete ops are not applied, so the base keeps the remote's
+  // value for them (rather than baking in `local`), so the still-pending
+  // difference is re-detected as drift on the next push (W-app-003).
+  const newBasePlugins: PluginConfig[] = [
+    ...remote.config.plugins,
+    ...idsToAdd.flatMap((id) => {
+      const p = localById.get(id);
+      return p !== undefined ? [p] : [];
+    }),
+  ];
+
+  await savePluginSnapshotAndRevision(
+    container,
+    { plugins: newBasePlugins },
+    newRevision,
+  );
 
   return {
     mode: firstTime ? "firstTime" : "push",

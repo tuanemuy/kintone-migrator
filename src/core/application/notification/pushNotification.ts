@@ -63,14 +63,28 @@ export async function pushNotification({
 
   if (!firstTime && !input.force) {
     const merge = computeNotificationThreeWayMerge(state, local, remote.config);
+    // Only the sections the local config manages are pushed, so only their
+    // remote drift can be overwritten or lost. Drift in a section the local
+    // config omits (e.g. local has no `reminder`) is not this push's concern —
+    // it is taken into the base verbatim and surfaced later by `pull`. Scoping
+    // the drift check to managed sections avoids blocking a push because of a
+    // remote change in an unmanaged section (W-app-004).
+    const isManaged = (key: string): boolean => {
+      if (key.startsWith("general:")) return local.general !== undefined;
+      if (key.startsWith("perRecord:")) return local.perRecord !== undefined;
+      if (key.startsWith("reminder:")) return local.reminder !== undefined;
+      return false;
+    };
+    const isDriftKind = (kind: string): boolean =>
+      kind === "remoteOnly" || kind === "conflict";
     const hasDrift =
       merge.entries.some(
-        (e) => e.change.kind === "remoteOnly" || e.change.kind === "conflict",
+        (e) => isManaged(e.key) && isDriftKind(e.change.kind),
       ) ||
-      merge.generalScalar.change.kind === "remoteOnly" ||
-      merge.generalScalar.change.kind === "conflict" ||
-      merge.reminderTimezone.change.kind === "remoteOnly" ||
-      merge.reminderTimezone.change.kind === "conflict";
+      (local.general !== undefined &&
+        isDriftKind(merge.generalScalar.change.kind)) ||
+      (local.reminder !== undefined &&
+        isDriftKind(merge.reminderTimezone.change.kind));
     if (hasDrift) {
       throw buildDriftConflict(NOTIFICATION_PULL_COMMAND);
     }

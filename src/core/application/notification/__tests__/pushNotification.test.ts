@@ -275,6 +275,65 @@ describe("pushNotification", () => {
     expect(container.appRevisionStorage.callLog).not.toContain("update");
   });
 
+  it("does NOT block the push when an unmanaged section drifted on the remote (W-app-004)", async () => {
+    const container = getContainer();
+    const base = config();
+    // remote changed reminder, which the local config does not manage.
+    const remote = config({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [reminder({ title: "remote-changed" })],
+      },
+    });
+    setBaseAndRemote(container, base, remote, "2");
+    // local omits reminder (and perRecord) and only edits general.
+    setLocal(container, {
+      general: {
+        notifyToCommenter: true,
+        notifications: [general({ recordEdited: true })],
+      },
+    });
+
+    const result = await pushNotification({ container, input: {} });
+
+    // The general push goes through; the reminder drift does not block it ...
+    expect(result.mode).toBe("push");
+    expect(container.notificationConfigurator.callLog).toContain(
+      "updateGeneralNotifications",
+    );
+    // ... and the unmanaged reminder is left to the remote (not pushed).
+    expect(container.notificationConfigurator.callLog).not.toContain(
+      "updateReminderNotifications",
+    );
+  });
+
+  it("still rejects when a MANAGED section drifted on the remote (W-app-004 guard)", async () => {
+    const container = getContainer();
+    const base = config();
+    const remote = config({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [reminder({ title: "remote-changed" })],
+      },
+    });
+    setBaseAndRemote(container, base, remote, "2");
+    // local DOES manage reminder (and edits it), so the drift must still block.
+    setLocal(
+      container,
+      config({
+        reminder: {
+          timezone: "Asia/Tokyo",
+          notifications: [reminder({ title: "local-changed" })],
+        },
+      }),
+    );
+
+    await expect(pushNotification({ container, input: {} })).rejects.toSatisfy(
+      (e: unknown) =>
+        e instanceof ConflictError && e.code === ConflictErrorCode.ConfigDrift,
+    );
+  });
+
   it("only pushes sections present in the local config", async () => {
     const container = getContainer();
     const base = config();

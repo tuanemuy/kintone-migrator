@@ -6,13 +6,10 @@ import type { MultiAppCliValues } from "../../projectConfig";
 import { resolveAppCliConfig } from "../../projectConfig";
 import { createPushCommand } from "../pushCommandFactory";
 
+// `force` is declared by the push factory; schema only supplies its container args.
 const pushArgs = {
   ...kintoneArgs,
   ...multiAppArgs,
-  force: {
-    type: "boolean" as const,
-    description: "Skip drift detection and overwrite remote",
-  },
 };
 
 /**

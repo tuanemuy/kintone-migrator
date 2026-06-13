@@ -10,17 +10,23 @@ import { ReportErrorCode } from "../errorCode";
 
 /**
  * Equality for two {@link ReportConfig} values, matching the 2-way
- * diffDetector's `compareReports` "no changes" semantics: `chartType` /
+ * diffDetector's `compareReports` "no changes" semantics: `name` / `chartType` /
  * `index` / `filterCond` are compared directly, `chartMode` treats `undefined`
  * and `""` as equivalent, and `groups` / `aggregations` / `sorts` /
  * `periodicReport` are deep-compared (`periodicReport` normalized to `null`).
- * `name` is the record key and is not compared here.
+ *
+ * `name` is compared even though it is the record key: the parser allows an
+ * explicit `name` override (`raw.name`), so the map key and `ReportConfig.name`
+ * can diverge on hand-edited YAML, and `name` is sent to the API on push. The
+ * 2-way `compareReports` detects this divergence, so the `eq` must too to keep
+ * the same granularity (W-dom-001).
  *
  * Reused as the `eq` for the record-keyed 3-way merge (ADR-188-003 / ADR-188-011)
  * so the merge granularity matches `report diff` exactly.
  */
 export function isReportConfigEqual(a: ReportConfig, b: ReportConfig): boolean {
   return (
+    a.name === b.name &&
     a.chartType === b.chartType &&
     (a.chartMode ?? "") === (b.chartMode ?? "") &&
     a.index === b.index &&

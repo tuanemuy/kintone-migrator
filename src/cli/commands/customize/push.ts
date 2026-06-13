@@ -88,7 +88,14 @@ export default define({
   name: "push",
   description:
     "Push the local customization config to kintone (with drift detection)",
-  args: { ...customizeArgs, ...confirmArgs },
+  args: {
+    ...customizeArgs,
+    ...confirmArgs,
+    force: {
+      type: "boolean" as const,
+      description: "Skip drift detection and overwrite remote",
+    },
+  },
   run: async (ctx) => {
     try {
       const values = ctx.values as WithConfirm<CustomizeCliValues>;
