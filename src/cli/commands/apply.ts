@@ -74,18 +74,25 @@ async function runApplyAll(
   printDiffAllResults(diffResults);
 
   // Note about seed data (not included in diff preview)
-  p.log.info("Note: Seed data will be upserted (no diff preview available).");
+  const seedExists = (await containers.seed.seedStorage.get()).exists;
+  if (seedExists) {
+    p.log.info("Note: Seed data will be upserted (no diff preview available).");
+  }
 
   // Check if there are any changes
   const hasChanges = diffResults.some((r) => r.success && !r.result.isEmpty);
   if (!hasChanges) {
-    p.log.success("No changes detected. Seed data will still be upserted.");
+    p.log.success(
+      seedExists
+        ? "No changes detected. Seed data will still be upserted."
+        : "No changes detected.",
+    );
   }
 
   // Step 2: Dry run exits here
   if (options.dryRun) {
     p.log.info("Dry run complete. No changes will be applied.");
-    if (!hasChanges) {
+    if (!hasChanges && seedExists) {
       p.log.info(
         "Note: Seed data would still be upserted when running without --dry-run.",
       );
