@@ -131,15 +131,14 @@ async function runApplyAll(
   // Step 5: Print results
   printApplyAllResults(output);
 
-  // Compute the failure truth value for this app and return it as the outcome.
-  // The caller (single-app handler or multi-app executor) decides how to turn
-  // this into an exit code; runApplyAll never writes process.exitCode directly.
+  // Return the failure verdict as an outcome; the caller decides how to map it
+  // to an exit code. runApplyAll never writes process.exitCode directly.
   //
   // A failure is any domain that genuinely failed (execution failure or aborted
   // skip) or a required deploy that failed. A "not-found" skip (config file
-  // absent) is not a failure. A deploy that was simply not needed (no Phase 2-4
-  // successes, so deployError is undefined) is not an error either, so we check
-  // output.deployError instead of !output.deployed.
+  // absent) is not a failure. A deploy that was simply not needed leaves
+  // deployError undefined, so we check output.deployError rather than
+  // !output.deployed.
   const hasFailures = output.phases
     .flatMap((pr) => pr.results)
     .some((r) => !r.success && r.skipped !== "not-found");

@@ -7,37 +7,29 @@ import type {
 import { MultiAppResult as MultiAppResultFactory } from "@/core/domain/projectConfig/entity";
 
 /**
- * Input DTO carrying the success/failure of a single app from an executor back
- * to `executeMultiApp`. This is a 2-value outcome (ok / not ok) that the
- * executor reports about itself; it is NOT the domain `AppExecutionResult`
- * (a 3-value `succeeded`/`failed`/`skipped` status that `executeMultiApp`
- * produces as output, where `skipped` is assigned by fail-fast and cannot be
- * expressed by an executor). See ADR-001.
+ * 2-value outcome (ok / not ok) an executor reports about a single app back to
+ * `executeMultiApp`. Distinct from the domain `AppExecutionResult`, whose 3rd
+ * status `skipped` is assigned by fail-fast and cannot be expressed by an
+ * executor. See ADR-001.
  *
- * For `{ ok: false }`, supplying `error` is the executor's responsibility: only
- * the executor has the context to describe why the app failed. When omitted,
- * the resulting `AppExecutionResult.error` is `undefined` (a "failed" app with
- * no reason). This use-case layer deliberately does NOT fabricate a generic
- * fallback `Error`, since it lacks that context. This is asymmetric with the
- * throw path (which always carries the caught real `Error`), and the asymmetry
- * is intentional: the responsibility for the failure reason stays with the
- * party that has it.
+ * On `{ ok: false }`, `error` is the executor's responsibility — only it has the
+ * context to describe the failure. When omitted, `AppExecutionResult.error` is
+ * `undefined`; this use-case layer deliberately does NOT fabricate a fallback
+ * `Error`. This is intentionally asymmetric with the throw path (which always
+ * carries the caught real `Error`).
  */
 export type AppExecutionOutcome =
   | { readonly ok: true }
   | { readonly ok: false; readonly error?: Error };
 
 /**
- * Executor return value is `AppExecutionOutcome | void`. A `void` (undefined)
- * return is treated as success, preserving the legacy contract (throw = failure,
- * normal return = success) so existing executors keep working unchanged.
+ * A `void` (undefined) return is treated as success, preserving the legacy
+ * contract (throw = failure, normal return = success) so existing executors that
+ * return nothing keep working unchanged. See ADR-001.
  */
-// `void` in the union is the intentional backward-compatibility contract
-// (void return = success) required for existing executors that return nothing.
-// See ADR-001.
 export type MultiAppExecutor = (
   app: AppEntry,
-  // biome-ignore lint/suspicious/noConfusingVoidType: see note above.
+  // biome-ignore lint/suspicious/noConfusingVoidType: void return = success, see type doc above.
 ) => Promise<AppExecutionOutcome | void>;
 
 export async function executeMultiApp(
@@ -58,8 +50,8 @@ export async function executeMultiApp(
     // as skipped rather than letting the error propagate and abort the loop.
     try {
       const outcome = await executor(app);
-      // `void`/undefined return = success (backward compatibility); an explicit
-      // `{ ok: false }` outcome is a failure even though no exception was thrown.
+      // An explicit `{ ok: false }` is a failure even though nothing was thrown;
+      // `void`/undefined stays success (backward compatibility).
       if (outcome && outcome.ok === false) {
         results.push({
           name: app.name,

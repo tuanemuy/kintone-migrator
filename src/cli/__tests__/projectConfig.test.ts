@@ -134,11 +134,9 @@ describe("runMultiAppWithFailCheck", () => {
   });
 
   it("executor が {ok:false} を返す場合、実体の executeMultiApp 経由で EXECUTION_ERROR の SystemError をスローする", async () => {
-    // Integration path: do NOT mock executeMultiApp's verdict. Delegate to the
-    // real implementation so the full wiring is exercised — executor returns
-    // { ok: false } → executeMultiApp sets status "failed" → hasFailure true →
-    // runMultiAppWithFailCheck throws. This binds the seam the other (mocked)
-    // case leaves untested.
+    // Integration path: use the real executeMultiApp (not the mocked verdict) so
+    // the full wiring { ok: false } → "failed" → throw is exercised. Binds the
+    // seam the other (mocked) case leaves untested.
     const { executeMultiApp: realExecuteMultiApp } = await vi.importActual<
       typeof import("@/core/application/projectConfig/executeMultiApp")
     >("@/core/application/projectConfig/executeMultiApp");

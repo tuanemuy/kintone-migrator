@@ -314,9 +314,8 @@ describe("apply command", () => {
 
     await applyCommand.run({ values: {} } as never);
 
-    // The executor must passthrough runApplyAll's { ok: false } unchanged. With
-    // no deployError this exercises the `?? new SystemError(...)` branch, so the
-    // error is an app-named ExecutionError SystemError (deployError absent).
+    // With no deployError, the `?? new SystemError(...)` branch produces an
+    // app-named ExecutionError SystemError.
     expect(capturedOutcome).toMatchObject({
       ok: false,
       error: expect.objectContaining({
