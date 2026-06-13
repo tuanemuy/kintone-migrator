@@ -10,7 +10,7 @@ export type SkippedPlugin = Readonly<{
    * `disabled`: the plugin is `enabled: false` locally but the kintone plugin
    * API cannot express it — there is no way to add a plugin in a disabled state
    * and no way to disable an already-added plugin. Manual action in the kintone
-   * admin UI is required (MEMORY: plugin-enabled-no-disable-api).
+   * admin UI is required.
    */
   reason: "disabled";
 }>;
@@ -45,7 +45,6 @@ export async function applyPlugin({
   for (const plugin of config.plugins) {
     const remote = remoteById.get(plugin.id);
     if (plugin.enabled) {
-      // enabled: true → add when missing on the remote, otherwise idempotent.
       if (remote === undefined) {
         idsToAdd.push(plugin.id);
       }
