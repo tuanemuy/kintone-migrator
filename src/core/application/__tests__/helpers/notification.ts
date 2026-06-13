@@ -5,10 +5,13 @@ import type {
   ReminderNotification,
 } from "@/core/domain/notification/entity";
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
+import type { NotificationStateStorage } from "@/core/domain/notification/ports/notificationStateStorage";
 import type { NotificationStorage } from "@/core/domain/notification/ports/notificationStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -149,9 +152,16 @@ export class InMemoryNotificationStorage
   extends InMemoryFileStorage
   implements NotificationStorage {}
 
+export class InMemoryNotificationStateStorage
+  extends InMemoryFileStorage
+  implements NotificationStateStorage {}
+
 export type TestNotificationContainer = NotificationContainer & {
   notificationConfigurator: InMemoryNotificationConfigurator;
   notificationStorage: InMemoryNotificationStorage;
+  notificationStateStorage: InMemoryNotificationStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -160,6 +170,9 @@ export function createTestNotificationContainer(): TestNotificationContainer {
     configCodec: testConfigCodec,
     notificationConfigurator: new InMemoryNotificationConfigurator(),
     notificationStorage: new InMemoryNotificationStorage(),
+    notificationStateStorage: new InMemoryNotificationStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

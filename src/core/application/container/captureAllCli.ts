@@ -99,6 +99,15 @@ export function createCliCaptureContainers(
       notification: createNotificationCliContainer({
         ...base,
         notificationFilePath: paths.notification,
+        notificationStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "notification.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       report: createReportCliContainer({
         ...base,

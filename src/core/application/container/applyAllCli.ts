@@ -89,6 +89,12 @@ export function createCliApplyAllContainers(
   const notification = createNotificationCliContainer({
     ...base,
     notificationFilePath: paths.notification,
+    notificationStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "notification.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const report = createReportCliContainer({
     ...base,
