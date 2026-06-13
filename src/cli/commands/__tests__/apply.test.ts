@@ -502,4 +502,115 @@ describe("apply command", () => {
 
     expect(process.exitCode).toBe(1);
   });
+
+  it("全ドメインが not-found skip の場合は exitCode が 1 にならないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            { domain: "customize", success: false, skipped: "not-found" },
+            { domain: "view", success: false, skipped: "not-found" },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it("一部 success だが末尾 deploy が失敗した場合は exitCode が 1 になること", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [{ domain: "schema", success: false, skipped: "not-found" }],
+        },
+        {
+          phase: "Views & Customization",
+          results: [{ domain: "customize", success: true }],
+        },
+      ],
+      deployed: false,
+      deployError: new Error("Deploy failed"),
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBe(1);
+  });
+
+  it("aborted skip がある場合は exitCode が 1 になること", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("fail"),
+              skipped: false,
+            },
+          ],
+        },
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("Skipped due to fatal error"),
+              skipped: "aborted",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBe(1);
+  });
 });

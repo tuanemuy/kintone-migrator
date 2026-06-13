@@ -30,7 +30,10 @@ function formatTaskResult(result: ApplyTaskResult): string {
   if (result.success) {
     return `  ${pc.green("\u2713")} ${name}`;
   }
-  if (result.skipped) {
+  if (result.skipped === "not-found") {
+    return `  ${pc.yellow("\u2298")} ${name} ${pc.dim("\u2014")} ${pc.yellow("skipped (file not found)")}`;
+  }
+  if (result.skipped === "aborted") {
     return `  ${pc.yellow("\u2298")} ${name} ${pc.dim("\u2014")} ${pc.yellow("skipped")}`;
   }
   return `  ${pc.red("\u2717")} ${name} ${pc.dim("\u2014")} ${pc.red(`failed (${formatErrorForDisplay(result.error)})`)}`;
@@ -69,6 +72,11 @@ export function printApplyAllResults(output: ApplyAllForAppOutput): void {
     p.log.warn(
       `Deployment failed: ${formatErrorForDisplay(output.deployError)}`,
     );
+  } else if (succeeded === 0 && failed === 0 && skipped > 0) {
+    // All processed domains were skipped (only "not-found" can satisfy
+    // failed === 0; aborted skips would set failed > 0 via the failing
+    // domain that triggered the abort). Nothing to deploy and no real error.
+    p.log.info("No config files found. Nothing to apply.");
   } else if (succeeded === 0) {
     p.log.warn("Not deployed due to errors.");
   } else if (failed > 0 || skipped > 0) {

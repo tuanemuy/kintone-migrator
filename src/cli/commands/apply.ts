@@ -121,7 +121,7 @@ async function runApplyAll(
   });
   const applyFailCount = output.phases
     .flatMap((pr) => pr.results)
-    .filter((r) => !r.success).length;
+    .filter((r) => !r.success && r.skipped !== "not-found").length;
   as.stop(
     `Apply complete.${applyFailCount > 0 ? ` (${applyFailCount} failed)` : ""}`,
   );
@@ -130,13 +130,16 @@ async function runApplyAll(
   printApplyAllResults(output);
 
   // Set non-zero exit code for CI/CD pipelines.
-  // Triggered when any domain failed/skipped OR deploy was not completed.
-  // When needsDeploy is false (no Phase 2-4 successes), deployed=false
-  // but hasFailures is also true, so the condition is correct.
+  // Triggered when any domain genuinely failed (execution failure or aborted
+  // skip) or when a required deploy failed. A "not-found" skip (config file
+  // absent) is not a failure and never raises the exit code. A deploy that was
+  // simply not needed (no Phase 2-4 successes, so deployError is undefined) is
+  // not an error either, so we check output.deployError instead of
+  // !output.deployed.
   const hasFailures = output.phases
     .flatMap((pr) => pr.results)
-    .some((r) => !r.success);
-  if (hasFailures || !output.deployed) {
+    .some((r) => !r.success && r.skipped !== "not-found");
+  if (hasFailures || output.deployError) {
     process.exitCode = 1;
   }
 }
