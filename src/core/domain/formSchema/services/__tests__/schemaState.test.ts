@@ -63,16 +63,14 @@ const realisticForm = {
 };
 
 describe("SchemaState serialize/parse", () => {
-  it("revision を含めて round-trip できる", () => {
+  it("snapshot のみを round-trip できる（revision は state に含めない）", () => {
     const schema: Schema = SchemaParser.parse(realisticForm);
-    const serialized = SchemaStateSerializer.serialize({
-      revision: "42",
-      schema,
-    });
-    expect(serialized.revision).toBe("42");
+    const serialized = SchemaStateSerializer.serialize({ schema });
+    // revision is now stored separately; the state file must not carry it
+    // anymore.
+    expect(serialized.revision).toBeUndefined();
 
     const parsed = SchemaStateParser.parse(serialized);
-    expect(parsed.revision).toBe("42");
 
     // serialize -> parse -> serialize is a fixed point.
     const reserialized = SchemaStateSerializer.serialize(parsed);
@@ -82,18 +80,23 @@ describe("SchemaState serialize/parse", () => {
   it("field/subtable/group/reference-table/decoration を含む snapshot を保持する", () => {
     const schema = SchemaParser.parse(realisticForm);
     const parsed = SchemaStateParser.parse(
-      SchemaStateSerializer.serialize({ revision: "1", schema }),
+      SchemaStateSerializer.serialize({ schema }),
     );
     expect(parsed.schema.layout).toEqual(schema.layout);
   });
 
-  it("revision がない場合は BusinessRuleError をスローする", () => {
+  it("旧 state（revision 同居）から後方互換で読める（revision は無視される）", () => {
+    // Legacy state files embedded a top-level `revision` alongside the layout.
+    // The parser must strip and ignore it for backward compatibility.
     const schema = SchemaParser.parse(realisticForm);
-    const data = SchemaStateSerializer.serialize({ revision: "1", schema });
-    const { revision: _omit, ...withoutRevision } = data;
-    expect(() => SchemaStateParser.parse(withoutRevision)).toThrow(
-      BusinessRuleError,
-    );
+    const data = SchemaStateSerializer.serialize({ schema });
+    const legacy = { revision: "42", ...data };
+
+    const parsed = SchemaStateParser.parse(legacy);
+
+    expect(parsed.schema.layout).toEqual(schema.layout);
+    // No revision leaks back out; the migrated snapshot drops it.
+    expect(SchemaStateSerializer.serialize(parsed).revision).toBeUndefined();
   });
 
   it("非オブジェクトは BusinessRuleError をスローする", () => {
@@ -105,7 +108,7 @@ describe("SchemaState serialize/parse", () => {
   it("空フォーム（最低1フィールド制約）は round-trip できない", () => {
     // A layout with no fields cannot satisfy Schema.create's minimum-1-field
     // constraint, so parsing it back throws.
-    const emptyData = { revision: "1", layout: [] };
+    const emptyData = { layout: [] };
     expect(() => SchemaStateParser.parse(emptyData)).toThrow(BusinessRuleError);
   });
 });

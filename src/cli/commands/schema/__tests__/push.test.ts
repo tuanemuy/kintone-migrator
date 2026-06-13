@@ -120,10 +120,10 @@ describe("push コマンド", () => {
     });
   });
 
-  it("drift 由来 ConflictError（SchemaDrift）はそのままのメッセージで処理される", async () => {
+  it("drift 由来 ConflictError（ConfigDrift）はそのままのメッセージで処理される", async () => {
     vi.mocked(p.confirm).mockResolvedValue(true);
     const driftError = new ConflictError(
-      ConflictErrorCode.SchemaDrift,
+      ConflictErrorCode.ConfigDrift,
       PUSH_DRIFT_MESSAGE,
     );
     vi.mocked(pushSchema).mockRejectedValue(driftError);

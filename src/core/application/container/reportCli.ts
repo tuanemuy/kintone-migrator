@@ -1,6 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
+import { KintoneAppRevisionReader } from "@/core/adapters/kintone/appRevisionReader";
 import { KintoneReportConfigurator } from "@/core/adapters/kintone/reportConfigurator";
+import { createLocalFileAppRevisionStorage } from "@/core/adapters/local/appRevisionStorage";
+import { createLocalFileReportStateStorage } from "@/core/adapters/local/reportStateStorage";
 import { createLocalFileReportStorage } from "@/core/adapters/local/reportStorage";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { KintoneAuth } from "./cli";
@@ -13,6 +16,8 @@ export type ReportCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   reportFilePath: string;
+  reportStateFilePath: string;
+  appRevisionFilePath: string;
   client?: KintoneRestAPIClient;
 };
 
@@ -25,6 +30,13 @@ export function createReportCliContainer(
     configCodec,
     reportConfigurator: new KintoneReportConfigurator(client, config.appId),
     reportStorage: createLocalFileReportStorage(config.reportFilePath),
+    reportStateStorage: createLocalFileReportStateStorage(
+      config.reportStateFilePath,
+    ),
+    appRevisionStorage: createLocalFileAppRevisionStorage(
+      config.appRevisionFilePath,
+    ),
+    appRevisionReader: new KintoneAppRevisionReader(client, config.appId),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

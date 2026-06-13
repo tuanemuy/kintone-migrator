@@ -2,6 +2,7 @@ import { AnyError } from "@/lib/error";
 import { ActionErrorCode } from "./action/errorCode";
 import { AdminNotesErrorCode } from "./adminNotes/errorCode";
 import { AppPermissionErrorCode } from "./appPermission/errorCode";
+import { AppRevisionErrorCode } from "./appRevision/errorCode";
 import { CustomizationErrorCode } from "./customization/errorCode";
 import { FieldPermissionErrorCode } from "./fieldPermission/errorCode";
 import { FormSchemaErrorCode } from "./formSchema/errorCode";
@@ -19,6 +20,7 @@ export const BusinessRuleErrorCode = {
   ...ActionErrorCode,
   ...AdminNotesErrorCode,
   ...AppPermissionErrorCode,
+  ...AppRevisionErrorCode,
   ...CustomizationErrorCode,
   ...FieldPermissionErrorCode,
   ...FormSchemaErrorCode,

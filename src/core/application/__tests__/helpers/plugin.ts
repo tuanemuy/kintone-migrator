@@ -1,10 +1,13 @@
 import type { PluginContainer } from "@/core/application/container/plugin";
 import type { PluginConfig } from "@/core/domain/plugin/entity";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
+import type { PluginStateStorage } from "@/core/domain/plugin/ports/pluginStateStorage";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -48,9 +51,16 @@ export class InMemoryPluginStorage
   extends InMemoryFileStorage
   implements PluginStorage {}
 
+export class InMemoryPluginStateStorage
+  extends InMemoryFileStorage
+  implements PluginStateStorage {}
+
 export type TestPluginContainer = PluginContainer & {
   pluginConfigurator: InMemoryPluginConfigurator;
   pluginStorage: InMemoryPluginStorage;
+  pluginStateStorage: InMemoryPluginStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -59,6 +69,9 @@ export function createTestPluginContainer(): TestPluginContainer {
     configCodec: testConfigCodec,
     pluginConfigurator: new InMemoryPluginConfigurator(),
     pluginStorage: new InMemoryPluginStorage(),
+    pluginStateStorage: new InMemoryPluginStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

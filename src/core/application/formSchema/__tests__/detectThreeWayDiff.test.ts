@@ -55,8 +55,10 @@ function setState(
   schema: Schema,
   revision: string,
 ): void {
-  const data = SchemaStateSerializer.serialize({ revision, schema });
+  const data = SchemaStateSerializer.serialize({ schema });
   container.schemaStateStorage.setContent(configCodec.stringify(data));
+  // revision is now persisted separately.
+  container.appRevisionStorage.setContent(configCodec.stringify({ revision }));
 }
 
 function parseSchema(label: string): Schema {
@@ -85,7 +87,7 @@ describe("detectThreeWayDiff", () => {
 
     expect(result.mode).toBe("three-way");
     if (result.mode === "three-way") {
-      expect(result.localChanges.map((e) => e.fieldCode)).toContain("name");
+      expect(result.localChanges.map((e) => e.key)).toContain("name");
       expect(result.remoteDrift).toHaveLength(0);
       expect(result.conflicts).toHaveLength(0);
     }
@@ -102,7 +104,7 @@ describe("detectThreeWayDiff", () => {
 
     expect(result.mode).toBe("three-way");
     if (result.mode === "three-way") {
-      expect(result.remoteDrift.map((e) => e.fieldCode)).toContain("name");
+      expect(result.remoteDrift.map((e) => e.key)).toContain("name");
     }
   });
 
@@ -117,7 +119,7 @@ describe("detectThreeWayDiff", () => {
 
     expect(result.mode).toBe("three-way");
     if (result.mode === "three-way") {
-      expect(result.conflicts.map((e) => e.fieldCode)).toContain("name");
+      expect(result.conflicts.map((e) => e.key)).toContain("name");
     }
   });
 });

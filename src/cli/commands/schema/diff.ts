@@ -5,7 +5,11 @@ import type { FormSchemaContainer } from "@/core/application/container/formSchem
 import { detectThreeWayDiff } from "@/core/application/formSchema/detectThreeWayDiff";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "../../config";
 import { handleCliError } from "../../handleError";
-import { printAppHeader, printThreeWayDiffResult } from "../../output";
+import {
+  printAppHeader,
+  printDiffResult,
+  printThreeWayDiffResult,
+} from "../../output";
 import {
   resolveAppCliConfig,
   routeMultiApp,
@@ -24,7 +28,7 @@ async function runDiff(container: FormSchemaContainer): Promise<void> {
   }
   s.stop("Comparison complete.");
 
-  printThreeWayDiffResult(result);
+  printThreeWayDiffResult(result, printDiffResult);
 }
 
 export default define({

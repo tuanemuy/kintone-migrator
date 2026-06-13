@@ -4,6 +4,7 @@ export const ActionErrorCode = {
   AcInvalidEntityType: "AC_INVALID_ENTITY_TYPE",
   AcEmptyActionName: "AC_EMPTY_ACTION_NAME",
   AcDuplicateIndex: "AC_DUPLICATE_INDEX",
+  AcUnresolvedConflict: "AC_UNRESOLVED_CONFLICT",
 } as const;
 
 export type ActionErrorCode =

@@ -4,6 +4,7 @@ export const GeneralSettingsErrorCode = {
   GsInvalidIconType: "GS_INVALID_ICON_TYPE",
   GsInvalidBooleanField: "GS_INVALID_BOOLEAN_FIELD",
   GsInvalidNumberPrecision: "GS_INVALID_NUMBER_PRECISION",
+  GsUnresolvedConflict: "GS_UNRESOLVED_CONFLICT",
 } as const;
 
 export type GeneralSettingsErrorCode =

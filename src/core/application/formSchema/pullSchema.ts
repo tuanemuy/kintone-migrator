@@ -10,6 +10,7 @@ import type {
   FormSchemaThreeWayMerge,
   MergeResolution,
 } from "@/core/domain/formSchema/valueObject";
+import { saveAppRevision } from "../appRevisionIo";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { stringifyConfig } from "../stringifyConfig";
 import { assertSchemaValid } from "./assertSchemaValid";
@@ -34,14 +35,33 @@ function serializeSchema(
 }
 
 /**
- * First stage of `schema pull` (AC-4, AC-5, AC-6, AC-11).
+ * Persists the new base: the schema snapshot (state file) and the app revision
+ * (`state/<appName>/revision.yaml`) together. revision lives in its own
+ * app-scoped store, so the two writes are kept side by side so they always
+ * advance together.
+ */
+async function saveSnapshotAndRevision(
+  container: FormSchemaServiceArgs["container"],
+  schema: Schema,
+  revision: string,
+): Promise<void> {
+  await saveState(container.schemaStateStorage, container.configCodec, schema);
+  await saveAppRevision(
+    container.appRevisionStorage,
+    container.configCodec,
+    revision,
+  );
+}
+
+/**
+ * First stage of `schema pull`.
  *
  * - `force`: returns the remote snapshot for local overwrite (capture-equiv).
  * - first run (no state): returns remote for one-way overwrite.
  * - otherwise: computes the 3-way merge and returns it for conflict resolution
  *   by the CLI. The local YAML / state are NOT written here — that happens in
  *   {@link applyPulledMerge} after resolution, so an aborted resolution leaves
- *   local and state untouched (AC-15).
+ *   local and state untouched.
  *
  * This stage never writes to the remote (pull is read-only against kintone).
  */
@@ -53,19 +73,14 @@ export async function pullSchema({
     await loadThreeWayInputs(container);
 
   // force / firstTime intentionally trust the remote without assertSchemaValid:
-  // these are capture-equivalent one-way overwrites (ADR-006/ADR-007, "base =
+  // these are capture-equivalent one-way overwrites ("base =
   // capture result"), and the remote is the source of truth. The merged path
   // (applyPulledMerge), by contrast, validates before writing because the
   // merged schema is locally synthesized and benefits from early feedback.
   if (input.force) {
     const schemaText = serializeSchema(container, remote);
     await container.schemaStorage.update(schemaText);
-    await saveState(
-      container.schemaStateStorage,
-      container.configCodec,
-      remoteRevision,
-      remote,
-    );
+    await saveSnapshotAndRevision(container, remote, remoteRevision);
     return { mode: "force", schemaText };
   }
 
@@ -73,12 +88,7 @@ export async function pullSchema({
     // First run / no local: one-way overwrite from remote and initialize state.
     const schemaText = serializeSchema(container, remote);
     await container.schemaStorage.update(schemaText);
-    await saveState(
-      container.schemaStateStorage,
-      container.configCodec,
-      remoteRevision,
-      remote,
-    );
+    await saveSnapshotAndRevision(container, remote, remoteRevision);
     return { mode: "firstTime", schemaText };
   }
 
@@ -100,7 +110,7 @@ export type ApplyPulledMergeInput = {
  * Writes the merged schema to the local YAML and updates the state to the
  * remote snapshot/revision. Called only after the CLI has fully resolved all
  * conflicts; if the user aborts resolution this is never invoked, so local and
- * state remain unchanged (AC-15).
+ * state remain unchanged.
  */
 export async function applyPulledMerge({
   container,
@@ -119,11 +129,10 @@ export async function applyPulledMerge({
   assertSchemaValid(merged);
   const schemaText = serializeSchema(container, merged);
   await container.schemaStorage.update(schemaText);
-  await saveState(
-    container.schemaStateStorage,
-    container.configCodec,
-    input.remoteRevision,
+  await saveSnapshotAndRevision(
+    container,
     input.remoteSchema,
+    input.remoteRevision,
   );
   return { schemaText };
 }

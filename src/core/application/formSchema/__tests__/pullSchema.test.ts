@@ -54,8 +54,10 @@ function setState(
   schema: Schema,
   revision: string,
 ): void {
-  const data = SchemaStateSerializer.serialize({ revision, schema });
+  const data = SchemaStateSerializer.serialize({ schema });
   container.schemaStateStorage.setContent(configCodec.stringify(data));
+  // revision is now persisted separately.
+  container.appRevisionStorage.setContent(configCodec.stringify({ revision }));
 }
 
 function parseSchema(label: string): Schema {

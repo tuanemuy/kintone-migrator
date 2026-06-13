@@ -1,7 +1,15 @@
 import type { AppPermissionCliContainerConfig } from "@/core/application/container/appPermissionCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const APP_ACL_STATE_FILE = "app-acl.yaml";
 
 export const appAclArgs = {
   ...kintoneArgs,
@@ -26,9 +34,17 @@ const {
   appFileField: (a) => a.appAclFile,
   defaultDir: "app-acl",
   defaultFileName: "app-acl.yaml",
-  buildConfig: (base, filePath): AppPermissionCliContainerConfig => ({
+  buildConfig: (base, filePath, app): AppPermissionCliContainerConfig => ({
     ...base,
     appAclFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode.
+    appAclStateFilePath: app
+      ? buildDomainStateFilePath(app.name, APP_ACL_STATE_FILE)
+      : buildLegacyDomainStateFilePath(APP_ACL_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   type AppFilePaths,
   buildAppFilePaths,
+  buildAppRevisionFilePath,
+  buildLegacyAppRevisionFilePath,
   buildLegacyStateFilePath,
   buildStateFilePath,
 } from "../appFilePaths";
@@ -71,7 +73,7 @@ describe("buildAppFilePaths", () => {
   });
 });
 
-// W-002 (ADR-002 / arch-r2-S002): state uses an app-scoped directory layout
+// state uses an app-scoped directory layout
 // (`state/<appName>/schema.yaml`, appName INSIDE) whose hierarchy is the inverse
 // of buildAppFilePaths (`<appName>/...`, appName OUTSIDE). These tests pin the
 // direction so a regression to `state/schema.yaml` (collapse) or
@@ -97,5 +99,36 @@ describe("buildLegacyStateFilePath", () => {
 
   it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
     expect(buildLegacyStateFilePath("output")).toBe("output/state/schema.yaml");
+  });
+});
+
+// revision is an app-scoped value stored once per app alongside
+// the per-domain snapshots, with the same app-inside directory convention as
+// buildStateFilePath.
+describe("buildAppRevisionFilePath", () => {
+  const appName = AppName.create("customer");
+
+  it("appName 内側の state/<appName>/revision.yaml を返す", () => {
+    expect(buildAppRevisionFilePath(appName)).toBe(
+      "state/customer/revision.yaml",
+    );
+  });
+
+  it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
+    expect(buildAppRevisionFilePath(appName, "output")).toBe(
+      "output/state/customer/revision.yaml",
+    );
+  });
+});
+
+describe("buildLegacyAppRevisionFilePath", () => {
+  it("legacy 単一アプリは state/revision.yaml を返す", () => {
+    expect(buildLegacyAppRevisionFilePath()).toBe("state/revision.yaml");
+  });
+
+  it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
+    expect(buildLegacyAppRevisionFilePath("output")).toBe(
+      "output/state/revision.yaml",
+    );
   });
 });

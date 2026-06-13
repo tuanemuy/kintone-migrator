@@ -1,7 +1,7 @@
-import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewServiceArgs } from "../container/view";
 import { ValidationError, ValidationErrorCode } from "../error";
 import { parseViewConfigText } from "./parseConfig";
+import { prepareViewsForUpdate } from "./prepareViewsForUpdate";
 
 export type ApplyViewOutput = {
   readonly skippedBuiltinViews: readonly string[];
@@ -19,31 +19,15 @@ export async function applyView({
   }
   const config = parseViewConfigText(container.configCodec, result.content);
 
-  const skippedBuiltinViews: string[] = [];
-  const filteredViews: Record<string, ViewConfig> = {};
-
-  for (const [name, view] of Object.entries(config.views)) {
-    if (view.builtinType !== undefined) {
-      skippedBuiltinViews.push(name);
-    } else {
-      filteredViews[name] = view;
-    }
-  }
-
   const current = await container.viewConfigurator.getViews();
 
-  // Merge remote builtinType views to preserve them during the replacement operation.
-  // Edge case: if a local non-builtinType view has the same name as a remote
-  // builtinType view, the local view takes precedence. This is unlikely in
-  // practice since builtinType names are system-assigned.
-  for (const [name, view] of Object.entries(current.views)) {
-    if (view.builtinType !== undefined && filteredViews[name] === undefined) {
-      filteredViews[name] = view;
-    }
-  }
+  const { views, skippedBuiltinViews } = prepareViewsForUpdate(
+    config.views,
+    current.views,
+  );
 
   await container.viewConfigurator.updateViews({
-    views: filteredViews,
+    views,
     revision: current.revision,
   });
 

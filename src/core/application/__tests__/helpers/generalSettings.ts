@@ -1,10 +1,13 @@
 import type { GeneralSettingsContainer } from "@/core/application/container/generalSettings";
 import type { GeneralSettingsConfig } from "@/core/domain/generalSettings/entity";
 import type { GeneralSettingsConfigurator } from "@/core/domain/generalSettings/ports/generalSettingsConfigurator";
+import type { GeneralSettingsStateStorage } from "@/core/domain/generalSettings/ports/generalSettingsStateStorage";
 import type { GeneralSettingsStorage } from "@/core/domain/generalSettings/ports/generalSettingsStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -50,9 +53,16 @@ export class InMemoryGeneralSettingsStorage
   extends InMemoryFileStorage
   implements GeneralSettingsStorage {}
 
+export class InMemoryGeneralSettingsStateStorage
+  extends InMemoryFileStorage
+  implements GeneralSettingsStateStorage {}
+
 export type TestGeneralSettingsContainer = GeneralSettingsContainer & {
   generalSettingsConfigurator: InMemoryGeneralSettingsConfigurator;
   generalSettingsStorage: InMemoryGeneralSettingsStorage;
+  generalSettingsStateStorage: InMemoryGeneralSettingsStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -61,6 +71,9 @@ export function createTestGeneralSettingsContainer(): TestGeneralSettingsContain
     configCodec: testConfigCodec,
     generalSettingsConfigurator: new InMemoryGeneralSettingsConfigurator(),
     generalSettingsStorage: new InMemoryGeneralSettingsStorage(),
+    generalSettingsStateStorage: new InMemoryGeneralSettingsStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

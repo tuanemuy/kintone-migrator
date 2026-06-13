@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { DetectThreeWayDiffOutput } from "@/core/application/formSchema/dto";
-import type { FieldCode } from "@/core/domain/formSchema/valueObject";
+import type { DetectSchemaThreeWayDiffOutput } from "@/core/application/formSchema/detectThreeWayDiff";
 
 vi.mock("@clack/prompts", () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
@@ -50,6 +49,7 @@ vi.mock("@/core/application/formSchema/detectThreeWayDiff");
 
 vi.mock("@/cli/output", () => ({
   printThreeWayDiffResult: vi.fn(),
+  printDiffResult: vi.fn(),
   printAppHeader: vi.fn(),
   printMultiAppResult: vi.fn(),
 }));
@@ -67,7 +67,7 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-function twoWayResult(): DetectThreeWayDiffOutput {
+function twoWayResult(): DetectSchemaThreeWayDiffOutput {
   return {
     mode: "two-way",
     diff: {
@@ -80,17 +80,13 @@ function twoWayResult(): DetectThreeWayDiffOutput {
   };
 }
 
-function threeWayResult(): DetectThreeWayDiffOutput {
+function threeWayResult(): DetectSchemaThreeWayDiffOutput {
   return {
     mode: "three-way",
-    localChanges: [
-      { fieldCode: "name" as FieldCode, fieldLabel: "名前", kind: "localOnly" },
-    ],
+    localChanges: [{ key: "name", label: "名前", kind: "localOnly" }],
     remoteDrift: [],
     conflicts: [],
-    layoutLocalChanged: false,
-    layoutRemoteChanged: false,
-    layoutConflict: false,
+    extras: [],
     isEmpty: false,
   };
 }
@@ -103,7 +99,10 @@ describe("diff コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(detectThreeWayDiff).toHaveBeenCalled();
-    expect(printThreeWayDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
   it("state がある場合、3-way 結果が printer に渡される", async () => {
@@ -112,7 +111,10 @@ describe("diff コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(printThreeWayDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {

@@ -14,6 +14,7 @@ import type {
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -39,7 +40,7 @@ export class InMemoryFormConfigurator
   /**
    * Arms the test double so the next mutation throws an API optimistic-lock
    * ConflictError (ConflictErrorCode.Conflict — distinct from the push-drift
-   * SchemaDrift code), as the real adapter would on a 409.
+   * ConfigDrift code), as the real adapter would on a 409.
    */
   failNextMutationWithOptimisticLock(): void {
     this.pendingMutationError = new ConflictError(
@@ -162,6 +163,7 @@ export type TestFormSchemaContainer = FormSchemaContainer & {
   formConfigurator: InMemoryFormConfigurator;
   schemaStorage: InMemorySchemaStorage;
   schemaStateStorage: InMemorySchemaStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -171,6 +173,7 @@ export function createTestFormSchemaContainer(): TestFormSchemaContainer {
     formConfigurator: new InMemoryFormConfigurator(),
     schemaStorage: new InMemorySchemaStorage(),
     schemaStateStorage: new InMemorySchemaStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

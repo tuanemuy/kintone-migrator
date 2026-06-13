@@ -1,7 +1,15 @@
 import type { NotificationCliContainerConfig } from "@/core/application/container/notificationCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const NOTIFICATION_STATE_FILE = "notification.yaml";
 
 export const notificationArgs = {
   ...kintoneArgs,
@@ -26,9 +34,17 @@ const {
   appFileField: (a) => a.notificationFile,
   defaultDir: "notification",
   defaultFileName: "notification.yaml",
-  buildConfig: (base, filePath): NotificationCliContainerConfig => ({
+  buildConfig: (base, filePath, app): NotificationCliContainerConfig => ({
     ...base,
     notificationFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode.
+    notificationStateFilePath: app
+      ? buildDomainStateFilePath(app.name, NOTIFICATION_STATE_FILE)
+      : buildLegacyDomainStateFilePath(NOTIFICATION_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

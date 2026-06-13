@@ -38,21 +38,24 @@ vi.mock("@/cli/projectConfig", () => ({
 vi.mock("@/cli/output", () => ({
   printAppHeader: vi.fn(),
   printProcessDiffResult: vi.fn(),
+  printThreeWayDiffResult: vi.fn(),
 }));
 
 vi.mock("@/core/application/container/processManagementCli", () => ({
   createProcessManagementCliContainer: vi.fn(() => ({})),
 }));
 
-vi.mock("@/core/application/processManagement/detectProcessManagementDiff");
+vi.mock(
+  "@/core/application/processManagement/detectProcessManagementThreeWayDiff",
+);
 
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
 
 import { handleCliError } from "@/cli/handleError";
-import { printProcessDiffResult } from "@/cli/output";
-import { detectProcessManagementDiff } from "@/core/application/processManagement/detectProcessManagementDiff";
+import { printThreeWayDiffResult } from "@/cli/output";
+import { detectProcessManagementThreeWayDiff } from "@/core/application/processManagement/detectProcessManagementThreeWayDiff";
 import command from "../diff";
 
 afterEach(() => {
@@ -60,45 +63,52 @@ afterEach(() => {
 });
 
 describe("process diff コマンド", () => {
-  it("diff 結果を表示する", async () => {
+  it("3-way diff 結果を表示する", async () => {
     const mockResult = {
-      entries: [
-        {
-          type: "added" as const,
-          category: "state" as const,
-          name: "処理中",
-          details: "assignee: ALL",
-        },
-      ],
+      mode: "three-way" as const,
+      localChanges: [],
+      remoteDrift: [],
+      conflicts: [],
+      extras: [],
       isEmpty: false,
-      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
-      warnings: [],
     };
-    vi.mocked(detectProcessManagementDiff).mockResolvedValue(mockResult);
+    vi.mocked(detectProcessManagementThreeWayDiff).mockResolvedValue(
+      mockResult,
+    );
 
     await command.run({ values: {} } as never);
 
-    expect(detectProcessManagementDiff).toHaveBeenCalled();
-    expect(printProcessDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(detectProcessManagementThreeWayDiff).toHaveBeenCalled();
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
   it("変更なしの場合も結果を表示する", async () => {
     const mockResult = {
-      entries: [],
+      mode: "three-way" as const,
+      localChanges: [],
+      remoteDrift: [],
+      conflicts: [],
+      extras: [],
       isEmpty: true,
-      summary: { added: 0, modified: 0, deleted: 0, total: 0 },
-      warnings: [],
     };
-    vi.mocked(detectProcessManagementDiff).mockResolvedValue(mockResult);
+    vi.mocked(detectProcessManagementThreeWayDiff).mockResolvedValue(
+      mockResult,
+    );
 
     await command.run({ values: {} } as never);
 
-    expect(printProcessDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {
     const error = new Error("Diff failed");
-    vi.mocked(detectProcessManagementDiff).mockRejectedValue(error);
+    vi.mocked(detectProcessManagementThreeWayDiff).mockRejectedValue(error);
 
     await command.run({ values: {} } as never);
 

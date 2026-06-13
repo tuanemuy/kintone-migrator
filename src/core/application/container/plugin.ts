@@ -1,4 +1,7 @@
+import type { AppRevisionReader } from "@/core/domain/appRevision/ports/appRevisionReader";
+import type { AppRevisionStorage } from "@/core/domain/appRevision/ports/appRevisionStorage";
 import type { PluginConfigurator } from "@/core/domain/plugin/ports/pluginConfigurator";
+import type { PluginStateStorage } from "@/core/domain/plugin/ports/pluginStateStorage";
 import type { PluginStorage } from "@/core/domain/plugin/ports/pluginStorage";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
@@ -8,6 +11,12 @@ export type PluginDiffContainer = {
   configCodec: ConfigCodec;
   pluginConfigurator: PluginConfigurator;
   pluginStorage: PluginStorage;
+  // Base snapshot storage for 3-way diff/pull/push.
+  pluginStateStorage: PluginStateStorage;
+  // App-scoped base revision storage (shared across domains).
+  appRevisionStorage: AppRevisionStorage;
+  // Reads the current remote app revision in one place.
+  appRevisionReader: AppRevisionReader;
 };
 
 export type PluginContainer = PluginDiffContainer & {

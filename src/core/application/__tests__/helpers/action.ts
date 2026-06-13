@@ -1,10 +1,13 @@
 import type { ActionContainer } from "@/core/application/container/action";
 import type { ActionConfig } from "@/core/domain/action/entity";
 import type { ActionConfigurator } from "@/core/domain/action/ports/actionConfigurator";
+import type { ActionStateStorage } from "@/core/domain/action/ports/actionStateStorage";
 import type { ActionStorage } from "@/core/domain/action/ports/actionStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -50,9 +53,16 @@ export class InMemoryActionStorage
   extends InMemoryFileStorage
   implements ActionStorage {}
 
+export class InMemoryActionStateStorage
+  extends InMemoryFileStorage
+  implements ActionStateStorage {}
+
 export type TestActionContainer = ActionContainer & {
   actionConfigurator: InMemoryActionConfigurator;
   actionStorage: InMemoryActionStorage;
+  actionStateStorage: InMemoryActionStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -61,6 +71,9 @@ export function createTestActionContainer(): TestActionContainer {
     configCodec: testConfigCodec,
     actionConfigurator: new InMemoryActionConfigurator(),
     actionStorage: new InMemoryActionStorage(),
+    actionStateStorage: new InMemoryActionStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

@@ -15,6 +15,7 @@ import { loadProjectConfig } from "@/core/application/projectConfig/loadProjectC
 import { resolveExecutionPlan } from "@/core/application/projectConfig/resolveExecutionPlan";
 import {
   buildAppFilePaths,
+  buildAppRevisionFilePath,
   buildStateFilePath,
 } from "@/core/domain/projectConfig/appFilePaths";
 import type {
@@ -156,6 +157,7 @@ export function resolveAppCliConfig(
       app.schemaFile ??
       buildAppFilePaths(app.name).schema,
     stateSchemaFilePath: buildStateFilePath(app.name),
+    appRevisionFilePath: buildAppRevisionFilePath(app.name),
   };
 }
 

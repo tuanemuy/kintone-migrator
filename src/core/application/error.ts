@@ -63,13 +63,14 @@ export function isNotFoundError(error: unknown): error is NotFoundError {
 export const ConflictErrorCode = {
   Conflict: "CONFLICT",
   /**
-   * The remote schema drifted from the base snapshot and the push was not
-   * forced (push-specific drift, ADR-008). Distinct from {@link Conflict},
-   * which the kintone adapter uses for API optimistic-lock (409) conflicts, so
-   * the CLI can tell snapshot drift apart from TOCTOU conflicts by code rather
-   * than by message string.
+   * The remote config drifted from the base snapshot and the push was not
+   * forced (push-specific drift). Distinct from
+   * {@link Conflict}, which the kintone adapter uses for API optimistic-lock
+   * (409) conflicts, so the CLI can tell snapshot drift apart from TOCTOU
+   * conflicts by code rather than by message string. Shared by every config
+   * domain (schema, view, ...), not schema-specific.
    */
-  SchemaDrift: "SCHEMA_DRIFT",
+  ConfigDrift: "CONFIG_DRIFT",
 } as const;
 export type ConflictErrorCode =
   (typeof ConflictErrorCode)[keyof typeof ConflictErrorCode];

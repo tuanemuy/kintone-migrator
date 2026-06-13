@@ -1,7 +1,15 @@
 import type { ReportCliContainerConfig } from "@/core/application/container/reportCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const REPORT_STATE_FILE = "report.yaml";
 
 export const reportArgs = {
   ...kintoneArgs,
@@ -26,9 +34,17 @@ const {
   appFileField: (a) => a.reportFile,
   defaultDir: "report",
   defaultFileName: "reports.yaml",
-  buildConfig: (base, filePath): ReportCliContainerConfig => ({
+  buildConfig: (base, filePath, app): ReportCliContainerConfig => ({
     ...base,
     reportFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode.
+    reportStateFilePath: app
+      ? buildDomainStateFilePath(app.name, REPORT_STATE_FILE)
+      : buildLegacyDomainStateFilePath(REPORT_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

@@ -1,10 +1,13 @@
 import type { ViewContainer } from "@/core/application/container/view";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
+import type { ViewStateStorage } from "@/core/domain/view/ports/viewStateStorage";
 import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -50,9 +53,16 @@ export class InMemoryViewStorage
   extends InMemoryFileStorage
   implements ViewStorage {}
 
+export class InMemoryViewStateStorage
+  extends InMemoryFileStorage
+  implements ViewStateStorage {}
+
 export type TestViewContainer = ViewContainer & {
   viewConfigurator: InMemoryViewConfigurator;
   viewStorage: InMemoryViewStorage;
+  viewStateStorage: InMemoryViewStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -61,6 +71,9 @@ export function createTestViewContainer(): TestViewContainer {
     configCodec: testConfigCodec,
     viewConfigurator: new InMemoryViewConfigurator(),
     viewStorage: new InMemoryViewStorage(),
+    viewStateStorage: new InMemoryViewStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

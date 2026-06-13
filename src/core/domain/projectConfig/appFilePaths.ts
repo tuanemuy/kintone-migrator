@@ -64,3 +64,57 @@ export function buildLegacyStateFilePath(baseDir?: string): string {
   const path = "state/schema.yaml";
   return baseDir ? join(baseDir, path) : path;
 }
+
+/**
+ * Resolves the path to an app-scoped domain state (base snapshot) file
+ * (`state/<appName>/<fileName>`, e.g. `state/sales/view.yaml`).
+ *
+ * Generalizes {@link buildStateFilePath} (which is schema-specific) so every
+ * config domain stores its base snapshot under the same `state/<appName>/`
+ * convention.
+ */
+export function buildDomainStateFilePath(
+  appName: AppName,
+  fileName: string,
+  baseDir?: string,
+): string {
+  const path = `state/${appName}/${fileName}`;
+  return baseDir ? join(baseDir, path) : path;
+}
+
+/**
+ * Resolves the path to the legacy single-app domain state file
+ * (`state/<fileName>`, e.g. `state/view.yaml`).
+ */
+export function buildLegacyDomainStateFilePath(
+  fileName: string,
+  baseDir?: string,
+): string {
+  const path = `state/${fileName}`;
+  return baseDir ? join(baseDir, path) : path;
+}
+
+/**
+ * Resolves the path to the app-scoped base revision file
+ * (`state/<appName>/revision.yaml`).
+ *
+ * revision is an app-scoped value shared by every config domain, so it is
+ * stored once per app alongside the per-domain snapshots in `state/<appName>/`.
+ * Same app-inside directory convention as {@link buildStateFilePath}.
+ */
+export function buildAppRevisionFilePath(
+  appName: AppName,
+  baseDir?: string,
+): string {
+  const path = `state/${appName}/revision.yaml`;
+  return baseDir ? join(baseDir, path) : path;
+}
+
+/**
+ * Resolves the path to the legacy single-app base revision file
+ * (`state/revision.yaml`).
+ */
+export function buildLegacyAppRevisionFilePath(baseDir?: string): string {
+  const path = "state/revision.yaml";
+  return baseDir ? join(baseDir, path) : path;
+}

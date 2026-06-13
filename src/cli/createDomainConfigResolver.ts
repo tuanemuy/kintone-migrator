@@ -34,7 +34,16 @@ export function createDomainConfigResolver<
   appFileField: (app: AppEntry) => string | undefined;
   defaultDir: string;
   defaultFileName: string;
-  buildConfig: (base: BaseContainerConfig, filePath: string) => TConfig;
+  /**
+   * Builds the domain container config. `app` is the resolved {@link AppEntry}
+   * for `--app` / `--all` modes, or undefined for legacy single-app mode; it
+   * lets domains derive app-scoped state/revision paths.
+   */
+  buildConfig: (
+    base: BaseContainerConfig,
+    filePath: string,
+    app: AppEntry | undefined,
+  ) => TConfig;
 }) {
   type Values = MultiAppCliValues & Partial<Record<TFileArgKey, string>>;
 
@@ -60,6 +69,7 @@ export function createDomainConfigResolver<
         guestSpaceId: config.guestSpaceId,
       },
       resolveDomainFilePath(cliValues),
+      undefined,
     );
   }
 
@@ -78,6 +88,7 @@ export function createDomainConfigResolver<
         guestSpaceId: config.guestSpaceId,
       },
       resolveDomainFilePath(cliValues, app),
+      app,
     );
   }
 
