@@ -268,7 +268,6 @@ describe("printApplyAllResults", () => {
     expect(abortedLine).not.toContain("file not found");
     expect(abortedLine).not.toContain("failed");
 
-    // Summary should show both a failed and a skipped count (1 each).
     const summaryLine = messageLines[messageLines.length - 1];
     expect(summaryLine).toContain("1 failed");
     expect(summaryLine).toContain("1 skipped");
@@ -318,8 +317,8 @@ describe("printApplyAllResults", () => {
     expect(abortedLine).toContain("skipped");
     expect(abortedLine).not.toContain("file not found");
 
-    // ADR-005: the summary aggregates all skip kinds into a single "N skipped"
-    // count and must NOT break them down by kind. Assert the combined count
+    // The summary aggregates all skip kinds into a single "N skipped" count
+    // and must NOT break them down by kind. Assert the combined count
     // ("2 skipped") and that no per-kind breakdown words leak into the summary.
     const summaryLine = messageLines[messageLines.length - 1];
     expect(summaryLine).toContain("2 skipped");

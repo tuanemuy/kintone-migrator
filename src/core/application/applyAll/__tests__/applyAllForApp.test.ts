@@ -626,14 +626,12 @@ describe("applyAllForApp", () => {
 
     const output = await applyAllForApp(makeArgs(new Set(["schema"])));
 
-    // schema is skipped as not-found
     const schemaResult = output.phases[0].results[0];
     expect(schemaResult.success).toBe(false);
     if (!schemaResult.success) {
       expect(schemaResult.skipped).toBe("not-found");
     }
 
-    // Phase 2-4 still succeed
     expect(output.phases[1].results.every((r) => r.success)).toBe(true);
 
     // Schema phase does not deploy; only the trailing batch deploy runs once
@@ -761,7 +759,7 @@ describe("applyAllForApp", () => {
 
   it("標準フェーズで probe が exists:true でも run が内容エラーで失敗する場合は not-found skip ではなく skipped:false の failure になること", async () => {
     setupAllMocksToSucceed();
-    // AC-4: the config file exists (probe exists:true), but the usecase fails
+    // The config file exists (probe exists:true), but the usecase fails
     // with an ordinary content error (e.g. parse failure). This stays a regular
     // failure (skipped:false) and must not be confused with a not-found skip.
     // It is also non-fatal, so other domains keep running.

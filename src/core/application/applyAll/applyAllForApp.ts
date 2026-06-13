@@ -327,7 +327,7 @@ async function executeStandardPhase(
     // When the config file is absent, skip gracefully without aborting.
     // This probe double-reads with the get() inside task.run(), but a shared
     // domain-agnostic probe structurally guarantees consistent not-found skip
-    // across all domains and the extra I/O is negligible (ADR-001).
+    // across all domains and the extra I/O is negligible.
     if (!(await task.storageExists())) {
       results.push({
         domain: task.domain,
