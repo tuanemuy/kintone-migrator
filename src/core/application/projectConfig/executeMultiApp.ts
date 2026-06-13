@@ -13,6 +13,15 @@ import { MultiAppResult as MultiAppResultFactory } from "@/core/domain/projectCo
  * (a 3-value `succeeded`/`failed`/`skipped` status that `executeMultiApp`
  * produces as output, where `skipped` is assigned by fail-fast and cannot be
  * expressed by an executor). See ADR-001.
+ *
+ * For `{ ok: false }`, supplying `error` is the executor's responsibility: only
+ * the executor has the context to describe why the app failed. When omitted,
+ * the resulting `AppExecutionResult.error` is `undefined` (a "failed" app with
+ * no reason). This use-case layer deliberately does NOT fabricate a generic
+ * fallback `Error`, since it lacks that context. This is asymmetric with the
+ * throw path (which always carries the caught real `Error`), and the asymmetry
+ * is intentional: the responsibility for the failure reason stays with the
+ * party that has it.
  */
 export type AppExecutionOutcome =
   | { readonly ok: true }

@@ -33,6 +33,7 @@ vi.mock("@/core/application/projectConfig/executeMultiApp", () => ({
 
 import * as p from "@clack/prompts";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
+import { printMultiAppResult } from "../output";
 import {
   runMultiAppWithFailCheck,
   validateExclusiveArgs,
@@ -155,6 +156,13 @@ describe("runMultiAppWithFailCheck", () => {
         code: "EXECUTION_ERROR",
       }),
     );
+
+    // Closes the misclassification gap end-to-end: the result handed to
+    // printMultiAppResult (called before the throw) must mark the app "failed",
+    // not "succeeded" (AC-1, Issue's core "status misclassification").
+    const multiResult = vi.mocked(printMultiAppResult).mock.calls[0][0];
+    expect(multiResult.results[0].status).toBe("failed");
+    expect(multiResult.results[0].status).not.toBe("succeeded");
   });
 
   it("executor が {ok:true} を返す場合、実体の executeMultiApp 経由でスローせず正常完了する", async () => {

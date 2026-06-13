@@ -103,6 +103,26 @@ describe("executeMultiApp", () => {
     expect(result.results[2].status).toBe("skipped");
   });
 
+  it("treats { ok: false } with omitted error as failure with undefined error", async () => {
+    const plan = makePlan(["a", "b"]);
+
+    // Type contract boundary: `error` is optional on `{ ok: false }`. An executor
+    // may omit it; the use-case layer does NOT fabricate a fallback Error (it has
+    // no context). The app must still be "failed" / hasFailure, with error undefined.
+    const result = await executeMultiApp(plan, async (app) => {
+      if (app.name === "a") {
+        return { ok: false };
+      }
+      return { ok: true };
+    });
+
+    expect(result.hasFailure).toBe(true);
+    expect(result.results[0].status).toBe("failed");
+    expect(result.results[0].status).not.toBe("succeeded");
+    expect(result.results[0].error).toBeUndefined();
+    expect(result.results[1].status).toBe("skipped");
+  });
+
   it("treats { ok: true } return as success", async () => {
     const plan = makePlan(["a", "b"]);
 
