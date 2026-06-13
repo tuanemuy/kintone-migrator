@@ -15,6 +15,8 @@ import initCommand from "./commands/init";
 import notificationGroup from "./commands/notification";
 import pluginGroup from "./commands/plugin";
 import processGroup from "./commands/process";
+import pullCommand from "./commands/pull";
+import pushCommand from "./commands/push";
 import recordAclGroup from "./commands/record-acl";
 import reportGroup from "./commands/report";
 import schemaGroup from "./commands/schema";
@@ -47,6 +49,8 @@ await cli(process.argv.slice(2), main, {
     apply: applyCommand,
     capture: captureCommand,
     diff: diffCommand,
+    pull: pullCommand,
+    push: pushCommand,
     schema: schemaGroup,
     seed: seedGroup,
     customize: customizeGroup,
