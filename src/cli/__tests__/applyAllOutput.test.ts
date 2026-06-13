@@ -254,17 +254,24 @@ describe("printApplyAllResults", () => {
 
     printApplyAllResults(output);
 
-    const messageCalls = vi.mocked(p.log.message).mock.calls;
-    const abortedLine = messageCalls[1][0] as string;
+    // p.log.message is called once per task row (phase headers use p.log.step),
+    // so find the row by its domain display name instead of a positional index
+    // to stay robust against phase-structure changes.
+    const messageLines = vi
+      .mocked(p.log.message)
+      .mock.calls.map((call) => call[0] as string);
+    const abortedLine = messageLines.find((line) =>
+      line.includes("Customization"),
+    ) as string;
     expect(abortedLine).toContain("\u2298");
     expect(abortedLine).toContain("skipped");
     expect(abortedLine).not.toContain("file not found");
     expect(abortedLine).not.toContain("failed");
 
-    // Summary should show both a failed and a skipped count
-    const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
-    expect(summaryLine).toContain("failed");
-    expect(summaryLine).toContain("skipped");
+    // Summary should show both a failed and a skipped count (1 each).
+    const summaryLine = messageLines[messageLines.length - 1];
+    expect(summaryLine).toContain("1 failed");
+    expect(summaryLine).toContain("1 skipped");
 
     // logError should fire only for the genuine failure (schema)
     expect(logError).toHaveBeenCalledTimes(1);
@@ -294,18 +301,31 @@ describe("printApplyAllResults", () => {
 
     printApplyAllResults(output);
 
-    const messageCalls = vi.mocked(p.log.message).mock.calls;
-    const notFoundLine = messageCalls[0][0] as string;
-    const abortedLine = messageCalls[1][0] as string;
+    // p.log.message is called once per task row (phase headers use p.log.step),
+    // so find each row by its domain display name instead of a positional index
+    // to stay robust against phase-structure changes.
+    const messageLines = vi
+      .mocked(p.log.message)
+      .mock.calls.map((call) => call[0] as string);
+    const notFoundLine = messageLines.find((line) =>
+      line.includes("Schema"),
+    ) as string;
+    const abortedLine = messageLines.find((line) =>
+      line.includes("Customization"),
+    ) as string;
 
     expect(notFoundLine).toContain("skipped (file not found)");
     expect(abortedLine).toContain("skipped");
     expect(abortedLine).not.toContain("file not found");
 
-    // Summary aggregates both skips into a single count (no breakdown)
-    const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
-    expect(summaryLine).toContain("2");
-    expect(summaryLine).toContain("skipped");
+    // ADR-005: the summary aggregates all skip kinds into a single "N skipped"
+    // count and must NOT break them down by kind. Assert the combined count
+    // ("2 skipped") and that no per-kind breakdown words leak into the summary.
+    const summaryLine = messageLines[messageLines.length - 1];
+    expect(summaryLine).toContain("2 skipped");
+    expect(summaryLine).not.toContain("not-found");
+    expect(summaryLine).not.toContain("file not found");
+    expect(summaryLine).not.toContain("aborted");
 
     // not-found has no error -> logError never fires here
     expect(logError).not.toHaveBeenCalled();
