@@ -1,6 +1,7 @@
 import {
   type AppFilePaths,
   buildAppFilePaths,
+  buildAppRevisionFilePath,
   buildStateFilePath,
 } from "@/core/domain/projectConfig/appFilePaths";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
@@ -58,6 +59,10 @@ export function createCliCaptureContainers(
         ...base,
         schemaFilePath: paths.schema,
         stateSchemaFilePath: buildStateFilePath(input.appName, input.baseDir),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       seed: createSeedCliContainer({ ...base, seedFilePath: paths.seed }),
       customization: createCustomizationCliContainer({

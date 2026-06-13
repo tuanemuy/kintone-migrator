@@ -19,6 +19,7 @@ describe("resolveConfig", () => {
       appId: "42",
       schemaFilePath: "schema.yaml",
       stateSchemaFilePath: "state/schema.yaml",
+      appRevisionFilePath: "state/revision.yaml",
     });
   });
 
@@ -34,6 +35,7 @@ describe("resolveConfig", () => {
       appId: "42",
       schemaFilePath: "schema.yaml",
       stateSchemaFilePath: "state/schema.yaml",
+      appRevisionFilePath: "state/revision.yaml",
     });
   });
 
@@ -133,6 +135,7 @@ describe("resolveConfig", () => {
       appId: "99",
       schemaFilePath: "custom.yaml",
       stateSchemaFilePath: "state/schema.yaml",
+      appRevisionFilePath: "state/revision.yaml",
     });
   });
 });

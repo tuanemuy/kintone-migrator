@@ -1,5 +1,6 @@
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { ConflictError, ConflictErrorCode } from "@/core/application/error";
+import type { AppRevisionStorage } from "@/core/domain/appRevision/ports/appRevisionStorage";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type {
   ExpectedRevision,
@@ -39,7 +40,7 @@ export class InMemoryFormConfigurator
   /**
    * Arms the test double so the next mutation throws an API optimistic-lock
    * ConflictError (ConflictErrorCode.Conflict — distinct from the push-drift
-   * SchemaDrift code), as the real adapter would on a 409.
+   * ConfigDrift code), as the real adapter would on a 409.
    */
   failNextMutationWithOptimisticLock(): void {
     this.pendingMutationError = new ConflictError(
@@ -158,10 +159,15 @@ export class InMemorySchemaStorage
   extends InMemoryFileStorage
   implements SchemaStorage {}
 
+export class InMemoryAppRevisionStorage
+  extends InMemoryFileStorage
+  implements AppRevisionStorage {}
+
 export type TestFormSchemaContainer = FormSchemaContainer & {
   formConfigurator: InMemoryFormConfigurator;
   schemaStorage: InMemorySchemaStorage;
   schemaStateStorage: InMemorySchemaStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -171,6 +177,7 @@ export function createTestFormSchemaContainer(): TestFormSchemaContainer {
     formConfigurator: new InMemoryFormConfigurator(),
     schemaStorage: new InMemorySchemaStorage(),
     schemaStateStorage: new InMemorySchemaStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

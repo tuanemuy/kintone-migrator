@@ -10,6 +10,7 @@ import type {
   FormSchemaThreeWayMerge,
   MergeResolution,
 } from "@/core/domain/formSchema/valueObject";
+import { saveAppRevision } from "../appRevisionIo";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { stringifyConfig } from "../stringifyConfig";
 import { assertSchemaValid } from "./assertSchemaValid";
@@ -30,6 +31,25 @@ function serializeSchema(
   return stringifyConfig(
     container.configCodec,
     SchemaSerializer.serialize(enrichedLayout, schema.fields),
+  );
+}
+
+/**
+ * Persists the new base: the schema snapshot (state file) and the app revision
+ * (`state/<appName>/revision.yaml`) together. revision lives in its own
+ * app-scoped store now (ADR-188-001), so the two writes are kept side by side
+ * so they always advance together.
+ */
+async function saveSnapshotAndRevision(
+  container: FormSchemaServiceArgs["container"],
+  schema: Schema,
+  revision: string,
+): Promise<void> {
+  await saveState(container.schemaStateStorage, container.configCodec, schema);
+  await saveAppRevision(
+    container.appRevisionStorage,
+    container.configCodec,
+    revision,
   );
 }
 
@@ -60,12 +80,7 @@ export async function pullSchema({
   if (input.force) {
     const schemaText = serializeSchema(container, remote);
     await container.schemaStorage.update(schemaText);
-    await saveState(
-      container.schemaStateStorage,
-      container.configCodec,
-      remoteRevision,
-      remote,
-    );
+    await saveSnapshotAndRevision(container, remote, remoteRevision);
     return { mode: "force", schemaText };
   }
 
@@ -73,12 +88,7 @@ export async function pullSchema({
     // First run / no local: one-way overwrite from remote and initialize state.
     const schemaText = serializeSchema(container, remote);
     await container.schemaStorage.update(schemaText);
-    await saveState(
-      container.schemaStateStorage,
-      container.configCodec,
-      remoteRevision,
-      remote,
-    );
+    await saveSnapshotAndRevision(container, remote, remoteRevision);
     return { mode: "firstTime", schemaText };
   }
 
@@ -119,11 +129,10 @@ export async function applyPulledMerge({
   assertSchemaValid(merged);
   const schemaText = serializeSchema(container, merged);
   await container.schemaStorage.update(schemaText);
-  await saveState(
-    container.schemaStateStorage,
-    container.configCodec,
-    input.remoteRevision,
+  await saveSnapshotAndRevision(
+    container,
     input.remoteSchema,
+    input.remoteRevision,
   );
   return { schemaText };
 }

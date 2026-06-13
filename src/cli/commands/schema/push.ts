@@ -51,11 +51,12 @@ async function runPush(
   } catch (error) {
     s.stop("Push failed.");
     // Distinguish API optimistic-lock (TOCTOU) conflicts from snapshot drift by
-    // error code (ADR-008): pushSchema tags snapshot drift with SchemaDrift,
-    // while the kintone adapter uses Conflict for API 409 (revision) conflicts.
+    // error code (ADR-008 / ADR-188-006): pushSchema tags snapshot drift with
+    // ConfigDrift, while the kintone adapter uses Conflict for API 409
+    // (revision) conflicts.
     if (
       isConflictError(error) &&
-      error.code !== ConflictErrorCode.SchemaDrift
+      error.code !== ConflictErrorCode.ConfigDrift
     ) {
       throw new ConflictError(
         ConflictErrorCode.Conflict,

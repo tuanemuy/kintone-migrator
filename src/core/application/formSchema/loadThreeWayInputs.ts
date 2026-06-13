@@ -6,7 +6,7 @@ import { parseSchemaText } from "./parseSchema";
 import { loadState } from "./schemaStateIo";
 
 export type ThreeWayInputs = Readonly<{
-  /** Parsed state (base snapshot + revision), or undefined on first run. */
+  /** Parsed state (base snapshot), or undefined on first run. */
   state: SchemaState | undefined;
   /** Local schema parsed from the YAML file, or undefined when absent. */
   local: Schema | undefined;

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   type AppFilePaths,
   buildAppFilePaths,
+  buildAppRevisionFilePath,
+  buildLegacyAppRevisionFilePath,
   buildLegacyStateFilePath,
   buildStateFilePath,
 } from "../appFilePaths";
@@ -97,5 +99,36 @@ describe("buildLegacyStateFilePath", () => {
 
   it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
     expect(buildLegacyStateFilePath("output")).toBe("output/state/schema.yaml");
+  });
+});
+
+// ADR-188-001: revision is an app-scoped value stored once per app alongside
+// the per-domain snapshots, with the same app-inside directory convention as
+// buildStateFilePath.
+describe("buildAppRevisionFilePath", () => {
+  const appName = AppName.create("customer");
+
+  it("appName 内側の state/<appName>/revision.yaml を返す", () => {
+    expect(buildAppRevisionFilePath(appName)).toBe(
+      "state/customer/revision.yaml",
+    );
+  });
+
+  it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
+    expect(buildAppRevisionFilePath(appName, "output")).toBe(
+      "output/state/customer/revision.yaml",
+    );
+  });
+});
+
+describe("buildLegacyAppRevisionFilePath", () => {
+  it("legacy 単一アプリは state/revision.yaml を返す", () => {
+    expect(buildLegacyAppRevisionFilePath()).toBe("state/revision.yaml");
+  });
+
+  it("baseDir が指定されると state ディレクトリの外側に付与される", () => {
+    expect(buildLegacyAppRevisionFilePath("output")).toBe(
+      "output/state/revision.yaml",
+    );
   });
 });

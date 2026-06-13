@@ -1,3 +1,4 @@
+import type { AppRevisionStorage } from "@/core/domain/appRevision/ports/appRevisionStorage";
 import type { FormConfigurator } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { SchemaStateStorage } from "@/core/domain/formSchema/ports/schemaStateStorage";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
@@ -14,6 +15,9 @@ export type FormSchemaDiffContainer = {
   // container so it is also injected into the full container (push/pull) via
   // inheritance. Legacy migrate/capture also receive it but never read/write it.
   schemaStateStorage: SchemaStateStorage;
+  // App-scoped base revision storage (shared across domains, ADR-188-001).
+  // The schema snapshot no longer carries the revision; it is persisted here.
+  appRevisionStorage: AppRevisionStorage;
 };
 
 export type FormSchemaContainer = FormSchemaDiffContainer & {

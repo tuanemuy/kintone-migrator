@@ -21,14 +21,18 @@ export async function loadState(
   return wrapBusinessRuleError(() => SchemaStateParser.parse(parsed));
 }
 
-/** Serializes and persists the schema state via the codec port. */
+/**
+ * Serializes and persists the schema snapshot via the codec port.
+ *
+ * The app revision is persisted separately via `saveAppRevision`
+ * (ADR-188-001), so it is no longer written into the state file here.
+ */
 export async function saveState(
   storage: SchemaStateStorage,
   codec: ConfigCodec,
-  revision: string,
   schema: Schema,
 ): Promise<void> {
-  const data = SchemaStateSerializer.serialize({ revision, schema });
+  const data = SchemaStateSerializer.serialize({ schema });
   const text = stringifyConfig(codec, data);
   await storage.update(text);
 }

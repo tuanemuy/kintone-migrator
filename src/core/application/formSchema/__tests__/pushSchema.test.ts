@@ -60,8 +60,10 @@ function setState(
   schema: Schema,
   revision: string,
 ): void {
-  const data = SchemaStateSerializer.serialize({ revision, schema });
+  const data = SchemaStateSerializer.serialize({ schema });
   container.schemaStateStorage.setContent(configCodec.stringify(data));
+  // revision is now persisted separately (ADR-188-001).
+  container.appRevisionStorage.setContent(configCodec.stringify({ revision }));
 }
 
 function parseSchema(label: string): Schema {
@@ -198,7 +200,7 @@ layout:
     );
   });
 
-  it("drift 拒否は SchemaDrift コードで区別される（API 楽観ロックではない）", async () => {
+  it("drift 拒否は ConfigDrift コードで区別される（API 楽観ロックではない）", async () => {
     const container = getContainer();
     const base = parseSchema("名前");
     setState(container, base, "7");
@@ -206,7 +208,7 @@ layout:
     setRemote(container, "名前_リモート変更", "9");
 
     await expect(pushSchema({ container, input: {} })).rejects.toMatchObject({
-      code: ConflictErrorCode.SchemaDrift,
+      code: ConflictErrorCode.ConfigDrift,
     });
   });
 
@@ -219,7 +221,7 @@ layout:
     // The remote changes again between the drift check and the apply: the
     // mutation API rejects with an optimistic-lock 409, which the adapter maps
     // to a ConflictError. pushSchema must let it propagate untouched (not
-    // swallow it, and not re-tag it as SchemaDrift).
+    // swallow it, and not re-tag it as ConfigDrift).
     container.formConfigurator.failNextMutationWithOptimisticLock();
 
     const error = await pushSchema({ container, input: {} }).catch((e) => e);
@@ -228,7 +230,7 @@ layout:
     // It is the API optimistic-lock code, NOT the push-drift code: the CLI uses
     // this distinction to choose the TOCTOU message (ADR-008 / ADR-014).
     expect(error.code).toBe(ConflictErrorCode.Conflict);
-    expect(error.code).not.toBe(ConflictErrorCode.SchemaDrift);
+    expect(error.code).not.toBe(ConflictErrorCode.ConfigDrift);
   });
 
   it("適用後 getRevision で取得した preview revision を state に記録する", async () => {

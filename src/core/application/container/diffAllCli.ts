@@ -1,6 +1,7 @@
 import {
   type AppFilePaths,
   buildAppFilePaths,
+  buildAppRevisionFilePath,
   buildStateFilePath,
 } from "@/core/domain/projectConfig/appFilePaths";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
@@ -57,6 +58,10 @@ export function createCliDiffAllContainers(
         ...base,
         schemaFilePath: paths.schema,
         stateSchemaFilePath: buildStateFilePath(input.appName, input.baseDir),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       customization: createCustomizationCliContainer({
         ...base,

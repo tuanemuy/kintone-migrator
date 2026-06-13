@@ -8,6 +8,7 @@ import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigur
 import { isLayoutEqual } from "@/core/domain/formSchema/services/diffDetector";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import { computeThreeWayMerge } from "@/core/domain/formSchema/services/threeWayMerge";
+import { saveAppRevision } from "../appRevisionIo";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { applySchemaChanges } from "./applySchemaChanges";
 import { assertSchemaValid } from "./assertSchemaValid";
@@ -31,8 +32,9 @@ export const PUSH_DRIFT_MESSAGE =
  * - Reads the current revision (expected-revision source + drift signal) and
  *   the remote snapshot (drift judged by snapshot comparison, never skipped by
  *   revision — ADR-004).
- * - drift && !force → {@link ConflictError} tagged with `SchemaDrift` (drift
- *   distinguished from API optimistic-lock conflicts by error code — ADR-008).
+ * - drift && !force → {@link ConflictError} tagged with `ConfigDrift` (drift
+ *   distinguished from API optimistic-lock conflicts by error code — ADR-008 /
+ *   ADR-188-006).
  * - otherwise applies the local schema via the shared {@link applySchemaChanges}
  *   (type changes / subtable additions rejected with ValidationError — AC-13),
  *   sending the observed remote revision as the expected revision (ADR-005).
@@ -72,11 +74,11 @@ export async function pushSchema({
     const layoutDrift = !isLayoutEqual(enrichedBaseLayout, merge.remoteLayout);
 
     if (hasFieldDrift || layoutDrift) {
-      // Tag with the SchemaDrift code so the CLI distinguishes this snapshot
+      // Tag with the ConfigDrift code so the CLI distinguishes this snapshot
       // drift from API optimistic-lock (TOCTOU) conflicts by code, not by
-      // message string (ADR-008 / adapter W-001).
+      // message string (ADR-008 / ADR-188-006 / adapter W-001).
       throw new ConflictError(
-        ConflictErrorCode.SchemaDrift,
+        ConflictErrorCode.ConfigDrift,
         PUSH_DRIFT_MESSAGE,
       );
     }
@@ -100,12 +102,14 @@ export async function pushSchema({
   await applySchemaChanges(local, { container, expectedRevision });
 
   // Record the post-apply preview revision and local schema as the new base.
+  // The snapshot and the app revision are persisted separately now
+  // (ADR-188-001), so they are written side by side to advance together.
   const newRevision = await container.formConfigurator.getRevision();
-  await saveState(
-    container.schemaStateStorage,
+  await saveState(container.schemaStateStorage, container.configCodec, local);
+  await saveAppRevision(
+    container.appRevisionStorage,
     container.configCodec,
     newRevision,
-    local,
   );
 
   return { mode: firstTime ? "firstTime" : "push", revision: newRevision };
