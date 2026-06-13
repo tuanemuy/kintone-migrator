@@ -9,6 +9,7 @@ export const FormSchemaErrorCode = {
   FsEmptyFields: "FS_EMPTY_FIELDS",
   FsInvalidStateStructure: "FS_INVALID_STATE_STRUCTURE",
   FsInvalidMergeResolution: "FS_INVALID_MERGE_RESOLUTION",
+  FsOrphanMergedField: "FS_ORPHAN_MERGED_FIELD",
 } as const;
 
 export type FormSchemaErrorCode =

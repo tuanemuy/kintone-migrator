@@ -1,11 +1,13 @@
 import { BusinessRuleError } from "@/core/domain/error";
 import { classifyThreeWay } from "../../diff";
+import type { FormLayout } from "../entity";
 import { Schema } from "../entity";
 import { FormSchemaErrorCode } from "../errorCode";
 import type {
   FieldCode,
   FieldDefinition,
   FormSchemaThreeWayMerge,
+  LayoutElement,
   MergeResolution,
 } from "../valueObject";
 import { isFieldEqual, isLayoutEqual } from "./diffDetector";
@@ -161,7 +163,75 @@ export function resolveMerge(
     );
   }
 
+  assertNoOrphanFields(mergedFields, chosenLayout);
+
   return Schema.create(mergedFields, chosenLayout);
+}
+
+/**
+ * Rejects merge resolutions that would produce an orphan field: a top-level
+ * field present in the merged field map but absent from the chosen layout.
+ *
+ * The field channel and the layout channel are resolved independently
+ * (`resolveFieldEntry` vs `layoutSide`). A field added on one side
+ * (auto-merged into `mergedFields`) can be placed only in that side's layout;
+ * if the conflicting layout from the other side is chosen, the field is not
+ * placed anywhere. Because schema serialization is layout-driven
+ * (`SchemaSerializer.serialize` walks the layout, not the field map), such an
+ * orphan field would be silently dropped on write-back. Detecting it here turns
+ * a silent correctness loss into an explicit, actionable error: the chosen
+ * resolution combination is internally inconsistent and the user must pick the
+ * layout side that contains the adopted field.
+ */
+function assertNoOrphanFields(
+  mergedFields: ReadonlyMap<FieldCode, FieldDefinition>,
+  layout: FormLayout,
+): void {
+  const placed = collectLayoutFieldCodes(layout);
+  const orphans: FieldCode[] = [];
+  for (const code of mergedFields.keys()) {
+    if (!placed.has(code)) orphans.push(code);
+  }
+  if (orphans.length > 0) {
+    throw new BusinessRuleError(
+      FormSchemaErrorCode.FsOrphanMergedField,
+      `Merge resolution leaves field(s) not placed in the chosen layout: ${orphans.join(
+        ", ",
+      )}. The adopted field exists on a different side than the chosen layout; choose the layout side that contains the field.`,
+    );
+  }
+}
+
+// Collects every field code that the layout places, so orphan top-level fields
+// (present in the merged field map but unplaced) can be detected. GROUP /
+// SUBTABLE / REFERENCE_TABLE items contribute their own code; ROW and nested
+// (group/subtable) field elements contribute the placed field's code.
+function collectLayoutFieldCodes(layout: FormLayout): ReadonlySet<FieldCode> {
+  const placed = new Set<FieldCode>();
+  const collectElements = (elements: readonly LayoutElement[]): void => {
+    for (const element of elements) {
+      if (element.kind === "field") placed.add(element.field.code);
+    }
+  };
+  for (const item of layout) {
+    switch (item.type) {
+      case "ROW":
+        collectElements(item.fields);
+        break;
+      case "GROUP":
+        placed.add(item.code);
+        for (const row of item.layout) collectElements(row.fields);
+        break;
+      case "SUBTABLE":
+        placed.add(item.code);
+        collectElements(item.fields);
+        break;
+      case "REFERENCE_TABLE":
+        placed.add(item.code);
+        break;
+    }
+  }
+  return placed;
 }
 
 function assertResolutionCovers(

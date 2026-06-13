@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { BusinessRuleError } from "../../../error";
 import { Schema } from "../../entity";
+import { FormSchemaErrorCode } from "../../errorCode";
 import {
   FieldCode,
   type FieldDefinition,
@@ -415,6 +417,79 @@ describe("resolveMerge", () => {
       expect(merged.fields.has(FieldCode.create("col_c"))).toBe(true);
       expect(merged.fields.has(FieldCode.create("col_b"))).toBe(false);
       expect(merged.fields.has(FieldCode.create("g_inner"))).toBe(true);
+    });
+  });
+
+  // W-001 (round-2, ADR-016): the field channel and the layout channel are
+  // resolved independently. A field added on one side auto-merges into the
+  // merged field map, but if the conflicting layout from the *other* side is
+  // chosen, that field is not placed anywhere. Layout-driven serialization
+  // would silently drop it. resolveMerge must reject this inconsistent
+  // resolution instead of producing a schema that loses the adopted field.
+  describe("orphan field 検出 (W-001)", () => {
+    // base has two ordered fields so local can change the layout (reorder)
+    // WITHOUT adding a field. remote adds `rfoo` (auto-merged as remoteOnly
+    // into the field channel) and places it in the remote layout. The layouts
+    // conflict, so resolveMerge must pick a layout side.
+    const orphanBase = schemaOf([
+      [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+      [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")],
+    ]);
+    // local reorders the two existing fields (layout-only change, no new field).
+    const orphanLocal = schemaOf([
+      [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")],
+      [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+    ]);
+    // remote keeps the original order and appends a new field rfoo.
+    const orphanRemote = schemaOf([
+      [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+      [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")],
+      [fieldRow("rfoo", "SINGLE_LINE_TEXT", "リモート追加")],
+    ]);
+
+    it("追加 field を含む側を採用しつつ layout は含まない側を採用すると拒否される", () => {
+      const merge = computeThreeWayMerge(orphanBase, orphanLocal, orphanRemote);
+      expect(merge.layoutConflict).toBe(true);
+      // rfoo is auto-merged into the field channel (remoteOnly addition).
+      expect(
+        merge.fieldEntries.some(
+          (e) =>
+            e.key === FieldCode.create("rfoo") &&
+            e.change.kind === "remoteOnly",
+        ),
+      ).toBe(true);
+
+      // Choosing the local layout (which lacks rfoo) leaves rfoo unplaced.
+      expect(() =>
+        resolveMerge(merge, {
+          fields: new Map(),
+          layout: "local",
+        }),
+      ).toThrow(BusinessRuleError);
+
+      try {
+        resolveMerge(merge, { fields: new Map(), layout: "local" });
+        expect.unreachable("should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(BusinessRuleError);
+        expect((error as BusinessRuleError).code).toBe(
+          FormSchemaErrorCode.FsOrphanMergedField,
+        );
+        expect((error as BusinessRuleError).message).toContain("rfoo");
+      }
+    });
+
+    it("追加 field を含む側の layout を採用すれば成立し field が保持される", () => {
+      const merge = computeThreeWayMerge(orphanBase, orphanLocal, orphanRemote);
+      // Choosing the remote layout (which contains rfoo) is consistent: every
+      // merged field is placed, so the adopted field is preserved.
+      const merged = resolveMerge(merge, {
+        fields: new Map(),
+        layout: "remote",
+      });
+      expect(merged.fields.has(FieldCode.create("rfoo"))).toBe(true);
+      expect(merged.fields.has(FieldCode.create("name"))).toBe(true);
+      expect(merged.fields.has(FieldCode.create("age"))).toBe(true);
     });
   });
 });
