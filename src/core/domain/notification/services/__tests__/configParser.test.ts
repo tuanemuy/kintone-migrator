@@ -1023,6 +1023,25 @@ describe("NotificationConfigParser.parse", () => {
     expect(config.reminder?.notifications[0].daysLater).toBe(-10000);
   });
 
+  it("should accept daysLater at the upper bound", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 10000,
+            hoursLater: 9,
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].daysLater).toBe(10000);
+  });
+
   it("should throw NtInvalidDaysLater for daysLater above the upper bound", () => {
     expect(() =>
       NotificationConfigParser.parse({
@@ -1088,6 +1107,25 @@ describe("NotificationConfigParser.parse", () => {
       },
     });
     expect(config.reminder?.notifications[0].hoursLater).toBe(-3);
+  });
+
+  it("should accept hoursLater at the upper bound", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 1,
+            hoursLater: 10000,
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].hoursLater).toBe(10000);
   });
 
   it("should throw NtInvalidHoursLater for hoursLater above the upper bound", () => {
