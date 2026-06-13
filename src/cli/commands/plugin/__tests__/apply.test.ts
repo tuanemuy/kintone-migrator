@@ -81,7 +81,10 @@ afterEach(() => {
 
 describe("plugin apply コマンド", () => {
   it("プラグインの適用に成功し、成功メッセージが表示される", async () => {
-    vi.mocked(applyPlugin).mockResolvedValue(undefined);
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [],
+    });
     vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
@@ -93,7 +96,10 @@ describe("plugin apply コマンド", () => {
   });
 
   it("適用後にデプロイの確認が行われる", async () => {
-    vi.mocked(applyPlugin).mockResolvedValue(undefined);
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [],
+    });
     vi.mocked(p.confirm).mockResolvedValue(true);
 
     await command.run({ values: {} } as never);
@@ -103,7 +109,10 @@ describe("plugin apply コマンド", () => {
   });
 
   it("デプロイをキャンセルした場合、警告メッセージが表示される", async () => {
-    vi.mocked(applyPlugin).mockResolvedValue(undefined);
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [],
+    });
     vi.mocked(p.confirm)
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
@@ -117,12 +126,46 @@ describe("plugin apply コマンド", () => {
   });
 
   it("--yes フラグで確認をスキップしてデプロイされる", async () => {
-    vi.mocked(applyPlugin).mockResolvedValue(undefined);
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [],
+    });
 
     await command.run({ values: { yes: true } } as never);
 
     expect(p.confirm).not.toHaveBeenCalled();
     expect(mockDeploy).toHaveBeenCalled();
+  });
+
+  it("skipped が非空のとき手動対応を促す警告が表示される", async () => {
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [
+        { pluginId: "abcdefghijklmnopqrstuvwxyz012345", reason: "disabled" },
+      ],
+    });
+
+    await command.run({ values: { yes: true } } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("kintone admin UI"),
+    );
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("abcdefghijklmnopqrstuvwxyz012345"),
+    );
+  });
+
+  it("skipped が空のとき手動対応の警告は表示されない", async () => {
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: ["djmhffjlbkikgmepoociabnpfcfjhdge"],
+      skipped: [],
+    });
+
+    await command.run({ values: { yes: true } } as never);
+
+    expect(p.log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("kintone admin UI"),
+    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {

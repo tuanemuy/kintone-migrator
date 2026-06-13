@@ -137,7 +137,7 @@ function setupAllMocksToSucceed(): void {
     newEnable: true,
   });
   vi.mocked(applyAdminNotes).mockResolvedValue(undefined);
-  vi.mocked(applyPlugin).mockResolvedValue(undefined);
+  vi.mocked(applyPlugin).mockResolvedValue({ addedPluginIds: [], skipped: [] });
   vi.mocked(upsertSeed).mockResolvedValue({
     added: 0,
     updated: 0,
@@ -479,6 +479,7 @@ describe("applyAllForApp", () => {
     });
     vi.mocked(applyPlugin).mockImplementation(async () => {
       callOrder.push("plugin");
+      return { addedPluginIds: [], skipped: [] };
     });
     vi.mocked(upsertSeed).mockImplementation(async () => {
       callOrder.push("seed");
