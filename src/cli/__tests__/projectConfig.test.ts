@@ -132,6 +132,46 @@ describe("runMultiAppWithFailCheck", () => {
     );
   });
 
+  it("executor が {ok:false} を返す場合、実体の executeMultiApp 経由で EXECUTION_ERROR の SystemError をスローする", async () => {
+    // Integration path: do NOT mock executeMultiApp's verdict. Delegate to the
+    // real implementation so the full wiring is exercised — executor returns
+    // { ok: false } → executeMultiApp sets status "failed" → hasFailure true →
+    // runMultiAppWithFailCheck throws. This binds the seam the other (mocked)
+    // case leaves untested.
+    const { executeMultiApp: realExecuteMultiApp } = await vi.importActual<
+      typeof import("@/core/application/projectConfig/executeMultiApp")
+    >("@/core/application/projectConfig/executeMultiApp");
+    vi.mocked(executeMultiApp).mockImplementation(realExecuteMultiApp);
+
+    const plan = makePlan([makeApp("App1")]);
+
+    await expect(
+      runMultiAppWithFailCheck(plan, async () => ({
+        ok: false,
+        error: new Error("fail"),
+      })),
+    ).rejects.toThrow(
+      expect.objectContaining({
+        code: "EXECUTION_ERROR",
+      }),
+    );
+  });
+
+  it("executor が {ok:true} を返す場合、実体の executeMultiApp 経由でスローせず正常完了する", async () => {
+    // Integration mirror: real executeMultiApp with an { ok: true } executor must
+    // NOT throw (fail-fast not erroneously triggered).
+    const { executeMultiApp: realExecuteMultiApp } = await vi.importActual<
+      typeof import("@/core/application/projectConfig/executeMultiApp")
+    >("@/core/application/projectConfig/executeMultiApp");
+    vi.mocked(executeMultiApp).mockImplementation(realExecuteMultiApp);
+
+    const plan = makePlan([makeApp("App1"), makeApp("App2")]);
+
+    await expect(
+      runMultiAppWithFailCheck(plan, async () => ({ ok: true })),
+    ).resolves.toBeUndefined();
+  });
+
   it("successMessage が指定されていない場合、成功ログは出力されない", async () => {
     const plan = makePlan([makeApp("App1")]);
     vi.mocked(executeMultiApp).mockResolvedValue({
