@@ -1,10 +1,13 @@
 import type { ReportContainer } from "@/core/application/container/report";
 import type { ReportConfig } from "@/core/domain/report/entity";
 import type { ReportConfigurator } from "@/core/domain/report/ports/reportConfigurator";
+import type { ReportStateStorage } from "@/core/domain/report/ports/reportStateStorage";
 import type { ReportStorage } from "@/core/domain/report/ports/reportStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -50,9 +53,16 @@ export class InMemoryReportStorage
   extends InMemoryFileStorage
   implements ReportStorage {}
 
+export class InMemoryReportStateStorage
+  extends InMemoryFileStorage
+  implements ReportStateStorage {}
+
 export type TestReportContainer = ReportContainer & {
   reportConfigurator: InMemoryReportConfigurator;
   reportStorage: InMemoryReportStorage;
+  reportStateStorage: InMemoryReportStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -61,6 +71,9 @@ export function createTestReportContainer(): TestReportContainer {
     configCodec: testConfigCodec,
     reportConfigurator: new InMemoryReportConfigurator(),
     reportStorage: new InMemoryReportStorage(),
+    reportStateStorage: new InMemoryReportStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

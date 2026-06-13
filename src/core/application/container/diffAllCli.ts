@@ -92,10 +92,28 @@ export function createCliDiffAllContainers(
       report: createReportCliContainer({
         ...base,
         reportFilePath: paths.report,
+        reportStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "report.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       action: createActionCliContainer({
         ...base,
         actionFilePath: paths.action,
+        actionStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "action.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
       }),
       process: createProcessManagementCliContainer({
         ...base,

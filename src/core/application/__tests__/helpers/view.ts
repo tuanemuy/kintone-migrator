@@ -1,5 +1,4 @@
 import type { ViewContainer } from "@/core/application/container/view";
-import type { AppRevisionReader } from "@/core/domain/appRevision/ports/appRevisionReader";
 import type { ViewConfig } from "@/core/domain/view/entity";
 import type { ViewConfigurator } from "@/core/domain/view/ports/viewConfigurator";
 import type { ViewStateStorage } from "@/core/domain/view/ports/viewStateStorage";
@@ -7,6 +6,7 @@ import type { ViewStorage } from "@/core/domain/view/ports/viewStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
   InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
@@ -56,22 +56,6 @@ export class InMemoryViewStorage
 export class InMemoryViewStateStorage
   extends InMemoryFileStorage
   implements ViewStateStorage {}
-
-export class InMemoryAppRevisionReader
-  extends FakeBase
-  implements AppRevisionReader
-{
-  private revision = "1";
-
-  async getCurrent(): Promise<string> {
-    this.trackCall("getCurrent");
-    return this.revision;
-  }
-
-  setRevision(revision: string): void {
-    this.revision = revision;
-  }
-}
 
 export type TestViewContainer = ViewContainer & {
   viewConfigurator: InMemoryViewConfigurator;

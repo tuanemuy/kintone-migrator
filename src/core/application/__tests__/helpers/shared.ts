@@ -1,6 +1,7 @@
 import { beforeEach } from "vitest";
 import { configCodec as yamlConfigCodec } from "@/core/adapters/yaml/configCodec";
 import { SystemError, SystemErrorCode } from "@/core/application/error";
+import type { AppRevisionReader } from "@/core/domain/appRevision/ports/appRevisionReader";
 import type { AppDeployer } from "@/core/domain/ports/appDeployer";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import type { StorageResult } from "@/core/domain/ports/storageResult";
@@ -73,6 +74,27 @@ export class InMemoryFileStorage extends FakeBase {
  * Shared across domains since the app revision is app-scoped (ADR-188-001).
  */
 export class InMemoryAppRevisionStorage extends InMemoryFileStorage {}
+
+/**
+ * In-memory reader of the current *remote* app revision (ADR-188-007). Shared
+ * across record-keyed domains (view / report / action) whose containers wire
+ * the reader for the `--all` early-skip path.
+ */
+export class InMemoryAppRevisionReader
+  extends FakeBase
+  implements AppRevisionReader
+{
+  private revision = "1";
+
+  async getCurrent(): Promise<string> {
+    this.trackCall("getCurrent");
+    return this.revision;
+  }
+
+  setRevision(revision: string): void {
+    this.revision = revision;
+  }
+}
 
 export class InMemoryAppDeployer extends FakeBase implements AppDeployer {
   deployCount = 0;
