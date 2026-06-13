@@ -184,7 +184,7 @@ Commands are organized into domain groups:
 | `schema` | `capture` | _Deprecated — use `schema pull`._ Save current form schema to file |
 | `schema` | `validate` | Validate schema file locally |
 | `schema` | `dump` | Dump raw field/layout JSON (for debugging) |
-| `seed` | `push` | Apply seed data records (plain upsert; no 3-way merge) |
+| `seed` | `push` | Upsert seed data records (plain upsert; no 3-way merge) |
 | `seed` | `apply` | _Deprecated alias for `seed push`._ |
 | `seed` | `capture` | Capture records from kintone app |
 | `customize` | `apply` | _Deprecated — use `customize push`._ Apply JS/CSS customizations |
@@ -326,7 +326,6 @@ kintone-migrator seed apply                    # Deprecated alias for `seed push
 | Option | Description |
 |---|---|
 | `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
-| `--key-field`, `-k` | Key field code for upsert |
 | `--clean` | Delete all existing records before upserting seed data (clean push). |
 | `--yes`, `-y` | Skip confirmation prompts (for `--clean` mode). |
 
