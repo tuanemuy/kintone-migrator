@@ -155,6 +155,24 @@ describe("plugin apply コマンド", () => {
     );
   });
 
+  it("skipped が複数件のとき各 pluginId が警告文に列挙される", async () => {
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [
+        { pluginId: "abcdefghijklmnopqrstuvwxyz012345", reason: "disabled" },
+        { pluginId: "zyxwvutsrqponmlkjihgfedcba543210", reason: "disabled" },
+      ],
+    });
+
+    await command.run({ values: { yes: true } } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "abcdefghijklmnopqrstuvwxyz012345, zyxwvutsrqponmlkjihgfedcba543210",
+      ),
+    );
+  });
+
   it("skipped が空のとき手動対応の警告は表示されない", async () => {
     vi.mocked(applyPlugin).mockResolvedValue({
       addedPluginIds: ["djmhffjlbkikgmepoociabnpfcfjhdge"],
@@ -165,6 +183,9 @@ describe("plugin apply コマンド", () => {
 
     expect(p.log.warn).not.toHaveBeenCalledWith(
       expect.stringContaining("kintone admin UI"),
+    );
+    expect(p.log.info).toHaveBeenCalledWith(
+      expect.stringContaining("djmhffjlbkikgmepoociabnpfcfjhdge"),
     );
   });
 
