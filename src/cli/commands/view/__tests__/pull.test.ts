@@ -51,6 +51,7 @@ vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
 
+import { cli } from "gunshi";
 import { handleCliError } from "@/cli/handleError";
 import {
   applyPulledViewMerge,
@@ -107,5 +108,41 @@ describe("view pull command", () => {
 
     expect(handleCliError).toHaveBeenCalled();
     expect(pullView).not.toHaveBeenCalled();
+  });
+
+  // Regression guard (Issue #188, symmetrical to the push factory --force test):
+  // `--ours` / `--theirs` / `--force` must be declared on the pull factory's
+  // args so gunshi parses them into `ctx.values`. Driving the command through
+  // gunshi's real parser (not a hand-built `values` object) is what catches a
+  // missing arg declaration: an undeclared flag would be dropped silently.
+  it("forwards --theirs to conflict resolution when parsed by gunshi", async () => {
+    vi.mocked(pullView).mockResolvedValue(mergedResult(true, ["一覧"]));
+
+    await cli(["--theirs"], command);
+
+    expect(applyPulledViewMerge).toHaveBeenCalled();
+    const input = vi.mocked(applyPulledViewMerge).mock.calls[0]?.[0]?.input;
+    expect(input?.resolution.get("一覧")).toBe("remote");
+    expect(handleCliError).not.toHaveBeenCalled();
+  });
+
+  it("forwards --ours to conflict resolution when parsed by gunshi", async () => {
+    vi.mocked(pullView).mockResolvedValue(mergedResult(true, ["一覧"]));
+
+    await cli(["--ours"], command);
+
+    expect(applyPulledViewMerge).toHaveBeenCalled();
+    const input = vi.mocked(applyPulledViewMerge).mock.calls[0]?.[0]?.input;
+    expect(input?.resolution.get("一覧")).toBe("local");
+    expect(handleCliError).not.toHaveBeenCalled();
+  });
+
+  it("forwards --force (skips merge apply) when parsed by gunshi", async () => {
+    vi.mocked(pullView).mockResolvedValue({ mode: "force" } as never);
+
+    await cli(["--force"], command);
+
+    expect(applyPulledViewMerge).not.toHaveBeenCalled();
+    expect(handleCliError).not.toHaveBeenCalled();
   });
 });

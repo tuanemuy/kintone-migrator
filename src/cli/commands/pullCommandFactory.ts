@@ -83,7 +83,8 @@ type PullCommandConfig<
  * AC-11), `--ours` / `--theirs` / interactive resolution, `--force`
  * (capture-equivalent overwrite), and the no-state first-run fallback. Domain
  * specifics (3-way merge, snapshot persistence) live in `pullFn` / `applyMerge`.
- * `routeMultiApp` is embedded; `--all` is rejected here and handled by ステップ 13.
+ * `routeMultiApp` is embedded; `--all` is rejected here and handled by the
+ * top-level pull dispatcher.
  */
 export function createPullCommand<
   TContainerConfig,

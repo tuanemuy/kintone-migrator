@@ -116,6 +116,10 @@ describe("printPushAllResults", () => {
 
     expect(notFound).toContain("file not found");
     expect(drift).toContain("drifted");
+    // The drift hint embeds the real CLI subcommand name, not a literal
+    // `<domain>` placeholder (W-001).
+    expect(drift).toContain("`view pull`");
+    expect(drift).not.toContain("<domain>");
     expect(failed).toContain("failed");
     expect(failed).toContain("boom");
 

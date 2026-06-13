@@ -32,7 +32,7 @@ function formatTaskResult(result: PullTaskResult): string {
     return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow("skipped (file not found)")}`;
   }
   if (result.skipped === "conflict") {
-    return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow("skipped (conflict — run `<domain> pull` to resolve)")}`;
+    return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow(`skipped (conflict — run \`${result.domain} pull\` to resolve)`)}`;
   }
   if (result.skipped === "aborted") {
     return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow("skipped")}`;
@@ -62,8 +62,9 @@ export function printPullAllResults(output: PullAllForAppOutput): void {
     (r) => !r.success && r.skipped === "conflict",
   );
   if (conflicts.length > 0) {
+    const hints = conflicts.map((r) => `\`${r.domain} pull\``).join(", ");
     p.log.warn(
-      `${conflicts.length} domain(s) had conflicts and were skipped. Resolve them with the individual \`<domain> pull\` (use --ours/--theirs to auto-resolve in --all).`,
+      `${conflicts.length} domain(s) had conflicts and were skipped. Resolve them with ${hints} (use --ours/--theirs to auto-resolve in --all).`,
     );
   }
 }

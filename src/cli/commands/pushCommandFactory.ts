@@ -64,7 +64,8 @@ type PushCommandConfig<
  * deploy via `confirmAndDeploy`. `routeMultiApp` is embedded as in the apply /
  * diff factories. Domain specifics (drift detection, expected-revision, snapshot
  * persistence) live in the `pushFn` usecase; presentation specifics in
- * `onResult`. `--all` is rejected here and handled by ステップ 13.
+ * `onResult`. `--all` is rejected here and handled by the top-level push
+ * dispatcher.
  */
 export function createPushCommand<
   TContainerConfig,

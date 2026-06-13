@@ -33,7 +33,7 @@ function formatTaskResult(result: PushTaskResult): string {
     return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow("skipped (file not found)")}`;
   }
   if (result.skipped === "drift") {
-    return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow("skipped (remote drifted — run `<domain> pull` first)")}`;
+    return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow(`skipped (remote drifted — run \`${result.domain} pull\` first)`)}`;
   }
   if (result.skipped === "aborted") {
     return `  ${pc.yellow("⊘")} ${name} ${pc.dim("—")} ${pc.yellow("skipped")}`;
