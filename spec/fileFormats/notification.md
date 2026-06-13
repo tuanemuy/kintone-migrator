@@ -122,8 +122,6 @@ reminder:
     - `hoursLater`: 追加時間（**−10,000〜10,000 の整数**、負値は基準日時より前、オプション）。`time` と同時に指定できない
     - `time`: 通知時刻（`"HH:MM"`、オプション）。`hoursLater` と同時に指定できない
 
-> ⚠️ **実装フォローアップ**: 現状の実装は `daysLater`/`hoursLater` を非負整数のみ許可し負値を拒否しているが、これは kintone REST API（[update-reminder-notification-settings](https://cybozu.dev/ja/kintone/docs/rest-api/apps/settings/update-reminder-notification-settings/)）の仕様（−10,000〜10,000・負値許容）に反する**実装バグ**。本仕様に合わせた修正が必要。
-
 ## バリデーション
 
 パース時に以下を検証する。詳細は [Notification ドメイン仕様](../domains/notification.md) を参照。

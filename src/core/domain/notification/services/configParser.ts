@@ -14,6 +14,10 @@ import { NotificationErrorCode } from "../errorCode";
 import type { NotificationEntity } from "../valueObject";
 import { isNotificationEntityType } from "../valueObject";
 
+// kintone REST API が許容する daysLater/hoursLater の範囲（負値は基準日時より前を表す）
+const REMINDER_OFFSET_MIN = -10000;
+const REMINDER_OFFSET_MAX = 10000;
+
 function parseEntity(raw: unknown, context: string): NotificationEntity {
   if (!isRecord(raw)) {
     throw new BusinessRuleError(
@@ -204,10 +208,14 @@ function parseReminderNotification(
     );
   }
 
-  if (!Number.isInteger(raw.daysLater) || raw.daysLater < 0) {
+  if (
+    !Number.isInteger(raw.daysLater) ||
+    raw.daysLater < REMINDER_OFFSET_MIN ||
+    raw.daysLater > REMINDER_OFFSET_MAX
+  ) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidDaysLater,
-      `Reminder notification at index ${index} has invalid "daysLater": ${raw.daysLater}. Must be a non-negative integer`,
+      `Reminder notification at index ${index} has invalid "daysLater": ${raw.daysLater}. Must be an integer between ${REMINDER_OFFSET_MIN} and ${REMINDER_OFFSET_MAX}`,
     );
   }
 
@@ -221,16 +229,17 @@ function parseReminderNotification(
     );
   }
 
-  // Validate that hoursLater is a non-negative integer when present
+  // Validate that hoursLater is an integer within range when present
   if (
     hasHoursLater &&
     (typeof raw.hoursLater !== "number" ||
       !Number.isInteger(raw.hoursLater) ||
-      raw.hoursLater < 0)
+      raw.hoursLater < REMINDER_OFFSET_MIN ||
+      raw.hoursLater > REMINDER_OFFSET_MAX)
   ) {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidHoursLater,
-      `Reminder notification at index ${index} has invalid "hoursLater": ${String(raw.hoursLater)}. Must be a non-negative integer`,
+      `Reminder notification at index ${index} has invalid "hoursLater": ${String(raw.hoursLater)}. Must be an integer between ${REMINDER_OFFSET_MIN} and ${REMINDER_OFFSET_MAX}`,
     );
   }
 

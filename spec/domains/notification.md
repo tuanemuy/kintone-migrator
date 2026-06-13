@@ -77,8 +77,6 @@ type ReminderNotification = Readonly<{
 - `time` は通知時刻（オプション）
 - `hoursLater` と `time` は同時に指定できない。両方指定された場合は `BusinessRuleError(NT_CONFLICTING_TIMING_FIELDS)` をスローする
 
-> ⚠️ **実装フォローアップ**: 現状の実装 `src/core/domain/notification/services/configParser.ts` は `daysLater`/`hoursLater` を**非負整数のみ許可**し、負値を `NT_INVALID_DAYS_LATER`/`NT_INVALID_HOURS_LATER` で拒否している。これは kintone REST API（[update-reminder-notification-settings](https://cybozu.dev/ja/kintone/docs/rest-api/apps/settings/update-reminder-notification-settings/)）が許容する正当な設定（−10,000〜10,000、負値=基準日時より前）を弾く**実装バグ**であり、本仕様（負値許容・範囲チェック）に合わせて修正が必要。
-
 ### ReminderNotificationConfig
 
 リマインダー通知の全体設定。
