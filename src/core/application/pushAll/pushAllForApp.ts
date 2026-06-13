@@ -469,8 +469,9 @@ export async function pushAllForApp(
   // deploy runs. Without this re-sync the next `pull --all` early-skip (AC-13)
   // would always miss (base != remote) and fall through to a full 3-way for
   // every domain. We re-read once after all deploys so the saved base matches
-  // the revision the early-skip later reads. Skipped on failure so a partially
-  // failed run does not record a base the snapshots do not match.
+  // the revision the early-skip later reads. Only re-synced when at least one
+  // domain was actually pushed, so a run that changed nothing leaves the base
+  // untouched.
   const anyPushed = phaseResults.some((pr) =>
     pr.results.some((r) => r.success),
   );
