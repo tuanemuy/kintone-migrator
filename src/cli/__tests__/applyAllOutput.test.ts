@@ -258,6 +258,76 @@ describe("printApplyAllResults", () => {
     expect(logError).not.toHaveBeenCalled();
   });
 
+  it("skipReason が not-found の場合に 'skipped (file not found)' と表示されること", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("Schema file not found"),
+              skipped: true,
+              skipReason: "not-found",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    const messageCalls = vi.mocked(p.log.message).mock.calls;
+    const schemaLine = messageCalls[0][0] as string;
+    expect(schemaLine).toContain("⊘");
+    expect(schemaLine).toContain("skipped (file not found)");
+    expect(schemaLine).not.toContain("failed");
+
+    // Summary still lumps it into the single skipped count (no not-found breakdown)
+    const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
+    expect(summaryLine).toContain("1");
+    expect(summaryLine).toContain("skipped");
+    expect(summaryLine).not.toContain("not found");
+  });
+
+  it("skipReason が aborted / 未設定の場合は 'skipped' にフォールバックすること", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Permissions",
+          results: [
+            {
+              domain: "app-acl",
+              success: false,
+              error: new Error("Skipped due to fatal error"),
+              skipped: true,
+              skipReason: "aborted",
+            },
+            {
+              domain: "record-acl",
+              success: false,
+              error: new Error("Skipped"),
+              skipped: true,
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+
+    printApplyAllResults(output);
+
+    const messageCalls = vi.mocked(p.log.message).mock.calls;
+    const abortedLine = messageCalls[0][0] as string;
+    const undefinedLine = messageCalls[1][0] as string;
+    expect(abortedLine).toContain("skipped");
+    expect(abortedLine).not.toContain("file not found");
+    expect(undefinedLine).toContain("skipped");
+    expect(undefinedLine).not.toContain("file not found");
+  });
+
   it("deployed が false で deployError がある場合にエラー詳細が表示されること", () => {
     const output: ApplyAllForAppOutput = {
       phases: [

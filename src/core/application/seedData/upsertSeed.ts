@@ -15,7 +15,7 @@ export async function upsertSeed({
   const result = await container.seedStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "Seed file not found",
     );
   }

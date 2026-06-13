@@ -131,6 +131,7 @@ export function isForbiddenError(error: unknown): error is ForbiddenError {
 
 export const ValidationErrorCode = {
   InvalidInput: "INVALID_INPUT",
+  ConfigFileNotFound: "CONFIG_FILE_NOT_FOUND",
 } as const;
 export type ValidationErrorCode =
   (typeof ValidationErrorCode)[keyof typeof ValidationErrorCode];
@@ -149,6 +150,20 @@ export class ValidationError extends ApplicationError {
 
 export function isValidationError(error: unknown): error is ValidationError {
   return error instanceof ValidationError;
+}
+
+/**
+ * Determines whether an error indicates that a configuration file does not
+ * exist. Used by the apply orchestration and CLI to treat a missing config
+ * file as a graceful skip (not a failure) without relying on message strings.
+ */
+export function isConfigFileNotFoundError(
+  error: unknown,
+): error is ValidationError {
+  return (
+    isValidationError(error) &&
+    error.code === ValidationErrorCode.ConfigFileNotFound
+  );
 }
 
 export const SystemErrorCode = {

@@ -17,7 +17,7 @@ export async function applyNotification({
   const result = await container.notificationStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "Notification config file not found",
     );
   }

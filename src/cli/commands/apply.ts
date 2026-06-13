@@ -39,6 +39,34 @@ type ApplyCliValues = MultiAppCliValues & {
   "dry-run"?: boolean;
 };
 
+/**
+ * Determines whether the apply run should set a non-zero exit code.
+ *
+ * Skipped domains (config file not found, or aborted) are NOT treated as
+ * failures. The exit code is non-zero only when:
+ *   - a real failure occurred (a non-success, non-skipped task), or
+ *   - there was a deployable change (a Phase 2-4 success, mirroring the
+ *     `needsDeploy` condition in applyAllForApp) but deploy did not complete.
+ *
+ * When every domain is skipped (e.g. all config files missing), there is no
+ * deployable success, so a `deployed === false` does not flip the exit code.
+ */
+export function shouldFailApply(
+  output: import("@/core/application/applyAll/applyAllForApp").ApplyAllForAppOutput,
+): boolean {
+  const allResults = output.phases.flatMap((pr) => pr.results);
+  const hasRealFailure = allResults.some((r) => !r.success && !r.skipped);
+
+  const hasDeployableSuccess = output.phases.some(
+    (pr) =>
+      pr.phase !== "Schema" &&
+      pr.phase !== "Seed Data" &&
+      pr.results.some((r) => r.success),
+  );
+
+  return hasRealFailure || (hasDeployableSuccess && !output.deployed);
+}
+
 async function runApplyAll(
   cliConfig: {
     baseUrl: string;
@@ -119,9 +147,10 @@ async function runApplyAll(
     containers,
     customizeBasePath,
   });
+  // Skipped domains (aborted or not-found) are not counted as failures.
   const applyFailCount = output.phases
     .flatMap((pr) => pr.results)
-    .filter((r) => !r.success).length;
+    .filter((r) => !r.success && !r.skipped).length;
   as.stop(
     `Apply complete.${applyFailCount > 0 ? ` (${applyFailCount} failed)` : ""}`,
   );
@@ -130,13 +159,7 @@ async function runApplyAll(
   printApplyAllResults(output);
 
   // Set non-zero exit code for CI/CD pipelines.
-  // Triggered when any domain failed/skipped OR deploy was not completed.
-  // When needsDeploy is false (no Phase 2-4 successes), deployed=false
-  // but hasFailures is also true, so the condition is correct.
-  const hasFailures = output.phases
-    .flatMap((pr) => pr.results)
-    .some((r) => !r.success);
-  if (hasFailures || !output.deployed) {
+  if (shouldFailApply(output)) {
     process.exitCode = 1;
   }
 }

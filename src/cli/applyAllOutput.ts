@@ -31,7 +31,11 @@ function formatTaskResult(result: ApplyTaskResult): string {
     return `  ${pc.green("\u2713")} ${name}`;
   }
   if (result.skipped) {
-    return `  ${pc.yellow("\u2298")} ${name} ${pc.dim("\u2014")} ${pc.yellow("skipped")}`;
+    const label =
+      result.skipReason === "not-found"
+        ? "skipped (file not found)"
+        : "skipped";
+    return `  ${pc.yellow("\u2298")} ${name} ${pc.dim("\u2014")} ${pc.yellow(label)}`;
   }
   return `  ${pc.red("\u2717")} ${name} ${pc.dim("\u2014")} ${pc.red(`failed (${formatErrorForDisplay(result.error)})`)}`;
 }

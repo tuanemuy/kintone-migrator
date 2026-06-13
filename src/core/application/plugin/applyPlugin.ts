@@ -8,7 +8,7 @@ export async function applyPlugin({
   const result = await container.pluginStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "Plugin config file not found",
     );
   }

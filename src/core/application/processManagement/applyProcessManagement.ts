@@ -13,7 +13,7 @@ export async function applyProcessManagement({
   const result = await container.processManagementStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "Process management config file not found",
     );
   }

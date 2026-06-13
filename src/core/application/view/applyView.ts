@@ -13,7 +13,7 @@ export async function applyView({
   const result = await container.viewStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "View config file not found",
     );
   }

@@ -65,7 +65,7 @@ export async function applyCustomization({
   const result = await container.customizationStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "Customization config file not found",
     );
   }

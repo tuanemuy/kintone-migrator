@@ -15,7 +15,7 @@ export async function applyFromConfig<TParsed, TRemote>(
   const result = await config.getStorage();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       config.notFoundMessage,
     );
   }

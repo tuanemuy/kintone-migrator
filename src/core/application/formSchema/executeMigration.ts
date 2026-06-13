@@ -60,7 +60,7 @@ export async function executeMigration({
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(
-      ValidationErrorCode.InvalidInput,
+      ValidationErrorCode.ConfigFileNotFound,
       "Schema file not found",
     );
   }

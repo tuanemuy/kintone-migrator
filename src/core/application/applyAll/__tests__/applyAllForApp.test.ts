@@ -5,6 +5,8 @@ import {
   SystemErrorCode,
   UnauthenticatedError,
   UnauthenticatedErrorCode,
+  ValidationError,
+  ValidationErrorCode,
 } from "@/core/application/error";
 import {
   type ApplyAllForAppInput,
@@ -523,5 +525,146 @@ describe("applyAllForApp", () => {
         }
       }
     }
+  });
+
+  function notFound(message: string): ValidationError {
+    return new ValidationError(ValidationErrorCode.ConfigFileNotFound, message);
+  }
+
+  describe("config-file-not-found graceful skip", () => {
+    it("schema が not-found のとき abort せず後続フェーズが継続し最終 deploy まで走ること", async () => {
+      setupAllMocksToSucceed();
+      vi.mocked(executeMigration).mockRejectedValue(
+        notFound("Schema file not found"),
+      );
+
+      const output = await applyAllForApp(baseArgs);
+
+      const schema = output.phases[0].results[0];
+      expect(schema.success).toBe(false);
+      if (!schema.success) {
+        expect(schema.skipped).toBe(true);
+        expect(schema.skipReason).toBe("not-found");
+      }
+
+      // Subsequent phases continue (not aborted)
+      for (const phase of output.phases.slice(1, 4)) {
+        for (const result of phase.results) {
+          expect(result.success).toBe(true);
+        }
+      }
+      expect(output.phases[4].results[0].success).toBe(true);
+
+      // Phase 2-4 had successes, so the batch deploy runs
+      expect(output.deployed).toBe(true);
+    });
+
+    it("schema の非 not-found 失敗は従来通り fatal abort されること（回帰防止）", async () => {
+      setupAllMocksToSucceed();
+      vi.mocked(executeMigration).mockRejectedValue(
+        new ValidationError(
+          ValidationErrorCode.InvalidInput,
+          "kintone REST API does not support adding fields to an existing subtable",
+        ),
+      );
+
+      const output = await applyAllForApp(baseArgs);
+
+      const schema = output.phases[0].results[0];
+      expect(schema.success).toBe(false);
+      if (!schema.success) {
+        expect(schema.skipped).toBe(false);
+      }
+      // Everything after is aborted
+      for (const phase of output.phases.slice(1)) {
+        for (const result of phase.results) {
+          expect(result.success).toBe(false);
+          if (!result.success) {
+            expect(result.skipped).toBe(true);
+            expect(result.skipReason).toBe("aborted");
+          }
+        }
+      }
+      expect(output.deployed).toBe(false);
+    });
+
+    it("Phase 2-4 ドメインの not-found は skip 扱いで他ドメインは継続すること", async () => {
+      setupAllMocksToSucceed();
+      vi.mocked(applyCustomization).mockRejectedValue(
+        notFound("Customization config file not found"),
+      );
+
+      const output = await applyAllForApp(baseArgs);
+
+      const customize = output.phases[1].results[0];
+      expect(customize.domain).toBe("customize");
+      expect(customize.success).toBe(false);
+      if (!customize.success) {
+        expect(customize.skipped).toBe(true);
+        expect(customize.skipReason).toBe("not-found");
+      }
+      // view still runs
+      expect(output.phases[1].results[1].success).toBe(true);
+      // Deploy still happens for the successful domains
+      expect(output.deployed).toBe(true);
+    });
+
+    it("全14ドメインが not-found のとき全て skipReason=not-found で deploy 対象ゼロになること", async () => {
+      vi.mocked(executeMigration).mockRejectedValue(
+        notFound("Schema file not found"),
+      );
+      vi.mocked(applyCustomization).mockRejectedValue(
+        notFound("Customization config file not found"),
+      );
+      vi.mocked(applyView).mockRejectedValue(
+        notFound("View config file not found"),
+      );
+      vi.mocked(applyFieldPermission).mockRejectedValue(
+        notFound("Field permission config file not found"),
+      );
+      vi.mocked(applyAppPermission).mockRejectedValue(
+        notFound("App permission config file not found"),
+      );
+      vi.mocked(applyRecordPermission).mockRejectedValue(
+        notFound("Record permission config file not found"),
+      );
+      vi.mocked(applyGeneralSettings).mockRejectedValue(
+        notFound("Settings config file not found"),
+      );
+      vi.mocked(applyNotification).mockRejectedValue(
+        notFound("Notification config file not found"),
+      );
+      vi.mocked(applyReport).mockRejectedValue(
+        notFound("Report config file not found"),
+      );
+      vi.mocked(applyAction).mockRejectedValue(
+        notFound("Action config file not found"),
+      );
+      vi.mocked(applyProcessManagement).mockRejectedValue(
+        notFound("Process management config file not found"),
+      );
+      vi.mocked(applyAdminNotes).mockRejectedValue(
+        notFound("Admin notes config file not found"),
+      );
+      vi.mocked(applyPlugin).mockRejectedValue(
+        notFound("Plugin config file not found"),
+      );
+      vi.mocked(upsertSeed).mockRejectedValue(notFound("Seed file not found"));
+
+      const output = await applyAllForApp(baseArgs);
+
+      const allResults = output.phases.flatMap((p) => p.results);
+      expect(allResults).toHaveLength(14);
+      for (const result of allResults) {
+        expect(result.success).toBe(false);
+        if (!result.success) {
+          expect(result.skipped).toBe(true);
+          expect(result.skipReason).toBe("not-found");
+        }
+      }
+      // No deployable success -> no batch deploy
+      expect(output.deployed).toBe(false);
+      expect(output.deployError).toBeUndefined();
+    });
   });
 });

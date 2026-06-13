@@ -4,6 +4,7 @@ import { applyAppPermission } from "@/core/application/appPermission/applyAppPer
 import type { ApplyAllContainers } from "@/core/application/container/applyAll";
 import { applyCustomization } from "@/core/application/customization/applyCustomization";
 import {
+  isConfigFileNotFoundError,
   isFatalError,
   SystemError,
   SystemErrorCode,
@@ -50,6 +51,10 @@ export type ApplyTaskResult =
       success: false;
       error: Error;
       skipped: boolean;
+      // Meaningful only when skipped is true.
+      // "aborted": skipped because an upstream fatal error aborted the run.
+      // "not-found": skipped because the domain's config file does not exist.
+      skipReason?: "aborted" | "not-found";
     }>;
 
 export type ApplyPhaseResult = Readonly<{
@@ -223,6 +228,7 @@ function buildSkippedPhaseResult(
       success: false as const,
       error: skipError,
       skipped: true,
+      skipReason: "aborted" as const,
     })),
   };
 }
@@ -246,8 +252,21 @@ async function executeSchemaPhase(
       await deployApp({ container: containers.schema });
       results.push({ domain: task.domain, success: true });
     } catch (error) {
-      // Schema phase failure is always fatal regardless of isFatalError check.
-      // Without a deployed schema, subsequent phases cannot function correctly.
+      // A missing schema config file is a graceful skip, not a failure: the
+      // schema phase is not aborted and subsequent phases continue.
+      if (isConfigFileNotFoundError(error)) {
+        results.push({
+          domain: task.domain,
+          success: false,
+          error,
+          skipped: true,
+          skipReason: "not-found",
+        });
+        continue;
+      }
+      // Any other schema phase failure is always fatal regardless of the
+      // isFatalError check. Without a deployed schema, subsequent phases
+      // cannot function correctly.
       const err = toError(error);
       results.push({
         domain: task.domain,
@@ -275,6 +294,7 @@ async function executeStandardPhase(
         success: false,
         error: createSkipError(state),
         skipped: true,
+        skipReason: "aborted",
       });
       continue;
     }
@@ -283,6 +303,17 @@ async function executeStandardPhase(
       await task.run();
       results.push({ domain: task.domain, success: true });
     } catch (error) {
+      // A missing config file is a graceful skip, not a failure.
+      if (isConfigFileNotFoundError(error)) {
+        results.push({
+          domain: task.domain,
+          success: false,
+          error,
+          skipped: true,
+          skipReason: "not-found",
+        });
+        continue;
+      }
       const err = toError(error);
       results.push({
         domain: task.domain,

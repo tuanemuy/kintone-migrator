@@ -112,6 +112,7 @@ vi.mock("@/core/application/applyAll/applyAllForApp", () => ({
 }));
 
 import * as p from "@clack/prompts";
+import type { ApplyAllForAppOutput } from "@/core/application/applyAll/applyAllForApp";
 import { applyAllForApp } from "@/core/application/applyAll/applyAllForApp";
 import { diffAllForApp } from "@/core/application/diffAll/diffAllForApp";
 import type {
@@ -125,7 +126,7 @@ import { printDiffAllResults } from "../../diffAllOutput";
 import { handleCliError } from "../../handleError";
 import { printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
-import applyCommand from "../apply";
+import applyCommand, { shouldFailApply } from "../apply";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -501,5 +502,136 @@ describe("apply command", () => {
     await applyCommand.run({ values: {} } as never);
 
     expect(process.exitCode).toBe(1);
+  });
+
+  it("全ドメインが not-found skip の場合は exitCode が 1 にならないこと", async () => {
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: AppEntry, config: ProjectConfig) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp(mockApp, mockProjectConfig);
+      },
+    );
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("Customization config file not found"),
+              skipped: true,
+              skipReason: "not-found",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(process.exitCode).toBeUndefined();
+  });
+});
+
+describe("shouldFailApply", () => {
+  const deployableSuccess: ApplyAllForAppOutput["phases"][number] = {
+    phase: "Views & Customization",
+    results: [{ domain: "customize", success: true }],
+  };
+
+  it("真の失敗があるとき true", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("boom"),
+              skipped: false,
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+    expect(shouldFailApply(output)).toBe(true);
+  });
+
+  it("全ドメインが not-found skip でデプロイ対象ゼロのとき false", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Views & Customization",
+          results: [
+            {
+              domain: "customize",
+              success: false,
+              error: new Error("not found"),
+              skipped: true,
+              skipReason: "not-found",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+    expect(shouldFailApply(output)).toBe(false);
+  });
+
+  it("aborted skip のみでデプロイ対象ゼロのとき false", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Seed Data",
+          results: [
+            {
+              domain: "seed",
+              success: false,
+              error: new Error("skipped"),
+              skipped: true,
+              skipReason: "aborted",
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    };
+    expect(shouldFailApply(output)).toBe(false);
+  });
+
+  it("Phase 2-4 に success があるのに未デプロイのとき true", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [deployableSuccess],
+      deployed: false,
+    };
+    expect(shouldFailApply(output)).toBe(true);
+  });
+
+  it("Phase 2-4 に success がありデプロイ済みのとき false", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [deployableSuccess],
+      deployed: true,
+    };
+    expect(shouldFailApply(output)).toBe(false);
+  });
+
+  it("Schema/Seed のみ success（Phase 2-4 success なし）で未デプロイでも false", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        { phase: "Schema", results: [{ domain: "schema", success: true }] },
+        { phase: "Seed Data", results: [{ domain: "seed", success: true }] },
+      ],
+      deployed: false,
+    };
+    expect(shouldFailApply(output)).toBe(false);
   });
 });
