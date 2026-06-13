@@ -6,6 +6,7 @@ export const FieldPermissionErrorCode = {
   FpEmptyFieldCode: "FP_EMPTY_FIELD_CODE",
   FpEmptyEntityCode: "FP_EMPTY_ENTITY_CODE",
   FpDuplicateFieldCode: "FP_DUPLICATE_FIELD_CODE",
+  FpUnresolvedConflict: "FP_UNRESOLVED_CONFLICT",
 } as const;
 
 export type FieldPermissionErrorCode =

@@ -1,10 +1,13 @@
 import type { AppPermissionContainer } from "@/core/application/container/appPermission";
 import type { AppRight } from "@/core/domain/appPermission/entity";
 import type { AppPermissionConfigurator } from "@/core/domain/appPermission/ports/appPermissionConfigurator";
+import type { AppPermissionStateStorage } from "@/core/domain/appPermission/ports/appPermissionStateStorage";
 import type { AppPermissionStorage } from "@/core/domain/appPermission/ports/appPermissionStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -57,9 +60,16 @@ export class InMemoryAppPermissionStorage
   extends InMemoryFileStorage
   implements AppPermissionStorage {}
 
+export class InMemoryAppPermissionStateStorage
+  extends InMemoryFileStorage
+  implements AppPermissionStateStorage {}
+
 export type TestAppPermissionContainer = AppPermissionContainer & {
   appPermissionConfigurator: InMemoryAppPermissionConfigurator;
   appPermissionStorage: InMemoryAppPermissionStorage;
+  appPermissionStateStorage: InMemoryAppPermissionStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -68,6 +78,9 @@ export function createTestAppPermissionContainer(): TestAppPermissionContainer {
     configCodec: testConfigCodec,
     appPermissionConfigurator: new InMemoryAppPermissionConfigurator(),
     appPermissionStorage: new InMemoryAppPermissionStorage(),
+    appPermissionStateStorage: new InMemoryAppPermissionStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

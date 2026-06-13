@@ -1,7 +1,15 @@
 import type { FieldPermissionCliContainerConfig } from "@/core/application/container/fieldPermissionCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const FIELD_ACL_STATE_FILE = "field-acl.yaml";
 
 export const fieldAclArgs = {
   ...kintoneArgs,
@@ -26,9 +34,18 @@ const {
   appFileField: (a) => a.fieldAclFile,
   defaultDir: "field-acl",
   defaultFileName: "field-acl.yaml",
-  buildConfig: (base, filePath): FieldPermissionCliContainerConfig => ({
+  buildConfig: (base, filePath, app): FieldPermissionCliContainerConfig => ({
     ...base,
     fieldAclFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode
+    // (ADR-188-001).
+    fieldAclStateFilePath: app
+      ? buildDomainStateFilePath(app.name, FIELD_ACL_STATE_FILE)
+      : buildLegacyDomainStateFilePath(FIELD_ACL_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

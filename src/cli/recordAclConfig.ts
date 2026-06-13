@@ -1,7 +1,15 @@
 import type { RecordPermissionCliContainerConfig } from "@/core/application/container/recordPermissionCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const RECORD_ACL_STATE_FILE = "record-acl.yaml";
 
 export const recordAclArgs = {
   ...kintoneArgs,
@@ -26,9 +34,18 @@ const {
   appFileField: (a) => a.recordAclFile,
   defaultDir: "record-acl",
   defaultFileName: "record-acl.yaml",
-  buildConfig: (base, filePath): RecordPermissionCliContainerConfig => ({
+  buildConfig: (base, filePath, app): RecordPermissionCliContainerConfig => ({
     ...base,
     recordAclFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode
+    // (ADR-188-001).
+    recordAclStateFilePath: app
+      ? buildDomainStateFilePath(app.name, RECORD_ACL_STATE_FILE)
+      : buildLegacyDomainStateFilePath(RECORD_ACL_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

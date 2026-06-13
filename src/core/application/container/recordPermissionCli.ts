@@ -1,6 +1,9 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { KintoneAppDeployer } from "@/core/adapters/kintone/appDeployer";
+import { KintoneAppRevisionReader } from "@/core/adapters/kintone/appRevisionReader";
 import { KintoneRecordPermissionConfigurator } from "@/core/adapters/kintone/recordPermissionConfigurator";
+import { createLocalFileAppRevisionStorage } from "@/core/adapters/local/appRevisionStorage";
+import { createLocalFileRecordPermissionStateStorage } from "@/core/adapters/local/recordPermissionStateStorage";
 import { createLocalFileRecordPermissionStorage } from "@/core/adapters/local/recordPermissionStorage";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
 import type { RecordPermissionContainer } from "@/core/application/container/recordPermission";
@@ -13,6 +16,8 @@ export type RecordPermissionCliContainerConfig = {
   appId: string;
   guestSpaceId?: string;
   recordAclFilePath: string;
+  recordAclStateFilePath: string;
+  appRevisionFilePath: string;
   client?: KintoneRestAPIClient;
 };
 
@@ -30,6 +35,13 @@ export function createRecordPermissionCliContainer(
     recordPermissionStorage: createLocalFileRecordPermissionStorage(
       config.recordAclFilePath,
     ),
+    recordPermissionStateStorage: createLocalFileRecordPermissionStateStorage(
+      config.recordAclStateFilePath,
+    ),
+    appRevisionStorage: createLocalFileAppRevisionStorage(
+      config.appRevisionFilePath,
+    ),
+    appRevisionReader: new KintoneAppRevisionReader(client, config.appId),
     appDeployer: new KintoneAppDeployer(client, config.appId),
   };
 }

@@ -4,6 +4,7 @@ export const AppPermissionErrorCode = {
   ApInvalidBooleanField: "AP_INVALID_BOOLEAN_FIELD",
   ApEmptyEntityCode: "AP_EMPTY_ENTITY_CODE",
   ApDuplicateEntity: "AP_DUPLICATE_ENTITY",
+  ApUnresolvedConflict: "AP_UNRESOLVED_CONFLICT",
 } as const;
 
 export type AppPermissionErrorCode =

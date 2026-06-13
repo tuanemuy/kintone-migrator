@@ -129,14 +129,32 @@ export function createCliApplyAllContainers(
   const fieldPermission = createFieldPermissionCliContainer({
     ...base,
     fieldAclFilePath: paths.fieldAcl,
+    fieldAclStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "field-acl.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const appPermission = createAppPermissionCliContainer({
     ...base,
     appAclFilePath: paths.appAcl,
+    appAclStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "app-acl.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const recordPermission = createRecordPermissionCliContainer({
     ...base,
     recordAclFilePath: paths.recordAcl,
+    recordAclStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "record-acl.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
   });
   const adminNotes = createAdminNotesCliContainer({
     ...base,

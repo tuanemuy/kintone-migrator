@@ -1,10 +1,13 @@
 import type { RecordPermissionContainer } from "@/core/application/container/recordPermission";
 import type { RecordRight } from "@/core/domain/recordPermission/entity";
 import type { RecordPermissionConfigurator } from "@/core/domain/recordPermission/ports/recordPermissionConfigurator";
+import type { RecordPermissionStateStorage } from "@/core/domain/recordPermission/ports/recordPermissionStateStorage";
 import type { RecordPermissionStorage } from "@/core/domain/recordPermission/ports/recordPermissionStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -57,9 +60,16 @@ export class InMemoryRecordPermissionStorage
   extends InMemoryFileStorage
   implements RecordPermissionStorage {}
 
+export class InMemoryRecordPermissionStateStorage
+  extends InMemoryFileStorage
+  implements RecordPermissionStateStorage {}
+
 export type TestRecordPermissionContainer = RecordPermissionContainer & {
   recordPermissionConfigurator: InMemoryRecordPermissionConfigurator;
   recordPermissionStorage: InMemoryRecordPermissionStorage;
+  recordPermissionStateStorage: InMemoryRecordPermissionStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -68,6 +78,9 @@ export function createTestRecordPermissionContainer(): TestRecordPermissionConta
     configCodec: testConfigCodec,
     recordPermissionConfigurator: new InMemoryRecordPermissionConfigurator(),
     recordPermissionStorage: new InMemoryRecordPermissionStorage(),
+    recordPermissionStateStorage: new InMemoryRecordPermissionStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }

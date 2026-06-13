@@ -1,10 +1,13 @@
 import type { FieldPermissionContainer } from "@/core/application/container/fieldPermission";
 import type { FieldRight } from "@/core/domain/fieldPermission/entity";
 import type { FieldPermissionConfigurator } from "@/core/domain/fieldPermission/ports/fieldPermissionConfigurator";
+import type { FieldPermissionStateStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStateStorage";
 import type { FieldPermissionStorage } from "@/core/domain/fieldPermission/ports/fieldPermissionStorage";
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionReader,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -57,9 +60,16 @@ export class InMemoryFieldPermissionStorage
   extends InMemoryFileStorage
   implements FieldPermissionStorage {}
 
+export class InMemoryFieldPermissionStateStorage
+  extends InMemoryFileStorage
+  implements FieldPermissionStateStorage {}
+
 export type TestFieldPermissionContainer = FieldPermissionContainer & {
   fieldPermissionConfigurator: InMemoryFieldPermissionConfigurator;
   fieldPermissionStorage: InMemoryFieldPermissionStorage;
+  fieldPermissionStateStorage: InMemoryFieldPermissionStateStorage;
+  appRevisionStorage: InMemoryAppRevisionStorage;
+  appRevisionReader: InMemoryAppRevisionReader;
   appDeployer: InMemoryAppDeployer;
 };
 
@@ -68,6 +78,9 @@ export function createTestFieldPermissionContainer(): TestFieldPermissionContain
     configCodec: testConfigCodec,
     fieldPermissionConfigurator: new InMemoryFieldPermissionConfigurator(),
     fieldPermissionStorage: new InMemoryFieldPermissionStorage(),
+    fieldPermissionStateStorage: new InMemoryFieldPermissionStateStorage(),
+    appRevisionStorage: new InMemoryAppRevisionStorage(),
+    appRevisionReader: new InMemoryAppRevisionReader(),
     appDeployer: new InMemoryAppDeployer(),
   };
 }
