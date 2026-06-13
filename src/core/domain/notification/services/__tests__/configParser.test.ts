@@ -902,24 +902,23 @@ describe("NotificationConfigParser.parse", () => {
     );
   });
 
-  it("reminderのdaysLaterが負数でエラー", () => {
-    expect(() =>
-      NotificationConfigParser.parse({
-        reminder: {
-          timezone: "Asia/Tokyo",
-          notifications: [
-            {
-              code: "due_date",
-              daysLater: -1,
-              hoursLater: 9,
-              filterCond: "",
-              title: "Due",
-              targets: [{ entity: { type: "USER", code: "admin" } }],
-            },
-          ],
-        },
-      }),
-    ).toThrow(BusinessRuleError);
+  it("reminderのdaysLaterが負数（基準日時より前）を許容する", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: -3,
+            hoursLater: 9,
+            filterCond: "",
+            title: "Due in 3 days",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].daysLater).toBe(-3);
   });
 
   it("reminderのhoursLaterが小数でエラー", () => {
@@ -1005,7 +1004,45 @@ describe("NotificationConfigParser.parse", () => {
     );
   });
 
-  it("should throw NtInvalidDaysLater for negative daysLater", () => {
+  it("should accept negative daysLater within range", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: -10000,
+            hoursLater: 9,
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].daysLater).toBe(-10000);
+  });
+
+  it("should accept daysLater at the upper bound", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 10000,
+            hoursLater: 9,
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].daysLater).toBe(10000);
+  });
+
+  it("should throw NtInvalidDaysLater for daysLater above the upper bound", () => {
     expect(() =>
       NotificationConfigParser.parse({
         reminder: {
@@ -1013,7 +1050,7 @@ describe("NotificationConfigParser.parse", () => {
           notifications: [
             {
               code: "due_date",
-              daysLater: -1,
+              daysLater: 10001,
               hoursLater: 9,
               filterCond: "",
               title: "Due",
@@ -1025,6 +1062,116 @@ describe("NotificationConfigParser.parse", () => {
     ).toThrow(
       expect.objectContaining({
         code: NotificationErrorCode.NtInvalidDaysLater,
+      }),
+    );
+  });
+
+  it("should throw NtInvalidDaysLater for daysLater below the lower bound", () => {
+    expect(() =>
+      NotificationConfigParser.parse({
+        reminder: {
+          timezone: "Asia/Tokyo",
+          notifications: [
+            {
+              code: "due_date",
+              daysLater: -10001,
+              hoursLater: 9,
+              filterCond: "",
+              title: "Due",
+              targets: [{ entity: { type: "USER", code: "admin" } }],
+            },
+          ],
+        },
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidDaysLater,
+      }),
+    );
+  });
+
+  it("should accept negative hoursLater within range", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 1,
+            hoursLater: -3,
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].hoursLater).toBe(-3);
+  });
+
+  it("should accept hoursLater at the upper bound", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: {
+        timezone: "Asia/Tokyo",
+        notifications: [
+          {
+            code: "due_date",
+            daysLater: 1,
+            hoursLater: 10000,
+            filterCond: "",
+            title: "Due",
+            targets: [{ entity: { type: "USER", code: "admin" } }],
+          },
+        ],
+      },
+    });
+    expect(config.reminder?.notifications[0].hoursLater).toBe(10000);
+  });
+
+  it("should throw NtInvalidHoursLater for hoursLater above the upper bound", () => {
+    expect(() =>
+      NotificationConfigParser.parse({
+        reminder: {
+          timezone: "Asia/Tokyo",
+          notifications: [
+            {
+              code: "due_date",
+              daysLater: 1,
+              hoursLater: 10001,
+              filterCond: "",
+              title: "Due",
+              targets: [{ entity: { type: "USER", code: "admin" } }],
+            },
+          ],
+        },
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidHoursLater,
+      }),
+    );
+  });
+
+  it("should throw NtInvalidHoursLater for hoursLater below the lower bound", () => {
+    expect(() =>
+      NotificationConfigParser.parse({
+        reminder: {
+          timezone: "Asia/Tokyo",
+          notifications: [
+            {
+              code: "due_date",
+              daysLater: 1,
+              hoursLater: -10001,
+              filterCond: "",
+              title: "Due",
+              targets: [{ entity: { type: "USER", code: "admin" } }],
+            },
+          ],
+        },
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidHoursLater,
       }),
     );
   });
