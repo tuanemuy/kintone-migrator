@@ -265,6 +265,57 @@ describe("apply command", () => {
     expect(applyAllForApp).toHaveBeenCalled();
   });
 
+  it("multiApp で先頭 app がドメイン失敗のとき executor が runApplyAll の {ok:false} をそのまま return すること", async () => {
+    const plan: ExecutionPlan = { orderedApps: [mockApp] };
+
+    vi.mocked(routeMultiApp).mockImplementationOnce(
+      async (
+        _values: unknown,
+        handlers: {
+          multiApp: (
+            plan: ExecutionPlan,
+            config: ProjectConfig,
+          ) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp(plan, mockProjectConfig);
+      },
+    );
+
+    // Capture the executor passed to runMultiAppWithFailCheck and invoke it
+    // directly to observe its return value (exit/process termination is out of
+    // scope here — that lives behind the mocked boundary).
+    let capturedOutcome: unknown;
+    vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
+      async (_plan, executor) => {
+        capturedOutcome = await executor(mockApp);
+      },
+    );
+
+    vi.mocked(p.confirm).mockResolvedValueOnce(true);
+    // Failure output (aborted skip) so runApplyAll yields { ok: false }.
+    vi.mocked(applyAllForApp).mockResolvedValueOnce({
+      phases: [
+        {
+          phase: "Schema",
+          results: [
+            {
+              domain: "schema",
+              success: false,
+              error: new Error("fail"),
+              skipped: false,
+            },
+          ],
+        },
+      ],
+      deployed: false,
+    });
+
+    await applyCommand.run({ values: {} } as never);
+
+    expect(capturedOutcome).toMatchObject({ ok: false });
+  });
+
   it("エラー発生時に handleCliError が呼ばれること", async () => {
     const testError = new Error("test error");
     vi.mocked(routeMultiApp).mockRejectedValueOnce(testError);

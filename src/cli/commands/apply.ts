@@ -4,6 +4,8 @@ import { define } from "gunshi";
 import { applyAllForApp } from "@/core/application/applyAll/applyAllForApp";
 import { createCliApplyAllContainers } from "@/core/application/container/applyAllCli";
 import { diffAllForApp } from "@/core/application/diffAll/diffAllForApp";
+import { SystemError, SystemErrorCode } from "@/core/application/error";
+import type { AppExecutionOutcome } from "@/core/application/projectConfig/executeMultiApp";
 import { printApplyAllResults } from "../applyAllOutput";
 import { confirmArgs, kintoneArgs, multiAppArgs } from "../config";
 import { printDiffAllResults } from "../diffAllOutput";
@@ -50,7 +52,7 @@ async function runApplyAll(
   },
   appName: string,
   options: { skipConfirm: boolean; dryRun: boolean },
-): Promise<void> {
+): Promise<AppExecutionOutcome> {
   const { containers, diffContainers, paths } = createCliApplyAllContainers({
     ...cliConfig,
     appName:
@@ -97,7 +99,7 @@ async function runApplyAll(
         "Note: Seed data would still be upserted when running without --dry-run.",
       );
     }
-    return;
+    return { ok: true };
   }
 
   // Step 3: Confirm
@@ -108,7 +110,7 @@ async function runApplyAll(
 
     if (p.isCancel(shouldContinue) || !shouldContinue) {
       p.cancel("Apply cancelled.");
-      return;
+      return { ok: true };
     }
   }
 
@@ -129,19 +131,31 @@ async function runApplyAll(
   // Step 5: Print results
   printApplyAllResults(output);
 
-  // Set non-zero exit code for CI/CD pipelines.
-  // Triggered when any domain genuinely failed (execution failure or aborted
-  // skip) or when a required deploy failed. A "not-found" skip (config file
-  // absent) is not a failure and never raises the exit code. A deploy that was
-  // simply not needed (no Phase 2-4 successes, so deployError is undefined) is
-  // not an error either, so we check output.deployError instead of
-  // !output.deployed.
+  // Compute the failure truth value for this app and return it as the outcome.
+  // The caller (single-app handler or multi-app executor) decides how to turn
+  // this into an exit code; runApplyAll never writes process.exitCode directly.
+  //
+  // A failure is any domain that genuinely failed (execution failure or aborted
+  // skip) or a required deploy that failed. A "not-found" skip (config file
+  // absent) is not a failure. A deploy that was simply not needed (no Phase 2-4
+  // successes, so deployError is undefined) is not an error either, so we check
+  // output.deployError instead of !output.deployed.
   const hasFailures = output.phases
     .flatMap((pr) => pr.results)
     .some((r) => !r.success && r.skipped !== "not-found");
   if (hasFailures || output.deployError) {
-    process.exitCode = 1;
+    return {
+      ok: false,
+      error:
+        output.deployError ??
+        new SystemError(
+          SystemErrorCode.ExecutionError,
+          `Apply failed for ${appName}.`,
+        ),
+    };
   }
+
+  return { ok: true };
 }
 
 export default define({
@@ -164,13 +178,19 @@ export default define({
         },
         singleApp: async (app, projectConfig) => {
           const cliConfig = resolveAppCliConfig(app, projectConfig, values);
-          await runApplyAll(cliConfig, app.name, { skipConfirm, dryRun });
+          const outcome = await runApplyAll(cliConfig, app.name, {
+            skipConfirm,
+            dryRun,
+          });
+          if (!outcome.ok) {
+            process.exitCode = 1;
+          }
         },
         multiApp: async (plan, projectConfig) => {
           await runMultiAppWithFailCheck(plan, async (app) => {
             const cliConfig = resolveAppCliConfig(app, projectConfig, values);
             printAppHeader(app.name, app.appId);
-            await runApplyAll(cliConfig, app.name, { skipConfirm, dryRun });
+            return runApplyAll(cliConfig, app.name, { skipConfirm, dryRun });
           });
         },
       });
