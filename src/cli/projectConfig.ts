@@ -288,7 +288,7 @@ export async function runMultiAppWithFailCheck(
     ).length;
     if (succeededCount > 0) {
       p.log.warn(
-        `${succeededCount} app(s) were applied to preview but may not have been deployed. Check their status in kintone.`,
+        `${succeededCount} app(s) completed before execution stopped. Check their status in kintone.`,
       );
     }
     throw new SystemError(

@@ -189,4 +189,53 @@ describe("runMultiAppWithFailCheck", () => {
 
     expect(p.log.success).not.toHaveBeenCalled();
   });
+
+  it("一部成功・一部失敗時、deploy モデル非依存の警告文言で warn が呼ばれる", async () => {
+    const plan = makePlan([makeApp("App1"), makeApp("App2")]);
+    vi.mocked(executeMultiApp).mockResolvedValue({
+      results: [
+        { name: "App1" as AppName, status: "succeeded" },
+        {
+          name: "App2" as AppName,
+          status: "failed",
+          error: new Error("fail"),
+        },
+      ],
+      hasFailure: true,
+    });
+
+    await expect(runMultiAppWithFailCheck(plan, vi.fn())).rejects.toThrow(
+      expect.objectContaining({ code: "EXECUTION_ERROR" }),
+    );
+
+    expect(p.log.warn).toHaveBeenCalledTimes(1);
+    const warnMessage = vi.mocked(p.log.warn).mock.calls[0][0];
+    expect(warnMessage).toContain(
+      "1 app(s) completed before execution stopped",
+    );
+    // The wording must stay deploy-model agnostic: this warning also fires for
+    // read-only and per-app-deploy commands, where "preview"/"deployed" is wrong.
+    expect(warnMessage).not.toContain("preview");
+    expect(warnMessage).not.toContain("deployed");
+  });
+
+  it("成功 app が無い失敗時は、当該の警告は出ない", async () => {
+    const plan = makePlan([makeApp("App1")]);
+    vi.mocked(executeMultiApp).mockResolvedValue({
+      results: [
+        {
+          name: "App1" as AppName,
+          status: "failed",
+          error: new Error("fail"),
+        },
+      ],
+      hasFailure: true,
+    });
+
+    await expect(runMultiAppWithFailCheck(plan, vi.fn())).rejects.toThrow(
+      expect.objectContaining({ code: "EXECUTION_ERROR" }),
+    );
+
+    expect(p.log.warn).not.toHaveBeenCalled();
+  });
 });
