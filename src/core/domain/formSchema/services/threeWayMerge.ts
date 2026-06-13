@@ -196,7 +196,7 @@ function assertNoOrphanFields(
   mergedFields: ReadonlyMap<FieldCode, FieldDefinition>,
   layout: FormLayout,
 ): void {
-  const placed = collectLayoutFieldCodes(layout);
+  const { placed, groupCodes } = collectLayoutFieldCodes(layout);
 
   const orphans: FieldCode[] = [];
   for (const code of mergedFields.keys()) {
@@ -211,8 +211,18 @@ function assertNoOrphanFields(
     );
   }
 
+  // The resurrected check assumes "every placed code exists in the merged field
+  // map". That holds for ordinary fields, SUBTABLE and REFERENCE_TABLE codes
+  // (getFields returns all three; subtable inner fields are flattened to the top
+  // level and REFERENCE_TABLE carries properties). It does NOT hold for GROUP:
+  // kintone's field-properties API never returns GROUP definitions (ADR-007),
+  // so when the remote field map (getFields-derived) backs `mergedFields`, GROUP
+  // codes are structurally absent even though they are placed in the layout.
+  // GROUP is a layout-only structural element and cannot be a deleted/resurrected
+  // field, so it is excluded from the resurrected check (ADR-018).
   const resurrected: FieldCode[] = [];
   for (const code of placed) {
+    if (groupCodes.has(code)) continue;
     if (!mergedFields.has(code)) resurrected.push(code);
   }
   if (resurrected.length > 0) {
@@ -231,8 +241,18 @@ function assertNoOrphanFields(
 // their own code; ROW and nested (group/subtable) field elements contribute the
 // placed field's code. Decoration (SPACER/HR/LABEL) and system-field elements
 // are intentionally excluded because they never appear in the field map.
-function collectLayoutFieldCodes(layout: FormLayout): ReadonlySet<FieldCode> {
+//
+// GROUP codes are also reported separately (`groupCodes`) because they are
+// layout-only structural elements that kintone's field-properties API never
+// returns (ADR-007). The resurrected check uses this set to exclude GROUP codes,
+// which can be placed without a matching field-map entry; the orphan check is
+// unaffected because it walks the field map, where GROUP codes never appear.
+function collectLayoutFieldCodes(layout: FormLayout): Readonly<{
+  placed: ReadonlySet<FieldCode>;
+  groupCodes: ReadonlySet<FieldCode>;
+}> {
   const placed = new Set<FieldCode>();
+  const groupCodes = new Set<FieldCode>();
   const collectElements = (elements: readonly LayoutElement[]): void => {
     for (const element of elements) {
       if (element.kind === "field") placed.add(element.field.code);
@@ -245,6 +265,7 @@ function collectLayoutFieldCodes(layout: FormLayout): ReadonlySet<FieldCode> {
         break;
       case "GROUP":
         placed.add(item.code);
+        groupCodes.add(item.code);
         for (const row of item.layout) collectElements(row.fields);
         break;
       case "SUBTABLE":
@@ -256,7 +277,7 @@ function collectLayoutFieldCodes(layout: FormLayout): ReadonlySet<FieldCode> {
         break;
     }
   }
-  return placed;
+  return { placed, groupCodes };
 }
 
 function assertResolutionCovers(

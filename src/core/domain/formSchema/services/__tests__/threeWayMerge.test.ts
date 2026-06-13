@@ -563,4 +563,176 @@ describe("resolveMerge", () => {
       expect(merged.fields.has(FieldCode.create("extra"))).toBe(true);
     });
   });
+
+  // B-001 (round-4, ADR-018): the resurrected check must not treat GROUP codes
+  // as resurrected fields. The remote field map comes from getFields(), which
+  // never returns GROUP definitions (ADR-007), so a GROUP placed in the remote
+  // layout has no entry in `mergedFields`. The check must exclude GROUP codes,
+  // or adopting a remote layout that contains a GROUP would always be rejected
+  // even without any deletion or conflict. The fixtures here build the remote
+  // via `asRemoteGetFields` so the getFields asymmetry is reproduced on the
+  // resolveMerge path (not just normalization).
+  describe("GROUP の getFields 非対称で resurrected 誤検出しない (B-001)", () => {
+    // All three sides carry a GROUP. local and remote each make a layout-only
+    // change (reorder the top-level rows) so the layouts conflict WITHOUT any
+    // field channel change. The remote field map omits the GROUP definition,
+    // mimicking getFields().
+    const groupBase = SchemaParser.parse({
+      layout: [
+        { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
+        { type: "ROW", fields: [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")] },
+        {
+          type: "GROUP",
+          code: "grp",
+          label: "G",
+          layout: [
+            {
+              type: "ROW",
+              fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+            },
+          ],
+        },
+      ],
+    });
+    // local reorders name/age (layout-only change).
+    const groupLocal = SchemaParser.parse({
+      layout: [
+        { type: "ROW", fields: [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")] },
+        { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
+        {
+          type: "GROUP",
+          code: "grp",
+          label: "G",
+          layout: [
+            {
+              type: "ROW",
+              fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+            },
+          ],
+        },
+      ],
+    });
+    // remote moves the GROUP to the top (a different layout change) and is
+    // rebuilt to drop the GROUP definition from its field map (getFields shape).
+    const groupRemoteParsed = SchemaParser.parse({
+      layout: [
+        {
+          type: "GROUP",
+          code: "grp",
+          label: "G",
+          layout: [
+            {
+              type: "ROW",
+              fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+            },
+          ],
+        },
+        { type: "ROW", fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")] },
+        { type: "ROW", fields: [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")] },
+      ],
+    });
+    const groupRemote = asRemoteGetFields(groupRemoteParsed);
+
+    it("削除なしの正当な merge は remote layout 採用でも過剰拒否されず GROUP が保持される", () => {
+      // Sanity: the asymmetry is real — remote's field map omits the GROUP.
+      expect(groupRemote.fields.has(FieldCode.create("grp"))).toBe(false);
+
+      const merge = computeThreeWayMerge(groupBase, groupLocal, groupRemote);
+      expect(merge.layoutConflict).toBe(true);
+      // No field-channel deletion/conflict: grp is excluded, others unchanged.
+      expect(
+        merge.fieldEntries.some(
+          (e) => e.change.kind === "remoteOnly" || e.change.kind === "conflict",
+        ),
+      ).toBe(false);
+
+      // Adopting the remote layout (which places the GROUP) must succeed even
+      // though the remote field map lacks the GROUP definition.
+      const merged = resolveMerge(merge, {
+        fields: new Map(),
+        layout: "remote",
+      });
+      // The GROUP is preserved in the result (reconstructed from the layout).
+      expect(
+        merged.layout.some(
+          (item) => item.type === "GROUP" && item.code === "grp",
+        ),
+      ).toBe(true);
+      // Ordinary fields survive too.
+      expect(merged.fields.has(FieldCode.create("name"))).toBe(true);
+      expect(merged.fields.has(FieldCode.create("age"))).toBe(true);
+      expect(merged.fields.has(FieldCode.create("g_inner"))).toBe(true);
+    });
+
+    it("真の resurrected（削除した通常 field を remote layout が残す）は引き続き拒否される", () => {
+      // local deletes `age` (and drops it from the local layout). remote keeps
+      // `age` placed and is built getFields-style (GROUP omitted). Adopting the
+      // remote layout would resurrect the deleted ordinary field `age`; this
+      // must still be rejected even with the GROUP exclusion in place.
+      const deleteLocal = SchemaParser.parse({
+        layout: [
+          {
+            type: "ROW",
+            fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+          },
+          {
+            type: "GROUP",
+            code: "grp",
+            label: "G",
+            layout: [
+              {
+                type: "ROW",
+                fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+              },
+            ],
+          },
+        ],
+      });
+      const deleteRemoteParsed = SchemaParser.parse({
+        layout: [
+          {
+            type: "GROUP",
+            code: "grp",
+            label: "G",
+            layout: [
+              {
+                type: "ROW",
+                fields: [fieldRow("g_inner", "SINGLE_LINE_TEXT", "G内部")],
+              },
+            ],
+          },
+          {
+            type: "ROW",
+            fields: [fieldRow("name", "SINGLE_LINE_TEXT", "名前")],
+          },
+          {
+            type: "ROW",
+            fields: [fieldRow("age", "SINGLE_LINE_TEXT", "年齢")],
+          },
+        ],
+      });
+      const deleteRemote = asRemoteGetFields(deleteRemoteParsed);
+
+      const merge = computeThreeWayMerge(groupBase, deleteLocal, deleteRemote);
+      expect(merge.layoutConflict).toBe(true);
+      const ageEntry = merge.fieldEntries.find(
+        (e) => e.key === FieldCode.create("age"),
+      );
+      expect(ageEntry?.change.kind).toBe("localOnly");
+      expect(ageEntry?.merged).toBeUndefined();
+
+      try {
+        resolveMerge(merge, { fields: new Map(), layout: "remote" });
+        expect.unreachable("should have thrown");
+      } catch (error) {
+        expect(error).toBeInstanceOf(BusinessRuleError);
+        expect((error as BusinessRuleError).code).toBe(
+          FormSchemaErrorCode.FsOrphanMergedField,
+        );
+        expect((error as BusinessRuleError).message).toContain("age");
+        // The GROUP must NOT be reported as resurrected.
+        expect((error as BusinessRuleError).message).not.toContain("grp");
+      }
+    });
+  });
 });
