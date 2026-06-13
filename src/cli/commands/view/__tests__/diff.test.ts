@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { DetectViewThreeWayDiffOutput } from "@/core/application/view/detectViewThreeWayDiff";
 
 vi.mock("@clack/prompts", () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
@@ -9,6 +10,7 @@ vi.mock("@clack/prompts", () => ({
     error: vi.fn(),
   },
   outro: vi.fn(),
+  note: vi.fn(),
 }));
 
 vi.mock("@/cli/viewConfig", () => ({
@@ -18,6 +20,8 @@ vi.mock("@/cli/viewConfig", () => ({
     auth: { type: "password", username: "user", password: "pass" },
     appId: "1",
     viewFilePath: "views.yaml",
+    viewStateFilePath: "state/view.yaml",
+    appRevisionFilePath: "state/revision.yaml",
   })),
   resolveViewAppContainerConfig: vi.fn(),
 }));
@@ -37,62 +41,80 @@ vi.mock("@/cli/projectConfig", () => ({
 vi.mock("@/cli/output", () => ({
   printAppHeader: vi.fn(),
   printViewDiffResult: vi.fn(),
+  printThreeWayDiffResult: vi.fn(),
 }));
 
 vi.mock("@/core/application/container/viewCli", () => ({
   createViewCliContainer: vi.fn(() => ({})),
 }));
 
-vi.mock("@/core/application/view/detectViewDiff");
+vi.mock("@/core/application/view/detectViewThreeWayDiff");
 
 vi.mock("@/cli/handleError", () => ({
   handleCliError: vi.fn(),
 }));
 
 import { handleCliError } from "@/cli/handleError";
-import { printViewDiffResult } from "@/cli/output";
-import { detectViewDiff } from "@/core/application/view/detectViewDiff";
+import { printThreeWayDiffResult } from "@/cli/output";
+import { detectViewThreeWayDiff } from "@/core/application/view/detectViewThreeWayDiff";
 import command from "../diff";
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("view diff command", () => {
-  it("should detect diff and print result", async () => {
-    const mockResult = {
-      entries: [
-        { type: "added" as const, viewName: "test", details: "new view" },
-      ],
-      summary: { added: 1, modified: 0, deleted: 0, total: 1 },
-      isEmpty: false,
-      warnings: [],
-    };
-    vi.mocked(detectViewDiff).mockResolvedValue(mockResult);
-
-    await command.run({ values: {} } as never);
-
-    expect(detectViewDiff).toHaveBeenCalled();
-    expect(printViewDiffResult).toHaveBeenCalledWith(mockResult);
-  });
-
-  it("should print empty result when no diff", async () => {
-    const mockResult = {
+function twoWayResult(): DetectViewThreeWayDiffOutput {
+  return {
+    mode: "two-way",
+    diff: {
       entries: [],
       summary: { added: 0, modified: 0, deleted: 0, total: 0 },
       isEmpty: true,
       warnings: [],
-    };
-    vi.mocked(detectViewDiff).mockResolvedValue(mockResult);
+    },
+  };
+}
+
+function threeWayResult(): DetectViewThreeWayDiffOutput {
+  return {
+    mode: "three-way",
+    localChanges: [{ key: "一覧", label: "LIST", kind: "localOnly" }],
+    remoteDrift: [],
+    conflicts: [],
+    extras: [],
+    isEmpty: false,
+  };
+}
+
+describe("view diff command", () => {
+  it("passes the two-way result to the printer when no state exists", async () => {
+    const mockResult = twoWayResult();
+    vi.mocked(detectViewThreeWayDiff).mockResolvedValue(mockResult);
 
     await command.run({ values: {} } as never);
 
-    expect(printViewDiffResult).toHaveBeenCalledWith(mockResult);
+    expect(detectViewThreeWayDiff).toHaveBeenCalled();
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
+  });
+
+  it("passes the three-way result to the printer when state exists", async () => {
+    const mockResult = threeWayResult();
+    vi.mocked(detectViewThreeWayDiff).mockResolvedValue(mockResult);
+
+    await command.run({ values: {} } as never);
+
+    expect(printThreeWayDiffResult).toHaveBeenCalledWith(
+      mockResult,
+      expect.any(Function),
+    );
   });
 
   it("should handle errors with handleCliError", async () => {
     const error = new Error("Diff failed");
-    vi.mocked(detectViewDiff).mockRejectedValue(error);
+    vi.mocked(detectViewThreeWayDiff).mockRejectedValue(error);
 
     await command.run({ values: {} } as never);
 

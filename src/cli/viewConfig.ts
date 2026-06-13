@@ -1,7 +1,15 @@
 import type { ViewCliContainerConfig } from "@/core/application/container/viewCli";
+import {
+  buildAppRevisionFilePath,
+  buildDomainStateFilePath,
+  buildLegacyAppRevisionFilePath,
+  buildLegacyDomainStateFilePath,
+} from "@/core/domain/projectConfig/appFilePaths";
 import { kintoneArgs, multiAppArgs } from "./config";
 import { createDomainConfigResolver } from "./createDomainConfigResolver";
 import type { MultiAppCliValues } from "./projectConfig";
+
+const VIEW_STATE_FILE = "view.yaml";
 
 export const viewArgs = {
   ...kintoneArgs,
@@ -26,9 +34,18 @@ const {
   appFileField: (a) => a.viewFile,
   defaultDir: "view",
   defaultFileName: "views.yaml",
-  buildConfig: (base, filePath): ViewCliContainerConfig => ({
+  buildConfig: (base, filePath, app): ViewCliContainerConfig => ({
     ...base,
     viewFilePath: filePath,
+    // State (base snapshot) and the app-scoped revision live under
+    // state/<appName>/ for project apps, or state/ for legacy single-app mode
+    // (ADR-188-001).
+    viewStateFilePath: app
+      ? buildDomainStateFilePath(app.name, VIEW_STATE_FILE)
+      : buildLegacyDomainStateFilePath(VIEW_STATE_FILE),
+    appRevisionFilePath: app
+      ? buildAppRevisionFilePath(app.name)
+      : buildLegacyAppRevisionFilePath(),
   }),
 });
 

@@ -2,6 +2,7 @@ import {
   type AppFilePaths,
   buildAppFilePaths,
   buildAppRevisionFilePath,
+  buildDomainStateFilePath,
   buildStateFilePath,
 } from "@/core/domain/projectConfig/appFilePaths";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
@@ -65,7 +66,16 @@ export function createCliApplyAllContainers(
     ...base,
     customizeFilePath: paths.customize,
   });
-  const view = createViewCliContainer({ ...base, viewFilePath: paths.view });
+  const view = createViewCliContainer({
+    ...base,
+    viewFilePath: paths.view,
+    viewStateFilePath: buildDomainStateFilePath(
+      input.appName,
+      "view.yaml",
+      input.baseDir,
+    ),
+    appRevisionFilePath: buildAppRevisionFilePath(input.appName, input.baseDir),
+  });
   const settings = createGeneralSettingsCliContainer({
     ...base,
     settingsFilePath: paths.settings,

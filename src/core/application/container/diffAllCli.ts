@@ -2,6 +2,7 @@ import {
   type AppFilePaths,
   buildAppFilePaths,
   buildAppRevisionFilePath,
+  buildDomainStateFilePath,
   buildStateFilePath,
 } from "@/core/domain/projectConfig/appFilePaths";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
@@ -67,7 +68,19 @@ export function createCliDiffAllContainers(
         ...base,
         customizeFilePath: paths.customize,
       }),
-      view: createViewCliContainer({ ...base, viewFilePath: paths.view }),
+      view: createViewCliContainer({
+        ...base,
+        viewFilePath: paths.view,
+        viewStateFilePath: buildDomainStateFilePath(
+          input.appName,
+          "view.yaml",
+          input.baseDir,
+        ),
+        appRevisionFilePath: buildAppRevisionFilePath(
+          input.appName,
+          input.baseDir,
+        ),
+      }),
       settings: createGeneralSettingsCliContainer({
         ...base,
         settingsFilePath: paths.settings,

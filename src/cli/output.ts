@@ -5,16 +5,18 @@ import type { AdminNotesDiffEntry } from "@/core/application/adminNotes/detectAd
 import type { AppPermissionDiffEntry } from "@/core/application/appPermission/detectAppPermissionDiff";
 import type { CustomizationDiffEntry } from "@/core/application/customization/detectCustomizationDiff";
 import type { FieldPermissionDiffEntry } from "@/core/application/fieldPermission/detectFieldPermissionDiff";
-import type {
-  DetectDiffOutput,
-  DetectThreeWayDiffOutput,
-} from "@/core/application/formSchema/dto";
+import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { GeneralSettingsDiffEntry } from "@/core/application/generalSettings/detectGeneralSettingsDiff";
 import type { NotificationDiffEntry } from "@/core/application/notification/detectNotificationDiff";
 import type { PluginDiffEntry } from "@/core/application/plugin/detectPluginDiff";
 import type { ProcessManagementDiffEntry } from "@/core/application/processManagement/detectProcessManagementDiff";
 import type { RecordPermissionDiffEntry } from "@/core/application/recordPermission/detectRecordPermissionDiff";
 import type { ReportDiffEntry } from "@/core/application/report/detectReportDiff";
+import type {
+  ThreeWayDiffEntry,
+  ThreeWayDiffExtra,
+  ThreeWayDiffResult,
+} from "@/core/application/threeWay/threeWayDiff";
 import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
 import type { DiffResult, DiffSummary } from "@/core/domain/diff";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
@@ -155,14 +157,43 @@ export function printDiffResult(result: DetectDiffOutput): void {
   p.note(lines.join("\n"), "Diff Details", { format: (v) => v });
 }
 
-// Prints a 3-way diff (state-aware) distinguishing local changes, remote drift,
-// and conflicts. Falls back to the 2-way printer when no state exists.
-export function printThreeWayDiffResult(
-  result: DetectThreeWayDiffOutput,
+function formatThreeWayEntry(entry: ThreeWayDiffEntry): string {
+  switch (entry.kind) {
+    case "localOnly":
+      return `${pc.green("L")} ${pc.dim("[")}${pc.green(entry.key)}${pc.dim("]")} ${entry.label}${pc.dim(":")} local change`;
+    case "remoteOnly":
+      return `${pc.yellow("R")} ${pc.dim("[")}${pc.yellow(entry.key)}${pc.dim("]")} ${entry.label}${pc.dim(":")} remote drift`;
+    case "conflict":
+      return `${pc.red("C")} ${pc.dim("[")}${pc.red(entry.key)}${pc.dim("]")} ${entry.label}${pc.dim(":")} conflict`;
+  }
+}
+
+// Extra (whole-entity) lines such as schema's `layout` status. Unlike keyed
+// entries these are rendered without bracket framing and support the
+// "change" (both-sides-auto-merged) case.
+function formatThreeWayExtra(extra: ThreeWayDiffExtra): string {
+  switch (extra.kind) {
+    case "localOnly":
+      return `${pc.green("L")} ${pc.green(extra.key)}${pc.dim(":")} local change`;
+    case "remoteOnly":
+      return `${pc.yellow("R")} ${pc.yellow(extra.key)}${pc.dim(":")} remote drift`;
+    case "conflict":
+      return `${pc.red("C")} ${pc.red(extra.key)}${pc.dim(":")} conflict`;
+    case "change":
+      return `${pc.green("L")} ${pc.green(extra.key)}${pc.dim(":")} change`;
+  }
+}
+
+// Prints a generic 3-way diff (state-aware) distinguishing local changes,
+// remote drift, and conflicts. Domain-agnostic (AC-2): each domain supplies a
+// ThreeWayDiffResult and a `printTwoWay` fallback for the no-state case.
+export function printThreeWayDiffResult<TTwoWay>(
+  result: ThreeWayDiffResult<TTwoWay>,
+  printTwoWay: (diff: TTwoWay) => void,
 ): void {
   if (result.mode === "two-way") {
     p.log.info("No base snapshot found (2-way comparison).");
-    printDiffResult(result.diff);
+    printTwoWay(result.diff);
     return;
   }
 
@@ -171,36 +202,12 @@ export function printThreeWayDiffResult(
     return;
   }
 
-  const lines: string[] = [];
-  for (const e of result.localChanges) {
-    lines.push(
-      `${pc.green("L")} ${pc.dim("[")}${pc.green(e.fieldCode)}${pc.dim("]")} ${e.fieldLabel}${pc.dim(":")} local change`,
-    );
-  }
-  for (const e of result.remoteDrift) {
-    lines.push(
-      `${pc.yellow("R")} ${pc.dim("[")}${pc.yellow(e.fieldCode)}${pc.dim("]")} ${e.fieldLabel}${pc.dim(":")} remote drift`,
-    );
-  }
-  for (const e of result.conflicts) {
-    lines.push(
-      `${pc.red("C")} ${pc.dim("[")}${pc.red(e.fieldCode)}${pc.dim("]")} ${e.fieldLabel}${pc.dim(":")} conflict`,
-    );
-  }
-  if (result.layoutConflict) {
-    lines.push(`${pc.red("C")} ${pc.red("layout")}${pc.dim(":")} conflict`);
-  } else if (result.layoutLocalChanged && !result.layoutRemoteChanged) {
-    lines.push(
-      `${pc.green("L")} ${pc.green("layout")}${pc.dim(":")} local change`,
-    );
-  } else if (result.layoutRemoteChanged && !result.layoutLocalChanged) {
-    lines.push(
-      `${pc.yellow("R")} ${pc.yellow("layout")}${pc.dim(":")} remote drift`,
-    );
-  } else if (result.layoutLocalChanged && result.layoutRemoteChanged) {
-    // Both changed to the same value (auto-merged); still report as changed.
-    lines.push(`${pc.green("L")} ${pc.green("layout")}${pc.dim(":")} change`);
-  }
+  const lines: string[] = [
+    ...result.localChanges.map(formatThreeWayEntry),
+    ...result.remoteDrift.map(formatThreeWayEntry),
+    ...result.conflicts.map(formatThreeWayEntry),
+    ...result.extras.map(formatThreeWayExtra),
+  ];
 
   p.log.info(
     `${pc.green("L")}=local  ${pc.yellow("R")}=remote drift  ${pc.red("C")}=conflict`,

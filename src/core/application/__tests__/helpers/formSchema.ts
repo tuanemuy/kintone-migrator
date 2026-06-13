@@ -1,6 +1,5 @@
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { ConflictError, ConflictErrorCode } from "@/core/application/error";
-import type { AppRevisionStorage } from "@/core/domain/appRevision/ports/appRevisionStorage";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
 import type {
   ExpectedRevision,
@@ -15,6 +14,7 @@ import type {
 import {
   FakeBase,
   InMemoryAppDeployer,
+  InMemoryAppRevisionStorage,
   InMemoryFileStorage,
   setupContainer,
   testConfigCodec,
@@ -158,10 +158,6 @@ export class InMemorySchemaStateStorage
 export class InMemorySchemaStorage
   extends InMemoryFileStorage
   implements SchemaStorage {}
-
-export class InMemoryAppRevisionStorage
-  extends InMemoryFileStorage
-  implements AppRevisionStorage {}
 
 export type TestFormSchemaContainer = FormSchemaContainer & {
   formConfigurator: InMemoryFormConfigurator;

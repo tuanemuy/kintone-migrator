@@ -47,34 +47,7 @@ export type CaptureSchemaOutput = {
   readonly hasExistingSchema: boolean;
 };
 
-// --- 3-way diff / pull / push DTOs ---
-
-export type ThreeWayFieldChangeKind = "localOnly" | "remoteOnly" | "conflict";
-
-export type ThreeWayDiffFieldEntry = {
-  readonly fieldCode: FieldCode;
-  readonly fieldLabel: string;
-  readonly kind: ThreeWayFieldChangeKind;
-};
-
-export type DetectThreeWayDiffOutput =
-  | {
-      readonly mode: "three-way";
-      /** Fields changed only locally (local will be pushed). */
-      readonly localChanges: readonly ThreeWayDiffFieldEntry[];
-      /** Fields changed only remotely (drift; pull would bring them in). */
-      readonly remoteDrift: readonly ThreeWayDiffFieldEntry[];
-      /** Fields changed on both sides to different values (conflicts). */
-      readonly conflicts: readonly ThreeWayDiffFieldEntry[];
-      readonly layoutLocalChanged: boolean;
-      readonly layoutRemoteChanged: boolean;
-      readonly layoutConflict: boolean;
-      readonly isEmpty: boolean;
-    }
-  | {
-      readonly mode: "two-way";
-      readonly diff: DetectDiffOutput;
-    };
+// --- pull / push DTOs ---
 
 /**
  * Result of the first stage of `pull`. For the `merged` mode the merge is

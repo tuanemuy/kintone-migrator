@@ -66,6 +66,35 @@ export function buildLegacyStateFilePath(baseDir?: string): string {
 }
 
 /**
+ * Resolves the path to an app-scoped domain state (base snapshot) file
+ * (`state/<appName>/<fileName>`, e.g. `state/sales/view.yaml`).
+ *
+ * Generalizes {@link buildStateFilePath} (which is schema-specific) so every
+ * config domain stores its base snapshot under the same `state/<appName>/`
+ * convention (ADR-188-001).
+ */
+export function buildDomainStateFilePath(
+  appName: AppName,
+  fileName: string,
+  baseDir?: string,
+): string {
+  const path = `state/${appName}/${fileName}`;
+  return baseDir ? join(baseDir, path) : path;
+}
+
+/**
+ * Resolves the path to the legacy single-app domain state file
+ * (`state/<fileName>`, e.g. `state/view.yaml`).
+ */
+export function buildLegacyDomainStateFilePath(
+  fileName: string,
+  baseDir?: string,
+): string {
+  const path = `state/${fileName}`;
+  return baseDir ? join(baseDir, path) : path;
+}
+
+/**
  * Resolves the path to the app-scoped base revision file
  * (`state/<appName>/revision.yaml`).
  *

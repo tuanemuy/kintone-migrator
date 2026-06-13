@@ -4,6 +4,7 @@ export const ViewErrorCode = {
   VwInvalidDeviceType: "VW_INVALID_DEVICE_TYPE",
   VwEmptyViewName: "VW_EMPTY_VIEW_NAME",
   VwInvalidIndex: "VW_INVALID_INDEX",
+  VwUnresolvedConflict: "VW_UNRESOLVED_CONFLICT",
 } as const;
 
 export type ViewErrorCode = (typeof ViewErrorCode)[keyof typeof ViewErrorCode];

@@ -68,6 +68,12 @@ export class InMemoryFileStorage extends FakeBase {
   }
 }
 
+/**
+ * In-memory app-scoped base revision storage (`state/<appName>/revision.yaml`).
+ * Shared across domains since the app revision is app-scoped (ADR-188-001).
+ */
+export class InMemoryAppRevisionStorage extends InMemoryFileStorage {}
+
 export class InMemoryAppDeployer extends FakeBase implements AppDeployer {
   deployCount = 0;
 
