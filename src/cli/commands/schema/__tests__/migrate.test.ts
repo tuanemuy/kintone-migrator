@@ -115,6 +115,21 @@ function hasDiffResult(): DetectDiffOutput {
 }
 
 describe("migrate コマンド", () => {
+  it("deprecation warning を表示しつつ従来動作を実行する", async () => {
+    vi.mocked(detectDiff).mockResolvedValue(hasDiffResult());
+    vi.mocked(p.confirm).mockResolvedValue(true);
+    vi.mocked(executeMigration).mockResolvedValue(undefined);
+    vi.mocked(confirmAndDeploy).mockResolvedValue(undefined);
+
+    await command.run({ values: {} } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("schema push"),
+    );
+    expect(detectDiff).toHaveBeenCalled();
+    expect(executeMigration).toHaveBeenCalled();
+  });
+
   it("差分がない場合、変更不要メッセージを表示して終了する", async () => {
     vi.mocked(detectDiff).mockResolvedValue(noDiffResult());
 

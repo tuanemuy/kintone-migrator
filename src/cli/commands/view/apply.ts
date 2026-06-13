@@ -19,6 +19,10 @@ export default createApplyCommand<
 >({
   description: "Apply view settings from YAML to kintone app",
   args: viewArgs,
+  deprecation: {
+    commandName: "view apply",
+    replacement: "view push",
+  },
   spinnerMessage: "Applying views...",
   spinnerStopMessage: "Views applied.",
   successMessage: "Views applied successfully.",

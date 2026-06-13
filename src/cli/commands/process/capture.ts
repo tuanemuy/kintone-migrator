@@ -12,6 +12,10 @@ export default createCaptureCommand({
   description:
     "Capture current process management settings from kintone app to file",
   args: processArgs,
+  deprecation: {
+    commandName: "process capture",
+    replacement: "process pull",
+  },
   spinnerMessage: "Capturing process management settings...",
   spinnerStopMessage: "Process management settings captured.",
   domainLabel: "Process management settings",

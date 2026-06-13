@@ -12,6 +12,10 @@ import { createApplyCommand } from "../applyCommandFactory";
 export default createApplyCommand({
   description: "Apply report settings from YAML to kintone app",
   args: reportArgs,
+  deprecation: {
+    commandName: "report apply",
+    replacement: "report push",
+  },
   spinnerMessage: "Applying report settings...",
   spinnerStopMessage: "Report settings applied.",
   successMessage: "Report settings applied successfully.",

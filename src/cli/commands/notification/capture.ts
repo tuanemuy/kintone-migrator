@@ -11,6 +11,10 @@ import { createCaptureCommand } from "../captureCommandFactory";
 export default createCaptureCommand({
   description: "Capture current notification settings from kintone app to file",
   args: notificationArgs,
+  deprecation: {
+    commandName: "notification capture",
+    replacement: "notification pull",
+  },
   spinnerMessage: "Capturing notification settings...",
   spinnerStopMessage: "Notification settings captured.",
   domainLabel: "Notification settings",

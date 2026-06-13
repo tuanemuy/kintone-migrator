@@ -14,6 +14,7 @@ import {
   resolveCustomizeAppConfig,
   resolveCustomizeConfig,
 } from "../../customizeConfig";
+import { printDeprecationWarning } from "../../deprecation";
 import { handleCliError } from "../../handleError";
 import { printAppHeader } from "../../output";
 import { routeMultiApp, runMultiAppWithFailCheck } from "../../projectConfig";
@@ -80,6 +81,12 @@ export default define({
   args: customizeArgs,
   run: async (ctx) => {
     try {
+      printDeprecationWarning({
+        oldCommand: "customize capture",
+        replacement: "customize pull",
+        note: "Legacy commands do not update local state; run customize pull/push to keep state in sync.",
+      });
+
       const values = ctx.values as CustomizeCliValues;
 
       await routeMultiApp(values, {

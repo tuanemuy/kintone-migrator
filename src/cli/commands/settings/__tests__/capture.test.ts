@@ -114,7 +114,9 @@ describe("settings capture command", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.log.warn).not.toHaveBeenCalled();
+    expect(p.log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("overwritten"),
+    );
   });
 
   it("should handle errors with handleCliError", async () => {

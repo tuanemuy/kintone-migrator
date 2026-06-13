@@ -114,7 +114,9 @@ describe("process capture コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.log.warn).not.toHaveBeenCalled();
+    expect(p.log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("overwritten"),
+    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {

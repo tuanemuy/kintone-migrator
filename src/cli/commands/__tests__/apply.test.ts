@@ -156,6 +156,23 @@ describe("apply command", () => {
     expect(process.exitCode).toBe(1);
   });
 
+  it("実行時に push への移行を案内する deprecation warning を出すこと（AC-1）", async () => {
+    await applyCommand.run({ values: {} } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("push"));
+  });
+
+  it("singleLegacy のエラー文言が旧コマンドではなく push 系の移行先を案内すること（AC-13）", async () => {
+    await applyCommand.run({ values: {} } as never);
+
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining("schema push"),
+    );
+    expect(p.log.error).not.toHaveBeenCalledWith(
+      expect.stringContaining("schema migrate"),
+    );
+  });
+
   it("singleApp では diffAllForApp と applyAllForApp が呼ばれること", async () => {
     vi.mocked(routeMultiApp).mockImplementationOnce(
       async (

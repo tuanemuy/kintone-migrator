@@ -12,6 +12,10 @@ import { createApplyCommand } from "../applyCommandFactory";
 export default createApplyCommand({
   description: "Apply admin notes from YAML to kintone app",
   args: adminNotesArgs,
+  deprecation: {
+    commandName: "admin-notes apply",
+    replacement: "admin-notes push",
+  },
   spinnerMessage: "Applying admin notes...",
   spinnerStopMessage: "Admin notes applied.",
   successMessage: "Admin notes applied successfully.",

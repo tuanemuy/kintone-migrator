@@ -15,13 +15,13 @@ export KINTONE_PASSWORD=your_password
 export KINTONE_APP_ID=123
 
 # Capture current form schema
-kintone-migrator schema capture -f schema.yaml
+kintone-migrator schema pull -f schema.yaml
 
 # Edit schema.yaml, then check diff
 kintone-migrator schema diff
 
 # Apply changes
-kintone-migrator schema migrate
+kintone-migrator schema push
 ```
 
 Requires Node.js 22 or later.
@@ -179,38 +179,42 @@ Commands are organized into domain groups:
 | Group | Subcommand | Description |
 |---|---|---|
 | `schema` | `diff` | Show differences between schema file and kintone form |
-| `schema` | `migrate` | Apply schema changes (incremental) |
+| `schema` | `migrate` | _Deprecated — use `schema push`._ Apply schema changes (incremental) |
 | `schema` | `override` | Overwrite entire form from schema |
-| `schema` | `capture` | Save current form schema to file |
+| `schema` | `capture` | _Deprecated — use `schema pull`._ Save current form schema to file |
 | `schema` | `validate` | Validate schema file locally |
 | `schema` | `dump` | Dump raw field/layout JSON (for debugging) |
-| `seed` | `apply` | Apply seed data records |
+| `seed` | `push` | Upsert seed data records (plain upsert; no 3-way merge) |
+| `seed` | `apply` | _Deprecated alias for `seed push`._ |
 | `seed` | `capture` | Capture records from kintone app |
-| `customize` | `apply` | Apply JS/CSS customizations |
-| `field-acl` | `apply` | Apply field access permissions |
-| `field-acl` | `capture` | Save current field permissions to file |
-| `view` | `apply` | Apply view (list) settings |
-| `view` | `capture` | Save current view settings to file |
-| `app-acl` | `apply` | Apply app-level access permissions |
-| `app-acl` | `capture` | Save current app permissions to file |
-| `record-acl` | `apply` | Apply record-level access permissions |
-| `record-acl` | `capture` | Save current record permissions to file |
-| `process` | `apply` | Apply process management (workflow) settings |
-| `process` | `capture` | Save current process management settings to file |
-| `settings` | `apply` | Apply general app settings |
-| `settings` | `capture` | Save current general settings to file |
-| `notification` | `apply` | Apply notification settings |
-| `notification` | `capture` | Save current notification settings to file |
-| `report` | `apply` | Apply graph/report settings |
-| `report` | `capture` | Save current report settings to file |
-| `action` | `apply` | Apply action settings |
-| `action` | `capture` | Save current action settings to file |
-| `admin-notes` | `apply` | Apply admin notes |
-| `admin-notes` | `capture` | Save current admin notes to file |
-| `plugin` | `apply` | Apply plugin settings |
-| `plugin` | `capture` | Save current plugin settings to file |
+| `customize` | `apply` | _Deprecated — use `customize push`._ Apply JS/CSS customizations |
+| `customize` | `capture` | _Deprecated — use `customize pull`._ Save current customizations to file |
+| `field-acl` | `apply` | _Deprecated — use `field-acl push`._ Apply field access permissions |
+| `field-acl` | `capture` | _Deprecated — use `field-acl pull`._ Save current field permissions to file |
+| `view` | `apply` | _Deprecated — use `view push`._ Apply view (list) settings |
+| `view` | `capture` | _Deprecated — use `view pull`._ Save current view settings to file |
+| `app-acl` | `apply` | _Deprecated — use `app-acl push`._ Apply app-level access permissions |
+| `app-acl` | `capture` | _Deprecated — use `app-acl pull`._ Save current app permissions to file |
+| `record-acl` | `apply` | _Deprecated — use `record-acl push`._ Apply record-level access permissions |
+| `record-acl` | `capture` | _Deprecated — use `record-acl pull`._ Save current record permissions to file |
+| `process` | `apply` | _Deprecated — use `process push`._ Apply process management (workflow) settings |
+| `process` | `capture` | _Deprecated — use `process pull`._ Save current process management settings to file |
+| `settings` | `apply` | _Deprecated — use `settings push`._ Apply general app settings |
+| `settings` | `capture` | _Deprecated — use `settings pull`._ Save current general settings to file |
+| `notification` | `apply` | _Deprecated — use `notification push`._ Apply notification settings |
+| `notification` | `capture` | _Deprecated — use `notification pull`._ Save current notification settings to file |
+| `report` | `apply` | _Deprecated — use `report push`._ Apply graph/report settings |
+| `report` | `capture` | _Deprecated — use `report pull`._ Save current report settings to file |
+| `action` | `apply` | _Deprecated — use `action push`._ Apply action settings |
+| `action` | `capture` | _Deprecated — use `action pull`._ Save current action settings to file |
+| `admin-notes` | `apply` | _Deprecated — use `admin-notes push`._ Apply admin notes |
+| `admin-notes` | `capture` | _Deprecated — use `admin-notes pull`._ Save current admin notes to file |
+| `plugin` | `apply` | _Deprecated — use `plugin push`._ Apply plugin settings |
+| `plugin` | `capture` | _Deprecated — use `plugin pull`._ Save current plugin settings to file |
 
-All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`schema migrate`, `schema override`, `seed apply --clean`, `customize apply`) support `--yes` / `-y` to skip confirmation prompts.
+> **Deprecation notice:** the `apply`/`capture`/`migrate` commands above are deprecated in favor of their per-domain `push`/`pull` successors and will be removed in a future major version. The top-level `apply`/`capture` aggregate commands are likewise superseded by the top-level `push`/`pull` aggregate commands (which run every domain at once), not by any single `<domain> push`/`<domain> pull`. `push` writes to kintone (with a drift guard; use `--force` for the legacy overwrite behavior) and `pull` reads from kintone (with 3-way merge; `--force` for legacy overwrite). `seed` is out of scope for 3-way merge, so it has `seed push` but no `seed pull` — keep using `seed capture` to read records.
+
+All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`schema push`, `schema override`, `seed push --clean`, `customize push`) support `--yes` / `-y` to skip confirmation prompts.
 
 ### `init` -- Project Initialization
 
@@ -254,6 +258,8 @@ kintone-migrator schema diff --app customer
 
 #### `schema migrate`
 
+> **Deprecated.** Use `schema push` (drift-guarded) or `schema push --force` (legacy overwrite) instead. `schema migrate` keeps working but will be removed in a future major version.
+
 Applies only the detected differences (add, update, delete) to the kintone form.
 
 ```bash
@@ -278,6 +284,8 @@ kintone-migrator schema override --all --yes
 | `--yes`, `-y` | Skip confirmation prompts. |
 
 #### `schema capture`
+
+> **Deprecated.** Use `schema pull` (3-way merge) or `schema pull --force` (legacy overwrite) instead. `schema capture` keeps working but will be removed in a future major version.
 
 Saves the current kintone form schema to a YAML file.
 
@@ -305,20 +313,20 @@ kintone-migrator schema dump
 
 ### `seed` -- Seed Data Management
 
-#### `seed apply`
+#### `seed push`
 
-Upserts seed data records into a kintone app.
+Upserts seed data records into a kintone app. seed is out of scope for 3-way merge, so this is a plain upsert with no drift guard. `seed apply` remains as a deprecated alias for `seed push`. There is no `seed pull`; use `seed capture` to read records.
 
 ```bash
-kintone-migrator seed apply                    # Apply seed data
-kintone-migrator seed apply --clean --yes      # Delete all records first
+kintone-migrator seed push                     # Upsert seed data
+kintone-migrator seed push --clean --yes       # Delete all records first
+kintone-migrator seed apply                    # Deprecated alias for `seed push`
 ```
 
 | Option | Description |
 |---|---|
 | `--seed-file`, `-s` | Seed file path (default: `seed.yaml`) |
-| `--key-field`, `-k` | Key field code for upsert |
-| `--clean` | Delete all records before applying. |
+| `--clean` | Delete all existing records before upserting seed data (clean push). |
 | `--yes`, `-y` | Skip confirmation prompts (for `--clean` mode). |
 
 #### `seed capture`
@@ -338,6 +346,8 @@ kintone-migrator seed capture --key-field customer_code
 
 #### `customize apply`
 
+> **Deprecated.** Use `customize push` instead (and `customize pull` in place of `customize capture`). The legacy commands keep working but will be removed in a future major version.
+
 Applies JS/CSS customizations from a YAML config file. Local files are uploaded and merged with existing settings.
 
 ```bash
@@ -354,6 +364,8 @@ kintone-migrator customize apply --all --yes
 ### `field-acl` -- Field Access Permissions
 
 #### `field-acl apply`
+
+> **Deprecated.** Use `field-acl push` instead (and `field-acl pull` in place of `field-acl capture`). The legacy commands keep working but will be removed in a future major version.
 
 Applies field access permissions from a YAML config file. Uses full replacement -- the file defines the complete desired state.
 
@@ -379,6 +391,8 @@ kintone-migrator field-acl capture --field-acl-file my-field-acl.yaml
 
 #### `view apply`
 
+> **Deprecated.** Use `view push` instead (and `view pull` in place of `view capture`). The legacy commands keep working but will be removed in a future major version.
+
 Applies view settings from a YAML config file.
 
 ```bash
@@ -401,6 +415,8 @@ kintone-migrator view capture
 ### `app-acl` -- App Access Permissions
 
 #### `app-acl apply`
+
+> **Deprecated.** Use `app-acl push` instead (and `app-acl pull` in place of `app-acl capture`). The legacy commands keep working but will be removed in a future major version.
 
 Applies app-level access permissions from a YAML config file.
 
@@ -425,6 +441,8 @@ kintone-migrator app-acl capture
 
 #### `record-acl apply`
 
+> **Deprecated.** Use `record-acl push` instead (and `record-acl pull` in place of `record-acl capture`). The legacy commands keep working but will be removed in a future major version.
+
 Applies record-level access permissions from a YAML config file.
 
 ```bash
@@ -447,6 +465,8 @@ kintone-migrator record-acl capture
 ### `process` -- Process Management (Workflow)
 
 #### `process apply`
+
+> **Deprecated.** Use `process push` instead (and `process pull` in place of `process capture`). The legacy commands keep working but will be removed in a future major version.
 
 Applies process management settings (statuses, actions, assignees) from a YAML config file.
 
@@ -471,6 +491,8 @@ kintone-migrator process capture
 
 #### `settings apply`
 
+> **Deprecated.** Use `settings push` instead (and `settings pull` in place of `settings capture`). The legacy commands keep working but will be removed in a future major version.
+
 Applies general app settings (name, description, icon, theme, etc.) from a YAML config file.
 
 ```bash
@@ -493,6 +515,8 @@ kintone-migrator settings capture
 ### `notification` -- Notification Settings
 
 #### `notification apply`
+
+> **Deprecated.** Use `notification push` instead (and `notification pull` in place of `notification capture`). The legacy commands keep working but will be removed in a future major version.
 
 Applies notification settings (general, per-record, reminder) from a YAML config file.
 
@@ -517,6 +541,8 @@ kintone-migrator notification capture
 
 #### `report apply`
 
+> **Deprecated.** Use `report push` instead (and `report pull` in place of `report capture`). The legacy commands keep working but will be removed in a future major version.
+
 Applies graph and report settings from a YAML config file.
 
 ```bash
@@ -539,6 +565,8 @@ kintone-migrator report capture
 ### `action` -- Action Settings
 
 #### `action apply`
+
+> **Deprecated.** Use `action push` instead (and `action pull` in place of `action capture`). The legacy commands keep working but will be removed in a future major version.
 
 Applies action settings (record copy actions) from a YAML config file.
 
@@ -563,6 +591,8 @@ kintone-migrator action capture
 
 #### `admin-notes apply`
 
+> **Deprecated.** Use `admin-notes push` instead (and `admin-notes pull` in place of `admin-notes capture`). The legacy commands keep working but will be removed in a future major version.
+
 Applies admin notes from a YAML config file.
 
 ```bash
@@ -585,6 +615,8 @@ kintone-migrator admin-notes capture
 ### `plugin` -- Plugin Settings
 
 #### `plugin apply`
+
+> **Deprecated.** Use `plugin push` instead (and `plugin pull` in place of `plugin capture`). The legacy commands keep working but will be removed in a future major version.
 
 Applies plugin settings (enable/disable installed plugins) from a YAML config file.
 

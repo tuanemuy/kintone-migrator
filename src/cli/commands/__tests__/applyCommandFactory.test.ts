@@ -103,6 +103,7 @@ function makeConfig(
   return {
     description: "Test apply",
     args: {} as Record<string, never>,
+    deprecation: { commandName: "test apply", replacement: "test push" },
     spinnerMessage: "Applying...",
     spinnerStopMessage: "Applied.",
     successMessage: "Applied successfully.",
@@ -120,6 +121,20 @@ function makeConfig(
 }
 
 describe("createApplyCommand", () => {
+  describe("deprecation warning", () => {
+    it("should print a deprecation warning pointing to the replacement", async () => {
+      const config = makeConfig();
+      const command = createApplyCommand(config);
+
+      await command.run({ values: {} } as never);
+
+      expect(p.log.warn).toHaveBeenCalledWith(
+        expect.stringContaining("test push"),
+      );
+      expect(config.applyFn).toHaveBeenCalled();
+    });
+  });
+
   describe("without diffPreview (backward compatibility)", () => {
     it("should apply directly without diff detection", async () => {
       const config = makeConfig();

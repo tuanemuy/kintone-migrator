@@ -60,6 +60,22 @@ afterEach(() => {
 });
 
 describe("capture コマンド", () => {
+  it("deprecation warning を表示しつつ従来動作を実行する", async () => {
+    vi.mocked(captureSchema).mockResolvedValue({
+      schemaText: "layout:\n",
+      hasExistingSchema: false,
+    });
+    vi.mocked(saveSchema).mockResolvedValue(undefined);
+
+    await command.run({ values: {} } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("schema pull"),
+    );
+    expect(captureSchema).toHaveBeenCalled();
+    expect(saveSchema).toHaveBeenCalled();
+  });
+
   it("現在のフォーム設定をキャプチャしてファイルに保存する", async () => {
     vi.mocked(captureSchema).mockResolvedValue({
       schemaText: "layout:\n  - type: ROW\n",
@@ -117,7 +133,9 @@ describe("capture コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(p.log.warn).not.toHaveBeenCalled();
+    expect(p.log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("overwritten"),
+    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {

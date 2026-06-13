@@ -13,6 +13,7 @@ import {
   multiAppArgs,
   resolveConfig,
 } from "../../config";
+import { printDeprecationWarning } from "../../deprecation";
 import { handleCliError } from "../../handleError";
 import {
   confirmAndDeploy,
@@ -68,6 +69,12 @@ export default define({
   args: { ...kintoneArgs, ...multiAppArgs, ...confirmArgs },
   run: async (ctx) => {
     try {
+      printDeprecationWarning({
+        oldCommand: "schema migrate",
+        replacement: "schema push",
+        note: "Use `schema push --force` for the legacy overwrite behavior. Legacy commands do not update local state; run schema pull/push to keep state in sync.",
+      });
+
       const skipConfirm = ctx.values.yes === true;
 
       await routeMultiApp(ctx.values, {

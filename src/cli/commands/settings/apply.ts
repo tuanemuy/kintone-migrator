@@ -12,6 +12,10 @@ import { createApplyCommand } from "../applyCommandFactory";
 export default createApplyCommand({
   description: "Apply general settings from YAML to kintone app",
   args: settingsArgs,
+  deprecation: {
+    commandName: "settings apply",
+    replacement: "settings push",
+  },
   spinnerMessage: "Applying general settings...",
   spinnerStopMessage: "General settings applied.",
   successMessage: "General settings applied successfully.",

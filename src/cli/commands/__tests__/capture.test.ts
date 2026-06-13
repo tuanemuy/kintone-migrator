@@ -111,6 +111,23 @@ describe("capture command", () => {
     expect(process.exitCode).toBe(1);
   });
 
+  it("実行時に pull への移行を案内する deprecation warning を出すこと（AC-2）", async () => {
+    await captureCommand.run({ values: {} } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(expect.stringContaining("pull"));
+  });
+
+  it("singleLegacy のエラー文言が旧コマンドではなく pull 系の移行先を案内すること（AC-13）", async () => {
+    await captureCommand.run({ values: {} } as never);
+
+    expect(p.log.error).toHaveBeenCalledWith(
+      expect.stringContaining("schema pull"),
+    );
+    expect(p.log.error).not.toHaveBeenCalledWith(
+      expect.stringContaining("schema capture"),
+    );
+  });
+
   it("singleApp では captureAllForApp と printCaptureAllResults が呼ばれること", async () => {
     vi.mocked(routeMultiApp).mockImplementationOnce(
       async (

@@ -7,6 +7,7 @@ import type {
   ProjectConfig,
 } from "@/core/domain/projectConfig/entity";
 import { confirmArgs, type WithConfirm } from "../config";
+import { printDeprecationWarning } from "../deprecation";
 import { handleCliError } from "../handleError";
 import { confirmAndDeploy, type Deployable, printAppHeader } from "../output";
 import type { MultiAppCliValues } from "../projectConfig";
@@ -20,6 +21,7 @@ type ApplyCommandConfig<
 > = {
   readonly description: string;
   readonly args: Args;
+  readonly deprecation: { commandName: string; replacement: string };
   readonly spinnerMessage: string;
   readonly spinnerStopMessage: string;
   readonly successMessage: string;
@@ -104,6 +106,11 @@ export function createApplyCommand<
     args: { ...config.args, ...confirmArgs },
     run: async (ctx) => {
       try {
+        printDeprecationWarning({
+          oldCommand: config.deprecation.commandName,
+          replacement: config.deprecation.replacement,
+        });
+
         // gunshi's ctx.values is typed as Record<string, unknown>; cast is needed
         // because the generic TCliValues carries domain-specific CLI value types.
         const values = ctx.values as TCliValues;

@@ -91,6 +91,17 @@ beforeEach(() => {
 });
 
 describe("customize apply command", () => {
+  it("should print a deprecation warning while still applying", async () => {
+    vi.mocked(applyCustomization).mockResolvedValue(undefined);
+
+    await command.run({ values: { yes: true } } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("customize push"),
+    );
+    expect(applyCustomization).toHaveBeenCalled();
+  });
+
   it("should apply customization on success", async () => {
     vi.mocked(applyCustomization).mockResolvedValue(undefined);
 

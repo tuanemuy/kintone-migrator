@@ -1,5 +1,66 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { deriveFilePrefix } from "../capture";
+
+vi.mock("@clack/prompts", () => ({
+  spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
+  log: {
+    info: vi.fn(),
+    success: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    step: vi.fn(),
+  },
+  note: vi.fn(),
+  outro: vi.fn(),
+  confirm: vi.fn(),
+  isCancel: vi.fn(() => false),
+  cancel: vi.fn(),
+}));
+
+vi.mock("../../../customizeConfig", () => ({
+  customizeArgs: {},
+  resolveCustomizeConfig: vi.fn(() => ({
+    customizeFilePath: "customize.yaml",
+  })),
+  resolveCustomizeAppConfig: vi.fn(),
+}));
+
+vi.mock("@/core/application/container/cli", () => ({
+  createCustomizationCliContainer: vi.fn(() => ({})),
+}));
+
+vi.mock("@/core/application/customization/captureCustomization", () => ({
+  captureCustomization: vi.fn().mockResolvedValue({
+    configText: "x",
+    hasExistingConfig: false,
+    fileResourceCount: 0,
+  }),
+}));
+
+vi.mock("@/core/application/customization/saveCustomization", () => ({
+  saveCustomization: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../../../handleError", () => ({
+  handleCliError: vi.fn(),
+}));
+
+vi.mock("../../../output", () => ({
+  printAppHeader: vi.fn(),
+}));
+
+vi.mock("../../../projectConfig", () => ({
+  routeMultiApp: vi.fn(
+    async (
+      _values: unknown,
+      handlers: { singleLegacy: () => Promise<void> },
+    ) => {
+      await handlers.singleLegacy();
+    },
+  ),
+  resolveAppCliConfig: vi.fn(),
+  runMultiAppWithFailCheck: vi.fn(),
+}));
 
 describe("deriveFilePrefix", () => {
   it("customize.yaml は空文字を返す", () => {
@@ -36,5 +97,26 @@ describe("deriveFilePrefix", () => {
 
   it("ディレクトリ内の .yml ファイルも正しくファイル名を返す", () => {
     expect(deriveFilePrefix("some-dir/my-config.yml")).toBe("my-config");
+  });
+});
+
+describe("customize capture command (deprecation)", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("deprecation warning を表示しつつ capture を実行する", async () => {
+    const p = await import("@clack/prompts");
+    const { captureCustomization } = await import(
+      "@/core/application/customization/captureCustomization"
+    );
+    const command = (await import("../capture")).default;
+
+    await command.run({ values: {} } as never);
+
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("customize pull"),
+    );
+    expect(captureCustomization).toHaveBeenCalled();
   });
 });

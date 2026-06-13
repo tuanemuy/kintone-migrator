@@ -58,31 +58,14 @@ vi.mock("@/cli/output", () => ({
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
 import { upsertSeed } from "@/core/application/seedData/upsertSeed";
-import command from "../apply";
+import command from "../push";
 
 afterEach(() => {
   vi.clearAllMocks();
 });
 
-describe("seed apply コマンド (deprecation alias)", () => {
-  it("deprecation warning を表示しつつ upsert を実行する", async () => {
-    vi.mocked(upsertSeed).mockResolvedValue({
-      added: 1,
-      updated: 0,
-      unchanged: 0,
-      deleted: 0,
-      total: 1,
-    });
-
-    await command.run({ values: {} } as never);
-
-    expect(p.log.warn).toHaveBeenCalledWith(
-      expect.stringContaining("seed push"),
-    );
-    expect(upsertSeed).toHaveBeenCalled();
-  });
-
-  it("デフォルトでupsertモードを実行する", async () => {
+describe("seed push コマンド", () => {
+  it("warning なしで upsert を実行する", async () => {
     vi.mocked(upsertSeed).mockResolvedValue({
       added: 2,
       updated: 0,
@@ -97,6 +80,9 @@ describe("seed apply コマンド (deprecation alias)", () => {
       expect.objectContaining({
         input: { clean: false },
       }),
+    );
+    expect(p.log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("deprecated"),
     );
   });
 
@@ -113,9 +99,6 @@ describe("seed apply コマンド (deprecation alias)", () => {
 
     expect(p.log.info).toHaveBeenCalledWith(expect.stringContaining("added"));
     expect(p.log.info).toHaveBeenCalledWith(expect.stringContaining("updated"));
-    expect(p.log.info).toHaveBeenCalledWith(
-      expect.stringContaining("unchanged"),
-    );
   });
 
   it("エラー発生時にhandleCliErrorで処理される", async () => {
@@ -125,19 +108,5 @@ describe("seed apply コマンド (deprecation alias)", () => {
     await command.run({ values: {} } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(error);
-  });
-
-  it("削除されたレコードがある場合のサマリー表示", async () => {
-    vi.mocked(upsertSeed).mockResolvedValue({
-      added: 0,
-      updated: 0,
-      unchanged: 0,
-      deleted: 5,
-      total: 0,
-    });
-
-    await command.run({ values: { clean: true, yes: true } } as never);
-
-    expect(p.log.info).toHaveBeenCalledWith(expect.stringContaining("deleted"));
   });
 });
