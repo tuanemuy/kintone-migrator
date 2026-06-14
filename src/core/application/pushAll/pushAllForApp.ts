@@ -63,10 +63,9 @@ export type PushPhaseName =
  * a warning does not affect success/failed/skipped aggregation, fail-fast,
  * `state.aborted`, or the exit verdict (`pushAllHasFailure`). The message is a
  * finished, display-ready string built in the application layer (the CLI layer
- * only renders it). Currently only the plugin task emits warnings, but any
- * domain can return them via the same channel. Push-specific (`domain` is
- * `PushDomain`); kept separate from apply-all's `ApplyWarning` per the push/apply
- * type split.
+ * only renders it). Any domain can return warnings via the same channel.
+ * Push-specific (`domain` is `PushDomain`); kept separate from apply-all's
+ * `ApplyWarning` per the push/apply type split.
  */
 export type PushWarning = Readonly<{ domain: PushDomain; message: string }>;
 
@@ -116,11 +115,9 @@ export type PushAllForAppInput = Readonly<{
 type PushTask = {
   readonly domain: PushDomain;
   readonly storageExists: () => Promise<boolean>;
-  // Returns the warnings the task wants surfaced (empty when none). The plugin
-  // task builds them from pushPlugin's `skipped`; all other tasks return [].
-  // Unified across all tasks intentionally: an optional field or a side channel
-  // would diverge from apply-all's established pattern, so every task returns
-  // `Promise<readonly PushWarning[]>` even when it never emits a warning.
+  // Returns the warnings the task wants surfaced (empty when none). Every task
+  // returns `Promise<readonly PushWarning[]>` even when it never warns: an
+  // optional field or side channel would diverge from apply-all's pattern.
   readonly run: () => Promise<readonly PushWarning[]>;
 };
 

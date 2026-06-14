@@ -341,7 +341,7 @@ describe("pushAllForApp", () => {
       .find((r) => r.domain === "plugin");
   }
 
-  it("plugin の add-disabled スキップが plugin success 結果の warnings に載る（AC-1/AC-5）", async () => {
+  it("plugin の add-disabled スキップが plugin success 結果の warnings に載る", async () => {
     mockAllPushesSucceed();
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",
@@ -368,7 +368,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("plugin の delete スキップが warnings に載る（AC-5）", async () => {
+  it("plugin の delete スキップが warnings に載る", async () => {
     mockAllPushesSucceed();
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",
@@ -393,7 +393,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("plugin の modify スキップが warnings に載る（AC-5）", async () => {
+  it("plugin の modify スキップが warnings に載る", async () => {
     mockAllPushesSucceed();
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",
@@ -418,7 +418,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("plugin の skipped が delete/modify/add-disabled 混在のとき3種すべての warning を順に載せる（AC-5）", async () => {
+  it("plugin の skipped が delete/modify/add-disabled 混在のとき3種すべての warning を順に載せる", async () => {
     mockAllPushesSucceed();
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",
@@ -445,7 +445,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("plugin の skipped が空のとき warnings は空（AC-8）", async () => {
+  it("plugin の skipped が空のとき warnings は空", async () => {
     mockAllPushesSucceed();
 
     const output = await pushAllForApp(makeArgs());
@@ -458,13 +458,11 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("push-all が生成する3種の warning 文言が plugin push 単体コマンドの文言と1文字単位で一致する（W-002 回帰防止）", async () => {
-    // Regression net for the intentionally-duplicated warning wording. Per #194
-    // ADR-002 (do not over-generalize) the strings are hardcoded independently
-    // in both pushAllForApp.ts and src/cli/commands/plugin/push.ts L43/48/53 —
-    // there is NO shared constant. These expected literals are kept in sync with
-    // commands/plugin/push.ts BY HAND (no shared-constant extraction per
-    // ADR-002). If either side changes, this test fails to flag the drift.
+  it("push-all が生成する3種の warning 文言が plugin push 単体コマンドの文言と1文字単位で一致する", async () => {
+    // The warning wording is intentionally duplicated (not extracted into a
+    // shared constant) per the do-not-over-generalize decision, so these literals
+    // are kept in sync with src/cli/commands/plugin/push.ts by hand. This test
+    // fails if either side drifts.
     mockAllPushesSucceed();
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",
@@ -481,15 +479,12 @@ describe("pushAllForApp", () => {
 
     const plugin = findPlugin(output);
     if (plugin?.success) {
-      // delete (matches commands/plugin/push.ts L43)
       expect(plugin.warnings[0].message).toBe(
         "Cannot remove plugins via the kintone API (add-only); left on the app: plugDel",
       );
-      // modify (matches commands/plugin/push.ts L48)
       expect(plugin.warnings[1].message).toBe(
         "Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: plugMod",
       );
-      // add-disabled (matches commands/plugin/push.ts L53)
       expect(plugin.warnings[2].message).toBe(
         "Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: plugDis",
       );
@@ -498,7 +493,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("schema phase の success 結果も warnings:[] を持つ（AC-3/AC-4）", async () => {
+  it("schema phase の success 結果も warnings:[] を持つ", async () => {
     mockAllPushesSucceed();
 
     const output = await pushAllForApp(makeArgs());
@@ -511,17 +506,14 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("plugin の success+warning と、別ドメインの実失敗（skipped:false）が同一出力に共存する（W-001 / apply S-004 相当）", async () => {
+  it("plugin の success+warning と、別ドメインの実失敗（skipped:false）が同一出力に共存する", async () => {
     mockAllPushesSucceed();
     // plugin (last domain of the Settings & Others phase) succeeds with a
     // warning. notification (an earlier domain of the same phase) fails with a
-    // non-fatal error, which records a genuine `skipped:false` failure without
-    // aborting the rest. This pins that a warning-bearing success and a real
-    // failure coexist in the same run, and that the failure variant carries no
-    // `warnings` field (only the success variant does). A non-fatal failure is
-    // used because push-all has no post-Settings phase (apply's S-004 fails the
-    // later seed phase); the only way plugin can still run-and-warn alongside a
-    // recorded failure is a non-fatal failure that does not abort.
+    // non-fatal error, recording a genuine `skipped:false` failure without
+    // aborting the rest. A non-fatal failure is required: push-all has no
+    // post-plugin phase, so it is the only way plugin can still run-and-warn
+    // alongside a recorded failure.
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",
       revision: "2",
@@ -564,7 +556,7 @@ describe("pushAllForApp", () => {
     );
   });
 
-  it("plugin 自身が drift skip したとき success バリアントでないため warning を持たない（W-001 push 固有）", async () => {
+  it("plugin 自身が drift skip したとき success バリアントでないため warning を持たない", async () => {
     mockAllPushesSucceed();
     // plugin itself drifts: ConfigDrift → skipped:"drift" failure variant. The
     // would-be add-only warnings are never reachable because the task did not
@@ -582,7 +574,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("plugin が not-found skip したとき warning を持たない（W-001）", async () => {
+  it("plugin が not-found skip したとき warning を持たない", async () => {
     mockAllPushesSucceed();
 
     const output = await pushAllForApp(
@@ -597,7 +589,7 @@ describe("pushAllForApp", () => {
     }
   });
 
-  it("warning があっても全体は success 扱いで deploy され、base revision 再同期も走る（AC-7/AC-9）", async () => {
+  it("warning があっても全体は success 扱いで deploy され、base revision 再同期も走る", async () => {
     mockAllPushesSucceed();
     vi.mocked(pushPlugin).mockResolvedValue({
       mode: "push",

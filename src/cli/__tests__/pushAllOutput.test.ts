@@ -136,7 +136,7 @@ describe("printPushAllResults", () => {
     expect(logError).toHaveBeenCalledTimes(1);
   });
 
-  it("plugin の warning を当該ドメイン行直後に warn 表示し、成否/exit を変えないこと（AC-6/AC-7）", () => {
+  it("plugin の warning を当該ドメイン行直後に warn 表示し、成否/exit を変えないこと", () => {
     const output: PushAllForAppOutput = {
       phases: [
         {
