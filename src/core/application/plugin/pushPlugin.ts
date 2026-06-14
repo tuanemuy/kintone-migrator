@@ -90,7 +90,7 @@ function partitionPushOps(
  *
  * The plugin API is **add-only**: `addPlugins` can only install a plugin id
  * that is not yet on the app. It has no remove API and cannot control the
- * `enabled` flag (MEMORY: plugin-enabled-no-disable-api). So this push:
+ * `enabled` flag. So this push:
  *
  * - Loads base/local/remote and rejects on drift (remoteOnly / conflict) unless
  *   `--force`.
