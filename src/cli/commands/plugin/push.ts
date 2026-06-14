@@ -35,6 +35,9 @@ export default createPushCommand({
     const modifications = result.skipped
       .filter((o) => o.reason === "modify")
       .map((o) => o.pluginId);
+    const addDisabled = result.skipped
+      .filter((o) => o.reason === "add-disabled")
+      .map((o) => o.pluginId);
     if (deletions.length > 0) {
       p.log.warn(
         `Cannot remove plugins via the kintone API (add-only); left on the app: ${deletions.join(", ")}`,
@@ -43,6 +46,11 @@ export default createPushCommand({
     if (modifications.length > 0) {
       p.log.warn(
         `Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: ${modifications.join(", ")}`,
+      );
+    }
+    if (addDisabled.length > 0) {
+      p.log.warn(
+        `Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: ${addDisabled.join(", ")}`,
       );
     }
   },

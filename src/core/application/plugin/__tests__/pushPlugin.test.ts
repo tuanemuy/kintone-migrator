@@ -195,6 +195,106 @@ describe("pushPlugin", () => {
     expect(saved.plugins.some((p) => p.id === "b")).toBe(true);
   });
 
+  it("adds only enabled:true missing ids; an enabled:false missing plugin is skipped as add-disabled (AC-1/AC-2/AC-3)", async () => {
+    const container = getContainer();
+    const base = { plugins: [plugin("a")] };
+    setState(container, base, "1");
+    // local adds "b" (enabled) and "c" (disabled), both missing on the remote.
+    container.pluginStorage.setContent(
+      yamlOf({
+        plugins: [
+          plugin("a"),
+          plugin("b", { enabled: true }),
+          plugin("c", { enabled: false }),
+        ],
+      }),
+    );
+    container.pluginConfigurator.setPlugins([plugin("a")], "1");
+
+    const result = await pushPlugin({ container, input: {} });
+
+    // Only the enabled missing plugin "b" is added; "c" is not.
+    expect(result.addedPluginIds).toEqual(["b"]);
+    expect(container.pluginConfigurator.lastAddPluginsParams?.ids).toEqual([
+      "b",
+    ]);
+    // The disabled missing plugin "c" is surfaced as an add-disabled skip.
+    expect(result.skipped).toContainEqual({
+      pluginId: "c",
+      reason: "add-disabled",
+    });
+    expect(result.skipped).toHaveLength(1);
+  });
+
+  it("does not skip the enabled:false plugin into the base snapshot (AC-5)", async () => {
+    const container = getContainer();
+    const base = { plugins: [plugin("a")] };
+    setState(container, base, "1");
+    container.pluginStorage.setContent(
+      yamlOf({
+        plugins: [plugin("a"), plugin("c", { enabled: false })],
+      }),
+    );
+    container.pluginConfigurator.setPlugins([plugin("a")], "1");
+
+    const result = await pushPlugin({ container, input: {} });
+
+    expect(result.skipped).toContainEqual({
+      pluginId: "c",
+      reason: "add-disabled",
+    });
+    // "c" was not added, so it must NOT be baked into the base — otherwise the
+    // still-pending add intent would be lost from the next push.
+    const saved = await readSavedBase(container);
+    expect(saved.plugins.some((p) => p.id === "c")).toBe(false);
+  });
+
+  it("force does not add an enabled:false missing plugin (AC-6)", async () => {
+    const container = getContainer();
+    const base = { plugins: [plugin("a")] };
+    setState(container, base, "1");
+    container.pluginStorage.setContent(
+      yamlOf({
+        plugins: [plugin("a"), plugin("c", { enabled: false })],
+      }),
+    );
+    // remote drifted (added "x"), but force skips the drift check.
+    container.pluginConfigurator.setPlugins([plugin("a"), plugin("x")], "2");
+
+    const result = await pushPlugin({ container, input: { force: true } });
+
+    expect(result.addedPluginIds).toHaveLength(0);
+    expect(container.pluginConfigurator.callLog).not.toContain("addPlugins");
+    expect(result.skipped).toContainEqual({
+      pluginId: "c",
+      reason: "add-disabled",
+    });
+  });
+
+  it("an already-added enabled:false plugin is reported as modify, not double-counted as add-disabled (arch-risk S-006)", async () => {
+    const container = getContainer();
+    const base = { plugins: [plugin("a", { enabled: true })] };
+    setState(container, base, "1");
+    // local disables "a", which already exists on the remote (enabled: true).
+    container.pluginStorage.setContent(
+      yamlOf({ plugins: [plugin("a", { enabled: false })] }),
+    );
+    container.pluginConfigurator.setPlugins(
+      [plugin("a", { enabled: true })],
+      "1",
+    );
+
+    const result = await pushPlugin({ container, input: {} });
+
+    // The already-added "a" is a modify, never an add-disabled.
+    expect(result.skipped).toContainEqual({ pluginId: "a", reason: "modify" });
+    expect(result.skipped).not.toContainEqual({
+      pluginId: "a",
+      reason: "add-disabled",
+    });
+    expect(result.skipped.filter((s) => s.pluginId === "a")).toHaveLength(1);
+  });
+
   it("first run (no state) adds missing ids and initializes state", async () => {
     const container = getContainer();
     container.pluginStorage.setContent(

@@ -107,7 +107,7 @@ vi.mock("@/core/application/applyAll/applyAllForApp", () => ({
     phases: [
       {
         phase: "Schema",
-        results: [{ domain: "schema", success: true }],
+        results: [{ domain: "schema", success: true, warnings: [] }],
       },
     ],
     deployed: true,
@@ -905,7 +905,7 @@ describe("apply command", () => {
       phases: [
         {
           phase: "Schema",
-          results: [{ domain: "schema", success: true }],
+          results: [{ domain: "schema", success: true, warnings: [] }],
         },
       ],
       deployed: false,
@@ -1299,7 +1299,7 @@ describe("apply command", () => {
         },
         {
           phase: "Seed Data",
-          results: [{ domain: "seed", success: true }],
+          results: [{ domain: "seed", success: true, warnings: [] }],
         },
       ],
       deployed: false,
@@ -1330,7 +1330,7 @@ describe("apply command", () => {
         },
         {
           phase: "Views & Customization",
-          results: [{ domain: "customize", success: true }],
+          results: [{ domain: "customize", success: true, warnings: [] }],
         },
       ],
       deployed: false,

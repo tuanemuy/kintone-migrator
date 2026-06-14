@@ -43,8 +43,22 @@ export type ApplyPhaseName =
   | "Settings & Others"
   | "Seed Data";
 
+/**
+ * A non-fatal advisory surfaced by an apply task. Unlike a failure or a skip,
+ * a warning does not affect success/failed/skipped aggregation, fail-fast, or
+ * the exit verdict. The message is a finished, display-ready string built in
+ * the application layer (the CLI layer only renders it). Currently only the
+ * plugin task emits warnings, but any domain can return them via the same
+ * channel.
+ */
+export type ApplyWarning = Readonly<{ domain: ApplyDomain; message: string }>;
+
 export type ApplyTaskResult =
-  | Readonly<{ domain: ApplyDomain; success: true }>
+  | Readonly<{
+      domain: ApplyDomain;
+      success: true;
+      warnings: readonly ApplyWarning[];
+    }>
   | Readonly<{ domain: ApplyDomain; success: false; skipped: "not-found" }>
   | Readonly<{
       domain: ApplyDomain;
@@ -78,7 +92,9 @@ export type ApplyAllForAppInput = Readonly<{
 type ApplyTask = {
   readonly domain: ApplyDomain;
   readonly storageExists: () => Promise<boolean>;
-  readonly run: () => Promise<void>;
+  // Returns the warnings the task wants surfaced (empty when none). The plugin
+  // task builds them from applyPlugin's `skipped`; all other tasks return [].
+  readonly run: () => Promise<readonly ApplyWarning[]>;
 };
 
 type PhaseDefinition = {
@@ -99,6 +115,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.schema.schemaStorage.get()).exists,
           run: async () => {
             await executeMigration({ container: c.schema });
+            return [];
           },
         },
       ],
@@ -115,6 +132,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
               container: c.customization,
               input: { basePath: args.customizeBasePath },
             });
+            return [];
           },
         },
         {
@@ -122,6 +140,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
           storageExists: async () => (await c.view.viewStorage.get()).exists,
           run: async () => {
             await applyView({ container: c.view });
+            return [];
           },
         },
       ],
@@ -135,6 +154,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.fieldPermission.fieldPermissionStorage.get()).exists,
           run: async () => {
             await applyFieldPermission({ container: c.fieldPermission });
+            return [];
           },
         },
         {
@@ -143,6 +163,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.appPermission.appPermissionStorage.get()).exists,
           run: async () => {
             await applyAppPermission({ container: c.appPermission });
+            return [];
           },
         },
         {
@@ -151,6 +172,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.recordPermission.recordPermissionStorage.get()).exists,
           run: async () => {
             await applyRecordPermission({ container: c.recordPermission });
+            return [];
           },
         },
       ],
@@ -164,6 +186,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.settings.generalSettingsStorage.get()).exists,
           run: async () => {
             await applyGeneralSettings({ container: c.settings });
+            return [];
           },
         },
         {
@@ -172,6 +195,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.notification.notificationStorage.get()).exists,
           run: async () => {
             await applyNotification({ container: c.notification });
+            return [];
           },
         },
         {
@@ -180,6 +204,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.report.reportStorage.get()).exists,
           run: async () => {
             await applyReport({ container: c.report });
+            return [];
           },
         },
         {
@@ -188,6 +213,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.action.actionStorage.get()).exists,
           run: async () => {
             await applyAction({ container: c.action });
+            return [];
           },
         },
         {
@@ -196,6 +222,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.process.processManagementStorage.get()).exists,
           run: async () => {
             await applyProcessManagement({ container: c.process });
+            return [];
           },
         },
         {
@@ -204,6 +231,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
             (await c.adminNotes.adminNotesStorage.get()).exists,
           run: async () => {
             await applyAdminNotes({ container: c.adminNotes });
+            return [];
           },
         },
         {
@@ -211,7 +239,21 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
           storageExists: async () =>
             (await c.plugin.pluginStorage.get()).exists,
           run: async () => {
-            await applyPlugin({ container: c.plugin });
+            const result = await applyPlugin({ container: c.plugin });
+            // `enabled: false` plugins are inexpressible via the add-only plugin
+            // API; surface them as a warning so the apply-all output advises
+            // manual handling in the kintone admin UI (mirrors the wording of
+            // the standalone `plugin apply` command).
+            const disabled = result.skipped.map((s) => s.pluginId);
+            if (disabled.length === 0) {
+              return [];
+            }
+            return [
+              {
+                domain: "plugin" as const,
+                message: `enabled: false is not supported by the kintone plugin API (add-only; cannot disable); handle in the kintone admin UI: ${disabled.join(", ")}`,
+              },
+            ];
           },
         },
       ],
@@ -224,6 +266,7 @@ function buildPhases(args: ApplyAllForAppInput): readonly PhaseDefinition[] {
           storageExists: async () => (await c.seed.seedStorage.get()).exists,
           run: async () => {
             await upsertSeed({ container: c.seed, input: {} });
+            return [];
           },
         },
       ],
@@ -287,9 +330,9 @@ async function executeSchemaPhase(
     }
 
     try {
-      await task.run();
+      const warnings = await task.run();
       await deployApp({ container: containers.schema });
-      results.push({ domain: task.domain, success: true });
+      results.push({ domain: task.domain, success: true, warnings });
     } catch (error) {
       // Schema phase failure is always fatal regardless of isFatalError check.
       // Without a deployed schema, subsequent phases cannot function correctly.
@@ -338,8 +381,8 @@ async function executeStandardPhase(
     }
 
     try {
-      await task.run();
-      results.push({ domain: task.domain, success: true });
+      const warnings = await task.run();
+      results.push({ domain: task.domain, success: true, warnings });
     } catch (error) {
       const err = toError(error);
       results.push({
