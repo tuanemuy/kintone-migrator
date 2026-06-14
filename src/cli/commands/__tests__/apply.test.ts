@@ -63,7 +63,7 @@ vi.mock("@/core/application/container/applyAllCli", () => ({
   createCliApplyAllContainers: vi.fn((config: { appName?: string }) => ({
     containers: {
       // Tag containers with the app name so per-app applyAllForApp calls can be
-      // identified by argument and their order asserted (AC-3).
+      // identified by argument and their order asserted.
       appName: config?.appName,
       seed: { seedStorage: { get: mockSeedStorageGet } },
     },
@@ -107,7 +107,7 @@ vi.mock("@/core/application/applyAll/applyAllForApp", () => ({
     phases: [
       {
         phase: "Schema",
-        results: [{ domain: "schema", success: true }],
+        results: [{ domain: "schema", success: true, warnings: [] }],
       },
     ],
     deployed: true,
@@ -905,7 +905,7 @@ describe("apply command", () => {
       phases: [
         {
           phase: "Schema",
-          results: [{ domain: "schema", success: true }],
+          results: [{ domain: "schema", success: true, warnings: [] }],
         },
       ],
       deployed: false,
@@ -935,9 +935,9 @@ describe("apply command", () => {
       },
     );
 
-    // Mirror of the AC-4(b) failure passthrough: with the default success
-    // output (no failures, no deployError) the executor must return { ok: true }
-    // so fail-fast is not erroneously triggered in the apply context (AC-3).
+    // With the default success output (no failures, no deployError) the
+    // executor must return { ok: true } so fail-fast is not erroneously
+    // triggered in the apply context.
     let capturedOutcome: unknown;
     vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
       async (_plan, executor) => {
@@ -969,10 +969,10 @@ describe("apply command", () => {
       },
     );
 
-    // #179 graceful skip × multi crossing: an app whose config files are all
-    // absent produces not-found-only output (skipped:"not-found", no genuine
-    // failure). runApplyAll's hasFailures excludes not-found, so the executor
-    // must return { ok: true } and not induce fail-fast for the rest (AC-5).
+    // An app whose config files are all absent produces not-found-only output
+    // (skipped:"not-found", no genuine failure). runApplyAll's hasFailures
+    // excludes not-found, so the executor must return { ok: true } and not
+    // induce fail-fast for the rest.
     let capturedOutcome: unknown;
     vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce(
       async (_plan, executor) => {
@@ -1299,7 +1299,7 @@ describe("apply command", () => {
         },
         {
           phase: "Seed Data",
-          results: [{ domain: "seed", success: true }],
+          results: [{ domain: "seed", success: true, warnings: [] }],
         },
       ],
       deployed: false,
@@ -1330,7 +1330,7 @@ describe("apply command", () => {
         },
         {
           phase: "Views & Customization",
-          results: [{ domain: "customize", success: true }],
+          results: [{ domain: "customize", success: true, warnings: [] }],
         },
       ],
       deployed: false,

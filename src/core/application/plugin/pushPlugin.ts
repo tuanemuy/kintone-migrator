@@ -1,4 +1,4 @@
-import type { PluginConfig } from "@/core/domain/plugin/entity";
+import type { PluginConfig, PluginsConfig } from "@/core/domain/plugin/entity";
 import { computePluginThreeWayMerge } from "@/core/domain/plugin/services/pluginMerge";
 import type { PluginServiceArgs } from "../container/plugin";
 import { ValidationError, ValidationErrorCode } from "../error";
@@ -18,9 +18,13 @@ export type SkippedPluginOp = Readonly<{
    * `delete`: the plugin was removed locally but still exists on the remote
    * (`addPlugins` cannot remove). `modify`: name/enabled changed locally but the
    * plugin already exists on the remote (`addPlugins` cannot update; `enabled`
-   * is not controllable via the REST API at all).
+   * is not controllable via the REST API at all). `add-disabled`: the plugin is
+   * `enabled: false` locally and missing on the remote — `addPlugins` would
+   * force-enable it (it cannot add in a disabled state), so it is left
+   * uninstalled and the disabled state must be set manually in the kintone
+   * admin UI.
    */
-  reason: "delete" | "modify";
+  reason: "delete" | "modify" | "add-disabled";
 }>;
 
 export type PushPluginOutput = {
@@ -36,18 +40,67 @@ export type PushPluginOutput = {
 const PLUGIN_PULL_COMMAND = "plugin pull";
 
 /**
+ * Splits the local→remote diff into the ids that can actually be added
+ * (`enabled: true`, missing on the remote) and the inexpressible ops surfaced
+ * as `skipped`: `add-disabled` (`enabled: false`, missing), `delete` (remote
+ * plugin absent locally), and `modify` (existing plugin with name/enabled
+ * change).
+ */
+function partitionPushOps(
+  local: PluginsConfig,
+  remoteById: ReadonlyMap<string, PluginConfig>,
+  localById: ReadonlyMap<string, PluginConfig>,
+  remotePlugins: readonly PluginConfig[],
+): { idsToAdd: string[]; skipped: SkippedPluginOp[] } {
+  const idsToAdd: string[] = [];
+  const skipped: SkippedPluginOp[] = [];
+
+  for (const localPlugin of local.plugins) {
+    const remotePlugin = remoteById.get(localPlugin.id);
+    if (remotePlugin === undefined) {
+      // Add-only: `enabled: false` cannot be added in a disabled state
+      // (addPlugins would force-enable it), so skip it as `add-disabled`.
+      if (localPlugin.enabled) {
+        idsToAdd.push(localPlugin.id);
+      } else {
+        skipped.push({ pluginId: localPlugin.id, reason: "add-disabled" });
+      }
+    } else if (
+      remotePlugin.name !== localPlugin.name ||
+      remotePlugin.enabled !== localPlugin.enabled
+    ) {
+      // An existing plugin whose name/enabled differs cannot be modified
+      // (no update API; `enabled` is REST-uncontrollable).
+      skipped.push({ pluginId: localPlugin.id, reason: "modify" });
+    }
+  }
+
+  // A remote plugin absent locally cannot be removed (no remove API).
+  for (const remotePlugin of remotePlugins) {
+    if (!localById.has(remotePlugin.id)) {
+      skipped.push({ pluginId: remotePlugin.id, reason: "delete" });
+    }
+  }
+
+  return { idsToAdd, skipped };
+}
+
+/**
  * Applies the local plugin config to the remote with drift detection.
  *
  * The plugin API is **add-only**: `addPlugins` can only install a plugin id
  * that is not yet on the app. It has no remove API and cannot control the
- * `enabled` flag (MEMORY: plugin-enabled-no-disable-api). So this push:
+ * `enabled` flag. So this push:
  *
  * - Loads base/local/remote and rejects on drift (remoteOnly / conflict) unless
  *   `--force`.
- * - Adds only the plugin ids that are present locally but missing on the remote.
- * - Surfaces every requested-but-inexpressible operation (a local deletion of a
- *   remote plugin, or a name/enabled change to an existing plugin) as a
- *   `skipped` warning instead of applying it — the only inexpressible case.
+ * - Adds only the `enabled: true` plugin ids that are present locally but
+ *   missing on the remote.
+ * - Surfaces every requested-but-inexpressible operation as a `skipped` warning
+ *   instead of applying it: a local deletion of a remote plugin (`delete`), a
+ *   name/enabled change to an existing plugin (`modify`), and an `enabled: false`
+ *   plugin missing on the remote (`add-disabled`, since `addPlugins` would
+ *   force-enable it).
  *
  * The expected revision (the observed remote revision) is sent to `addPlugins`
  * as a TOCTOU guard on a normal push; `--force` / first run omit it. When there is nothing to add, the remote is not touched but
@@ -90,30 +143,12 @@ export async function pushPlugin({
     local.plugins.map((p) => [p.id, p]),
   );
 
-  // Add-only: install plugin ids present locally but missing on the remote.
-  const idsToAdd = local.plugins
-    .filter((p) => !remoteById.has(p.id))
-    .map((p) => p.id);
-
-  // Inexpressible operations: a remote plugin absent locally cannot be
-  // removed, and an existing plugin whose name/enabled differs cannot be
-  // modified (no update API; `enabled` is REST-uncontrollable).
-  const skipped: SkippedPluginOp[] = [];
-  for (const remotePlugin of remote.config.plugins) {
-    if (!localById.has(remotePlugin.id)) {
-      skipped.push({ pluginId: remotePlugin.id, reason: "delete" });
-    }
-  }
-  for (const localPlugin of local.plugins) {
-    const remotePlugin = remoteById.get(localPlugin.id);
-    if (
-      remotePlugin !== undefined &&
-      (remotePlugin.name !== localPlugin.name ||
-        remotePlugin.enabled !== localPlugin.enabled)
-    ) {
-      skipped.push({ pluginId: localPlugin.id, reason: "modify" });
-    }
-  }
+  const { idsToAdd, skipped } = partitionPushOps(
+    local,
+    remoteById,
+    localById,
+    remote.config.plugins,
+  );
 
   let newRevision = remote.revision;
   if (idsToAdd.length > 0) {

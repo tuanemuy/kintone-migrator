@@ -32,38 +32,38 @@ function makeSuccessOutput(): ApplyAllForAppOutput {
     phases: [
       {
         phase: "Schema",
-        results: [{ domain: "schema", success: true }],
+        results: [{ domain: "schema", success: true, warnings: [] }],
       },
       {
         phase: "Views & Customization",
         results: [
-          { domain: "customize", success: true },
-          { domain: "view", success: true },
+          { domain: "customize", success: true, warnings: [] },
+          { domain: "view", success: true, warnings: [] },
         ],
       },
       {
         phase: "Permissions",
         results: [
-          { domain: "field-acl", success: true },
-          { domain: "app-acl", success: true },
-          { domain: "record-acl", success: true },
+          { domain: "field-acl", success: true, warnings: [] },
+          { domain: "app-acl", success: true, warnings: [] },
+          { domain: "record-acl", success: true, warnings: [] },
         ],
       },
       {
         phase: "Settings & Others",
         results: [
-          { domain: "settings", success: true },
-          { domain: "notification", success: true },
-          { domain: "report", success: true },
-          { domain: "action", success: true },
-          { domain: "process", success: true },
-          { domain: "admin-notes", success: true },
-          { domain: "plugin", success: true },
+          { domain: "settings", success: true, warnings: [] },
+          { domain: "notification", success: true, warnings: [] },
+          { domain: "report", success: true, warnings: [] },
+          { domain: "action", success: true, warnings: [] },
+          { domain: "process", success: true, warnings: [] },
+          { domain: "admin-notes", success: true, warnings: [] },
+          { domain: "plugin", success: true, warnings: [] },
         ],
       },
       {
         phase: "Seed Data",
-        results: [{ domain: "seed", success: true }],
+        results: [{ domain: "seed", success: true, warnings: [] }],
       },
     ],
     deployed: true,
@@ -156,7 +156,7 @@ describe("printApplyAllResults", () => {
       phases: [
         {
           phase: "Schema",
-          results: [{ domain: "schema", success: true }],
+          results: [{ domain: "schema", success: true, warnings: [] }],
         },
         {
           phase: "Views & Customization",
@@ -167,7 +167,7 @@ describe("printApplyAllResults", () => {
               error: new Error("API error"),
               skipped: false,
             },
-            { domain: "view", success: true },
+            { domain: "view", success: true, warnings: [] },
           ],
         },
       ],
@@ -198,12 +198,12 @@ describe("printApplyAllResults", () => {
       phases: [
         {
           phase: "Schema",
-          results: [{ domain: "schema", success: true }],
+          results: [{ domain: "schema", success: true, warnings: [] }],
         },
         {
           phase: "Views & Customization",
           results: [
-            { domain: "customize", success: true },
+            { domain: "customize", success: true, warnings: [] },
             {
               domain: "view",
               success: false,
@@ -398,7 +398,7 @@ describe("printApplyAllResults", () => {
       phases: [
         {
           phase: "Schema",
-          results: [{ domain: "schema", success: true }],
+          results: [{ domain: "schema", success: true, warnings: [] }],
         },
       ],
       deployed: false,
@@ -449,6 +449,84 @@ describe("printApplyAllResults", () => {
     const messageCalls = vi.mocked(p.log.message).mock.calls;
     const summaryLine = messageCalls[messageCalls.length - 1][0] as string;
     expect(summaryLine).toContain("No domains processed");
+  });
+
+  it("plugin の warning が当該ドメイン行直後に p.log.warn で表示され、success 集計を変えないこと (AC-7/AC-8)", () => {
+    const output: ApplyAllForAppOutput = {
+      phases: [
+        {
+          phase: "Settings & Others",
+          results: [
+            {
+              domain: "plugin",
+              success: true,
+              warnings: [
+                {
+                  domain: "plugin",
+                  message:
+                    "enabled: false is not supported by the kintone plugin API (add-only; cannot disable); handle in the kintone admin UI: p1",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      deployed: true,
+    };
+
+    printApplyAllResults(output);
+
+    // The warning is surfaced via p.log.warn.
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("kintone admin UI: p1"),
+    );
+
+    // The warning does not count as a failure or skip in the summary.
+    const messageLines = vi
+      .mocked(p.log.message)
+      .mock.calls.map((call) => call[0] as string);
+    const summaryLine = messageLines[messageLines.length - 1];
+    expect(summaryLine).toContain("1 succeeded");
+    expect(summaryLine).not.toContain("failed");
+    expect(summaryLine).not.toContain("skipped");
+  });
+
+  it("マルチアプリでも printPhaseResult が app 非依存なので各アプリの warning がそのブロック内に表示されること (coverage S-001)", () => {
+    // printApplyAllResults handles one app's output. In multi-app apply the
+    // caller invokes it once per app, so each app's plugin warning appears in
+    // its own block. Verify a per-app output renders its own warning.
+    const appOutput = (pluginId: string): ApplyAllForAppOutput => ({
+      phases: [
+        {
+          phase: "Settings & Others",
+          results: [
+            {
+              domain: "plugin",
+              success: true,
+              warnings: [
+                { domain: "plugin", message: `handle manually: ${pluginId}` },
+              ],
+            },
+          ],
+        },
+      ],
+      deployed: true,
+    });
+
+    printApplyAllResults(appOutput("app1-plugin"));
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("app1-plugin"),
+    );
+
+    vi.clearAllMocks();
+
+    printApplyAllResults(appOutput("app2-plugin"));
+    expect(p.log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("app2-plugin"),
+    );
+    expect(p.log.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining("app1-plugin"),
+    );
   });
 
   it("空の phases（skipped === 0）のときは中立文言には入らず 'Not deployed due to errors.' が出ること", () => {

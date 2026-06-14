@@ -758,6 +758,132 @@ describe("applyAllForApp", () => {
     }
   });
 
+  it("plugin の skipped が success の warnings に載り、他ドメインは空配列であること (AC-7/AC-8)", async () => {
+    setupAllMocksToSucceed();
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [{ pluginId: "p1", reason: "disabled" }],
+    });
+
+    const output = await applyAllForApp(baseArgs);
+
+    const allResults = output.phases.flatMap((ph) => ph.results);
+    const pluginResult = allResults.find((r) => r.domain === "plugin");
+    expect(pluginResult?.success).toBe(true);
+    if (pluginResult?.success) {
+      expect(pluginResult.warnings).toHaveLength(1);
+      expect(pluginResult.warnings[0].domain).toBe("plugin");
+      expect(pluginResult.warnings[0].message).toContain("p1");
+      expect(pluginResult.warnings[0].message).toContain("kintone admin UI");
+    }
+
+    // Every other successful domain returns an empty warnings array.
+    for (const result of allResults) {
+      if (result.success && result.domain !== "plugin") {
+        expect(result.warnings).toEqual([]);
+      }
+    }
+
+    // Warnings are not errors: aggregation and deploy are unaffected.
+    expect(allResults.every((r) => r.success)).toBe(true);
+    expect(output.deployed).toBe(true);
+  });
+
+  it("同一フェーズで warning と failed が混在しても独立して集計され、warning が success/fail-fast を汚さないこと (arch-risk S-004)", async () => {
+    setupAllMocksToSucceed();
+    // plugin (Settings & Others) returns a warning; notification in the same
+    // phase fails with a non-fatal error.
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [{ pluginId: "p1", reason: "disabled" }],
+    });
+    vi.mocked(applyNotification).mockRejectedValue(
+      new SystemError(SystemErrorCode.ExternalApiError, "notification failed"),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    const allResults = output.phases.flatMap((ph) => ph.results);
+    const pluginResult = allResults.find((r) => r.domain === "plugin");
+    const notificationResult = allResults.find(
+      (r) => r.domain === "notification",
+    );
+
+    // plugin still succeeds with its warning despite the sibling failure.
+    expect(pluginResult?.success).toBe(true);
+    if (pluginResult?.success) {
+      expect(pluginResult.warnings).toHaveLength(1);
+    }
+
+    // notification failed (non-fatal, not a skip).
+    expect(notificationResult?.success).toBe(false);
+    if (notificationResult && !notificationResult.success) {
+      expect(notificationResult.skipped).toBe(false);
+    }
+
+    // The non-fatal failure does not abort: other Settings & Others domains run.
+    const settingsPhase = output.phases.find(
+      (ph) => ph.phase === "Settings & Others",
+    );
+    expect(settingsPhase?.results.some((r) => r.domain === "seed")).toBe(false);
+    expect(
+      output.phases.find((ph) => ph.phase === "Seed Data")?.results[0].success,
+    ).toBe(true);
+  });
+
+  it("plugin の success+warning が、別フェーズの致命的失敗（実失敗 skipped:false）と同一出力に共存すること (arch-risk S-004)", async () => {
+    setupAllMocksToSucceed();
+    // plugin (Settings & Others phase) succeeds with a warning. seed (the final
+    // Seed Data phase) then fails fatally. This pins that a warning and a fatal
+    // failure coexist in the same output. The fatal failure must actually be
+    // recorded — otherwise asserting "plugin keeps its warning" is a tautology,
+    // since phase results are append-only and a later failure cannot retroact.
+    // Note: seed is the last phase, so this exercises warning/failure coexistence,
+    // not the abort-skip propagation path (no subsequent phase is skipped here).
+    vi.mocked(applyPlugin).mockResolvedValue({
+      addedPluginIds: [],
+      skipped: [{ pluginId: "p1", reason: "disabled" }],
+    });
+    vi.mocked(upsertSeed).mockRejectedValue(
+      new UnauthenticatedError(
+        UnauthenticatedErrorCode.InvalidCredentials,
+        "Invalid credentials",
+      ),
+    );
+
+    const output = await applyAllForApp(baseArgs);
+
+    const allResults = output.phases.flatMap((ph) => ph.results);
+
+    // The abort actually happened: seed ran and failed (skipped:false), not a
+    // graceful skip. Without this assertion the test below is meaningless.
+    const seedResult = allResults.find((r) => r.domain === "seed");
+    expect(seedResult?.success).toBe(false);
+    if (seedResult && !seedResult.success) {
+      expect(seedResult.skipped).toBe(false);
+    }
+
+    // plugin's success+warnings survive in the same output as the seed failure.
+    const pluginResult = allResults.find((r) => r.domain === "plugin");
+    expect(pluginResult?.success).toBe(true);
+    if (pluginResult?.success) {
+      expect(pluginResult.warnings).toHaveLength(1);
+      expect(pluginResult.warnings[0].domain).toBe("plugin");
+    }
+
+    // Both the warning and the failure coexist in the final output.
+    expect(
+      output.phases
+        .flatMap((ph) => ph.results)
+        .some((r) => r.success && r.warnings.length > 0),
+    ).toBe(true);
+    expect(
+      output.phases
+        .flatMap((ph) => ph.results)
+        .some((r) => !r.success && r.skipped === false),
+    ).toBe(true);
+  });
+
   it("標準フェーズで probe が exists:true でも run が内容エラーで失敗する場合は not-found skip ではなく skipped:false の failure になること", async () => {
     setupAllMocksToSucceed();
     // The config file exists (probe exists:true), but the usecase fails
