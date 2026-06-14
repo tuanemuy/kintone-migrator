@@ -19,7 +19,7 @@ describe("applyPlugin", () => {
       const container = getContainer();
       container.pluginStorage.setContent(VALID_CONFIG);
 
-      await applyPlugin({ container });
+      const output = await applyPlugin({ container });
 
       expect(container.pluginConfigurator.callLog).toEqual([
         "getPlugins",
@@ -29,6 +29,11 @@ describe("applyPlugin", () => {
         "djmhffjlbkikgmepoociabnpfcfjhdge",
         "abcdefghijklmnopqrstuvwxyz012345",
       ]);
+      expect(output.addedPluginIds).toEqual([
+        "djmhffjlbkikgmepoociabnpfcfjhdge",
+        "abcdefghijklmnopqrstuvwxyz012345",
+      ]);
+      expect(output.skipped).toEqual([]);
     });
 
     it("should not call addPlugins when all plugins already exist", async () => {
@@ -47,10 +52,12 @@ describe("applyPlugin", () => {
         },
       ]);
 
-      await applyPlugin({ container });
+      const output = await applyPlugin({ container });
 
       expect(container.pluginConfigurator.callLog).toEqual(["getPlugins"]);
       expect(container.pluginConfigurator.lastAddPluginsParams).toBeNull();
+      expect(output.addedPluginIds).toEqual([]);
+      expect(output.skipped).toEqual([]);
     });
 
     it("should only add plugins that are missing", async () => {
@@ -64,7 +71,7 @@ describe("applyPlugin", () => {
         },
       ]);
 
-      await applyPlugin({ container });
+      const output = await applyPlugin({ container });
 
       expect(container.pluginConfigurator.callLog).toEqual([
         "getPlugins",
@@ -73,6 +80,141 @@ describe("applyPlugin", () => {
       expect(container.pluginConfigurator.lastAddPluginsParams?.ids).toEqual([
         "abcdefghijklmnopqrstuvwxyz012345",
       ]);
+      expect(output.addedPluginIds).toEqual([
+        "abcdefghijklmnopqrstuvwxyz012345",
+      ]);
+      expect(output.skipped).toEqual([]);
+    });
+  });
+
+  describe("enabled: false handling", () => {
+    it("should not add an enabled:false plugin and surface it as skipped (disabled)", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(`
+plugins:
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: 条件分岐プラグイン
+    enabled: true
+  - id: abcdefghijklmnopqrstuvwxyz012345
+    name: ルックアッププラグイン
+    enabled: false
+`);
+
+      const output = await applyPlugin({ container });
+
+      expect(container.pluginConfigurator.lastAddPluginsParams?.ids).toEqual([
+        "djmhffjlbkikgmepoociabnpfcfjhdge",
+      ]);
+      expect(output.addedPluginIds).toEqual([
+        "djmhffjlbkikgmepoociabnpfcfjhdge",
+      ]);
+      expect(output.skipped).toEqual([
+        {
+          pluginId: "abcdefghijklmnopqrstuvwxyz012345",
+          reason: "disabled",
+        },
+      ]);
+    });
+
+    it("should not call addPlugins when only enabled:false plugins exist but still report them as skipped", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(`
+plugins:
+  - id: abcdefghijklmnopqrstuvwxyz012345
+    name: ルックアッププラグイン
+    enabled: false
+`);
+
+      const output = await applyPlugin({ container });
+
+      expect(container.pluginConfigurator.callLog).toEqual(["getPlugins"]);
+      expect(container.pluginConfigurator.lastAddPluginsParams).toBeNull();
+      expect(output.addedPluginIds).toEqual([]);
+      expect(output.skipped).toEqual([
+        {
+          pluginId: "abcdefghijklmnopqrstuvwxyz012345",
+          reason: "disabled",
+        },
+      ]);
+    });
+
+    it("should NOT warn about an already-added plugin whose remote is already enabled:false (avoid noise)", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(`
+plugins:
+  - id: abcdefghijklmnopqrstuvwxyz012345
+    name: ルックアッププラグイン
+    enabled: false
+`);
+      container.pluginConfigurator.setPlugins([
+        {
+          id: "abcdefghijklmnopqrstuvwxyz012345",
+          name: "ルックアッププラグイン",
+          enabled: false,
+        },
+      ]);
+
+      const output = await applyPlugin({ container });
+
+      expect(container.pluginConfigurator.callLog).toEqual(["getPlugins"]);
+      expect(container.pluginConfigurator.lastAddPluginsParams).toBeNull();
+      expect(output.addedPluginIds).toEqual([]);
+      expect(output.skipped).toEqual([]);
+    });
+
+    it("should warn about an already-added plugin whose remote is enabled:true but local is enabled:false (disable intent, API-unsupported)", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(`
+plugins:
+  - id: abcdefghijklmnopqrstuvwxyz012345
+    name: ルックアッププラグイン
+    enabled: false
+`);
+      container.pluginConfigurator.setPlugins([
+        {
+          id: "abcdefghijklmnopqrstuvwxyz012345",
+          name: "ルックアッププラグイン",
+          enabled: true,
+        },
+      ]);
+
+      const output = await applyPlugin({ container });
+
+      expect(container.pluginConfigurator.callLog).toEqual(["getPlugins"]);
+      expect(container.pluginConfigurator.lastAddPluginsParams).toBeNull();
+      expect(output.addedPluginIds).toEqual([]);
+      expect(output.skipped).toEqual([
+        {
+          pluginId: "abcdefghijklmnopqrstuvwxyz012345",
+          reason: "disabled",
+        },
+      ]);
+    });
+
+    it("should keep remote-only plugins (merge; never deletes them)", async () => {
+      const container = getContainer();
+      container.pluginStorage.setContent(`
+plugins:
+  - id: djmhffjlbkikgmepoociabnpfcfjhdge
+    name: 条件分岐プラグイン
+`);
+      container.pluginConfigurator.setPlugins([
+        {
+          id: "remoteonlyplugin0000000000000000",
+          name: "リモート専用プラグイン",
+          enabled: true,
+        },
+      ]);
+
+      const output = await applyPlugin({ container });
+
+      expect(container.pluginConfigurator.lastAddPluginsParams?.ids).toEqual([
+        "djmhffjlbkikgmepoociabnpfcfjhdge",
+      ]);
+      expect(output.addedPluginIds).toEqual([
+        "djmhffjlbkikgmepoociabnpfcfjhdge",
+      ]);
+      expect(output.skipped).toEqual([]);
     });
   });
 

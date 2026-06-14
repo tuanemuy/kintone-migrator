@@ -16,16 +16,32 @@
 2. ファイルが存在しない（`exists` が `false`）場合、`ValidationError` をスローする
 3. `PluginConfigParser.parse()` でプラグイン設定をパースする
 4. `PluginConfigurator.getPlugins()` で現在のプラグイン一覧とrevisionを取得する
-5. 設定ファイルのプラグインを `enabled` に応じて振り分ける
+5. 設定ファイルのプラグインを `enabled` とリモートの現状（`get-app-plugins` が返す `id`/`enabled`）に応じて振り分ける
    - `enabled: true` かつリモートに未追加のプラグイン → 追加対象（`add-app-plugins`）
    - `enabled: true` かつリモートに追加済みのプラグイン → 何もしない（冪等）
-   - `enabled: false` のプラグイン → **スキップし警告を出力する**（無効化は API 非対応のため、kintone の管理画面で手動対応が必要である旨を案内する。エラーにはしない）
+   - `enabled: false` かつリモートに未追加のプラグイン → **スキップし警告対象にする**（追加すると有効化されてしまうため追加しない。無効化は API 非対応で kintone の管理画面で手動対応が必要である旨を案内する）
+   - `enabled: false` かつリモートに追加済み かつ リモートが `enabled: true`（無効化したいが API 非対応）のプラグイン → **スキップし警告対象にする**（無効化は反映できず手動対応が必要）
+   - `enabled: false` かつリモートに追加済み かつ リモートが `enabled: false`（既に意図どおり）のプラグイン → 何もしない（過剰警告を避けるため警告対象にしない）
+   - いずれの警告もエラーにはせず apply は継続する
 6. 追加対象が1件以上ある場合、`PluginConfigurator.addPlugins()` でまとめて追加する（取得した `revision` を引き渡す）
 7. 設定ファイルに存在しないリモートのプラグインは保持し、削除しない（マージ方式）
 
 ### 出力DTO
 
-なし（`void`）
+```typescript
+type SkippedPlugin = {
+  readonly pluginId: string;
+  // disabled: enabled:false だが kintone プラグイン API では表現できない
+  // （無効状態で追加する手段も既存プラグインを無効化する手段も無い）。
+  // kintone 管理画面での手動対応が必要。
+  readonly reason: "disabled";
+};
+
+type ApplyPluginOutput = {
+  readonly addedPluginIds: readonly string[];
+  readonly skipped: readonly SkippedPlugin[];
+};
+```
 
 ### テストケース
 
@@ -35,7 +51,9 @@
 - `enabled: true` で既にリモートに追加済みのプラグインは追加対象に含まれない（冪等）
 - 追加対象が0件の場合、`addPlugins()` は呼ばれない
 - 設定ファイルに存在しないリモートのプラグインは保持され、削除されない
-- `enabled: false` のプラグインはスキップされ、無効化は手動対応が必要である旨の警告が出力される（apply 全体はエラーにならず継続する）
+- `enabled: false` かつリモート未追加のプラグインは追加されず、`skipped`（`reason: "disabled"`）として警告対象になる（apply 全体はエラーにならず継続する）
+- `enabled: false` かつリモート追加済み かつ リモートが `enabled: true`（無効化意図・API 非対応）のプラグインは `skipped` として警告対象になる
+- `enabled: false` かつリモート追加済み かつ リモートが `enabled: false`（既に意図どおり）のプラグインは過剰警告を避けるため `skipped` に含まれない
 - capture で取り込んだ `enabled: false` のプラグインを apply しても、その無効化状態は再現されない（ラウンドトリップの非対称。API 制約として許容する）
 
 #### 異常系
@@ -191,7 +209,7 @@ type SavePluginInput = {
 - `PluginConfigurator` → kintone REST APIアダプター（`get-app-plugins` / `add-app-plugins`）
 - 設定ファイルパス → `--plugin-file` / `PLUGIN_FILE_PATH` から取得（デフォルト: `plugins.yaml`、マルチアプリ: `plugin/<appName>.yaml`）
 - 適用前に `detectPluginDiff` で差分プレビューを表示し、差分がなければ何もしない。差分がある場合は確認プロンプト（`--yes` でスキップ可）の後に適用する
-- apply はマージ（追加のみ）。`enabled: false` のプラグインはスキップされ、無効化が手動対応である旨の警告が表示される
+- apply はマージ（追加のみ）。`enabled: false` のプラグインは、リモート未追加（追加すると有効化されるため見送り）またはリモート追加済み×リモート `enabled: true`（無効化意図・API 非対応）の場合に警告対象としてスキップされ、kintone 管理画面での手動対応が必要である旨が表示される。リモートが既に `enabled: false`（意図どおり）の場合は過剰警告を避けるため警告しない
 - 適用後、`confirmAndDeploy` で運用環境への反映（デプロイ）を確認する
 
 ### plugin captureコマンド
