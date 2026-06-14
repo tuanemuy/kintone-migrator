@@ -5,6 +5,8 @@ import {
   ConflictErrorCode,
   UnauthenticatedError,
   UnauthenticatedErrorCode,
+  ValidationError,
+  ValidationErrorCode,
 } from "@/core/application/error";
 import {
   type PushAllForAppInput,
@@ -456,6 +458,46 @@ describe("pushAllForApp", () => {
     }
   });
 
+  it("push-all が生成する3種の warning 文言が plugin push 単体コマンドの文言と1文字単位で一致する（W-002 回帰防止）", async () => {
+    // Regression net for the intentionally-duplicated warning wording. Per #194
+    // ADR-002 (do not over-generalize) the strings are hardcoded independently
+    // in both pushAllForApp.ts and src/cli/commands/plugin/push.ts L43/48/53 —
+    // there is NO shared constant. These expected literals are kept in sync with
+    // commands/plugin/push.ts BY HAND (no shared-constant extraction per
+    // ADR-002). If either side changes, this test fails to flag the drift.
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [
+        { pluginId: "plugDel", reason: "delete" },
+        { pluginId: "plugMod", reason: "modify" },
+        { pluginId: "plugDis", reason: "add-disabled" },
+      ],
+    });
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    if (plugin?.success) {
+      // delete (matches commands/plugin/push.ts L43)
+      expect(plugin.warnings[0].message).toBe(
+        "Cannot remove plugins via the kintone API (add-only); left on the app: plugDel",
+      );
+      // modify (matches commands/plugin/push.ts L48)
+      expect(plugin.warnings[1].message).toBe(
+        "Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: plugMod",
+      );
+      // add-disabled (matches commands/plugin/push.ts L53)
+      expect(plugin.warnings[2].message).toBe(
+        "Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: plugDis",
+      );
+    } else {
+      throw new Error("plugin should have succeeded");
+    }
+  });
+
   it("schema phase の success 結果も warnings:[] を持つ（AC-3/AC-4）", async () => {
     mockAllPushesSucceed();
 
@@ -466,6 +508,92 @@ describe("pushAllForApp", () => {
     expect(schema.success).toBe(true);
     if (schema.success) {
       expect(schema.warnings).toEqual([]);
+    }
+  });
+
+  it("plugin の success+warning と、別ドメインの実失敗（skipped:false）が同一出力に共存する（W-001 / apply S-004 相当）", async () => {
+    mockAllPushesSucceed();
+    // plugin (last domain of the Settings & Others phase) succeeds with a
+    // warning. notification (an earlier domain of the same phase) fails with a
+    // non-fatal error, which records a genuine `skipped:false` failure without
+    // aborting the rest. This pins that a warning-bearing success and a real
+    // failure coexist in the same run, and that the failure variant carries no
+    // `warnings` field (only the success variant does). A non-fatal failure is
+    // used because push-all has no post-Settings phase (apply's S-004 fails the
+    // later seed phase); the only way plugin can still run-and-warn alongside a
+    // recorded failure is a non-fatal failure that does not abort.
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [{ pluginId: "plugDis", reason: "add-disabled" }],
+    });
+    vi.mocked(pushNotification).mockRejectedValue(
+      new ValidationError(ValidationErrorCode.InvalidInput, "invalid"),
+    );
+
+    const output = await pushAllForApp(makeArgs());
+
+    const allResults = output.phases.flatMap((p) => p.results);
+
+    // plugin's success+warning survives in the same output as the failure.
+    const plugin = allResults.find((r) => r.domain === "plugin");
+    expect(plugin?.success).toBe(true);
+    if (plugin?.success) {
+      expect(plugin.warnings).toHaveLength(1);
+      expect(plugin.warnings[0].domain).toBe("plugin");
+    }
+
+    // A genuine failure was recorded (skipped:false), so the coexistence is
+    // real and not a tautology.
+    const notification = allResults.find((r) => r.domain === "notification");
+    expect(notification?.success).toBe(false);
+    if (notification && !notification.success) {
+      expect(notification.skipped).toBe(false);
+      // The failure variant has no `warnings` field at all — only success
+      // results carry warnings.
+      expect("warnings" in notification).toBe(false);
+    }
+
+    // Both the warning and the failure coexist in the final output.
+    expect(allResults.some((r) => r.success && r.warnings.length > 0)).toBe(
+      true,
+    );
+    expect(allResults.some((r) => !r.success && r.skipped === false)).toBe(
+      true,
+    );
+  });
+
+  it("plugin 自身が drift skip したとき success バリアントでないため warning を持たない（W-001 push 固有）", async () => {
+    mockAllPushesSucceed();
+    // plugin itself drifts: ConfigDrift → skipped:"drift" failure variant. The
+    // would-be add-only warnings are never reachable because the task did not
+    // succeed; the drift failure result carries no `warnings` field.
+    vi.mocked(pushPlugin).mockRejectedValue(
+      new ConflictError(ConflictErrorCode.ConfigDrift, "drift"),
+    );
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    expect(plugin).toMatchObject({ success: false, skipped: "drift" });
+    if (plugin && !plugin.success) {
+      expect("warnings" in plugin).toBe(false);
+    }
+  });
+
+  it("plugin が not-found skip したとき warning を持たない（W-001）", async () => {
+    mockAllPushesSucceed();
+
+    const output = await pushAllForApp(
+      makeArgs({ missing: new Set(["plugin"]) }),
+    );
+
+    const plugin = findPlugin(output);
+    expect(plugin).toMatchObject({ success: false, skipped: "not-found" });
+    expect(pushPlugin).not.toHaveBeenCalled();
+    if (plugin && !plugin.success) {
+      expect("warnings" in plugin).toBe(false);
     }
   });
 
