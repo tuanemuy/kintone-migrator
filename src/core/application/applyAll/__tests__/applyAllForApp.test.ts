@@ -831,12 +831,15 @@ describe("applyAllForApp", () => {
     ).toBe(true);
   });
 
-  it("plugin が success+warning として積まれた後に後続フェーズが致命エラーで失敗しても、最終出力に plugin の warning と当該失敗が共存すること (arch-risk S-004)", async () => {
+  it("plugin の success+warning が、別フェーズの致命的失敗（実失敗 skipped:false）と同一出力に共存すること (arch-risk S-004)", async () => {
     setupAllMocksToSucceed();
-    // plugin (Settings & Others phase) succeeds with a warning. seed (the later
-    // Seed Data phase) then fails fatally. The fatal failure must actually be
+    // plugin (Settings & Others phase) succeeds with a warning. seed (the final
+    // Seed Data phase) then fails fatally. This pins that a warning and a fatal
+    // failure coexist in the same output. The fatal failure must actually be
     // recorded — otherwise asserting "plugin keeps its warning" is a tautology,
     // since phase results are append-only and a later failure cannot retroact.
+    // Note: seed is the last phase, so this exercises warning/failure coexistence,
+    // not the abort-skip propagation path (no subsequent phase is skipped here).
     vi.mocked(applyPlugin).mockResolvedValue({
       addedPluginIds: [],
       skipped: [{ pluginId: "p1", reason: "disabled" }],
