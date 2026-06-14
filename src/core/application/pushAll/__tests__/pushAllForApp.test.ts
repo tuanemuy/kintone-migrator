@@ -5,6 +5,8 @@ import {
   ConflictErrorCode,
   UnauthenticatedError,
   UnauthenticatedErrorCode,
+  ValidationError,
+  ValidationErrorCode,
 } from "@/core/application/error";
 import {
   type PushAllForAppInput,
@@ -205,6 +207,11 @@ describe("pushAllForApp", () => {
     expect(allResults).toHaveLength(13);
     for (const r of allResults) {
       expect(r.success).toBe(true);
+      // Unified run signature: every success result carries `warnings`,
+      // empty when the task emitted none.
+      if (r.success) {
+        expect(r.warnings).toEqual([]);
+      }
     }
 
     // Schema deploy happens after the schema task, plus a single deploy after
@@ -326,5 +333,286 @@ describe("pushAllForApp", () => {
     );
 
     expect(sync.savedRevision).toBeUndefined();
+  });
+
+  function findPlugin(output: Awaited<ReturnType<typeof pushAllForApp>>) {
+    return output.phases
+      .flatMap((p) => p.results)
+      .find((r) => r.domain === "plugin");
+  }
+
+  it("plugin の add-disabled スキップが plugin success 結果の warnings に載る", async () => {
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [
+        { pluginId: "plugA", reason: "add-disabled" },
+        { pluginId: "plugB", reason: "add-disabled" },
+      ],
+    });
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    expect(plugin?.success).toBe(true);
+    if (plugin?.success) {
+      expect(plugin.warnings).toEqual([
+        {
+          domain: "plugin",
+          message:
+            "Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: plugA, plugB",
+        },
+      ]);
+    }
+  });
+
+  it("plugin の delete スキップが warnings に載る", async () => {
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [{ pluginId: "plugDel", reason: "delete" }],
+    });
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    if (plugin?.success) {
+      expect(plugin.warnings).toEqual([
+        {
+          domain: "plugin",
+          message:
+            "Cannot remove plugins via the kintone API (add-only); left on the app: plugDel",
+        },
+      ]);
+    } else {
+      throw new Error("plugin should have succeeded");
+    }
+  });
+
+  it("plugin の modify スキップが warnings に載る", async () => {
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [{ pluginId: "plugMod", reason: "modify" }],
+    });
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    if (plugin?.success) {
+      expect(plugin.warnings).toEqual([
+        {
+          domain: "plugin",
+          message:
+            "Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: plugMod",
+        },
+      ]);
+    } else {
+      throw new Error("plugin should have succeeded");
+    }
+  });
+
+  it("plugin の skipped が delete/modify/add-disabled 混在のとき3種すべての warning を順に載せる", async () => {
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [
+        { pluginId: "plugDel", reason: "delete" },
+        { pluginId: "plugMod", reason: "modify" },
+        { pluginId: "plugDis", reason: "add-disabled" },
+      ],
+    });
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    if (plugin?.success) {
+      expect(plugin.warnings.map((w) => w.message)).toEqual([
+        "Cannot remove plugins via the kintone API (add-only); left on the app: plugDel",
+        "Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: plugMod",
+        "Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: plugDis",
+      ]);
+    } else {
+      throw new Error("plugin should have succeeded");
+    }
+  });
+
+  it("plugin の skipped が空のとき warnings は空", async () => {
+    mockAllPushesSucceed();
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    if (plugin?.success) {
+      expect(plugin.warnings).toEqual([]);
+    } else {
+      throw new Error("plugin should have succeeded");
+    }
+  });
+
+  it("push-all が生成する3種の warning 文言が plugin push 単体コマンドの文言と1文字単位で一致する", async () => {
+    // The warning wording is intentionally duplicated (not extracted into a
+    // shared constant) per the do-not-over-generalize decision, so these literals
+    // are kept in sync with src/cli/commands/plugin/push.ts by hand. This test
+    // fails if either side drifts.
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [
+        { pluginId: "plugDel", reason: "delete" },
+        { pluginId: "plugMod", reason: "modify" },
+        { pluginId: "plugDis", reason: "add-disabled" },
+      ],
+    });
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    if (plugin?.success) {
+      expect(plugin.warnings[0].message).toBe(
+        "Cannot remove plugins via the kintone API (add-only); left on the app: plugDel",
+      );
+      expect(plugin.warnings[1].message).toBe(
+        "Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: plugMod",
+      );
+      expect(plugin.warnings[2].message).toBe(
+        "Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: plugDis",
+      );
+    } else {
+      throw new Error("plugin should have succeeded");
+    }
+  });
+
+  it("schema phase の success 結果も warnings:[] を持つ", async () => {
+    mockAllPushesSucceed();
+
+    const output = await pushAllForApp(makeArgs());
+
+    const schema = output.phases[0].results[0];
+    expect(schema.domain).toBe("schema");
+    expect(schema.success).toBe(true);
+    if (schema.success) {
+      expect(schema.warnings).toEqual([]);
+    }
+  });
+
+  it("plugin の success+warning と、別ドメインの実失敗（skipped:false）が同一出力に共存する", async () => {
+    mockAllPushesSucceed();
+    // plugin (last domain of the Settings & Others phase) succeeds with a
+    // warning. notification (an earlier domain of the same phase) fails with a
+    // non-fatal error, recording a genuine `skipped:false` failure without
+    // aborting the rest. A non-fatal failure is required: push-all has no
+    // post-plugin phase, so it is the only way plugin can still run-and-warn
+    // alongside a recorded failure.
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [{ pluginId: "plugDis", reason: "add-disabled" }],
+    });
+    vi.mocked(pushNotification).mockRejectedValue(
+      new ValidationError(ValidationErrorCode.InvalidInput, "invalid"),
+    );
+
+    const output = await pushAllForApp(makeArgs());
+
+    const allResults = output.phases.flatMap((p) => p.results);
+
+    // plugin's success+warning survives in the same output as the failure.
+    const plugin = allResults.find((r) => r.domain === "plugin");
+    expect(plugin?.success).toBe(true);
+    if (plugin?.success) {
+      expect(plugin.warnings).toHaveLength(1);
+      expect(plugin.warnings[0].domain).toBe("plugin");
+    }
+
+    // A genuine failure was recorded (skipped:false), so the coexistence is
+    // real and not a tautology.
+    const notification = allResults.find((r) => r.domain === "notification");
+    expect(notification?.success).toBe(false);
+    if (notification && !notification.success) {
+      expect(notification.skipped).toBe(false);
+      // The failure variant has no `warnings` field at all — only success
+      // results carry warnings.
+      expect("warnings" in notification).toBe(false);
+    }
+
+    // Both the warning and the failure coexist in the final output.
+    expect(allResults.some((r) => r.success && r.warnings.length > 0)).toBe(
+      true,
+    );
+    expect(allResults.some((r) => !r.success && r.skipped === false)).toBe(
+      true,
+    );
+  });
+
+  it("plugin 自身が drift skip したとき success バリアントでないため warning を持たない", async () => {
+    mockAllPushesSucceed();
+    // plugin itself drifts: ConfigDrift → skipped:"drift" failure variant. The
+    // would-be add-only warnings are never reachable because the task did not
+    // succeed; the drift failure result carries no `warnings` field.
+    vi.mocked(pushPlugin).mockRejectedValue(
+      new ConflictError(ConflictErrorCode.ConfigDrift, "drift"),
+    );
+
+    const output = await pushAllForApp(makeArgs());
+
+    const plugin = findPlugin(output);
+    expect(plugin).toMatchObject({ success: false, skipped: "drift" });
+    if (plugin && !plugin.success) {
+      expect("warnings" in plugin).toBe(false);
+    }
+  });
+
+  it("plugin が not-found skip したとき warning を持たない", async () => {
+    mockAllPushesSucceed();
+
+    const output = await pushAllForApp(
+      makeArgs({ missing: new Set(["plugin"]) }),
+    );
+
+    const plugin = findPlugin(output);
+    expect(plugin).toMatchObject({ success: false, skipped: "not-found" });
+    expect(pushPlugin).not.toHaveBeenCalled();
+    if (plugin && !plugin.success) {
+      expect("warnings" in plugin).toBe(false);
+    }
+  });
+
+  it("warning があっても全体は success 扱いで deploy され、base revision 再同期も走る", async () => {
+    mockAllPushesSucceed();
+    vi.mocked(pushPlugin).mockResolvedValue({
+      mode: "push",
+      revision: "2",
+      addedPluginIds: [],
+      skipped: [{ pluginId: "plugDis", reason: "add-disabled" }],
+    });
+    const sync: RevisionSync = {
+      remoteRevision: "9",
+      savedRevision: undefined,
+    };
+
+    const output = await pushAllForApp(makeArgs({ sync }));
+
+    // All 13 domains still succeed; warning does not flip success/skip/error.
+    const allResults = output.phases.flatMap((p) => p.results);
+    expect(allResults).toHaveLength(13);
+    for (const r of allResults) {
+      expect(r.success).toBe(true);
+    }
+    // anyPushed/needsDeploy verdicts look only at r.success, so deploy and the
+    // post-deploy base re-sync run exactly as in the warning-free case.
+    expect(output.deployed).toBe(true);
+    expect(sync.savedRevision).toBe("9");
   });
 });

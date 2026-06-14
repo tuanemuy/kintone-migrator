@@ -58,8 +58,23 @@ export type PushPhaseName =
   | "Permissions"
   | "Settings & Others";
 
+/**
+ * A non-fatal advisory surfaced by a push task. Unlike a failure or a skip,
+ * a warning does not affect success/failed/skipped aggregation, fail-fast,
+ * `state.aborted`, or the exit verdict (`pushAllHasFailure`). The message is a
+ * finished, display-ready string built in the application layer (the CLI layer
+ * only renders it). Any domain can return warnings via the same channel.
+ * Push-specific (`domain` is `PushDomain`); kept separate from apply-all's
+ * `ApplyWarning` per the push/apply type split.
+ */
+export type PushWarning = Readonly<{ domain: PushDomain; message: string }>;
+
 export type PushTaskResult =
-  | Readonly<{ domain: PushDomain; success: true }>
+  | Readonly<{
+      domain: PushDomain;
+      success: true;
+      warnings: readonly PushWarning[];
+    }>
   | Readonly<{ domain: PushDomain; success: false; skipped: "not-found" }>
   | Readonly<{
       domain: PushDomain;
@@ -100,7 +115,10 @@ export type PushAllForAppInput = Readonly<{
 type PushTask = {
   readonly domain: PushDomain;
   readonly storageExists: () => Promise<boolean>;
-  readonly run: () => Promise<void>;
+  // Returns the warnings the task wants surfaced (empty when none). Every task
+  // returns `Promise<readonly PushWarning[]>` even when it never warns: an
+  // optional field or side channel would diverge from apply-all's pattern.
+  readonly run: () => Promise<readonly PushWarning[]>;
 };
 
 type PhaseDefinition = {
@@ -122,6 +140,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
             (await c.schema.schemaStorage.get()).exists,
           run: async () => {
             await pushSchema({ container: c.schema, input: { force } });
+            return [];
           },
         },
       ],
@@ -138,6 +157,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.customization,
               input: { basePath: args.customizeBasePath, force },
             });
+            return [];
           },
         },
         {
@@ -145,6 +165,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
           storageExists: async () => (await c.view.viewStorage.get()).exists,
           run: async () => {
             await pushView({ container: c.view, input: { force } });
+            return [];
           },
         },
       ],
@@ -161,6 +182,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.fieldPermission,
               input: { force },
             });
+            return [];
           },
         },
         {
@@ -172,6 +194,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.appPermission,
               input: { force },
             });
+            return [];
           },
         },
         {
@@ -183,6 +206,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.recordPermission,
               input: { force },
             });
+            return [];
           },
         },
       ],
@@ -199,6 +223,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.settings,
               input: { force },
             });
+            return [];
           },
         },
         {
@@ -210,6 +235,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.notification,
               input: { force },
             });
+            return [];
           },
         },
         {
@@ -218,6 +244,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
             (await c.report.reportStorage.get()).exists,
           run: async () => {
             await pushReport({ container: c.report, input: { force } });
+            return [];
           },
         },
         {
@@ -226,6 +253,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
             (await c.action.actionStorage.get()).exists,
           run: async () => {
             await pushAction({ container: c.action, input: { force } });
+            return [];
           },
         },
         {
@@ -237,6 +265,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
               container: c.process,
               input: { force },
             });
+            return [];
           },
         },
         {
@@ -245,6 +274,7 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
             (await c.adminNotes.adminNotesStorage.get()).exists,
           run: async () => {
             await pushAdminNotes({ container: c.adminNotes, input: { force } });
+            return [];
           },
         },
         {
@@ -252,7 +282,41 @@ function buildPhases(args: PushAllForAppInput): readonly PhaseDefinition[] {
           storageExists: async () =>
             (await c.plugin.pluginStorage.get()).exists,
           run: async () => {
-            await pushPlugin({ container: c.plugin, input: { force } });
+            const result = await pushPlugin({
+              container: c.plugin,
+              input: { force },
+            });
+            // Add-only API: surface every operation that `addPlugins` could not
+            // express (mirrors the standalone `plugin push` command's wording).
+            const warnings: PushWarning[] = [];
+            const deletions = result.skipped
+              .filter((o) => o.reason === "delete")
+              .map((o) => o.pluginId);
+            const modifications = result.skipped
+              .filter((o) => o.reason === "modify")
+              .map((o) => o.pluginId);
+            const addDisabled = result.skipped
+              .filter((o) => o.reason === "add-disabled")
+              .map((o) => o.pluginId);
+            if (deletions.length > 0) {
+              warnings.push({
+                domain: "plugin",
+                message: `Cannot remove plugins via the kintone API (add-only); left on the app: ${deletions.join(", ")}`,
+              });
+            }
+            if (modifications.length > 0) {
+              warnings.push({
+                domain: "plugin",
+                message: `Cannot modify existing plugins (name/enabled) via the kintone API (add-only); unchanged: ${modifications.join(", ")}`,
+              });
+            }
+            if (addDisabled.length > 0) {
+              warnings.push({
+                domain: "plugin",
+                message: `Cannot add plugins in a disabled state via the kintone API (add-only; adding would force-enable them); not added — set enabled: false manually in the kintone admin UI: ${addDisabled.join(", ")}`,
+              });
+            }
+            return warnings;
           },
         },
       ],
@@ -320,9 +384,9 @@ async function executeSchemaPhase(
     }
 
     try {
-      await task.run();
+      const warnings = await task.run();
       await deployApp({ container: containers.schema });
-      results.push({ domain: task.domain, success: true });
+      results.push({ domain: task.domain, success: true, warnings });
     } catch (error) {
       const err = toError(error);
       // A drifted schema is skippable but still aborts the rest: subsequent
@@ -378,8 +442,8 @@ async function executeStandardPhase(
     }
 
     try {
-      await task.run();
-      results.push({ domain: task.domain, success: true });
+      const warnings = await task.run();
+      results.push({ domain: task.domain, success: true, warnings });
     } catch (error) {
       const err = toError(error);
       if (isDrift(err)) {
