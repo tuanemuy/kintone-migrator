@@ -48,6 +48,14 @@ function printPhaseResult(phaseResult: PushPhaseResult): void {
     if (!result.success && result.skipped === false) {
       logError(result.error);
     }
+    // Surface advisory warnings right after their domain row so it is clear
+    // which domain they belong to. Warnings are not errors and do not affect
+    // the summary counts or the exit verdict.
+    if (result.success) {
+      for (const warning of result.warnings) {
+        p.log.warn(warning.message);
+      }
+    }
   }
 }
 
