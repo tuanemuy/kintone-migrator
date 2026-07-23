@@ -298,3 +298,25 @@ describe("pullAllForApp — 早期スキップの安全性（W-app-002）", () =
     ).toBe(false);
   });
 });
+
+/**
+ * `pullCustomization` is fully mocked here, so this layer cannot observe the
+ * Fix B state (base == local) — that behavior is verified in pullCustomization's
+ * own usecase tests. Here we only pin the wiring: customize delegates with
+ * `force: false` (so only Fix A/B, never the force-only Fix C, apply via pullAll).
+ */
+describe("pullAllForApp — customize 配線（Issue #205）", () => {
+  it("customize は force:false で pullCustomization に委譲する", async () => {
+    vi.mocked(getCurrentRemoteRevision).mockResolvedValue("101");
+    vi.mocked(loadAppRevision).mockResolvedValue({ revision: "100" });
+    mockAllPullsForce();
+
+    await pullAllForApp(makeArgs());
+
+    expect(pullCustomization).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({ force: false }),
+      }),
+    );
+  });
+});

@@ -403,6 +403,92 @@ describe("captureCustomization", () => {
     ).rejects.toThrow("getCustomization failed");
   });
 
+  it("should preserve declared paths and resolve downloads against the content base when preservePaths is given", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: {
+        basePath,
+        filePrefix,
+        preservePaths: new Map([["app.js", "app/desktop/js/app.js"]]),
+      },
+    });
+
+    // Config keeps the declared (nested) path, not the normalized scheme.
+    expect(result.config.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "app/desktop/js/app.js",
+    });
+    const parsed = parseCustomizationConfigText(configCodec, result.configText);
+    expect(parsed.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "app/desktop/js/app.js",
+    });
+    // Download target = join(basePath, filePrefix, declaredPath) == the same
+    // location push uploads from (basePath == computeBasePath == content base).
+    expect(
+      container.fileWriter.writtenFiles.has(
+        "/project/customize/myapp/app/desktop/js/app.js",
+      ),
+    ).toBe(true);
+  });
+
+  it("returns the config it wrote and uses the normalized scheme when preservePaths is unset (AC-8)", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: { basePath, filePrefix },
+    });
+
+    // Unset preservePaths keeps the capture normalization contract.
+    expect(result.config.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "desktop/js/app.js",
+    });
+    const parsed = parseCustomizationConfigText(configCodec, result.configText);
+    expect(parsed.desktop.js[0]).toEqual(result.config.desktop.js[0]);
+  });
+
   it("should download files directly under basePath when filePrefix is empty", async () => {
     setup();
     container.customizationConfigurator.setCustomization({

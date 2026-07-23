@@ -17,10 +17,20 @@ import { stringifyConfig } from "../stringifyConfig";
 export type CaptureCustomizationInput = {
   readonly basePath: string;
   readonly filePrefix: string;
+  /**
+   * Opt-in path preservation for `pull`. Keyed by FILE basename (as produced by
+   * `remoteResourceName`), value is the existing local declared relative path.
+   * When a remote FILE's basename is present, its config path and download
+   * target adopt the declared path instead of the capture-normalized scheme.
+   * Unset (the `capture` command) keeps the current normalization (AC-8).
+   */
+  readonly preservePaths?: ReadonlyMap<string, string>;
 };
 
 export type CaptureCustomizationOutput = {
   readonly configText: string;
+  /** The config that was written, for callers that persist it as the new base. */
+  readonly config: CustomizationConfig;
   readonly hasExistingConfig: boolean;
   readonly fileResourceCount: number;
 };
@@ -97,6 +107,8 @@ function planResources(
   platformDir: string,
   resourceType: "js" | "css",
   relativeBaseDir: string,
+  contentBase: string,
+  preservePaths: ReadonlyMap<string, string> | undefined,
 ): PlanResult {
   const planned: CustomizationResource[] = [];
   const filesToDownload: PlannedFile[] = [];
@@ -111,14 +123,27 @@ function planResources(
         sanitizeFileName(resource.file.name),
         usedNames,
       );
-      const absolutePath = join(dir, fileName);
-      const relativePath = join(relativeBaseDir, resourceType, fileName);
-      planned.push({ type: "FILE", path: relativePath });
-      filesToDownload.push({
-        fileName,
-        fileKey: resource.file.fileKey,
-        absolutePath,
-      });
+      const declaredPath = preservePaths?.get(resource.file.name);
+      if (declaredPath !== undefined) {
+        // Preserve the existing local declared path: path is a local-owned
+        // concern, so keep it and resolve the download target against the same
+        // content base push uploads from (`join(basePath, filePrefix)`).
+        planned.push({ type: "FILE", path: declaredPath });
+        filesToDownload.push({
+          fileName,
+          fileKey: resource.file.fileKey,
+          absolutePath: join(contentBase, declaredPath),
+        });
+      } else {
+        const absolutePath = join(dir, fileName);
+        const relativePath = join(relativeBaseDir, resourceType, fileName);
+        planned.push({ type: "FILE", path: relativePath });
+        filesToDownload.push({
+          fileName,
+          fileKey: resource.file.fileKey,
+          absolutePath,
+        });
+      }
     }
   }
 
@@ -130,12 +155,14 @@ function planPlatform(
   platformName: string,
   basePath: string,
   filePrefix: string,
+  preservePaths: ReadonlyMap<string, string> | undefined,
 ): {
   platform: CustomizationPlatform;
   filesToDownload: readonly PlannedFile[];
   fileCount: number;
 } {
-  const platformDir = join(basePath, filePrefix, platformName);
+  const contentBase = join(basePath, filePrefix);
+  const platformDir = join(contentBase, platformName);
   const platformPrefix = platformName;
 
   const jsPlan = planResources(
@@ -143,12 +170,16 @@ function planPlatform(
     platformDir,
     "js",
     platformPrefix,
+    contentBase,
+    preservePaths,
   );
   const cssPlan = planResources(
     remotePlatform.css,
     platformDir,
     "css",
     platformPrefix,
+    contentBase,
+    preservePaths,
   );
 
   const fileCount =
@@ -198,12 +229,14 @@ export async function captureCustomization({
     "desktop",
     input.basePath,
     input.filePrefix,
+    input.preservePaths,
   );
   const mobilePlan = planPlatform(
     mobile,
     "mobile",
     input.basePath,
     input.filePrefix,
+    input.preservePaths,
   );
 
   const config: CustomizationConfig = {
@@ -226,6 +259,7 @@ export async function captureCustomization({
 
   return {
     configText,
+    config,
     hasExistingConfig: existing.exists,
     fileResourceCount: desktopPlan.fileCount + mobilePlan.fileCount,
   };

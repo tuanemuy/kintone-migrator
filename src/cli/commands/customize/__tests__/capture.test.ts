@@ -1,5 +1,6 @@
+import { dirname, join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deriveFilePrefix } from "../capture";
+import { computeBasePath, deriveFilePrefix } from "../capture";
 
 vi.mock("@clack/prompts", () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
@@ -98,6 +99,31 @@ describe("deriveFilePrefix", () => {
   it("ディレクトリ内の .yml ファイルも正しくファイル名を返す", () => {
     expect(deriveFilePrefix("some-dir/my-config.yml")).toBe("my-config");
   });
+});
+
+/**
+ * pull resolves file content against `join(captureBasePath, filePrefix)`, while
+ * push resolves against `computeBasePath(...)`. This invariant pins that the two
+ * bases are structurally identical for the same input, so pull writes exactly
+ * where push uploads from (AC-10).
+ */
+describe("pull/push base path invariant (AC-10)", () => {
+  const paths = [
+    "customize.yaml",
+    "myapp/customize.yaml",
+    "customize/customer.yaml",
+    "/project/apps/myapp/customize.yaml",
+    "some-dir/my-config.yml",
+  ];
+
+  for (const path of paths) {
+    it(`join(captureBasePath, filePrefix) equals computeBasePath for ${path}`, () => {
+      // These mirror how src/cli/commands/customize/pull.ts derives its bases.
+      const captureBasePath = dirname(resolve(path));
+      const filePrefix = deriveFilePrefix(path);
+      expect(join(captureBasePath, filePrefix)).toBe(computeBasePath(path));
+    });
+  }
 });
 
 describe("customize capture command (deprecation)", () => {
