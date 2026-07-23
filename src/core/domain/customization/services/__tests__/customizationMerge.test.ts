@@ -10,6 +10,10 @@ function file(name: string): CustomizationResource {
   return { type: "FILE", path: name };
 }
 
+function fileAt(path: string): CustomizationResource {
+  return { type: "FILE", path };
+}
+
 function pathOf(r: CustomizationResource): string {
   return r.type === "FILE" ? r.path : r.url;
 }
@@ -171,5 +175,59 @@ describe("resolveCustomizationMerge", () => {
     expect(() =>
       resolveCustomizationMerge(merge, new Map(), local, remote),
     ).toThrow();
+  });
+
+  it("keeps the local declared path for an unchanged entry (path is local-owned)", () => {
+    // base/remote carry the basename path (state/remote view); local declares a
+    // nested build-output path with the same basename.
+    const base = cfg([file("a.js")]);
+    const local = cfg([fileAt("app/desktop/js/a.js")]);
+    const remote = cfg([file("a.js")]);
+    const merge = computeCustomizationThreeWayMerge(
+      base,
+      local,
+      remote,
+      NO_MODIFIED,
+    );
+    const result = resolveCustomizationMerge(merge, new Map(), local, remote);
+    expect(result.desktop.js.map(pathOf)).toEqual(["app/desktop/js/a.js"]);
+  });
+
+  it("keeps the local declared path even when a conflict is resolved to remote", () => {
+    const base = cfg([file("a.js")]);
+    const local = cfg([fileAt("app/desktop/js/a.js")]);
+    const remote = cfg([file("a.js")]);
+    const merge = computeCustomizationThreeWayMerge(
+      base,
+      local,
+      remote,
+      new Set(["a.js"]),
+    );
+    const result = resolveCustomizationMerge(
+      merge,
+      new Map([["desktop:js:a.js", "remote"]]),
+      local,
+      remote,
+    );
+    // content-source is remote, but path stays the local declared path.
+    expect(result.desktop.js.map(pathOf)).toEqual(["app/desktop/js/a.js"]);
+  });
+
+  it("uses the remote basename path only for a remote-only entry", () => {
+    const base = cfg([file("a.js")]);
+    const local = cfg([fileAt("app/desktop/js/a.js")]);
+    const remote = cfg([file("a.js"), file("c.js")]);
+    const merge = computeCustomizationThreeWayMerge(
+      base,
+      local,
+      remote,
+      NO_MODIFIED,
+    );
+    const result = resolveCustomizationMerge(merge, new Map(), local, remote);
+    // existing entry keeps its nested path; new remote-only file uses basename.
+    expect(result.desktop.js.map(pathOf)).toEqual([
+      "app/desktop/js/a.js",
+      "c.js",
+    ]);
   });
 });
