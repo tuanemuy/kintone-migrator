@@ -57,9 +57,14 @@ const PLATFORMS: readonly Platform[] = ["desktop", "mobile"];
 const CATEGORIES: readonly Category[] = ["js", "css"];
 const SCOPE_KEY = "config:scope";
 
-function resourceKey(
-  platform: Platform,
-  category: Category,
+/**
+ * Bucket-qualified resource identity: `platform:category:name`. Shared with the
+ * force/firstTime pull path (`preservePaths`) so path preservation matches the
+ * merge on the same identity and cross-bucket same-basename files stay distinct.
+ */
+export function resourceKey(
+  platform: string,
+  category: string,
   name: string,
 ): string {
   return `${platform}:${category}:${name}`;
@@ -183,6 +188,11 @@ export function resolveCustomizationMerge(
  * Rebuilds the config from the chosen resource keys, ordering each bucket by the
  * resource's position in local first, then any remote-only resources, so the
  * resulting list is stable and matches the user's local ordering intent.
+ *
+ * `path` is a local-owned concern (the build-output location) that is orthogonal
+ * to which content wins the merge: whenever a key exists locally, the local
+ * resource (its declared path) is kept regardless of the chosen content side.
+ * Only remote-only keys fall back to the chosen (remote/basename) resource.
  */
 function rebuild(
   chosen: Map<string, CustomizationResource>,
@@ -196,13 +206,20 @@ function rebuild(
   ): CustomizationResource[] {
     const seen = new Set<string>();
     const out: CustomizationResource[] = [];
+    const localByKey = new Map<string, CustomizationResource>();
+    for (const resource of platformList(local, platform, category)) {
+      localByKey.set(
+        resourceKey(platform, category, resourceName(resource)),
+        resource,
+      );
+    }
     const append = (resources: readonly CustomizationResource[]) => {
       for (const resource of resources) {
         const key = resourceKey(platform, category, resourceName(resource));
         if (seen.has(key)) continue;
         const picked = chosen.get(key);
         if (picked !== undefined) {
-          out.push(picked);
+          out.push(localByKey.get(key) ?? picked);
           seen.add(key);
         }
       }

@@ -6,12 +6,14 @@ import {
   type CustomizationThreeWayMerge,
   computeCustomizationThreeWayMerge,
   resolveCustomizationMerge,
+  resourceKey,
 } from "@/core/domain/customization/services/customizationMerge";
 import {
   remoteResourceName,
   resourceName,
 } from "@/core/domain/customization/services/diffDetector";
 import type {
+  CustomizationResource,
   LocalFileResource,
   RemoteCustomization,
 } from "@/core/domain/customization/valueObject";
@@ -69,14 +71,24 @@ export async function pullCustomization({
 
   if (input.force || state === undefined || local === undefined) {
     // Capture-equivalent: download remote file bodies, write config + files.
+    // When a local config exists (force, or state-loss recovery), preserve its
+    // declared FILE paths so `path` (a local-owned concern) survives the pull.
+    const preservePaths =
+      local !== undefined ? buildPreservePaths(local) : undefined;
     const captured = await captureCustomization({
       container,
-      input: { basePath: input.captureBasePath, filePrefix: input.filePrefix },
+      input: {
+        basePath: input.captureBasePath,
+        filePrefix: input.filePrefix,
+        preservePaths,
+      },
     });
     await container.customizationStorage.update(captured.configText);
+    // Persist the config we actually wrote as the new base (base == local),
+    // keeping pull symmetric with push instead of the basename-only remote view.
     await saveCustomizationSnapshotAndRevision(
       container,
-      remote.config,
+      captured.config,
       remote.revision,
     );
     return { mode: input.force ? "force" : "firstTime" };
@@ -183,11 +195,46 @@ export async function applyPulledCustomizationMerge({
     CustomizationConfigSerializer.serialize(merged),
   );
   await container.customizationStorage.update(configText);
+  // Base == the config we just wrote locally (declared paths), so a subsequent
+  // push sees no drift and `git diff` stays clean (push-symmetric).
   await saveCustomizationSnapshotAndRevision(
     container,
-    input.remoteConfig,
+    merged,
     input.remoteRevision,
   );
+}
+
+/**
+ * Builds the path-preservation map for `captureCustomization`: bucket-qualified
+ * key (`resourceKey(platform, category, FILE basename)`) → declared local
+ * relative path. The composite key matches the merge identity so cross-bucket
+ * same-basename files (e.g. `app/desktop/js/main.js` vs `app/mobile/js/main.js`)
+ * stay distinct instead of colliding under a flat basename map. Only FILE
+ * resources carry a path.
+ */
+function buildPreservePaths(
+  config: CustomizationConfig,
+): ReadonlyMap<string, string> {
+  const map = new Map<string, string>();
+  const add = (
+    platform: string,
+    category: string,
+    resources: readonly CustomizationResource[],
+  ) => {
+    for (const resource of resources) {
+      if (resource.type === "FILE") {
+        map.set(
+          resourceKey(platform, category, resourceName(resource)),
+          resource.path,
+        );
+      }
+    }
+  };
+  add("desktop", "js", config.desktop.js);
+  add("desktop", "css", config.desktop.css);
+  add("mobile", "js", config.mobile.js);
+  add("mobile", "css", config.mobile.css);
+  return map;
 }
 
 function allFileResources(config: CustomizationConfig): LocalFileResource[] {
