@@ -301,9 +301,8 @@ describe("pullAllForApp — 早期スキップの安全性（W-app-002）", () =
 
 /**
  * `pullCustomization` is fully mocked here, so this layer cannot observe the
- * Fix B state (base == local) — that behavior is verified in pullCustomization's
- * own usecase tests. Here we only pin the wiring: customize delegates with
- * `force: false` (so only Fix A/B, never the force-only Fix C, apply via pullAll).
+ * base == local behavior — that is verified in pullCustomization's own usecase
+ * tests. Here we only pin the wiring: customize delegates with `force: false`.
  */
 describe("pullAllForApp — customize 配線（Issue #205）", () => {
   it("customize は force:false で pullCustomization に委譲する", async () => {

@@ -106,7 +106,7 @@ describe("deriveFilePrefix", () => {
  * pull resolves file content against `join(captureBasePath, filePrefix)`, while
  * push resolves against `computeBasePath(...)`. This invariant pins that the two
  * bases are structurally identical for the same input, so pull writes exactly
- * where push uploads from (AC-10).
+ * where push uploads from.
  *
  * The bases come from `derivePullPaths` — the exact function `runPull` uses — so a
  * regression in pull.ts's own `captureBasePath`/`filePrefix` derivation is caught

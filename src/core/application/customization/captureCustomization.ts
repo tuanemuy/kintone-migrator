@@ -26,7 +26,7 @@ export type CaptureCustomizationInput = {
    * `remoteResourceName`); the value is the existing local declared relative
    * path. When a remote FILE's key is present, its config path and download
    * target adopt the declared path instead of the capture-normalized scheme.
-   * Unset (the `capture` command) keeps the current normalization (AC-8).
+   * Unset (the `capture` command) keeps the current normalization.
    */
   readonly preservePaths?: ReadonlyMap<string, string>;
 };

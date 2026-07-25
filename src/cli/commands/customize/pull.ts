@@ -32,9 +32,9 @@ type CustomizeMerged = Extract<PullCustomizationOutput, { mode: "merged" }>;
  * - `captureBasePath` + `filePrefix` are passed to the capture-equivalent
  *   (force / first-time) path.
  *
- * AC-10 invariant: `join(captureBasePath, filePrefix) === basePath`, so pull
- * writes exactly where push uploads from. Exported so the invariant test pins
- * these exact derivations rather than a hand-mirrored copy.
+ * Invariant: `join(captureBasePath, filePrefix) === basePath`, so pull writes
+ * exactly where push uploads from. Exported so the invariant test pins these
+ * exact derivations rather than a hand-mirrored copy.
  */
 export function derivePullPaths(customizeFilePath: string): {
   readonly basePath: string;
