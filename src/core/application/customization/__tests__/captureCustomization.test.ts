@@ -430,7 +430,9 @@ describe("captureCustomization", () => {
       input: {
         basePath,
         filePrefix,
-        preservePaths: new Map([["app.js", "app/desktop/js/app.js"]]),
+        preservePaths: new Map([
+          ["desktop:js:app.js", "app/desktop/js/app.js"],
+        ]),
       },
     });
 
@@ -451,6 +453,107 @@ describe("captureCustomization", () => {
         "/project/customize/myapp/app/desktop/js/app.js",
       ),
     ).toBe(true);
+  });
+
+  it("matches preservePaths by bucket-qualified key so same-basename files across buckets stay distinct (B-001)", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-d-main",
+              name: "main.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-d-style",
+              name: "style.css",
+              contentType: "text/css",
+              size: "10",
+            },
+          },
+        ],
+      },
+      mobile: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-m-main",
+              name: "main.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-m-style",
+              name: "style.css",
+              contentType: "text/css",
+              size: "10",
+            },
+          },
+        ],
+      },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: {
+        basePath,
+        filePrefix,
+        // Same basenames (main.js / style.css) in different buckets map to
+        // different declared paths; a flat basename lookup would cross them.
+        preservePaths: new Map([
+          ["desktop:js:main.js", "app/desktop/js/main.js"],
+          ["desktop:css:style.css", "app/desktop/css/style.css"],
+          ["mobile:js:main.js", "app/mobile/js/main.js"],
+          ["mobile:css:style.css", "app/mobile/css/style.css"],
+        ]),
+      },
+    });
+
+    expect(result.config.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "app/desktop/js/main.js",
+    });
+    expect(result.config.desktop.css[0]).toEqual({
+      type: "FILE",
+      path: "app/desktop/css/style.css",
+    });
+    expect(result.config.mobile.js[0]).toEqual({
+      type: "FILE",
+      path: "app/mobile/js/main.js",
+    });
+    expect(result.config.mobile.css[0]).toEqual({
+      type: "FILE",
+      path: "app/mobile/css/style.css",
+    });
+
+    // Each body lands at its own bucket's nested location (no collision).
+    const base = "/project/customize/myapp";
+    for (const p of [
+      "app/desktop/js/main.js",
+      "app/desktop/css/style.css",
+      "app/mobile/js/main.js",
+      "app/mobile/css/style.css",
+    ]) {
+      expect(container.fileWriter.writtenFiles.has(`${base}/${p}`)).toBe(true);
+    }
+    expect(container.fileWriter.writtenFiles.size).toBe(4);
   });
 
   it("returns the config it wrote and uses the normalized scheme when preservePaths is unset (AC-8)", async () => {

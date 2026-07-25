@@ -57,9 +57,14 @@ const PLATFORMS: readonly Platform[] = ["desktop", "mobile"];
 const CATEGORIES: readonly Category[] = ["js", "css"];
 const SCOPE_KEY = "config:scope";
 
-function resourceKey(
-  platform: Platform,
-  category: Category,
+/**
+ * Bucket-qualified resource identity: `platform:category:name`. Shared with the
+ * force/firstTime pull path (`preservePaths`) so path preservation matches the
+ * merge on the same identity and cross-bucket same-basename files stay distinct.
+ */
+export function resourceKey(
+  platform: string,
+  category: string,
   name: string,
 ): string {
   return `${platform}:${category}:${name}`;

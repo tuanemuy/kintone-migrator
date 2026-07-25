@@ -1,6 +1,7 @@
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { computeBasePath, deriveFilePrefix } from "../capture";
+import { derivePullPaths } from "../pull";
 
 vi.mock("@clack/prompts", () => ({
   spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
@@ -106,6 +107,10 @@ describe("deriveFilePrefix", () => {
  * push resolves against `computeBasePath(...)`. This invariant pins that the two
  * bases are structurally identical for the same input, so pull writes exactly
  * where push uploads from (AC-10).
+ *
+ * The bases come from `derivePullPaths` — the exact function `runPull` uses — so a
+ * regression in pull.ts's own `captureBasePath`/`filePrefix` derivation is caught
+ * here, rather than a hand-mirrored copy that could silently drift from pull.ts.
  */
 describe("pull/push base path invariant (AC-10)", () => {
   const paths = [
@@ -117,11 +122,14 @@ describe("pull/push base path invariant (AC-10)", () => {
   ];
 
   for (const path of paths) {
-    it(`join(captureBasePath, filePrefix) equals computeBasePath for ${path}`, () => {
-      // These mirror how src/cli/commands/customize/pull.ts derives its bases.
-      const captureBasePath = dirname(resolve(path));
-      const filePrefix = deriveFilePrefix(path);
-      expect(join(captureBasePath, filePrefix)).toBe(computeBasePath(path));
+    it(`pull content base equals push computeBasePath for ${path}`, () => {
+      const { basePath, captureBasePath, filePrefix } = derivePullPaths(path);
+      // pull downloads/writes content against join(captureBasePath, filePrefix);
+      // push uploads from basePath. They must resolve to the same location.
+      expect(join(captureBasePath, filePrefix)).toBe(basePath);
+      // basePath must be push's computeBasePath, and filePrefix push's prefix.
+      expect(basePath).toBe(computeBasePath(path));
+      expect(filePrefix).toBe(deriveFilePrefix(path));
     });
   }
 });

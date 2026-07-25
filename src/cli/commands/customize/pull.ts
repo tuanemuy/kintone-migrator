@@ -24,6 +24,30 @@ import { computeBasePath, deriveFilePrefix } from "./capture";
 
 type CustomizeMerged = Extract<PullCustomizationOutput, { mode: "merged" }>;
 
+/**
+ * Derives the path bases `runPull` feeds to the application layer.
+ *
+ * - `basePath` (= push's {@link computeBasePath}) is where merged/downloaded
+ *   content resolves and push uploads from.
+ * - `captureBasePath` + `filePrefix` are passed to the capture-equivalent
+ *   (force / first-time) path.
+ *
+ * AC-10 invariant: `join(captureBasePath, filePrefix) === basePath`, so pull
+ * writes exactly where push uploads from. Exported so the invariant test pins
+ * these exact derivations rather than a hand-mirrored copy.
+ */
+export function derivePullPaths(customizeFilePath: string): {
+  readonly basePath: string;
+  readonly captureBasePath: string;
+  readonly filePrefix: string;
+} {
+  return {
+    basePath: computeBasePath(customizeFilePath),
+    captureBasePath: dirname(resolve(customizeFilePath)),
+    filePrefix: deriveFilePrefix(customizeFilePath),
+  };
+}
+
 type PullOptions = {
   readonly force: boolean;
   readonly ours: boolean;
@@ -65,11 +89,11 @@ async function runPull(
 ): Promise<void> {
   const container: CustomizationContainer =
     createCustomizationCliContainer(containerConfig);
-  // Resource paths in the local config resolve against this base.
-  const basePath = computeBasePath(containerConfig.customizeFilePath);
-  // capture-equivalent paths (basePath = file dir, prefix isolates per app)
-  const captureBasePath = dirname(resolve(containerConfig.customizeFilePath));
-  const filePrefix = deriveFilePrefix(containerConfig.customizeFilePath);
+  // basePath: where local resource paths resolve (push-symmetric).
+  // captureBasePath/filePrefix: capture-equivalent bases (prefix isolates per app).
+  const { basePath, captureBasePath, filePrefix } = derivePullPaths(
+    containerConfig.customizeFilePath,
+  );
 
   const s = p.spinner();
   s.start("Pulling customization from kintone...");

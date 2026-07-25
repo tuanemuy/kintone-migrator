@@ -453,3 +453,89 @@ describe("pullCustomization — path preservation (Issue #205)", () => {
     expect(state.desktop.js[0]).toEqual({ type: "FILE", path: NESTED });
   });
 });
+
+describe("pullCustomization — cross-bucket path preservation (Issue #205, B-001)", () => {
+  const getContainer = setupTestCustomizationContainer();
+
+  // desktop and mobile ship same-basename files (main.js / style.css) — a common
+  // layout. Each bucket's declared path must survive independently; a flat
+  // basename map would let one bucket's path clobber the other's (last-wins).
+  const D_JS = "app/desktop/js/main.js";
+  const D_CSS = "app/desktop/css/style.css";
+  const M_JS = "app/mobile/js/main.js";
+  const M_CSS = "app/mobile/css/style.css";
+
+  function crossBucketLocal(): CustomizationConfig {
+    return {
+      scope: "ALL",
+      desktop: {
+        js: [{ type: "FILE", path: D_JS }],
+        css: [{ type: "FILE", path: D_CSS }],
+      },
+      mobile: {
+        js: [{ type: "FILE", path: M_JS }],
+        css: [{ type: "FILE", path: M_CSS }],
+      },
+    };
+  }
+
+  function setCrossBucketRemote(
+    container: TestCustomizationContainer,
+    revision: string,
+  ): void {
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [remoteFile("main.js", "fk-d-main")],
+        css: [remoteFile("style.css", "fk-d-style")],
+      },
+      mobile: {
+        js: [remoteFile("main.js", "fk-m-main")],
+        css: [remoteFile("style.css", "fk-m-style")],
+      },
+      revision,
+    });
+    for (const key of ["fk-d-main", "fk-d-style", "fk-m-main", "fk-m-style"]) {
+      container.fileDownloader.setFile(
+        key,
+        new TextEncoder().encode(`body-${key}`).buffer,
+      );
+    }
+  }
+
+  it("force keeps each bucket's declared path without cross-bucket collision (AC-1/2/3)", async () => {
+    const container = getContainer();
+    const local = crossBucketLocal();
+    setState(container, local, "1");
+    setLocal(container, local);
+    setCrossBucketRemote(container, "2");
+
+    const result = await pullCustomization({
+      container,
+      input: { ...input, force: true },
+    });
+    expect(result.mode).toBe("force");
+
+    // Every bucket keeps its own declared path (not last-wins from another).
+    const localAfter = await readLocal(container);
+    expect(localAfter.desktop.js[0]).toEqual({ type: "FILE", path: D_JS });
+    expect(localAfter.desktop.css[0]).toEqual({ type: "FILE", path: D_CSS });
+    expect(localAfter.mobile.js[0]).toEqual({ type: "FILE", path: M_JS });
+    expect(localAfter.mobile.css[0]).toEqual({ type: "FILE", path: M_CSS });
+
+    // Bodies land at four distinct nested locations — no two downloads collide.
+    for (const path of [D_JS, D_CSS, M_JS, M_CSS]) {
+      expect(container.fileWriter.writtenFiles.has(`${BASE}/${path}`)).toBe(
+        true,
+      );
+    }
+    expect(container.fileWriter.writtenFiles.size).toBe(4);
+
+    // State mirrors local for every bucket (base == local).
+    const state = await readState(container);
+    expect(state.desktop.js[0]).toEqual({ type: "FILE", path: D_JS });
+    expect(state.desktop.css[0]).toEqual({ type: "FILE", path: D_CSS });
+    expect(state.mobile.js[0]).toEqual({ type: "FILE", path: M_JS });
+    expect(state.mobile.css[0]).toEqual({ type: "FILE", path: M_CSS });
+  });
+});
