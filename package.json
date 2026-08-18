@@ -19,7 +19,7 @@
     "infrastructure-as-code"
   ],
   "type": "module",
-  "packageManager": "pnpm@11.1.1",
+  "packageManager": "pnpm@11.22.0",
   "bin": {
     "kintone-migrator": "dist/index.mjs"
   },
