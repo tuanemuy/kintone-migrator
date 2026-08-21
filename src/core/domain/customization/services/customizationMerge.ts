@@ -27,8 +27,8 @@ import { resourceName } from "./diffDetector";
  * (`remoteOnly`) and from a real two-sided divergence (`conflict`). Contents are
  * never merged line-by-line — the whole file is taken from the chosen side.
  *
- * A side with no digest for a key (content unreadable, or a base snapshot
- * written before digests existed) gets that side's `untracked:<side>` sentinel.
+ * A side with no digest for a key (content unreadable, or never recorded in the
+ * snapshot) gets that side's `untracked:<side>` sentinel.
  * Base keys with no recorded digest are resolved by
  * {@link resolveBaseFileDigests} before the merge runs.
  *
@@ -267,7 +267,7 @@ export type ResolveBaseFileDigestsOptions = Readonly<{
   localKeys: ReadonlySet<string>;
   /** FILE keys present in the remote config. */
   remoteKeys: ReadonlySet<string>;
-  /** The state records no digest at all (written before digests existed). */
+  /** The state records no digest at all. */
   legacyState: boolean;
   /** The app revision has not advanced since the snapshot was written. */
   remoteUnchanged: boolean;
@@ -281,7 +281,7 @@ export type ResolveBaseFileDigestsOptions = Readonly<{
 export type EstimatedBaseKeys = Readonly<{
   /** Rule 2: the remote content was optimistically assumed to be the base. */
   optimistic: ReadonlySet<string>;
-  /** Rules 3-5: the classification reproduces the pre-digest behaviour. */
+  /** Rules 3-5: the base tag was inferred from the two sides alone. */
   conservative: ReadonlySet<string>;
 }>;
 
@@ -307,8 +307,8 @@ export type ResolvedBaseFileTags = Readonly<{
  * 5. otherwise the base gets its own sentinel — both sides diverged
  *    (`conflict`), or the key exists on neither side (`bothSame`).
  *
- * Rules 3-5 reproduce exactly what the pre-digest implementation classified, so
- * a state without digests never regresses.
+ * Rules 3-5 decide from the two sides alone, which is all a snapshot without
+ * digests allows.
  */
 export function resolveBaseFileDigests(
   baseConfig: CustomizationConfig,

@@ -209,7 +209,6 @@ export async function applyPulledCustomizationMerge({
     }
   }
 
-  // Remote fileKey lookup under the same bucket-qualified identity.
   const remoteFileKeys = remoteFileKeyMap(input.remote);
 
   const downloads: Promise<void>[] = [];
@@ -268,9 +267,8 @@ export async function applyPulledCustomizationMerge({
  * local side won the merge: the base means "what local and remote last agreed
  * on", and content that stayed local was never uploaded. Recording the on-disk
  * bytes instead would make the very next diff report the local edit as remote
- * drift and block the push — the bug this whole flow exists to avoid. Keys the
- * remote does not have (locally added files, or remote-only files freshly
- * downloaded) take the on-disk digest.
+ * drift and block the push. Keys the remote does not have (locally added files,
+ * or remote-only files freshly downloaded) take the on-disk digest.
  */
 async function buildMergedBaseDigests(
   merged: CustomizationConfig,

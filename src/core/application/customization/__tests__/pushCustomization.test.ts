@@ -268,8 +268,8 @@ describe("pushCustomization", () => {
     setRemote(container, [remoteFile("a.js")], "2");
     setRemoteBody(container, "a.js", "edited-on-kintone");
 
-    // Removing the declaration used to delete the remote edit silently; with a
-    // recorded baseline the remote change is real drift.
+    // Pushing the dropped declaration would delete the remote edit, so with a
+    // recorded baseline the remote change counts as real drift.
     await expect(
       pushCustomization({ container, input: { basePath: BASE } }),
     ).rejects.toSatisfy(isConfigDrift);

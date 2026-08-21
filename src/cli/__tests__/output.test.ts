@@ -104,11 +104,9 @@ describe("printDiffResult", () => {
 
     printDiffResult(result);
 
-    // Changes サマリーが出力される
     expect(p.log.info).toHaveBeenCalledWith(
       expect.stringContaining("+1 added"),
     );
-    // Diff Details ノートが出力される
     expect(p.note).toHaveBeenCalledWith(
       expect.stringContaining("name"),
       "Diff Details",

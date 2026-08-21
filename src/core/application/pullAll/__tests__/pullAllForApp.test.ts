@@ -187,7 +187,6 @@ describe("pullAllForApp — conflict 時挙動（ADR-188-005）", () => {
     vi.mocked(getCurrentRemoteRevision).mockResolvedValue("101");
     vi.mocked(loadAppRevision).mockResolvedValue({ revision: "100" });
     mockAllPullsForce();
-    // view returns a merged result with a conflict.
     vi.mocked(pullView).mockResolvedValue({
       mode: "merged",
       merge: { hasConflict: true, conflicts: [{ key: "v1" }] },
@@ -199,7 +198,7 @@ describe("pullAllForApp — conflict 時挙動（ADR-188-005）", () => {
 
     const view = output.results.find((r) => r.domain === "view");
     expect(view).toMatchObject({ success: false, skipped: "conflict" });
-    // Conflict domain is NOT written (applyPulledViewMerge not called).
+    // The conflicting domain is left unwritten.
     expect(applyPulledViewMerge).not.toHaveBeenCalled();
     // Other domains still ran.
     const report = output.results.find((r) => r.domain === "report");
@@ -322,9 +321,9 @@ describe("pullAllForApp — customize 配線（Issue #205）", () => {
     );
   });
 
-  // Issue #207 / AC-19: the merge's remote digests must reach the apply stage
-  // through this path too, otherwise the bulk `pull` would record disk-derived
-  // base digests and reintroduce the false-drift bug on its own.
+  // The merge's remote digests must reach the apply stage through this path
+  // too; otherwise the bulk `pull` records disk-derived base digests and the
+  // next diff reports the local edit as remote drift.
   it("customize は pullCustomization の remoteDigests を applyPulledCustomizationMerge へ素通しする", async () => {
     vi.mocked(getCurrentRemoteRevision).mockResolvedValue("101");
     vi.mocked(loadAppRevision).mockResolvedValue({ revision: "100" });

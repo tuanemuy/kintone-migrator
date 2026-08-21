@@ -149,8 +149,6 @@ async function runPull(
 ): Promise<void> {
   const container: CustomizationContainer =
     createCustomizationCliContainer(containerConfig);
-  // basePath: where local resource paths resolve (push-symmetric).
-  // captureBasePath/filePrefix: capture-equivalent bases (prefix isolates per app).
   const { basePath, captureBasePath, filePrefix } = derivePullPaths(
     containerConfig.customizeFilePath,
   );

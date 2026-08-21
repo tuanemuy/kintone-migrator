@@ -145,8 +145,6 @@ export async function pushCustomization({
   const { revision: newRevision } =
     await container.customizationConfigurator.updateCustomization({
       scope: local.scope,
-      // Full-list replace (authoritative): the local config is the source of
-      // truth, so renames/deletions are expressed by sending the complete lists.
       desktop: { js: desktop.js, css: desktop.css },
       mobile: { js: mobile.js, css: mobile.css },
       ...(expectedRevision !== undefined ? { revision: expectedRevision } : {}),

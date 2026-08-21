@@ -170,7 +170,6 @@ describe("computeCustomizationThreeWayMerge — FILE content", () => {
       tags({ base: { [KEY]: "v1" }, local: { [KEY]: "v2" } }),
     );
 
-    // The remote deleted it while the local body changed: both sides moved.
     expect(kindOf(merge, KEY)).toBe("conflict");
     expect(merge.hasConflict).toBe(true);
   });
@@ -183,8 +182,8 @@ describe("computeCustomizationThreeWayMerge — FILE content", () => {
       tags({ base: { [KEY]: "v1" }, remote: { [KEY]: "v2" } }),
     );
 
-    // Dropping the declaration no longer silently deletes a remote edit: the
-    // remote change is real drift, so the push is blocked instead.
+    // Dropping the declaration must not silently delete a remote edit: the
+    // remote change is real drift, so the push has to be blocked.
     expect(kindOf(merge, KEY)).toBe("conflict");
     expect(merge.hasConflict).toBe(true);
   });
@@ -538,8 +537,9 @@ describe("resolveBaseFileDigests", () => {
 });
 
 /**
- * A snapshot with no digests must classify exactly as the pre-digest
- * implementation did whenever the app revision has moved on.
+ * Once the app revision has moved on, a snapshot with no digests is classified
+ * by the conservative rules alone: which sides hold the key, and whether the
+ * two sides agree.
  */
 describe("digest-less snapshot at a changed revision keeps the previous classification", () => {
   function classify(
@@ -713,7 +713,6 @@ describe("resolveCustomizationMerge", () => {
       local,
       remote,
     );
-    // content-source is remote, but path stays the local declared path.
     expect(result.desktop.js.map(pathOf)).toEqual(["app/desktop/js/a.js"]);
   });
 
@@ -729,7 +728,6 @@ describe("resolveCustomizationMerge", () => {
     );
 
     const result = resolveCustomizationMerge(merge, new Map(), local, remote);
-    // existing entry keeps its nested path; new remote-only file uses basename.
     expect(result.desktop.js.map(pathOf)).toEqual([
       "app/desktop/js/a.js",
       "c.js",

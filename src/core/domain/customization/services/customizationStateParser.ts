@@ -18,8 +18,8 @@ import { resourceName } from "./diffDetector";
  * Collects the per-FILE `digest` entries into the merge's key space. The
  * structure itself is already validated by {@link CustomizationConfigParser},
  * so this pass only reads the extra key and rejects malformed values. A missing
- * `digest` means "untracked", not an error: state files written before digests
- * existed parse into an empty map.
+ * `digest` means "untracked", not an error: a state file carrying no digest at
+ * all parses into an empty map.
  */
 function parseFileDigests(parsed: unknown): CustomizationFileDigests {
   const digests = new Map<string, ContentDigest>();
@@ -84,8 +84,7 @@ function digestEntry(
  * The inverse of {@link CustomizationStateSerializer}: the captured config is
  * parsed via the same {@link CustomizationConfigParser} as the local YAML, so
  * the base snapshot is validated identically, then the per-FILE `digest` keys
- * are collected into the snapshot's digest map. The domain layer does not depend
- * on YAML; the application layer handles codec decoding before calling this.
+ * are collected into the snapshot's digest map.
  */
 export const CustomizationStateParser = {
   parse: (parsed: unknown): CustomizationState => ({

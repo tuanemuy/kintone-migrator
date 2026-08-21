@@ -180,8 +180,6 @@ function buildTasks(args: PullAllForAppInput): readonly PullTask[] {
   const c = args.containers;
   const ours = args.ours === true;
   const theirs = args.theirs === true;
-  // Whether a conflicting domain should be auto-resolved (--ours/--theirs) or
-  // left for the user (default: skip).
   const autoResolve = ours || theirs;
 
   return [
@@ -585,9 +583,6 @@ export async function pullAllForApp(
 ): Promise<PullAllForAppOutput> {
   const containers = args.containers;
 
-  // Early-skip: read remote (preview) revision once and compare with the
-  // stored base. A match means the remote is unchanged, so skip all per-domain
-  // comparisons. A mismatch (or absent base) falls through to full 3-way.
   const [remoteRevision, baseRevision] = await Promise.all([
     getCurrentRemoteRevision(containers.view),
     loadBaseRevision(containers),

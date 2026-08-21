@@ -60,8 +60,6 @@ function sanitizeFileName(name: string): string {
  * Unlike {@link deduplicateName} from `@/lib/deduplicateName`, this function is
  * file-name-aware: it inserts the counter before the extension (e.g. `file_1.js`)
  * rather than appending it at the end (which would produce `file.js_1`).
- * This extension-aware behavior cannot be achieved by the generic lib utility,
- * so a local implementation is necessary.
  */
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {

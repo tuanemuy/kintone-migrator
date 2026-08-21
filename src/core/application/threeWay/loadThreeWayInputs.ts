@@ -8,8 +8,8 @@ import { loadSnapshotState, type SnapshotStateStorage } from "./stateIo";
  *
  * - `state`: the base snapshot (common ancestor), or undefined on first run.
  * - `baseRevision`: the app (preview) revision saved alongside the base
- *   snapshot, or undefined on first run. revision is now app-scoped and read
- *   from {@link AppRevisionStorage} rather than from the snapshot.
+ *   snapshot, or undefined on first run. The revision is app-scoped, so it is
+ *   read from {@link AppRevisionStorage} rather than from the snapshot.
  * - `local`: the local config parsed from its YAML file, or undefined when the
  *   file is absent. Defaults to the snapshot shape; domains whose snapshot
  *   carries more than the config (e.g. customization's file digests) set
@@ -47,7 +47,7 @@ export type LoadThreeWayInputsArgs<
  * Loads the base snapshot, the base app revision, the local config, and the
  * remote config in parallel for a 3-way sync. Generic over the snapshot
  * (`TSnapshot`) and remote (`TRemote`) shapes so every config domain reuses one
- * loader (generalization of schema step1's `loadThreeWayInputs`).
+ * loader.
  */
 export async function loadThreeWayInputs<
   TSnapshot,
