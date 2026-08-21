@@ -240,6 +240,20 @@ describe("detectCustomizationThreeWayDiff", () => {
     expect(result.localChanges.map((e) => e.key)).toContain(KEY);
   });
 
+  it("propagates a remote download failure instead of leaving the key untracked", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    matchFile(container, "a.js", "v1");
+    container.fileDownloader.setFailOn("download");
+
+    // Swallowing this the way an unreadable local file is swallowed would turn a
+    // transient network error into "the remote holds no content for this key"
+    // and report remote drift on a file nobody touched.
+    await expect(runDiff(container)).rejects.toThrow("download failed");
+  });
+
   it("notes the unreadable file behind that change, even with a recorded baseline", async () => {
     const container = getContainer();
     setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));

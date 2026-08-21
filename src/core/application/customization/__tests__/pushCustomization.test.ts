@@ -335,6 +335,24 @@ describe("pushCustomization", () => {
     );
   });
 
+  it("digests an absolutely declared path from where the upload reads it (AC-6)", async () => {
+    const container = getContainer();
+    const declared = "/vendor/app.js";
+    setLocal(container, localFile(declared));
+    setRemote(container, [], "5");
+    // Seeded only at the declared path itself. `join(BASE, declared)` would name
+    // `/app/vendor/app.js`, which is unreadable, so the key would silently lose
+    // its digest while the upload still sent `/vendor/app.js`.
+    container.fileContentReader.setFile(declared, bytes("vendor-body"));
+
+    await pushCustomization({ container, input: { basePath: BASE } });
+
+    expect(container.fileUploader.uploadedFiles.has(declared)).toBe(true);
+    expect(await readStateDigests(container)).toEqual(
+      new Map([["desktop:js:app.js", digestOf("vendor-body")]]),
+    );
+  });
+
   it("leaves an unreadable file untracked instead of failing (AC-10)", async () => {
     const container = getContainer();
     setState(
