@@ -54,13 +54,29 @@ type PullOptions = {
   readonly theirs: boolean;
 };
 
+/** The merge key holding the customization scope rather than a resource. */
+const SCOPE_KEY = "config:scope";
+
 /**
  * What each choice does. `pull` never writes to kintone, so the destruction is
  * one-directional: only the copy on disk can be lost here, and the wording says
  * which choice loses it.
+ *
+ * The scope is a single value in the customization config file, so no file moves
+ * either way. A resource whose remote side is a URL — or gone — carries no body
+ * to write over the local copy, hence "wherever the remote side has a body"
+ * rather than a flat promise that the file on disk is replaced.
  */
-const CONFLICT_EFFECT =
-  "remote replaces the local file on disk; local keeps it, and the remote stays untouched until the next `customize push`";
+const SCOPE_EFFECT =
+  "remote takes the remote scope; local keeps the local one, and the remote stays untouched until the next `customize push`";
+const RESOURCE_EFFECT =
+  "remote replaces the local file on disk wherever the remote side has a body; local keeps the copy on disk, and the remote stays untouched until the next `customize push`";
+
+/** The merge facts the prompt wording depends on. */
+type ConflictContext = Pick<
+  CustomizeMerged,
+  "estimatedKeys" | "unreadableLocalKeys"
+>;
 
 /**
  * Why the divergence may not be real, when it may not be.
@@ -71,13 +87,13 @@ const CONFLICT_EFFECT =
  * pointing at a file that is not on disk.
  */
 function conflictCaveat(
-  merged: CustomizeMerged,
+  context: ConflictContext,
   key: string,
 ): string | undefined {
-  if (merged.unreadableLocalKeys.has(key)) {
+  if (context.unreadableLocalKeys.has(key)) {
     return "the local file could not be read, so this may not be a real conflict";
   }
-  if (merged.estimatedKeys.conservative.has(key)) {
+  if (context.estimatedKeys.conservative.has(key)) {
     return "no recorded baseline for this file, so this may not be a real conflict";
   }
   return undefined;
@@ -85,15 +101,19 @@ function conflictCaveat(
 
 /**
  * The conflict prompt. Exported so its wording is pinned by a test: this prompt
- * is the only place where picking the wrong side discards content.
+ * is the only place where picking the wrong side discards content, and both the
+ * caveat and the effect are chosen here.
  */
 export function buildConflictPrompt(
+  context: ConflictContext,
   key: string,
-  caveat: string | undefined,
 ): string {
-  const detail =
-    caveat === undefined ? CONFLICT_EFFECT : `${caveat}; ${CONFLICT_EFFECT}`;
-  return `Conflict on file "${key}". Keep which side? (${detail})`;
+  const isScope = key === SCOPE_KEY;
+  const effect = isScope ? SCOPE_EFFECT : RESOURCE_EFFECT;
+  const caveat = conflictCaveat(context, key);
+  const detail = caveat === undefined ? effect : `${caveat}; ${effect}`;
+  const subject = isScope ? "scope" : `entry "${key}"`;
+  return `Conflict on ${subject}. Keep which side? (${detail})`;
 }
 
 async function resolveConflicts(
@@ -111,10 +131,7 @@ async function resolveConflicts(
       continue;
     }
     const selected = await p.select({
-      message: buildConflictPrompt(
-        conflict.key,
-        conflictCaveat(merged, conflict.key),
-      ),
+      message: buildConflictPrompt(merged, conflict.key),
       options: [
         { value: "local", label: "local (ours)" },
         { value: "remote", label: "remote (theirs)" },

@@ -152,9 +152,12 @@ type BucketedResources<T> = Readonly<
  * it belongs to. Generic over the resource so the local config, the raw remote
  * shape and a merged config are all walked by the same code.
  *
- * Every key-producing walk goes through here: a hand-written enumeration that
- * misses a bucket is not a type error, and the symptom — digests silently left
- * unrecorded, downloads silently skipped — surfaces far from the cause.
+ * Key-producing walks over a typed config go through here: a hand-written
+ * enumeration that misses a bucket is not a type error, and the symptom —
+ * digests silently left unrecorded, downloads silently skipped — surfaces far
+ * from the cause. Walks over raw `unknown` data (the state parser) cannot be
+ * typed as {@link BucketedResources} and instead iterate {@link PLATFORMS} and
+ * {@link CATEGORIES} directly, which keeps them on the same bucket space.
  */
 export function* walkCustomizationBuckets<T>(
   resources: BucketedResources<T>,

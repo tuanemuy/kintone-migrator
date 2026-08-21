@@ -3,7 +3,7 @@ import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
 import {
   type CustomizationPlatformName,
-  resourceKey,
+  remoteFileResourceKey,
 } from "@/core/domain/customization/services/customizationMerge";
 import type {
   CustomizationPlatform,
@@ -25,10 +25,10 @@ export type CaptureCustomizationInput = {
    * Opt-in path preservation for `pull`. Keyed by the bucket-qualified identity
    * `resourceKey(platform, category, FILE basename)` — the same identity the
    * 3-way merge uses, so cross-bucket same-basename files stay distinct. The
-   * basename component is the remote FILE's `file.name` (as produced by
-   * `remoteResourceName`); the value is the existing local declared relative
-   * path. When a remote FILE's key is present, its config path and download
-   * target adopt the declared path instead of the capture-normalized scheme.
+   * basename component is the trailing path segment (as produced by
+   * `resourceName`); the value is the existing local declared relative path.
+   * When a remote FILE's key is present, its config path and download target
+   * adopt the declared path instead of the capture-normalized scheme.
    * Unset (the `capture` command) keeps the current normalization.
    */
   readonly preservePaths?: ReadonlyMap<string, string>;
@@ -132,9 +132,11 @@ function planResources(
         usedNames,
       );
       // Match on the bucket-qualified identity so a remote FILE only adopts a
-      // preserved path from the same (platform, category) bucket.
+      // preserved path from the same (platform, category) bucket, normalizing
+      // the remote name the same way the key producer normalizes the declared
+      // path so a name containing a separator still finds its entry.
       const declaredPath = preservePaths?.get(
-        resourceKey(platformName, resourceType, resource.file.name),
+        remoteFileResourceKey(platformName, resourceType, resource.file.name),
       );
       if (declaredPath !== undefined) {
         // Preserve the existing local declared path: path is a local-owned

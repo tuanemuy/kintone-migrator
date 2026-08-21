@@ -75,20 +75,22 @@ mobile:
 
 ## state スナップショット
 
-`customize push` / `customize pull` は同期完了時のカスタマイズ設定を state スナップショットとして保存する。これは 3-way マージの共通祖先（base）であり、capture 出力と同じフォーマットに FILE リソースの内容ダイジェストを加えたもの。保存先は実行モードによって異なる。
+`customize push` / `customize pull` は同期完了時のカスタマイズ設定を state スナップショットとして保存する。全ドメイン一括の `push` / `pull` コマンドも、その customize 経路で同じ state を書く。これは 3-way マージの共通祖先（base）であり、capture 出力と同じフォーマットに FILE リソースの内容ダイジェストを加えたもの。保存先は実行モードによって異なる。
 
 | 実行モード | state スナップショット | アプリ revision |
 | --- | --- | --- |
 | 単一アプリモード（既定） | `state/customize.yaml` | `state/revision.yaml` |
-| 複数アプリモード（`--app` / `--all`） | `state/<appName>/customize.yaml` | `state/<appName>/revision.yaml` |
+| 複数アプリモード（`--app`、または一括 `push` / `pull` の `--all`） | `state/<appName>/customize.yaml` | `state/<appName>/revision.yaml` |
+
+`customize push` / `customize pull` が受け付けるのは `--app` までで、`--all` は拒否する。複数アプリを一括で処理するのは全ドメイン一括の `push` / `pull` コマンドのみ。
 
 ```yaml
 scope: ALL
 desktop:
   js:
-    - type: FILE
+    - digest: sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+      type: FILE
       path: desktop/js/app.js
-      digest: sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
     - type: URL
       url: https://cdn.example.com/lib.js
 ```
@@ -100,10 +102,10 @@ desktop:
 | `type` | `"FILE"` \| `"URL"` | 必須 | リソースの種別 |
 | `path` | string | 任意 | FILE リソースのローカルパス（`type: FILE` のとき必須・非空） |
 | `url` | string | 任意 | URL リソースの URL（`type: URL` のとき必須・非空） |
-| `digest` | string | 任意 | FILE リソースの内容ダイジェスト（`sha256:<64桁の16進数>`）。FILE リソースのみに付き、未記録のエントリは追跡外として扱う |
+| `digest` | string | 任意 | FILE リソースの内容ダイジェスト（`sha256:<64桁の16進数（小文字）>`）。FILE リソースのみに付き、未記録のエントリは追跡外として扱う |
 
 - URL リソースの内容は本ツールの管理外のため `digest` は付かない
-- 形式は `sha256:<64桁の16進数>`。バイト列をそのままハッシュし、改行コードや BOM の正規化は行わない
+- 形式は `sha256:<64桁の16進数（小文字）>`。バイト列をそのままハッシュし、改行コードや BOM の正規化は行わない
 - 値は原則としてリモートが保持している内容のダイジェストで、経路ごとに次のように決まる
     - `customize push`: アップロードするローカルファイルの内容（反映後にリモートが保持する内容）のダイジェスト
     - `customize pull`（`--force` / state が無い初回）: リモートからダウンロードして書き出したファイルの内容のダイジェスト
