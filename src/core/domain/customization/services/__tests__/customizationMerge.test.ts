@@ -10,8 +10,10 @@ import {
   type CustomizationMergeTags,
   computeCustomizationThreeWayMerge,
   fileResourceKeys,
+  remoteFileResourceKey,
   resolveBaseFileDigests,
   resolveCustomizationMerge,
+  walkCustomizationBuckets,
 } from "../customizationMerge";
 
 function file(name: string): CustomizationResource {
@@ -345,6 +347,41 @@ describe("fileResourceKeys", () => {
       "desktop:js:a.js",
       "mobile:css:m.css",
     ]);
+  });
+});
+
+describe("walkCustomizationBuckets", () => {
+  it("visits all four buckets, tagging each resource with its own bucket", () => {
+    const config: CustomizationConfig = {
+      scope: "ALL",
+      desktop: { js: [file("dj.js")], css: [file("dc.css")] },
+      mobile: { js: [file("mj.js")], css: [file("mc.css")] },
+    };
+
+    expect(
+      [...walkCustomizationBuckets(config)].map(
+        ({ platform, category, resource }) =>
+          `${platform}:${category}:${pathOf(resource)}`,
+      ),
+    ).toEqual([
+      "desktop:js:dj.js",
+      "desktop:css:dc.css",
+      "mobile:js:mj.js",
+      "mobile:css:mc.css",
+    ]);
+  });
+});
+
+describe("remoteFileResourceKey", () => {
+  it("keys a remote FILE by the trailing segment of the name kintone reports", () => {
+    // The remote config the merge is built from carries `file.name` as its
+    // `path`, so a name with a directory part must collapse the same way.
+    expect(remoteFileResourceKey("desktop", "js", "sub/main.js")).toBe(
+      "desktop:js:main.js",
+    );
+    expect(remoteFileResourceKey("mobile", "css", "style.css")).toBe(
+      "mobile:css:style.css",
+    );
   });
 });
 

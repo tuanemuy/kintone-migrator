@@ -3,9 +3,9 @@ import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import type { FileContentReader } from "@/core/domain/customization/ports/fileContentReader";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
 import {
-  CATEGORIES,
-  PLATFORMS,
+  remoteFileResourceKey,
   resourceKey,
+  walkCustomizationBuckets,
 } from "@/core/domain/customization/services/customizationMerge";
 import { resourceName } from "@/core/domain/customization/services/diffDetector";
 import type {
@@ -56,19 +56,17 @@ async function digestLocalFiles(
   keys: ReadonlySet<string> | undefined,
 ): Promise<CustomizationFileDigests> {
   const targets: Array<{ key: string; absolutePath: string }> = [];
-  for (const platform of PLATFORMS) {
-    for (const category of CATEGORIES) {
-      for (const resource of config[platform][category]) {
-        if (resource.type !== "FILE") {
-          continue;
-        }
-        const key = resourceKey(platform, category, resourceName(resource));
-        if (keys !== undefined && !keys.has(key)) {
-          continue;
-        }
-        targets.push({ key, absolutePath: resolve(basePath, resource.path) });
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    config,
+  )) {
+    if (resource.type !== "FILE") {
+      continue;
     }
+    const key = resourceKey(platform, category, resourceName(resource));
+    if (keys !== undefined && !keys.has(key)) {
+      continue;
+    }
+    targets.push({ key, absolutePath: resolve(basePath, resource.path) });
   }
 
   const results = await Promise.all(
@@ -122,23 +120,17 @@ export async function computeRemoteFileDigests(
   keys: ReadonlySet<string>,
 ): Promise<CustomizationFileDigests> {
   const targets: Array<{ key: string; fileKey: string }> = [];
-  for (const platform of PLATFORMS) {
-    for (const category of CATEGORIES) {
-      for (const resource of remote[platform][category]) {
-        if (resource.type !== "FILE") {
-          continue;
-        }
-        const key = resourceKey(
-          platform,
-          category,
-          resourceName({ type: "FILE", path: resource.file.name }),
-        );
-        if (!keys.has(key)) {
-          continue;
-        }
-        targets.push({ key, fileKey: resource.file.fileKey });
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    remote,
+  )) {
+    if (resource.type !== "FILE") {
+      continue;
     }
+    const key = remoteFileResourceKey(platform, category, resource.file.name);
+    if (!keys.has(key)) {
+      continue;
+    }
+    targets.push({ key, fileKey: resource.file.fileKey });
   }
 
   const results = await Promise.all(

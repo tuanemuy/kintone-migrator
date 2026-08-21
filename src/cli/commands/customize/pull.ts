@@ -54,6 +54,48 @@ type PullOptions = {
   readonly theirs: boolean;
 };
 
+/**
+ * What each choice does. `pull` never writes to kintone, so the destruction is
+ * one-directional: only the copy on disk can be lost here, and the wording says
+ * which choice loses it.
+ */
+const CONFLICT_EFFECT =
+  "remote replaces the local file on disk; local keeps it, and the remote stays untouched until the next `customize push`";
+
+/**
+ * Why the divergence may not be real, when it may not be.
+ *
+ * An unreadable local file counts as unknown content, so it conflicts with any
+ * remote change even where a baseline was recorded — a separate case from a
+ * missing baseline, and the only one where picking `local` leaves the merge
+ * pointing at a file that is not on disk.
+ */
+function conflictCaveat(
+  merged: CustomizeMerged,
+  key: string,
+): string | undefined {
+  if (merged.unreadableLocalKeys.has(key)) {
+    return "the local file could not be read, so this may not be a real conflict";
+  }
+  if (merged.estimatedKeys.conservative.has(key)) {
+    return "no recorded baseline for this file, so this may not be a real conflict";
+  }
+  return undefined;
+}
+
+/**
+ * The conflict prompt. Exported so its wording is pinned by a test: this prompt
+ * is the only place where picking the wrong side discards content.
+ */
+export function buildConflictPrompt(
+  key: string,
+  caveat: string | undefined,
+): string {
+  const detail =
+    caveat === undefined ? CONFLICT_EFFECT : `${caveat}; ${CONFLICT_EFFECT}`;
+  return `Conflict on file "${key}". Keep which side? (${detail})`;
+}
+
 async function resolveConflicts(
   merged: CustomizeMerged,
   options: PullOptions,
@@ -68,16 +110,11 @@ async function resolveConflicts(
       resolution.set(conflict.key, "remote");
       continue;
     }
-    // A conservatively estimated key has no recorded baseline, so "both sides
-    // changed" is a guess — the file may not diverge at all (e.g. the local
-    // copy could not be read). This prompt is the only place where picking the
-    // wrong side actually discards content, so say so before asking.
-    const estimated = merged.estimatedKeys.conservative.has(conflict.key);
-    const message = estimated
-      ? `Conflict on file "${conflict.key}". Keep which side? (estimated: no recorded baseline for this file, so this may not be a real conflict — the side you drop is overwritten)`
-      : `Conflict on file "${conflict.key}". Keep which side?`;
     const selected = await p.select({
-      message,
+      message: buildConflictPrompt(
+        conflict.key,
+        conflictCaveat(merged, conflict.key),
+      ),
       options: [
         { value: "local", label: "local (ours)" },
         { value: "remote", label: "remote (theirs)" },

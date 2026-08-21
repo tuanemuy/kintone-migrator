@@ -35,7 +35,7 @@ function formatKeys(keys: readonly string[]): string {
 function optimisticNote(keys: readonly string[]): string {
   return [
     `Base snapshot has no content digest for ${keys.length} file(s); they were classified by assuming the remote still matches the base (app revision unchanged): ${formatKeys(keys)}.`,
-    "A normal (non-force) `customize push` or `customize pull` records the baseline. If the remote may have been edited outside this tool, run `customize pull --force` first to take the remote side — that replaces every local customization file and `customize.yaml` with the remote copy, discarding the local edits listed above, so save them elsewhere first.",
+    "A normal (non-force) `customize push` or `customize pull` records the baseline. If the remote may have been edited outside this tool, run `customize pull --force` first to take the remote side — that replaces every local customization file and your customization config file with the remote copy, discarding the local edits listed above, so save them elsewhere first.",
   ].join("\n");
 }
 
@@ -48,7 +48,7 @@ function conservativeNote(keys: readonly string[]): string {
 
 function unreadableNote(keys: readonly string[]): string {
   return [
-    `${keys.length} file(s) declared in customize.yaml could not be read from disk, so their content counted as unknown and they are listed as changed: ${formatKeys(keys)}.`,
+    `${keys.length} file(s) declared in the customization config file could not be read from disk, so their content counted as unknown and they are listed as changed: ${formatKeys(keys)}.`,
     "Build or restore those files (or fix the declared paths) and run `customize diff` again to see the real classification.",
   ].join("\n");
 }

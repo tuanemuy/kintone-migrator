@@ -256,6 +256,23 @@ describe("detectCustomizationThreeWayDiff", () => {
     expect(notes.join("\n")).not.toContain("no content digest");
   });
 
+  it("refers to the customization config file without naming a path", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setRemoteBody(container, "a.js", "v1");
+    container.fileContentReader.setFailure(`${BASE}/a.js`);
+
+    const notes = ((await runDiff(container)).notes ?? []).join("\n");
+
+    // The path is configurable (`--customize-file` / `CUSTOMIZE_FILE_PATH`) and
+    // defaults to `customize/<appName>.yaml` in multi-app mode, so a note that
+    // names `customize.yaml` points at a file the user may not have.
+    expect(notes).toContain("declared in the customization config file");
+    expect(notes).not.toContain("customize.yaml");
+  });
+
   it("stays silent about readable files", async () => {
     const container = getContainer();
     setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
@@ -334,6 +351,9 @@ describe("detectCustomizationThreeWayDiff — snapshots without digests", () => 
 
     expect(notes).toContain("replaces every local customization file");
     expect(notes).toContain("discarding the local edits");
+    // The config file is named generically because its path is configurable.
+    expect(notes).toContain("your customization config file");
+    expect(notes).not.toContain("customize.yaml");
   });
 
   it("notes the inferred classification and points at a plain pull (AC-9 b)", async () => {

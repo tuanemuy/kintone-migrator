@@ -75,7 +75,12 @@ mobile:
 
 ## state スナップショット
 
-`customize push` / `customize pull` は同期完了時のカスタマイズ設定を `state/<appName>/customize.yaml` に保存する。これは 3-way マージの共通祖先（base）であり、capture 出力と同じフォーマットに FILE リソースの内容ダイジェストを加えたもの。
+`customize push` / `customize pull` は同期完了時のカスタマイズ設定を state スナップショットとして保存する。これは 3-way マージの共通祖先（base）であり、capture 出力と同じフォーマットに FILE リソースの内容ダイジェストを加えたもの。保存先は実行モードによって異なる。
+
+| 実行モード | state スナップショット | アプリ revision |
+| --- | --- | --- |
+| 単一アプリモード（既定） | `state/customize.yaml` | `state/revision.yaml` |
+| 複数アプリモード（`--app` / `--all`） | `state/<appName>/customize.yaml` | `state/<appName>/revision.yaml` |
 
 ```yaml
 scope: ALL
@@ -104,13 +109,13 @@ desktop:
     - `customize pull`（`--force` / state が無い初回）: リモートからダウンロードして書き出したファイルの内容のダイジェスト
     - `customize pull`（マージ適用）: リモートに同じキーが存在すればリモート側の内容のダイジェスト（ローカル側が採用されたエントリの内容はまだリモートに存在しないため）。リモートに存在しないキー（ローカルで追加され、まだアップロードされていないファイル）はディスク上の内容のダイジェスト
 - いずれの経路でも、内容を読み取れなかった FILE エントリには `digest` が付かない
-- アプリの revision はここには含まれない。`state/<appName>/revision.yaml` に別途保存される
+- アプリの revision はここには含まれない。上表のアプリ revision ファイルに別途保存される
 
 ### digest が無い場合
 
 `digest` が無い FILE エントリは「追跡外」（保存時点の内容が不明）として扱う。内容が空のファイルも `digest` を持つため、両者は区別される。追跡外エントリの分類は次のように決まる。
 
-- `digest` を 1 件も持たない state（`digest` の導入前に作られたもの）で、`state/<appName>/revision.yaml` の revision がリモートのアプリ revision と一致する場合は、リモートの内容を base とみなす
+- `digest` を 1 件も持たない state（`digest` の導入前に作られたもの）で、アプリ revision ファイルの revision がリモートのアプリ revision と一致する場合は、リモートの内容を base とみなす
 - それ以外の場合は、リソースの存在有無と両側の内容一致から保守的に分類する（digest 導入前と同じ分類になる）
 
 いずれの場合も、`--force` なしの `customize push` / `customize pull` を一度通せば、リモートに存在するか、ローカルディスクから読めるファイルについて `digest` が記録され、以降は内容の厳密な比較になる。リモートにも存在せず、ディスクからも読めないファイル（宣言だけが残っている未生成のビルド成果物など）は追跡外のまま残る。

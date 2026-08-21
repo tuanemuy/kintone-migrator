@@ -99,13 +99,73 @@ const SCOPE_KEY = "config:scope";
  * Bucket-qualified resource identity: `platform:category:name`. Shared with the
  * force/firstTime pull path (`preservePaths`) so path preservation matches the
  * merge on the same identity and cross-bucket same-basename files stay distinct.
+ *
+ * The bucket parameters are the bucket types rather than `string` so a typo or a
+ * stale literal at a call site is a compile error instead of a key nobody ever
+ * looks up.
  */
 export function resourceKey(
-  platform: string,
-  category: string,
+  platform: CustomizationPlatformName,
+  category: CustomizationCategoryName,
   name: string,
 ): string {
   return `${platform}:${category}:${name}`;
+}
+
+/**
+ * The {@link resourceKey} of a remote FILE, from the name kintone reports.
+ *
+ * The remote name is normalized exactly like a local declared path, because the
+ * remote config the merge is built from carries `file.name` as its `path`: a
+ * name containing `/` becomes its trailing segment there, and a lookup keyed by
+ * the raw name would miss the very entry it describes.
+ */
+export function remoteFileResourceKey(
+  platform: CustomizationPlatformName,
+  category: CustomizationCategoryName,
+  fileName: string,
+): string {
+  return resourceKey(
+    platform,
+    category,
+    resourceName({ type: "FILE", path: fileName }),
+  );
+}
+
+/** A resource together with the bucket it was found in. */
+export type BucketedResource<T> = Readonly<{
+  platform: CustomizationPlatformName;
+  category: CustomizationCategoryName;
+  resource: T;
+}>;
+
+/** Anything shaped like a customization: two platforms of two resource lists. */
+type BucketedResources<T> = Readonly<
+  Record<
+    CustomizationPlatformName,
+    Readonly<Record<CustomizationCategoryName, readonly T[]>>
+  >
+>;
+
+/**
+ * Walks every (platform, category) bucket, tagging each resource with the bucket
+ * it belongs to. Generic over the resource so the local config, the raw remote
+ * shape and a merged config are all walked by the same code.
+ *
+ * Every key-producing walk goes through here: a hand-written enumeration that
+ * misses a bucket is not a type error, and the symptom — digests silently left
+ * unrecorded, downloads silently skipped — surfaces far from the cause.
+ */
+export function* walkCustomizationBuckets<T>(
+  resources: BucketedResources<T>,
+): Generator<BucketedResource<T>> {
+  for (const platform of PLATFORMS) {
+    for (const category of CATEGORIES) {
+      for (const resource of resources[platform][category]) {
+        yield { platform, category, resource };
+      }
+    }
+  }
 }
 
 function platformList(
@@ -128,17 +188,15 @@ function toMap(
   side: Side,
 ): Map<string, MergeValue> {
   const map = new Map<string, MergeValue>();
-  for (const platform of PLATFORMS) {
-    for (const category of CATEGORIES) {
-      for (const resource of platformList(config, platform, category)) {
-        const key = resourceKey(platform, category, resourceName(resource));
-        const tag =
-          resource.type === "FILE"
-            ? `FILE:${tags.get(key) ?? UNTRACKED[side]}`
-            : "URL";
-        map.set(key, { resource, tag });
-      }
-    }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    config,
+  )) {
+    const key = resourceKey(platform, category, resourceName(resource));
+    const tag =
+      resource.type === "FILE"
+        ? `FILE:${tags.get(key) ?? UNTRACKED[side]}`
+        : "URL";
+    map.set(key, { resource, tag });
   }
   const scope = config.scope ?? DEFAULT_CUSTOMIZATION_SCOPE;
   map.set(SCOPE_KEY, { scope });
@@ -150,13 +208,11 @@ export function fileResourceKeys(
   config: CustomizationConfig,
 ): ReadonlySet<string> {
   const keys = new Set<string>();
-  for (const platform of PLATFORMS) {
-    for (const category of CATEGORIES) {
-      for (const resource of platformList(config, platform, category)) {
-        if (resource.type === "FILE") {
-          keys.add(resourceKey(platform, category, resourceName(resource)));
-        }
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    config,
+  )) {
+    if (resource.type === "FILE") {
+      keys.add(resourceKey(platform, category, resourceName(resource)));
     }
   }
   return keys;

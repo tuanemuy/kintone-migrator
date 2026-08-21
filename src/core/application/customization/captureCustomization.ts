@@ -1,7 +1,10 @@
 import { basename, extname, join, resolve } from "node:path";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
-import { resourceKey } from "@/core/domain/customization/services/customizationMerge";
+import {
+  type CustomizationPlatformName,
+  resourceKey,
+} from "@/core/domain/customization/services/customizationMerge";
 import type {
   CustomizationPlatform,
   CustomizationResource,
@@ -108,7 +111,7 @@ type PlanResult = {
 
 function planResources(
   resources: readonly RemoteResource[],
-  platformName: string,
+  platformName: CustomizationPlatformName,
   platformDir: string,
   resourceType: "js" | "css",
   relativeBaseDir: string,
@@ -163,7 +166,7 @@ function planResources(
 
 function planPlatform(
   remotePlatform: RemotePlatform,
-  platformName: string,
+  platformName: CustomizationPlatformName,
   basePath: string,
   filePrefix: string,
   preservePaths: ReadonlyMap<string, string> | undefined,

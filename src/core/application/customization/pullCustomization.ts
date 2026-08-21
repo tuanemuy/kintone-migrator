@@ -6,18 +6,15 @@ import {
   type CustomizationThreeWayMerge,
   type EstimatedBaseKeys,
   fileResourceKeys,
+  remoteFileResourceKey,
   resolveCustomizationMerge,
   resourceKey,
+  walkCustomizationBuckets,
 } from "@/core/domain/customization/services/customizationMerge";
-import {
-  remoteResourceName,
-  resourceName,
-} from "@/core/domain/customization/services/diffDetector";
+import { resourceName } from "@/core/domain/customization/services/diffDetector";
 import type {
   ContentDigest,
   CustomizationFileDigests,
-  CustomizationResource,
-  LocalFileResource,
   RemoteCustomization,
 } from "@/core/domain/customization/valueObject";
 import type {
@@ -71,6 +68,12 @@ export type PullCustomizationOutput =
        * a conservatively estimated key may not be a real divergence at all.
        */
       readonly estimatedKeys: EstimatedBaseKeys;
+      /**
+       * Keys whose local body could not be read while classifying. The CLI warns
+       * before asking which side of a conflict to keep: such a key looks like a
+       * two-sided divergence only because the local content was unknown.
+       */
+      readonly unreadableLocalKeys: ReadonlySet<string>;
     };
 
 /**
@@ -126,7 +129,7 @@ export async function pullCustomization({
     return { mode: input.force ? "force" : "firstTime" };
   }
 
-  const { merge, remoteDigests, estimatedKeys } =
+  const { merge, remoteDigests, estimatedKeys, unreadableLocalKeys } =
     await buildCustomizationThreeWayMerge({
       container,
       state,
@@ -145,6 +148,7 @@ export async function pullCustomization({
     remoteRevision: remote.revision,
     remoteDigests,
     estimatedKeys,
+    unreadableLocalKeys,
   };
 }
 
@@ -209,13 +213,21 @@ export async function applyPulledCustomizationMerge({
   const remoteFileKeys = remoteFileKeyMap(input.remote);
 
   const downloads: Promise<void>[] = [];
-  for (const { platform, category, resource } of allFileResources(merged)) {
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    merged,
+  )) {
+    if (resource.type !== "FILE") {
+      continue;
+    }
     const key = resourceKey(platform, category, resourceName(resource));
     if (!fromRemote.has(key)) {
       continue;
     }
     const fileKey = remoteFileKeys.get(key);
     if (fileKey === undefined) {
+      // The remote side of this key is a URL: the merge took the remote side,
+      // but the rebuilt config keeps the locally declared FILE entry (path is a
+      // local-owned concern), so there is no remote body to fetch.
       continue;
     }
     const absolutePath = resolve(input.basePath, resource.path);
@@ -299,82 +311,37 @@ function buildPreservePaths(
   config: CustomizationConfig,
 ): ReadonlyMap<string, string> {
   const map = new Map<string, string>();
-  const add = (
-    platform: string,
-    category: string,
-    resources: readonly CustomizationResource[],
-  ) => {
-    for (const resource of resources) {
-      if (resource.type === "FILE") {
-        map.set(
-          resourceKey(platform, category, resourceName(resource)),
-          resource.path,
-        );
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    config,
+  )) {
+    if (resource.type === "FILE") {
+      map.set(
+        resourceKey(platform, category, resourceName(resource)),
+        resource.path,
+      );
     }
-  };
-  add("desktop", "js", config.desktop.js);
-  add("desktop", "css", config.desktop.css);
-  add("mobile", "js", config.mobile.js);
-  add("mobile", "css", config.mobile.css);
+  }
   return map;
 }
 
-type BucketFileResource = {
-  readonly platform: string;
-  readonly category: string;
-  readonly resource: LocalFileResource;
-};
-
 /**
- * FILE resources paired with the bucket they live in, so the caller can rebuild
- * their `resourceKey` instead of collapsing them onto a bare basename.
- */
-function allFileResources(config: CustomizationConfig): BucketFileResource[] {
-  const all: BucketFileResource[] = [];
-  const add = (
-    platform: string,
-    category: string,
-    resources: readonly CustomizationResource[],
-  ) => {
-    for (const resource of resources) {
-      if (resource.type === "FILE") {
-        all.push({ platform, category, resource });
-      }
-    }
-  };
-  add("desktop", "js", config.desktop.js);
-  add("desktop", "css", config.desktop.css);
-  add("mobile", "js", config.mobile.js);
-  add("mobile", "css", config.mobile.css);
-  return all;
-}
-
-/**
- * Remote FILE `fileKey`s keyed by `resourceKey(platform, category, remote FILE
- * name)`. A flat basename map would make cross-bucket same-basename files
- * (e.g. `desktop/js/main.js` and `mobile/js/main.js`) resolve to whichever
- * bucket was registered last, overwriting one bucket's body with the other's.
+ * Remote FILE `fileKey`s under the merge identity, so a body is looked up by the
+ * same key the merge decided to take from the remote. A flat basename map would
+ * make cross-bucket same-basename files (e.g. `desktop/js/main.js` and
+ * `mobile/js/main.js`) resolve to whichever bucket was registered last,
+ * overwriting one bucket's body with the other's.
  */
 function remoteFileKeyMap(remote: RemoteCustomization): Map<string, string> {
   const map = new Map<string, string>();
-  const add = (
-    platform: string,
-    category: string,
-    resources: RemoteCustomization["desktop"]["js"],
-  ) => {
-    for (const r of resources) {
-      if (r.type === "FILE") {
-        map.set(
-          resourceKey(platform, category, remoteResourceName(r)),
-          r.file.fileKey,
-        );
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    remote,
+  )) {
+    if (resource.type === "FILE") {
+      map.set(
+        remoteFileResourceKey(platform, category, resource.file.name),
+        resource.file.fileKey,
+      );
     }
-  };
-  add("desktop", "js", remote.desktop.js);
-  add("desktop", "css", remote.desktop.css);
-  add("mobile", "js", remote.mobile.js);
-  add("mobile", "css", remote.mobile.css);
+  }
   return map;
 }

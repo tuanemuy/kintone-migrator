@@ -352,6 +352,38 @@ describe("pullCustomization", () => {
     }
   });
 
+  it("reports the conflicting key whose local body could not be read", async () => {
+    const container = getContainer();
+    // The baseline IS recorded, so the key is not a conservative estimate — the
+    // conflict exists only because the local content is unknown, and the CLI has
+    // to say so before asking which side to keep.
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    container.fileContentReader.setFailure(`${BASE}/a.js`);
+    container.fileDownloader.setFile("fk-a.js", bytes("v2"));
+
+    const pull = await pullMerged(container);
+
+    expect(pull.merge.conflicts.map((c) => c.key)).toEqual([KEY]);
+    expect(pull.estimatedKeys.conservative.has(KEY)).toBe(false);
+    expect([...pull.unreadableLocalKeys]).toEqual([KEY]);
+  });
+
+  it("leaves unreadableLocalKeys empty when every declared body is readable", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    container.fileContentReader.setFile(`${BASE}/a.js`, bytes("local"));
+    container.fileDownloader.setFile("fk-a.js", bytes("remote"));
+
+    const pull = await pullMerged(container);
+
+    expect(pull.merge.conflicts.map((c) => c.key)).toEqual([KEY]);
+    expect([...pull.unreadableLocalKeys]).toEqual([]);
+  });
+
   it("succeeds with the key untracked when a declared file is missing from disk (AC-10)", async () => {
     const container = getContainer();
     setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
@@ -440,6 +472,47 @@ describe("pullCustomization — snapshot digests with a file prefix (AC-6)", () 
     expect(await readStateDigests(container)).toEqual(
       new Map([[CAPTURED_KEY, digestOf("v1")]]),
     );
+  });
+});
+
+describe("pullCustomization — remote file name with a directory separator", () => {
+  const getContainer = setupTestCustomizationContainer();
+
+  // The remote config the merge is built from carries `file.name` as its `path`,
+  // so a name like "sub/a.js" is keyed by its trailing segment. A fileKey index
+  // keyed by the raw name misses that key: the body is never downloaded, yet the
+  // new base records the remote digest — the disk keeps the old bytes while the
+  // state claims the remote's, so the next push overwrites the remote with them.
+  it("downloads the remote body under the merge identity and records it as the base", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("sub/a.js", "fk-nested")], "2");
+    container.fileContentReader.setFile(`${BASE}/a.js`, bytes("v1"));
+    container.fileDownloader.setFile("fk-nested", bytes("v2"));
+
+    const pull = await pullMerged(container);
+    expect(pull.merge.entries.find((e) => e.key === KEY)?.change.kind).toBe(
+      "remoteOnly",
+    );
+
+    await applyMerge(container, pull);
+
+    expect(textOf(container.fileWriter.writtenFiles.get(`${BASE}/a.js`))).toBe(
+      "v2",
+    );
+    expect(await readStateDigests(container)).toEqual(
+      new Map([[KEY, digestOf("v2")]]),
+    );
+    // The recorded base matches what is on disk, so nothing looks like drift.
+    const diff = await detectCustomizationThreeWayDiff({
+      container,
+      input: { basePath: BASE },
+    });
+    expect(diff.mode).toBe("three-way");
+    if (diff.mode === "three-way") {
+      expect(diff.isEmpty).toBe(true);
+    }
   });
 });
 
