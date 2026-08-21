@@ -2,7 +2,11 @@ import { resolve } from "node:path";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import type { FileContentReader } from "@/core/domain/customization/ports/fileContentReader";
 import type { FileDownloader } from "@/core/domain/customization/ports/fileDownloader";
-import { resourceKey } from "@/core/domain/customization/services/customizationMerge";
+import {
+  CATEGORIES,
+  PLATFORMS,
+  resourceKey,
+} from "@/core/domain/customization/services/customizationMerge";
 import { resourceName } from "@/core/domain/customization/services/diffDetector";
 import type {
   ContentDigest,
@@ -10,9 +14,6 @@ import type {
   RemoteCustomization,
 } from "@/core/domain/customization/valueObject";
 import { computeContentDigest } from "@/lib/contentDigest";
-
-const PLATFORMS = ["desktop", "mobile"] as const;
-const CATEGORIES = ["js", "css"] as const;
 
 /**
  * Digests the given local FILE resources.

@@ -197,8 +197,6 @@ export function printThreeWayDiffResult<TTwoWay>(
     return;
   }
 
-  // Caveats about how the classification was reached apply even when nothing
-  // differs, so they precede the empty-diff shortcut.
   for (const note of result.notes ?? []) {
     p.log.warn(note);
   }

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 
 const PREFIX = "sha256:";
+const DIGEST_PATTERN = /^sha256:[0-9a-f]{64}$/;
 
 /**
  * Content fingerprint of a byte sequence, formatted as `sha256:<64 hex chars>`.
@@ -26,11 +27,14 @@ export function computeContentDigest(
   return `${PREFIX}${createHash("sha256").update(bytes).digest("hex")}`;
 }
 
-/** Narrows an untrusted value (e.g. a parsed state file) to a {@link ContentDigest}. */
+/**
+ * Narrows an untrusted value (e.g. a parsed state file) to a {@link ContentDigest}.
+ *
+ * The full `sha256:<64 lowercase hex chars>` shape is enforced, not just the
+ * prefix: state files are hand-editable, and a truncated or otherwise malformed
+ * digest would be adopted as a comparison token and silently report the remote
+ * as changed. Every value {@link computeContentDigest} produces matches.
+ */
 export function isContentDigest(value: unknown): value is ContentDigest {
-  return (
-    typeof value === "string" &&
-    value.startsWith(PREFIX) &&
-    value.length > PREFIX.length
-  );
+  return typeof value === "string" && DIGEST_PATTERN.test(value);
 }

@@ -68,8 +68,16 @@ async function resolveConflicts(
       resolution.set(conflict.key, "remote");
       continue;
     }
+    // A conservatively estimated key has no recorded baseline, so "both sides
+    // changed" is a guess — the file may not diverge at all (e.g. the local
+    // copy could not be read). This prompt is the only place where picking the
+    // wrong side actually discards content, so say so before asking.
+    const estimated = merged.estimatedKeys.conservative.has(conflict.key);
+    const message = estimated
+      ? `Conflict on file "${conflict.key}". Keep which side? (estimated: no recorded baseline for this file, so this may not be a real conflict — the side you drop is overwritten)`
+      : `Conflict on file "${conflict.key}". Keep which side?`;
     const selected = await p.select({
-      message: `Conflict on file "${conflict.key}". Keep which side?`,
+      message,
       options: [
         { value: "local", label: "local (ours)" },
         { value: "remote", label: "remote (theirs)" },

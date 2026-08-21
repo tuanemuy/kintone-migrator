@@ -556,6 +556,50 @@ describe("captureCustomization", () => {
     expect(container.fileWriter.writtenFiles.size).toBe(4);
   });
 
+  it("writes a preserved absolute declared path where push uploads from (W-006)", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-abs",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    await captureCustomization({
+      container,
+      input: {
+        basePath,
+        filePrefix,
+        // `configParser` only rejects empty paths, so an absolute declared path
+        // is writable. Push uploads from (and the snapshot digests) the
+        // `resolve`d location, so capture must write exactly there.
+        preservePaths: new Map([["desktop:js:app.js", "/abs/vendor/app.js"]]),
+      },
+    });
+
+    expect(container.fileWriter.writtenFiles.has("/abs/vendor/app.js")).toBe(
+      true,
+    );
+    expect(
+      container.fileWriter.writtenFiles.has(
+        "/project/customize/myapp/abs/vendor/app.js",
+      ),
+    ).toBe(false);
+  });
+
   it("returns the config it wrote and uses the normalized scheme when preservePaths is unset (AC-8)", async () => {
     setup();
     container.customizationConfigurator.setCustomization({

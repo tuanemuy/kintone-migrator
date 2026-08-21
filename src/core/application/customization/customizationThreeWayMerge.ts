@@ -40,6 +40,13 @@ export type BuildCustomizationThreeWayMergeResult = Readonly<{
    * side does not pretend the local content was already uploaded.
    */
   remoteDigests: CustomizationFileDigests;
+  /**
+   * Keys whose local body was needed for the classification but could not be
+   * read from disk. Their digest is silently absent (see
+   * `readLocalDigest`), so the caller reports them instead of letting the
+   * resulting classification look like a real content change.
+   */
+  unreadableLocalKeys: ReadonlySet<string>;
 }>;
 
 /**
@@ -104,7 +111,16 @@ export async function buildCustomizationThreeWayMerge({
     { base: baseTags, local: localDigests, remote: remoteDigests },
   );
 
-  return { merge, estimatedKeys, remoteDigests };
+  const unreadableLocalKeys = difference(localNeeded, localDigests);
+
+  return { merge, estimatedKeys, remoteDigests, unreadableLocalKeys };
+}
+
+function difference(
+  keys: ReadonlySet<string>,
+  digests: CustomizationFileDigests,
+): Set<string> {
+  return new Set([...keys].filter((key) => !digests.has(key)));
 }
 
 function union(a: ReadonlySet<string>, b: ReadonlySet<string>): Set<string> {

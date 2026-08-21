@@ -4,6 +4,7 @@ import { CustomizationConfigSerializer } from "@/core/domain/customization/servi
 import {
   type CustomizationMergeResolution,
   type CustomizationThreeWayMerge,
+  type EstimatedBaseKeys,
   fileResourceKeys,
   resolveCustomizationMerge,
   resourceKey,
@@ -64,6 +65,12 @@ export type PullCustomizationOutput =
        * the remote holds (see its `remoteDigests`).
        */
       readonly remoteDigests: CustomizationFileDigests;
+      /**
+       * Keys whose base tag had to be estimated because no baseline digest was
+       * recorded. The CLI warns before asking which side of a conflict to keep:
+       * a conservatively estimated key may not be a real divergence at all.
+       */
+      readonly estimatedKeys: EstimatedBaseKeys;
     };
 
 /**
@@ -119,14 +126,15 @@ export async function pullCustomization({
     return { mode: input.force ? "force" : "firstTime" };
   }
 
-  const { merge, remoteDigests } = await buildCustomizationThreeWayMerge({
-    container,
-    state,
-    baseRevision,
-    local,
-    remote,
-    basePath: input.basePath,
-  });
+  const { merge, remoteDigests, estimatedKeys } =
+    await buildCustomizationThreeWayMerge({
+      container,
+      state,
+      baseRevision,
+      local,
+      remote,
+      basePath: input.basePath,
+    });
 
   return {
     mode: "merged",
@@ -136,6 +144,7 @@ export async function pullCustomization({
     remoteConfig: remote.config,
     remoteRevision: remote.revision,
     remoteDigests,
+    estimatedKeys,
   };
 }
 
@@ -179,33 +188,33 @@ export async function applyPulledCustomizationMerge({
     ),
   );
 
-  // File names whose body must be taken from the remote: every `remoteOnly`
+  // Merge keys whose body must be taken from the remote: every `remoteOnly`
   // entry plus every conflict resolved to `remote`. (`localOnly` / `bothSame` /
   // `unchanged` keep the local on-disk copy — same content, no re-download.)
+  // Keyed by the bucket-qualified merge identity, so a divergence in one bucket
+  // never drags a same-basename file of another bucket into the download set.
   const fromRemote = new Set<string>();
   for (const entry of input.merge.entries) {
-    const name = nameFromKey(entry.key);
-    if (name === undefined) continue;
     if (entry.change.kind === "remoteOnly") {
-      fromRemote.add(name);
+      fromRemote.add(entry.key);
     } else if (
       entry.change.kind === "conflict" &&
       input.resolution.get(entry.key) === "remote"
     ) {
-      fromRemote.add(name);
+      fromRemote.add(entry.key);
     }
   }
 
-  // Remote fileKey lookup by basename for files we must download.
+  // Remote fileKey lookup under the same bucket-qualified identity.
   const remoteFileKeys = remoteFileKeyMap(input.remote);
 
   const downloads: Promise<void>[] = [];
-  for (const resource of allFileResources(merged)) {
-    const name = resourceName(resource);
-    if (!fromRemote.has(name)) {
+  for (const { platform, category, resource } of allFileResources(merged)) {
+    const key = resourceKey(platform, category, resourceName(resource));
+    if (!fromRemote.has(key)) {
       continue;
     }
-    const fileKey = remoteFileKeys.get(name);
+    const fileKey = remoteFileKeys.get(key);
     if (fileKey === undefined) {
       continue;
     }
@@ -311,38 +320,61 @@ function buildPreservePaths(
   return map;
 }
 
-function allFileResources(config: CustomizationConfig): LocalFileResource[] {
-  const all = [
-    ...config.desktop.js,
-    ...config.desktop.css,
-    ...config.mobile.js,
-    ...config.mobile.css,
-  ];
-  return all.filter((r): r is LocalFileResource => r.type === "FILE");
-}
+type BucketFileResource = {
+  readonly platform: string;
+  readonly category: string;
+  readonly resource: LocalFileResource;
+};
 
 /**
- * Extracts the file/resource name from a merge key. Resource keys are
- * `platform:category:name`; the `config:scope` key has no resource name.
+ * FILE resources paired with the bucket they live in, so the caller can rebuild
+ * their `resourceKey` instead of collapsing them onto a bare basename.
  */
-function nameFromKey(key: string): string | undefined {
-  const parts = key.split(":");
-  if (parts.length < 3) return undefined;
-  return parts.slice(2).join(":");
-}
-
-function remoteFileKeyMap(remote: RemoteCustomization): Map<string, string> {
-  const map = new Map<string, string>();
-  const add = (resources: RemoteCustomization["desktop"]["js"]) => {
-    for (const r of resources) {
-      if (r.type === "FILE") {
-        map.set(remoteResourceName(r), r.file.fileKey);
+function allFileResources(config: CustomizationConfig): BucketFileResource[] {
+  const all: BucketFileResource[] = [];
+  const add = (
+    platform: string,
+    category: string,
+    resources: readonly CustomizationResource[],
+  ) => {
+    for (const resource of resources) {
+      if (resource.type === "FILE") {
+        all.push({ platform, category, resource });
       }
     }
   };
-  add(remote.desktop.js);
-  add(remote.desktop.css);
-  add(remote.mobile.js);
-  add(remote.mobile.css);
+  add("desktop", "js", config.desktop.js);
+  add("desktop", "css", config.desktop.css);
+  add("mobile", "js", config.mobile.js);
+  add("mobile", "css", config.mobile.css);
+  return all;
+}
+
+/**
+ * Remote FILE `fileKey`s keyed by `resourceKey(platform, category, remote FILE
+ * name)`. A flat basename map would make cross-bucket same-basename files
+ * (e.g. `desktop/js/main.js` and `mobile/js/main.js`) resolve to whichever
+ * bucket was registered last, overwriting one bucket's body with the other's.
+ */
+function remoteFileKeyMap(remote: RemoteCustomization): Map<string, string> {
+  const map = new Map<string, string>();
+  const add = (
+    platform: string,
+    category: string,
+    resources: RemoteCustomization["desktop"]["js"],
+  ) => {
+    for (const r of resources) {
+      if (r.type === "FILE") {
+        map.set(
+          resourceKey(platform, category, remoteResourceName(r)),
+          r.file.fileKey,
+        );
+      }
+    }
+  };
+  add("desktop", "js", remote.desktop.js);
+  add("desktop", "css", remote.desktop.css);
+  add("mobile", "js", remote.mobile.js);
+  add("mobile", "css", remote.mobile.css);
   return map;
 }

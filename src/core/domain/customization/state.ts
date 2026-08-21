@@ -27,6 +27,14 @@ export type CustomizationState = Readonly<{
    * Content digests of the snapshot's FILE resources, keyed by
    * `resourceKey(platform, category, basename)`. Keys are a subset of the FILE
    * resources in `config`; URL resources never carry a digest.
+   *
+   * Known limitation: the key is basename-based, so two FILE resources sharing a
+   * basename within one bucket (e.g. `src/app.js` and `lib/app.js` both in
+   * `desktop.js`) collapse into a single key and only the last one wins. Their
+   * contents are then compared against one another's digest, which classifies
+   * them as a persistent conflict. This is inherent to the merge's key design,
+   * not specific to digests; the 2-way `diffDetector` warns about duplicate
+   * basenames for the same reason.
    */
   fileDigests: CustomizationFileDigests;
 }>;

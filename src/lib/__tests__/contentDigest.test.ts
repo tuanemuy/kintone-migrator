@@ -46,14 +46,30 @@ describe("computeContentDigest", () => {
 });
 
 describe("isContentDigest", () => {
-  it("accepts a sha256-prefixed non-empty string", () => {
+  const HEX64 = "a".repeat(64);
+
+  it("accepts every value computeContentDigest produces", () => {
     expect(isContentDigest(computeContentDigest(bytes("x")))).toBe(true);
+    expect(isContentDigest(computeContentDigest(bytes("")))).toBe(true);
+    expect(isContentDigest(EMPTY_SHA256)).toBe(true);
   });
 
-  it("rejects a non-string, an empty string, a bare prefix, and other algorithms", () => {
-    expect(isContentDigest(123)).toBe(false);
-    expect(isContentDigest("")).toBe(false);
-    expect(isContentDigest("sha256:")).toBe(false);
-    expect(isContentDigest("md5:abc")).toBe(false);
+  it.each([
+    ["a non-string", 123],
+    ["null", null],
+    ["undefined", undefined],
+    ["an empty string", ""],
+    ["a bare prefix", "sha256:"],
+    ["another algorithm", `md5:${HEX64}`],
+    ["a missing prefix", HEX64],
+    ["a truncated digest", `sha256:${"a".repeat(63)}`],
+    ["an over-long digest", `sha256:${"a".repeat(65)}`],
+    ["uppercase hex", `sha256:${"A".repeat(64)}`],
+    ["a non-hex character", `sha256:${"z".repeat(64)}`],
+    ["leading whitespace", ` sha256:${HEX64}`],
+    ["a trailing newline", `sha256:${HEX64}\n`],
+    ["a doubled prefix", `sha256:sha256:${HEX64}`],
+  ])("rejects %s", (_label, value) => {
+    expect(isContentDigest(value)).toBe(false);
   });
 });

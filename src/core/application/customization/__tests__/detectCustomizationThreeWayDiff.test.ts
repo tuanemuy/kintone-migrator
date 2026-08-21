@@ -132,6 +132,7 @@ describe("detectCustomizationThreeWayDiff", () => {
     const container = getContainer();
     setLocal(container, localFile("a.js"));
     setRemote(container, [remoteFile("a.js")], "1");
+    matchFile(container, "a.js");
 
     const result = await detectCustomizationThreeWayDiff({
       container,
@@ -238,6 +239,51 @@ describe("detectCustomizationThreeWayDiff", () => {
     // base == remote, and the local content is unknown → a local change.
     expect(result.localChanges.map((e) => e.key)).toContain(KEY);
   });
+
+  it("notes the unreadable file behind that change, even with a recorded baseline", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setRemoteBody(container, "a.js", "v1");
+    container.fileContentReader.setFailure(`${BASE}/a.js`);
+
+    const notes = (await runDiff(container)).notes ?? [];
+
+    expect(notes.join("\n")).toContain("could not be read from disk");
+    expect(notes.join("\n")).toContain(KEY);
+    // The baseline is recorded, so neither inference note applies.
+    expect(notes.join("\n")).not.toContain("no content digest");
+  });
+
+  it("stays silent about readable files", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1", baseDigests({ [KEY]: "v1" }));
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setLocalBody(container, "a.js", "v2");
+    setRemoteBody(container, "a.js", "v1");
+
+    const result = await runDiff(container);
+
+    expect(result.localChanges.map((e) => e.key)).toContain(KEY);
+    expect(result.notes).toBeUndefined();
+  });
+
+  it("stays silent when the unreadable file produced no diff line", async () => {
+    const container = getContainer();
+    // The unreadable file is absent from the remote and from the base, so its
+    // classification does not depend on the content that could not be read.
+    setState(container, emptyConfig(), "1");
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [], "1");
+    container.fileContentReader.setFailure(`${BASE}/a.js`);
+
+    const result = await runDiff(container);
+
+    expect(result.localChanges.map((e) => e.key)).toContain(KEY);
+    expect(result.notes).toBeUndefined();
+  });
 });
 
 describe("detectCustomizationThreeWayDiff — snapshots without digests", () => {
@@ -272,6 +318,22 @@ describe("detectCustomizationThreeWayDiff — snapshots without digests", () => 
     expect(notes).toContain("non-force");
     expect(notes).toContain("If the remote may have been edited outside");
     expect(notes).not.toContain("classification is inferred");
+    // The affected entry is named, not just counted.
+    expect(notes).toContain(KEY);
+  });
+
+  it("spells out what `customize pull --force` destroys (AC-9 a)", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1");
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "1");
+    setLocalBody(container, "a.js", "edited-locally");
+    setRemoteBody(container, "a.js", "original");
+
+    const notes = ((await runDiff(container)).notes ?? []).join("\n");
+
+    expect(notes).toContain("replaces every local customization file");
+    expect(notes).toContain("discarding the local edits");
   });
 
   it("notes the inferred classification and points at a plain pull (AC-9 b)", async () => {
@@ -289,6 +351,30 @@ describe("detectCustomizationThreeWayDiff — snapshots without digests", () => 
     expect(notes).toContain("classification is inferred");
     expect(notes).toContain("Run `customize pull` once");
     expect(notes).not.toContain("--force");
+    // `customize push` points here for "details", so the keys must be listed.
+    expect(notes).toContain(KEY);
+  });
+
+  it("summarizes the tail once more keys are inferred than fit the note", async () => {
+    const container = getContainer();
+    const names = Array.from({ length: 12 }, (_, i) => `f${i}.js`);
+    setState(container, localFile(...names), "1");
+    setLocal(container, localFile(...names));
+    setRemote(
+      container,
+      names.map((n) => remoteFile(n)),
+      "2",
+    );
+    for (const name of names) {
+      setLocalBody(container, name, "local");
+      setRemoteBody(container, name, "remote");
+    }
+
+    const notes = ((await runDiff(container)).notes ?? []).join("\n");
+
+    expect(notes).toContain("for 12 file(s)");
+    expect(notes).toContain("desktop:js:f0.js");
+    expect(notes).toContain("and 2 more");
   });
 
   it("stays silent when the inferred keys produced no diff line (AC-9 c)", async () => {

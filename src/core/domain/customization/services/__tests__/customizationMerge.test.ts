@@ -160,6 +160,33 @@ describe("computeCustomizationThreeWayMerge — FILE content", () => {
     expect(kindOf(merge, KEY)).toBe("unchanged");
   });
 
+  it("flags a remotely deleted file whose local body moved away from base as conflict", () => {
+    const merge = computeCustomizationThreeWayMerge(
+      cfg([file("a.js")]),
+      cfg([file("a.js")]),
+      cfg([]),
+      tags({ base: { [KEY]: "v1" }, local: { [KEY]: "v2" } }),
+    );
+
+    // The remote deleted it while the local body changed: both sides moved.
+    expect(kindOf(merge, KEY)).toBe("conflict");
+    expect(merge.hasConflict).toBe(true);
+  });
+
+  it("flags a locally dropped declaration whose remote body moved away from base as conflict", () => {
+    const merge = computeCustomizationThreeWayMerge(
+      cfg([file("a.js")]),
+      cfg([]),
+      cfg([file("a.js")]),
+      tags({ base: { [KEY]: "v1" }, remote: { [KEY]: "v2" } }),
+    );
+
+    // Dropping the declaration no longer silently deletes a remote edit: the
+    // remote change is real drift, so the push is blocked instead.
+    expect(kindOf(merge, KEY)).toBe("conflict");
+    expect(merge.hasConflict).toBe(true);
+  });
+
   it("keys content by bucket so a same-basename file in another bucket is unaffected", () => {
     const withBoth = (): CustomizationConfig => ({
       scope: "ALL",

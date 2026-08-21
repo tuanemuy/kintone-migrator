@@ -43,7 +43,7 @@ export type ThreeWayDiffResult<TTwoWay = unknown> =
       /**
        * Domain-specific caveats about how the diff was produced (e.g. entries
        * classified without a recorded content baseline). Printed before the
-       * entries, including when the diff itself is empty.
+       * entries.
        */
       notes?: readonly string[];
       isEmpty: boolean;

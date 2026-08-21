@@ -31,7 +31,7 @@ export type PushCustomizationOutput = {
 const CUSTOMIZE_PULL_COMMAND = "customize pull";
 
 function inferredDriftHint(count: number): string {
-  return `${count} of the drifted file(s) have no recorded content baseline, so this drift may be inferred. Run \`customize diff\` for details; the pull above also records the baseline.`;
+  return `Drift possibly inferred: no recorded content baseline for ${count} of the drifted file(s). Run \`customize diff\` for the affected file(s); the pull above also records the baseline.`;
 }
 
 async function resolvePlatform(

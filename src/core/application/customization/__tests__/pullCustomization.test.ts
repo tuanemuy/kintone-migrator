@@ -38,6 +38,10 @@ function digestOf(body: string): ContentDigest {
   return computeContentDigest(bytes(body));
 }
 
+function textOf(data: ArrayBuffer | undefined): string | undefined {
+  return data === undefined ? undefined : new TextDecoder().decode(data);
+}
+
 function localFile(...names: string[]): CustomizationConfig {
   return {
     scope: "ALL",
@@ -683,6 +687,116 @@ describe("pullCustomization — cross-bucket path preservation (Issue #205, B-00
         ["mobile:js:main.js", digestOf("body-fk-m-main")],
         ["mobile:css:style.css", digestOf("body-fk-m-style")],
       ]),
+    );
+  });
+});
+
+describe("pullCustomization — cross-bucket merge application (Issue #207, W-005)", () => {
+  const getContainer = setupTestCustomizationContainer();
+
+  // desktop and mobile both ship a `main.js`. The download set of an applied
+  // merge is keyed by the bucket-qualified identity, so a remote-side change in
+  // one bucket must neither re-download nor overwrite the other bucket's file
+  // (a flat basename key resolves both to whichever fileKey was seen last).
+  const D_JS = "desktop/js/main.js";
+  const M_JS = "mobile/js/main.js";
+  const D_KEY = "desktop:js:main.js";
+  const M_KEY = "mobile:js:main.js";
+  const D_PATH = `${BASE}/${D_JS}`;
+  const M_PATH = `${BASE}/${M_JS}`;
+
+  function twoBucketLocal(): CustomizationConfig {
+    return {
+      scope: "ALL",
+      desktop: { js: [{ type: "FILE", path: D_JS }], css: [] },
+      mobile: { js: [{ type: "FILE", path: M_JS }], css: [] },
+    };
+  }
+
+  function setTwoBucketRemote(
+    container: TestCustomizationContainer,
+    revision: string,
+    bodies: { desktop: string; mobile: string },
+  ): void {
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: { js: [remoteFile("main.js", "fk-d-main")], css: [] },
+      mobile: { js: [remoteFile("main.js", "fk-m-main")], css: [] },
+      revision,
+    });
+    container.fileDownloader.setFile("fk-d-main", bytes(bodies.desktop));
+    container.fileDownloader.setFile("fk-m-main", bytes(bodies.mobile));
+  }
+
+  it("downloads only the changed bucket, with that bucket's own body", async () => {
+    const container = getContainer();
+    const local = twoBucketLocal();
+    setState(
+      container,
+      local,
+      "1",
+      baseDigests({ [D_KEY]: "d-v1", [M_KEY]: "m-v1" }),
+    );
+    setLocal(container, local);
+    // desktop drifted remotely (remoteOnly); mobile is identical everywhere.
+    setTwoBucketRemote(container, "2", { desktop: "d-v2", mobile: "m-v1" });
+    container.fileContentReader.setFile(D_PATH, bytes("d-v1"));
+    container.fileContentReader.setFile(M_PATH, bytes("m-v1"));
+
+    const pull = await pullMerged(container);
+    expect(pull.merge.entries.find((e) => e.key === D_KEY)?.change.kind).toBe(
+      "remoteOnly",
+    );
+    expect(pull.merge.entries.find((e) => e.key === M_KEY)?.change.kind).toBe(
+      "unchanged",
+    );
+
+    await applyMerge(container, pull);
+
+    // The desktop body comes from the desktop fileKey, not mobile's.
+    expect(textOf(container.fileWriter.writtenFiles.get(D_PATH))).toBe("d-v2");
+    expect(container.fileWriter.writtenFiles.has(M_PATH)).toBe(false);
+    expect(await readStateDigests(container)).toEqual(
+      new Map([
+        [D_KEY, digestOf("d-v2")],
+        [M_KEY, digestOf("m-v1")],
+      ]),
+    );
+  });
+
+  it("keeps a local-only edit in the sibling bucket when a conflict resolves to remote", async () => {
+    const container = getContainer();
+    const local = twoBucketLocal();
+    setState(
+      container,
+      local,
+      "1",
+      baseDigests({ [D_KEY]: "d-base", [M_KEY]: "m-base" }),
+    );
+    setLocal(container, local);
+    // desktop diverged on both sides (conflict); mobile changed locally only.
+    setTwoBucketRemote(container, "2", {
+      desktop: "d-remote",
+      mobile: "m-base",
+    });
+    container.fileContentReader.setFile(D_PATH, bytes("d-local"));
+    container.fileContentReader.setFile(M_PATH, bytes("m-local"));
+
+    const pull = await pullMerged(container);
+    expect(pull.merge.conflicts.map((c) => c.key)).toEqual([D_KEY]);
+    expect(pull.merge.entries.find((e) => e.key === M_KEY)?.change.kind).toBe(
+      "localOnly",
+    );
+
+    await applyMerge(container, pull, new Map([[D_KEY, "remote"]]));
+
+    expect(textOf(container.fileWriter.writtenFiles.get(D_PATH))).toBe(
+      "d-remote",
+    );
+    // Resolving the desktop conflict must not overwrite the mobile edit.
+    expect(container.fileWriter.writtenFiles.has(M_PATH)).toBe(false);
+    expect(textOf(await container.fileContentReader.read(M_PATH))).toBe(
+      "m-local",
     );
   });
 });

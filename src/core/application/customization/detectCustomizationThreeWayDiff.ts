@@ -16,41 +16,70 @@ export type DetectCustomizationThreeWayDiffInput = {
   readonly basePath: string;
 };
 
-function optimisticNote(count: number): string {
+/** How many resource keys a note lists inline before summarizing the rest. */
+const MAX_LISTED_KEYS = 10;
+
+/**
+ * Renders the affected resource keys so the note identifies its subjects.
+ *
+ * The counts alone cannot be acted on: neither the diff lines nor `customize
+ * push` mark which entries were inferred, so "N file(s)" leaves the user with no
+ * way to tell them apart from the exactly-compared ones.
+ */
+function formatKeys(keys: readonly string[]): string {
+  const listed = keys.slice(0, MAX_LISTED_KEYS).join(", ");
+  const rest = keys.length - MAX_LISTED_KEYS;
+  return rest > 0 ? `${listed}, and ${rest} more` : listed;
+}
+
+function optimisticNote(keys: readonly string[]): string {
   return [
-    `Base snapshot has no content digest for ${count} file(s); they were classified by assuming the remote still matches the base (app revision unchanged).`,
-    "A normal (non-force) `customize push` or `customize pull` records the baseline. If the remote may have been edited outside this tool, run `customize pull --force` first to take the remote side.",
+    `Base snapshot has no content digest for ${keys.length} file(s); they were classified by assuming the remote still matches the base (app revision unchanged): ${formatKeys(keys)}.`,
+    "A normal (non-force) `customize push` or `customize pull` records the baseline. If the remote may have been edited outside this tool, run `customize pull --force` first to take the remote side — that replaces every local customization file and `customize.yaml` with the remote copy, discarding the local edits listed above, so save them elsewhere first.",
   ].join("\n");
 }
 
-function conservativeNote(count: number): string {
+function conservativeNote(keys: readonly string[]): string {
   return [
-    `Base snapshot has no content digest for ${count} file(s); their classification is inferred.`,
+    `Base snapshot has no content digest for ${keys.length} file(s); their classification is inferred: ${formatKeys(keys)}.`,
     "Run `customize pull` once (resolve the entries, or use `--ours` / `--theirs`) to record the baseline for files that exist on the remote or can be read from disk. Subsequent runs use exact content comparison for those files.",
   ].join("\n");
 }
 
+function unreadableNote(keys: readonly string[]): string {
+  return [
+    `${keys.length} file(s) declared in customize.yaml could not be read from disk, so their content counted as unknown and they are listed as changed: ${formatKeys(keys)}.`,
+    "Build or restore those files (or fix the declared paths) and run `customize diff` again to see the real classification.",
+  ].join("\n");
+}
+
 /**
- * Builds the caveats for keys whose base content was inferred rather than read
- * from the snapshot. Only keys that actually surfaced as a diff line are
- * counted: an inferred key classified as `unchanged` tells the user nothing, and
- * over-reporting would train them to ignore the note.
+ * Builds the caveats for keys the classification could not compare exactly:
+ * those whose base content was inferred rather than read from the snapshot, and
+ * those whose local body was unreadable. Only keys that actually surfaced as a
+ * diff line are reported: such a key classified as `unchanged` tells the user
+ * nothing, and over-reporting would train them to ignore the note.
  */
 function buildNotes(
   estimatedKeys: EstimatedBaseKeys,
+  unreadableLocalKeys: ReadonlySet<string>,
   changedKeys: ReadonlySet<string>,
 ): string[] {
-  const countIn = (keys: ReadonlySet<string>): number =>
-    [...keys].filter((key) => changedKeys.has(key)).length;
+  const changedIn = (keys: ReadonlySet<string>): string[] =>
+    [...keys].filter((key) => changedKeys.has(key));
 
   const notes: string[] = [];
-  const optimistic = countIn(estimatedKeys.optimistic);
-  if (optimistic > 0) {
+  const optimistic = changedIn(estimatedKeys.optimistic);
+  if (optimistic.length > 0) {
     notes.push(optimisticNote(optimistic));
   }
-  const conservative = countIn(estimatedKeys.conservative);
-  if (conservative > 0) {
+  const conservative = changedIn(estimatedKeys.conservative);
+  if (conservative.length > 0) {
     notes.push(conservativeNote(conservative));
+  }
+  const unreadable = changedIn(unreadableLocalKeys);
+  if (unreadable.length > 0) {
+    notes.push(unreadableNote(unreadable));
   }
   return notes;
 }
@@ -79,14 +108,15 @@ export async function detectCustomizationThreeWayDiff({
     return { mode: "two-way", diff };
   }
 
-  const { merge, estimatedKeys } = await buildCustomizationThreeWayMerge({
-    container,
-    state,
-    baseRevision,
-    local,
-    remote,
-    basePath: input.basePath,
-  });
+  const { merge, estimatedKeys, unreadableLocalKeys } =
+    await buildCustomizationThreeWayMerge({
+      container,
+      state,
+      baseRevision,
+      local,
+      remote,
+      basePath: input.basePath,
+    });
 
   const changedKeys = new Set(
     merge.entries
@@ -104,6 +134,6 @@ export async function detectCustomizationThreeWayDiff({
     merge,
     (entry) => entry.key,
     [],
-    buildNotes(estimatedKeys, changedKeys),
+    buildNotes(estimatedKeys, unreadableLocalKeys, changedKeys),
   );
 }

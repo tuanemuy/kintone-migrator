@@ -36,8 +36,11 @@ import { resourceName } from "./diffDetector";
  * the platform js/css lists in a stable order.
  */
 
-type Platform = "desktop" | "mobile";
-type Category = "js" | "css";
+/** Platform bucket of a customization config. */
+export type CustomizationPlatformName = "desktop" | "mobile";
+/** Resource category within a platform bucket. */
+export type CustomizationCategoryName = "js" | "css";
+
 type Side = "base" | "local" | "remote";
 
 /**
@@ -75,8 +78,21 @@ export type CustomizationMergeResolution = ReadonlyMap<
   "local" | "remote"
 >;
 
-const PLATFORMS: readonly Platform[] = ["desktop", "mobile"];
-const CATEGORIES: readonly Category[] = ["js", "css"];
+/**
+ * The bucket space every walk over a customization config must agree on.
+ *
+ * Shared rather than redeclared per module: the merge keys, the snapshot's
+ * digest keys and the locally/remotely computed digest keys are only comparable
+ * while they enumerate the same buckets, and a bucket missing from one walk
+ * would not be a type error — it would silently leave digests unrecorded and
+ * degrade the classification to an estimate.
+ */
+export const PLATFORMS: readonly CustomizationPlatformName[] = [
+  "desktop",
+  "mobile",
+];
+export const CATEGORIES: readonly CustomizationCategoryName[] = ["js", "css"];
+
 const SCOPE_KEY = "config:scope";
 
 /**
@@ -94,8 +110,8 @@ export function resourceKey(
 
 function platformList(
   config: CustomizationConfig,
-  platform: Platform,
-  category: Category,
+  platform: CustomizationPlatformName,
+  category: CustomizationCategoryName,
 ): readonly CustomizationResource[] {
   const p: CustomizationPlatform = config[platform];
   return category === "js" ? p.js : p.css;
@@ -340,8 +356,8 @@ function rebuild(
   remote: CustomizationConfig,
 ): CustomizationConfig {
   function bucket(
-    platform: Platform,
-    category: Category,
+    platform: CustomizationPlatformName,
+    category: CustomizationCategoryName,
   ): CustomizationResource[] {
     const seen = new Set<string>();
     const out: CustomizationResource[] = [];

@@ -13,6 +13,10 @@ type SerializedResource =
  * state snapshot's per-FILE `digest`). Called for every resource as it is
  * generated, so callers never have to walk — let alone mutate — the output,
  * whose shape omits empty buckets and empty platforms.
+ *
+ * Only additional keys take effect: the resource's own keys (`type`, `path`,
+ * `url`) always win, so a hook can never rewrite the body of a serialized
+ * resource into something that still parses but describes another file.
  */
 export type CustomizationResourceDecorator = (
   platform: "desktop" | "mobile",
@@ -31,7 +35,7 @@ function serializeResource(
       ? { type: "FILE", path: resource.path }
       : { type: "URL", url: resource.url };
   const extra = decorate?.(platform, category, resource);
-  return extra === undefined ? serialized : { ...serialized, ...extra };
+  return extra === undefined ? serialized : { ...extra, ...serialized };
 }
 
 function serializeResourceList(

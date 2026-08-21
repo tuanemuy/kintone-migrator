@@ -1,4 +1,4 @@
-import { basename, extname, join } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
 import { resourceKey } from "@/core/domain/customization/services/customizationMerge";
@@ -137,11 +137,13 @@ function planResources(
         // Preserve the existing local declared path: path is a local-owned
         // concern, so keep it and resolve the download target against the same
         // content base push uploads from (`join(basePath, filePrefix)`).
+        // `resolve` (not `join`) so a declared absolute path lands where push
+        // uploads from and where the snapshot digest is read from.
         planned.push({ type: "FILE", path: declaredPath });
         filesToDownload.push({
           fileName,
           fileKey: resource.file.fileKey,
-          absolutePath: join(contentBase, declaredPath),
+          absolutePath: resolve(contentBase, declaredPath),
         });
       } else {
         const absolutePath = join(dir, fileName);

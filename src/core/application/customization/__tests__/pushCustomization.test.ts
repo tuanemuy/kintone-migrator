@@ -252,6 +252,32 @@ describe("pushCustomization", () => {
     ).rejects.toSatisfy(isConfigDrift);
   });
 
+  it("rejects when the remote body of a locally dropped declaration moved away from base", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, {
+      scope: "ALL",
+      desktop: { js: [], css: [] },
+      mobile: { js: [], css: [] },
+    });
+    setRemote(container, [remoteFile("a.js")], "2");
+    setRemoteBody(container, "a.js", "edited-on-kintone");
+
+    // Removing the declaration used to delete the remote edit silently; with a
+    // recorded baseline the remote change is real drift.
+    await expect(
+      pushCustomization({ container, input: { basePath: BASE } }),
+    ).rejects.toSatisfy(isConfigDrift);
+    expect(container.customizationConfigurator.callLog).not.toContain(
+      "updateCustomization",
+    );
+  });
+
   it("pushes when both sides changed to the same content (AC-5)", async () => {
     const container = getContainer();
     setState(
@@ -443,7 +469,9 @@ describe("pushCustomization — snapshots without digests", () => {
 
     expect(error).toBeInstanceOf(ConflictError);
     const message = (error as ConflictError).message;
-    expect(message).toContain("no recorded content baseline");
+    expect(message).toContain(
+      "Drift possibly inferred: no recorded content baseline for 1 of the drifted file(s).",
+    );
     expect(message).toContain("customize diff");
   });
 

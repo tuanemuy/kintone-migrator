@@ -175,6 +175,19 @@ export class InMemoryFileUploader extends FakeBase implements FileUploader {
   }
 }
 
+/**
+ * Reads back what is on the shared local disk (`InMemoryLocalFiles`).
+ *
+ * The disk holds only what a test put there: `setFile(path, bytes)` on this
+ * reader, or a `write` performed by `InMemoryFileWriter` (so files produced by
+ * pull are readable afterwards). Paths are matched exactly as the production
+ * code resolves them, which is `resolve(basePath, resource.path)` — seed with
+ * the same absolute path the use case will read, otherwise the read fails.
+ *
+ * A path that was never seeded fails like a missing file rather than yielding
+ * synthesized bytes, so a test that forgets to seed cannot pass by reading
+ * content that does not exist.
+ */
 export class InMemoryFileContentReader
   extends FakeBase
   implements FileContentReader
@@ -195,7 +208,10 @@ export class InMemoryFileContentReader
     }
     const data = this.localFiles.get(filePath);
     if (data === undefined) {
-      return new TextEncoder().encode(`local-content-of-${filePath}`).buffer;
+      throw new SystemError(
+        SystemErrorCode.StorageError,
+        `no file seeded at ${filePath} (test)`,
+      );
     }
     return data;
   }
@@ -205,8 +221,9 @@ export class InMemoryFileContentReader
   }
 
   /**
-   * Makes a single path unreadable. `FakeBase.setFailOn` fails every `read`,
-   * which cannot express "one declared file is missing from disk".
+   * Makes a single path unreadable even if it was seeded. `FakeBase.setFailOn`
+   * fails every `read`, which cannot express "one declared file is missing from
+   * disk".
    */
   setFailure(filePath: string): void {
     this.failingPaths.add(filePath);

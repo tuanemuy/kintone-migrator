@@ -88,16 +88,29 @@ desktop:
       url: https://cdn.example.com/lib.js
 ```
 
-- `digest` は FILE リソースのみに付く。URL リソースの内容は本ツールの管理外なので付かない
+**StateResource**（state スナップショットの `desktop.js[]` 等の各要素）:
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `type` | `"FILE"` \| `"URL"` | 必須 | リソースの種別 |
+| `path` | string | 任意 | FILE リソースのローカルパス（`type: FILE` のとき必須・非空） |
+| `url` | string | 任意 | URL リソースの URL（`type: URL` のとき必須・非空） |
+| `digest` | string | 任意 | FILE リソースの内容ダイジェスト（`sha256:<64桁の16進数>`）。FILE リソースのみに付き、未記録のエントリは追跡外として扱う |
+
+- URL リソースの内容は本ツールの管理外のため `digest` は付かない
 - 形式は `sha256:<64桁の16進数>`。バイト列をそのままハッシュし、改行コードや BOM の正規化は行わない
-- 値は「保存時点でリモートが保持していた内容」のダイジェスト。`customize pull` のマージ適用では、リモートに存在するキーはリモート側の内容のダイジェストを記録する（ローカル側が採用されたエントリの内容はまだリモートに存在しないため）
+- 値は原則としてリモートが保持している内容のダイジェストで、経路ごとに次のように決まる
+    - `customize push`: アップロードするローカルファイルの内容（反映後にリモートが保持する内容）のダイジェスト
+    - `customize pull`（`--force` / state が無い初回）: リモートからダウンロードして書き出したファイルの内容のダイジェスト
+    - `customize pull`（マージ適用）: リモートに同じキーが存在すればリモート側の内容のダイジェスト（ローカル側が採用されたエントリの内容はまだリモートに存在しないため）。リモートに存在しないキー（ローカルで追加され、まだアップロードされていないファイル）はディスク上の内容のダイジェスト
+- いずれの経路でも、内容を読み取れなかった FILE エントリには `digest` が付かない
 - アプリの revision はここには含まれない。`state/<appName>/revision.yaml` に別途保存される
 
 ### digest が無い場合
 
 `digest` が無い FILE エントリは「追跡外」（保存時点の内容が不明）として扱う。内容が空のファイルも `digest` を持つため、両者は区別される。追跡外エントリの分類は次のように決まる。
 
-- `digest` を 1 件も持たない state（v0.34.x 以前に作られたもの）で、`state/<appName>/revision.yaml` の revision がリモートのアプリ revision と一致する場合は、リモートの内容を base とみなす
+- `digest` を 1 件も持たない state（`digest` の導入前に作られたもの）で、`state/<appName>/revision.yaml` の revision がリモートのアプリ revision と一致する場合は、リモートの内容を base とみなす
 - それ以外の場合は、リソースの存在有無と両側の内容一致から保守的に分類する（digest 導入前と同じ分類になる）
 
 いずれの場合も、`--force` なしの `customize push` / `customize pull` を一度通せば、リモートに存在するか、ローカルディスクから読めるファイルについて `digest` が記録され、以降は内容の厳密な比較になる。リモートにも存在せず、ディスクからも読めないファイル（宣言だけが残っている未生成のビルド成果物など）は追跡外のまま残る。
@@ -108,7 +121,7 @@ desktop:
 
 | エラーコード | 条件 |
 | --- | --- |
-| `CZ_INVALID_CONFIG_STRUCTURE` | ルート構造が不正（オブジェクトでない、`desktop` / `mobile` が不正 等）、または state スナップショットの `digest` が `sha256:` 始まりの非空文字列でない |
+| `CZ_INVALID_CONFIG_STRUCTURE` | ルート構造が不正（オブジェクトでない、`desktop` / `mobile` が不正 等）、または state スナップショットの `digest` が `sha256:<64桁の16進数（小文字）>` 形式でない |
 | `CZ_INVALID_SCOPE` | `scope` が `ALL` / `ADMIN` / `NONE` 以外 |
 | `CZ_INVALID_RESOURCE_TYPE` | リソースの `type` が `FILE` / `URL` 以外、または必須の `path` / `url` 欠落・空 |
 | `CZ_TOO_MANY_FILES` | kintone のファイル数上限を超過 |

@@ -28,6 +28,25 @@ describe("CustomizationStateParser", () => {
     ]);
   });
 
+  it("collects digests from every platform x category bucket", () => {
+    const bucket = (path: string) => ({
+      js: [{ type: "FILE", path: `${path}/a.js`, digest: DIGEST }],
+      css: [{ type: "FILE", path: `${path}/a.css`, digest: DIGEST }],
+    });
+    const state = CustomizationStateParser.parse({
+      scope: "ALL",
+      desktop: bucket("desktop"),
+      mobile: bucket("mobile"),
+    });
+
+    expect([...state.fileDigests.keys()].sort()).toEqual([
+      "desktop:css:a.css",
+      "desktop:js:a.js",
+      "mobile:css:a.css",
+      "mobile:js:a.js",
+    ]);
+  });
+
   it("parses a state without any digest as an empty digest map (legacy state)", () => {
     const state = CustomizationStateParser.parse({
       scope: "ALL",
@@ -58,6 +77,11 @@ describe("CustomizationStateParser", () => {
     ["an empty string", ""],
     ["a bare prefix", "sha256:"],
     ["another algorithm", "md5:abcdef"],
+    ["a truncated hex body", `sha256:${"a".repeat(63)}`],
+    ["an over-long hex body", `sha256:${"a".repeat(65)}`],
+    ["a non-hex body", `sha256:${"z".repeat(64)}`],
+    ["an uppercase hex body", `sha256:${"A".repeat(64)}`],
+    ["a trailing newline", `${DIGEST}\n`],
   ])("rejects %s digest", (_label, digest) => {
     const parse = () =>
       CustomizationStateParser.parse({

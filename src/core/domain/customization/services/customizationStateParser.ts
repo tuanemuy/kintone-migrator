@@ -5,11 +5,14 @@ import { CustomizationErrorCode } from "../errorCode";
 import type { CustomizationState } from "../state";
 import type { CustomizationFileDigests } from "../valueObject";
 import { CustomizationConfigParser } from "./configParser";
-import { resourceKey } from "./customizationMerge";
+import {
+  CATEGORIES,
+  type CustomizationCategoryName,
+  type CustomizationPlatformName,
+  PLATFORMS,
+  resourceKey,
+} from "./customizationMerge";
 import { resourceName } from "./diffDetector";
-
-const PLATFORMS = ["desktop", "mobile"] as const;
-const CATEGORIES = ["js", "css"] as const;
 
 /**
  * Collects the per-FILE `digest` entries into the merge's key space. The
@@ -49,8 +52,8 @@ function parseFileDigests(parsed: unknown): CustomizationFileDigests {
 /** The `[resourceKey, digest]` pair of one serialized resource, if it has one. */
 function digestEntry(
   raw: unknown,
-  platform: (typeof PLATFORMS)[number],
-  category: (typeof CATEGORIES)[number],
+  platform: CustomizationPlatformName,
+  category: CustomizationCategoryName,
 ): [string, ContentDigest] | undefined {
   if (!isRecord(raw) || raw.type !== "FILE" || typeof raw.path !== "string") {
     return undefined;
@@ -62,7 +65,7 @@ function digestEntry(
   if (!isContentDigest(digest)) {
     throw new BusinessRuleError(
       CustomizationErrorCode.CzInvalidConfigStructure,
-      `FILE resource "${raw.path}" has an invalid "digest": ${String(digest)}. Must be a non-empty "sha256:" prefixed string`,
+      `FILE resource "${raw.path}" has an invalid "digest": ${String(digest)}. Must be a "sha256:<64 lowercase hex chars>" string`,
     );
   }
   return [
