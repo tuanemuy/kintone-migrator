@@ -375,6 +375,25 @@ describe("detectCustomizationThreeWayDiff — snapshots without digests", () => 
     expect(notes).toContain(KEY);
   });
 
+  it("names `--ours` as the safe shortcut and spells out what `--theirs` overwrites", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1");
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setLocalBody(container, "a.js", "local");
+    setRemoteBody(container, "a.js", "remote");
+
+    const notes = ((await runDiff(container)).notes ?? []).join("\n");
+
+    expect(notes).toContain("`--ours` to keep every local copy");
+    // `--theirs` is destructive on disk, so it never appears unqualified.
+    expect(notes).toContain(
+      "`--theirs` records the baseline too, but it replaces the local files on disk with the remote copies",
+    );
+    expect(notes).toContain("save the local edits elsewhere first");
+    expect(notes).not.toContain("--force");
+  });
+
   it("summarizes the tail once more keys are inferred than fit the note", async () => {
     const container = getContainer();
     const names = Array.from({ length: 12 }, (_, i) => `f${i}.js`);

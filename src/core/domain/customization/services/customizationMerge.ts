@@ -93,7 +93,15 @@ export const PLATFORMS: readonly CustomizationPlatformName[] = [
 ];
 export const CATEGORIES: readonly CustomizationCategoryName[] = ["js", "css"];
 
-const SCOPE_KEY = "config:scope";
+/**
+ * The merge key holding the customization scope rather than a resource.
+ *
+ * Exported so every consumer branches on the same literal: the CLI's conflict
+ * prompt tells scope conflicts and file conflicts apart by this key alone, and a
+ * private copy drifting from this one would describe overwriting a file that
+ * does not exist.
+ */
+export const SCOPE_KEY = "config:scope";
 
 /**
  * Bucket-qualified resource identity: `platform:category:name`. Shared with the

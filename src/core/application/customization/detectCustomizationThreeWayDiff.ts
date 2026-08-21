@@ -42,7 +42,7 @@ function optimisticNote(keys: readonly string[]): string {
 function conservativeNote(keys: readonly string[]): string {
   return [
     `Base snapshot has no content digest for ${keys.length} file(s); their classification is inferred: ${formatKeys(keys)}.`,
-    "Run `customize pull` once (resolve the entries, or use `--ours` / `--theirs`) to record the baseline for files that exist on the remote or can be read from disk. Subsequent runs use exact content comparison for those files.",
+    "Run `customize pull` once (resolve the entries, or use `--ours` to keep every local copy) to record the baseline for files that exist on the remote or can be read from disk. Subsequent runs use exact content comparison for those files. `--theirs` records the baseline too, but it replaces the local files on disk with the remote copies wherever the remote side has a body, so save the local edits elsewhere first.",
   ].join("\n");
 }
 

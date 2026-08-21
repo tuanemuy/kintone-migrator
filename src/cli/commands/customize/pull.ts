@@ -12,6 +12,7 @@ import {
   pullCustomization,
 } from "@/core/application/customization/pullCustomization";
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+import { SCOPE_KEY } from "@/core/domain/customization/services/customizationMerge";
 import {
   type CustomizeCliValues,
   customizeArgs,
@@ -53,9 +54,6 @@ type PullOptions = {
   readonly ours: boolean;
   readonly theirs: boolean;
 };
-
-/** The merge key holding the customization scope rather than a resource. */
-const SCOPE_KEY = "config:scope";
 
 /**
  * What each choice does. `pull` never writes to kintone, so the destruction is

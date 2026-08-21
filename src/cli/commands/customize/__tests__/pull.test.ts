@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { SCOPE_KEY } from "@/core/domain/customization/services/customizationMerge";
 import { buildConflictPrompt } from "../pull";
 
 const KEY = "desktop:js:main.js";
 const OTHER_KEY = "mobile:css:main.css";
-const SCOPE_KEY = "config:scope";
 
 const UNREADABLE_CAVEAT = "the local file could not be read";
 const BASELINE_CAVEAT = "no recorded baseline for this file";
