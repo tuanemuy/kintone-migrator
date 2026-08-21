@@ -40,6 +40,12 @@ export type ThreeWayDiffResult<TTwoWay = unknown> =
       conflicts: readonly ThreeWayDiffEntry[];
       /** Domain-specific tail entries appended after the keyed entries. */
       extras: readonly ThreeWayDiffExtra[];
+      /**
+       * Domain-specific caveats about how the diff was produced (e.g. entries
+       * classified without a recorded content baseline). Printed before the
+       * entries, including when the diff itself is empty.
+       */
+      notes?: readonly string[];
       isEmpty: boolean;
     }>
   | Readonly<{
@@ -57,6 +63,7 @@ export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
   merge: RecordThreeWayMerge<V>,
   label: (entry: ThreeWayEntry<string, V>) => string,
   extras: readonly ThreeWayDiffExtra[] = [],
+  notes: readonly string[] = [],
 ): ThreeWayDiffResult<TTwoWay> {
   const localChanges: ThreeWayDiffEntry[] = [];
   const remoteDrift: ThreeWayDiffEntry[] = [];
@@ -102,6 +109,7 @@ export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
     remoteDrift,
     conflicts,
     extras,
+    ...(notes.length > 0 ? { notes } : {}),
     isEmpty,
   };
 }

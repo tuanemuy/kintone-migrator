@@ -1,4 +1,24 @@
+import type { ContentDigest } from "@/lib/contentDigest";
 import type { DiffResult } from "../diff";
+
+export type { ContentDigest };
+
+/**
+ * Content fingerprints of FILE resources, persisted in the base snapshot.
+ *
+ * Keyed by `resourceKey(platform, category, basename)` — the same identity the
+ * 3-way merge uses. A key that is absent is *untracked* (its content was not
+ * recorded), which is distinct from a file whose content is empty.
+ */
+export type CustomizationFileDigests = ReadonlyMap<string, ContentDigest>;
+
+/**
+ * Comparison tokens fed to the 3-way merge. Never persisted: besides digests,
+ * a tag may be an `untracked:<side>` sentinel standing for "no content known
+ * for this side". {@link CustomizationFileDigests} is assignable here, but not
+ * the other way around, so a sentinel can never reach the state file.
+ */
+export type CustomizationFileTags = ReadonlyMap<string, string>;
 
 export const SCOPES = ["ALL", "ADMIN", "NONE"] as const;
 

@@ -132,6 +132,7 @@ async function runPull(
         remote: result.remote,
         remoteConfig: result.remoteConfig,
         remoteRevision: result.remoteRevision,
+        remoteDigests: result.remoteDigests,
       },
     });
     p.log.success("Local customization merged and written.");
@@ -162,6 +163,7 @@ async function runPull(
       remote: result.remote,
       remoteConfig: result.remoteConfig,
       remoteRevision: result.remoteRevision,
+      remoteDigests: result.remoteDigests,
     },
   });
   p.log.success("Conflicts resolved. Local customization written.");

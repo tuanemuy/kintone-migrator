@@ -197,6 +197,12 @@ export function printThreeWayDiffResult<TTwoWay>(
     return;
   }
 
+  // Caveats about how the classification was reached apply even when nothing
+  // differs, so they precede the empty-diff shortcut.
+  for (const note of result.notes ?? []) {
+    p.log.warn(note);
+  }
+
   if (result.isEmpty) {
     p.log.info("No changes detected (local, remote, and base are in sync).");
     return;

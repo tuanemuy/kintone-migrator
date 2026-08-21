@@ -11,17 +11,23 @@ import { loadSnapshotState, type SnapshotStateStorage } from "./stateIo";
  *   snapshot, or undefined on first run. revision is now app-scoped and read
  *   from {@link AppRevisionStorage} rather than from the snapshot.
  * - `local`: the local config parsed from its YAML file, or undefined when the
- *   file is absent.
+ *   file is absent. Defaults to the snapshot shape; domains whose snapshot
+ *   carries more than the config (e.g. customization's file digests) set
+ *   `TLocal` to the config type alone.
  * - `remote`: the current remote config (and the remote revision it carries).
  */
-export type ThreeWayInputs<TSnapshot, TRemote> = Readonly<{
+export type ThreeWayInputs<TSnapshot, TRemote, TLocal = TSnapshot> = Readonly<{
   state: TSnapshot | undefined;
   baseRevision: string | undefined;
-  local: TSnapshot | undefined;
+  local: TLocal | undefined;
   remote: TRemote;
 }>;
 
-export type LoadThreeWayInputsArgs<TSnapshot, TRemote> = Readonly<{
+export type LoadThreeWayInputsArgs<
+  TSnapshot,
+  TRemote,
+  TLocal = TSnapshot,
+> = Readonly<{
   codec: ConfigCodec;
   /** Snapshot (base) state storage for this domain. */
   stateStorage: SnapshotStateStorage;
@@ -32,7 +38,7 @@ export type LoadThreeWayInputsArgs<TSnapshot, TRemote> = Readonly<{
   /** Label used in parse error messages (e.g. "View state"). */
   stateLabel: string;
   /** Loads the local config from its file, or undefined when absent. */
-  loadLocal: () => Promise<TSnapshot | undefined>;
+  loadLocal: () => Promise<TLocal | undefined>;
   /** Fetches the current remote config (carrying its own revision). */
   loadRemote: () => Promise<TRemote>;
 }>;
@@ -43,9 +49,13 @@ export type LoadThreeWayInputsArgs<TSnapshot, TRemote> = Readonly<{
  * (`TSnapshot`) and remote (`TRemote`) shapes so every config domain reuses one
  * loader (generalization of schema step1's `loadThreeWayInputs`).
  */
-export async function loadThreeWayInputs<TSnapshot, TRemote>(
-  args: LoadThreeWayInputsArgs<TSnapshot, TRemote>,
-): Promise<ThreeWayInputs<TSnapshot, TRemote>> {
+export async function loadThreeWayInputs<
+  TSnapshot,
+  TRemote,
+  TLocal = TSnapshot,
+>(
+  args: LoadThreeWayInputsArgs<TSnapshot, TRemote, TLocal>,
+): Promise<ThreeWayInputs<TSnapshot, TRemote, TLocal>> {
   const [state, appRevision, local, remote] = await Promise.all([
     loadSnapshotState(
       args.stateStorage,

@@ -9,14 +9,27 @@ import {
 } from "@/core/application/error";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
+import { CustomizationStateParser } from "@/core/domain/customization/services/customizationStateParser";
 import { CustomizationStateSerializer } from "@/core/domain/customization/services/customizationStateSerializer";
 import type {
+  ContentDigest,
+  CustomizationFileDigests,
   CustomizationScope,
   RemoteResource,
 } from "@/core/domain/customization/valueObject";
+import { computeContentDigest } from "@/lib/contentDigest";
+import { detectCustomizationThreeWayDiff } from "../detectCustomizationThreeWayDiff";
 import { pushCustomization } from "../pushCustomization";
 
 const BASE = "/app";
+
+function bytes(body: string): ArrayBuffer {
+  return new TextEncoder().encode(body).buffer as ArrayBuffer;
+}
+
+function digestOf(body: string): ContentDigest {
+  return computeContentDigest(bytes(body));
+}
 
 function localFile(name: string): CustomizationConfig {
   return {
@@ -51,13 +64,23 @@ function setRemote(
   });
 }
 
+/** Digest map for a state snapshot, built from the bodies the base recorded. */
+function baseDigests(bodies: Record<string, string>): CustomizationFileDigests {
+  return new Map(
+    Object.entries(bodies).map(([key, body]) => [key, digestOf(body)]),
+  );
+}
+
 function setState(
   container: TestCustomizationContainer,
   config: CustomizationConfig,
   revision: string,
+  fileDigests: CustomizationFileDigests = new Map(),
 ): void {
   container.customizationStateStorage.setContent(
-    configCodec.stringify(CustomizationStateSerializer.serialize({ config })),
+    configCodec.stringify(
+      CustomizationStateSerializer.serialize({ config, fileDigests }),
+    ),
   );
   container.appRevisionStorage.setContent(configCodec.stringify({ revision }));
 }
@@ -71,15 +94,39 @@ function setLocal(
   );
 }
 
+function setLocalBody(
+  container: TestCustomizationContainer,
+  name: string,
+  body: string,
+): void {
+  container.fileContentReader.setFile(`${BASE}/${name}`, bytes(body));
+}
+
+function setRemoteBody(
+  container: TestCustomizationContainer,
+  name: string,
+  body: string,
+): void {
+  container.fileDownloader.setFile(`fk-${name}`, bytes(body));
+}
+
 /** Makes a shared file's local and remote content identical (no content drift). */
 function matchFile(
   container: TestCustomizationContainer,
   name: string,
   body = `same-${name}`,
 ): void {
-  const buf = new TextEncoder().encode(body).buffer;
-  container.fileContentReader.setFile(`${BASE}/${name}`, buf);
-  container.fileDownloader.setFile(`fk-${name}`, buf);
+  setLocalBody(container, name, body);
+  setRemoteBody(container, name, body);
+}
+
+async function readStateDigests(
+  container: TestCustomizationContainer,
+): Promise<CustomizationFileDigests> {
+  const result = await container.customizationStateStorage.get();
+  if (!result.exists) throw new Error("expected state");
+  return CustomizationStateParser.parse(configCodec.parse(result.content))
+    .fileDigests;
 }
 
 describe("pushCustomization", () => {
@@ -96,8 +143,12 @@ describe("pushCustomization", () => {
 
   it("replaces the full lists and sends the observed revision (no drift)", async () => {
     const container = getContainer();
-    const base = localFile("a.js");
-    setState(container, base, "1");
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "same-a.js" }),
+    );
     setLocal(container, localFile("a.js"));
     setRemote(container, [remoteFile("a.js")], "1");
     matchFile(container, "a.js");
@@ -116,53 +167,179 @@ describe("pushCustomization", () => {
     expect(container.appRevisionStorage.callLog).toContain("update");
   });
 
-  it("rejects with a ConfigDrift ConflictError when the remote added a file", async () => {
+  it("pushes a locally edited file without --force and keeps the revision guard (AC-2)", async () => {
     const container = getContainer();
-    const base = localFile("a.js");
-    setState(container, base, "1");
+    // base == remote content; only the local body moved on.
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
     setLocal(container, localFile("a.js"));
-    // remote drifted: added b.js relative to base.
-    setRemote(container, [remoteFile("a.js"), remoteFile("b.js")], "2");
+    setRemote(container, [remoteFile("a.js")], "3");
+    setLocalBody(container, "a.js", "v2");
+    setRemoteBody(container, "a.js", "v1");
+
+    const result = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(result.mode).toBe("push");
+    expect(container.customizationConfigurator.lastUpdateParams?.revision).toBe(
+      "3",
+    );
+  });
+
+  it("rejects with a ConfigDrift ConflictError when the remote body changed (AC-3)", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "3");
+    setLocalBody(container, "a.js", "v1");
+    setRemoteBody(container, "a.js", "edited-on-kintone");
 
     await expect(
       pushCustomization({ container, input: { basePath: BASE } }),
-    ).rejects.toSatisfy(
-      (e: unknown) =>
-        e instanceof ConflictError && e.code === ConflictErrorCode.ConfigDrift,
-    );
+    ).rejects.toSatisfy(isConfigDrift);
     expect(container.customizationConfigurator.callLog).not.toContain(
       "updateCustomization",
     );
   });
 
-  it("rejects when a same-name file content diverges on both sides (conflict)", async () => {
+  it("rejects with a ConfigDrift ConflictError when the remote added a file", async () => {
     const container = getContainer();
-    const base = localFile("a.js");
-    setState(container, base, "1");
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
     setLocal(container, localFile("a.js"));
-    setRemote(container, [remoteFile("a.js")], "1");
-    // make local content differ from remote content → modifiedFileNames has a.js
-    container.fileContentReader.setFile(
-      `${BASE}/a.js`,
-      new TextEncoder().encode("local-body").buffer,
-    );
-    container.fileDownloader.setFile(
-      "fk-a.js",
-      new TextEncoder().encode("remote-body").buffer,
-    );
+    // remote drifted: added b.js relative to base.
+    setRemote(container, [remoteFile("a.js"), remoteFile("b.js")], "2");
+    matchFile(container, "a.js", "v1");
 
     await expect(
       pushCustomization({ container, input: { basePath: BASE } }),
-    ).rejects.toSatisfy(
-      (e: unknown) =>
-        e instanceof ConflictError && e.code === ConflictErrorCode.ConfigDrift,
+    ).rejects.toSatisfy(isConfigDrift);
+    expect(container.customizationConfigurator.callLog).not.toContain(
+      "updateCustomization",
     );
+  });
+
+  it("rejects when a same-name file content diverges on both sides (conflict, AC-4)", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setLocalBody(container, "a.js", "local-body");
+    setRemoteBody(container, "a.js", "remote-body");
+
+    await expect(
+      pushCustomization({ container, input: { basePath: BASE } }),
+    ).rejects.toSatisfy(isConfigDrift);
+  });
+
+  it("pushes when both sides changed to the same content (AC-5)", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    matchFile(container, "a.js", "v2");
+
+    const result = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(result.mode).toBe("push");
+  });
+
+  it("records the digest of the on-disk content in the new base (AC-6)", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "1");
+    setLocalBody(container, "a.js", "pushed-body");
+    setRemoteBody(container, "a.js", "v1");
+
+    await pushCustomization({ container, input: { basePath: BASE } });
+
+    expect(await readStateDigests(container)).toEqual(
+      new Map([["desktop:js:a.js", digestOf("pushed-body")]]),
+    );
+  });
+
+  it("records digests on the first run too (AC-6)", async () => {
+    const container = getContainer();
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [], "5");
+    setLocalBody(container, "a.js", "initial-body");
+
+    const result = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(result.mode).toBe("firstTime");
+    expect(await readStateDigests(container)).toEqual(
+      new Map([["desktop:js:a.js", digestOf("initial-body")]]),
+    );
+  });
+
+  it("leaves an unreadable file untracked instead of failing (AC-10)", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "1");
+    setRemoteBody(container, "a.js", "v1");
+    // The declared build artifact is missing from disk.
+    container.fileContentReader.setFailure(`${BASE}/a.js`);
+
+    const result = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(result.mode).toBe("push");
+    expect((await readStateDigests(container)).size).toBe(0);
   });
 
   it("force skips the drift check and sends no expected revision", async () => {
     const container = getContainer();
-    const base = localFile("a.js");
-    setState(container, base, "1");
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
     setLocal(container, localFile("a.js"));
     setRemote(container, [remoteFile("a.js"), remoteFile("b.js")], "2");
 
@@ -195,3 +372,138 @@ describe("pushCustomization", () => {
     expect(container.appRevisionStorage.callLog).toContain("update");
   });
 });
+
+describe("pushCustomization — snapshots without digests", () => {
+  const getContainer = setupTestCustomizationContainer();
+
+  it("pushes a locally edited file when the app revision has not moved (AC-7)", async () => {
+    const container = getContainer();
+    // Legacy state: no digests recorded, revision still matches the remote.
+    setState(container, localFile("a.js"), "1");
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "1");
+    setLocalBody(container, "a.js", "edited-locally");
+    setRemoteBody(container, "a.js", "original");
+
+    const result = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(result.mode).toBe("push");
+    expect(container.customizationConfigurator.lastUpdateParams?.revision).toBe(
+      "1",
+    );
+  });
+
+  it("still blocks when the app revision moved and both sides diverge (AC-8 b)", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1");
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setLocalBody(container, "a.js", "local-body");
+    setRemoteBody(container, "a.js", "remote-body");
+
+    await expect(
+      pushCustomization({ container, input: { basePath: BASE } }),
+    ).rejects.toSatisfy(isConfigDrift);
+  });
+
+  it("still pushes when the local declaration was removed (AC-8 d)", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1");
+    setLocal(container, {
+      scope: "ALL",
+      desktop: { js: [], css: [] },
+      mobile: { js: [], css: [] },
+    });
+    setRemote(container, [remoteFile("a.js")], "2");
+    setRemoteBody(container, "a.js", "remote-body");
+
+    const result = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(result.mode).toBe("push");
+  });
+
+  it("adds the inferred-classification hint when an inferred key caused the drift (AC-18)", async () => {
+    const container = getContainer();
+    setState(container, localFile("a.js"), "1");
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "2");
+    setLocalBody(container, "a.js", "local-body");
+    setRemoteBody(container, "a.js", "remote-body");
+
+    const error = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ConflictError);
+    const message = (error as ConflictError).message;
+    expect(message).toContain("no recorded content baseline");
+    expect(message).toContain("customize diff");
+  });
+
+  it("keeps the plain drift message when no inferred key is involved (AC-18)", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js"), remoteFile("b.js")], "2");
+    matchFile(container, "a.js", "v1");
+
+    const error = await pushCustomization({
+      container,
+      input: { basePath: BASE },
+    }).catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(ConflictError);
+    expect((error as ConflictError).message).not.toContain(
+      "no recorded content baseline",
+    );
+  });
+});
+
+describe("pushCustomization — round trip (AC-12)", () => {
+  const getContainer = setupTestCustomizationContainer();
+
+  it("reports no differences when diffing right after a non-forced push", async () => {
+    const container = getContainer();
+    setState(
+      container,
+      localFile("a.js"),
+      "1",
+      baseDigests({ "desktop:js:a.js": "v1" }),
+    );
+    setLocal(container, localFile("a.js"));
+    setRemote(container, [remoteFile("a.js")], "1");
+    setLocalBody(container, "a.js", "v2");
+    setRemoteBody(container, "a.js", "v1");
+
+    await pushCustomization({ container, input: { basePath: BASE } });
+
+    const diff = await detectCustomizationThreeWayDiff({
+      container,
+      input: { basePath: BASE },
+    });
+
+    expect(diff.mode).toBe("three-way");
+    if (diff.mode === "three-way") {
+      expect(diff.isEmpty).toBe(true);
+    }
+  });
+});
+
+function isConfigDrift(error: unknown): boolean {
+  return (
+    error instanceof ConflictError &&
+    error.code === ConflictErrorCode.ConfigDrift
+  );
+}

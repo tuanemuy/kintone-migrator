@@ -26,7 +26,10 @@ import { pullAction } from "@/core/application/action/pullAction";
 import { pullAdminNotes } from "@/core/application/adminNotes/pullAdminNotes";
 import { pullAppPermission } from "@/core/application/appPermission/pullAppPermission";
 import { loadAppRevision } from "@/core/application/appRevisionIo";
-import { pullCustomization } from "@/core/application/customization/pullCustomization";
+import {
+  applyPulledCustomizationMerge,
+  pullCustomization,
+} from "@/core/application/customization/pullCustomization";
 import { pullFieldPermission } from "@/core/application/fieldPermission/pullFieldPermission";
 import { pullSchema } from "@/core/application/formSchema/pullSchema";
 import { pullGeneralSettings } from "@/core/application/generalSettings/pullGeneralSettings";
@@ -315,6 +318,35 @@ describe("pullAllForApp — customize 配線（Issue #205）", () => {
     expect(pullCustomization).toHaveBeenCalledWith(
       expect.objectContaining({
         input: expect.objectContaining({ force: false }),
+      }),
+    );
+  });
+
+  // Issue #207 / AC-19: the merge's remote digests must reach the apply stage
+  // through this path too, otherwise the bulk `pull` would record disk-derived
+  // base digests and reintroduce the false-drift bug on its own.
+  it("customize は pullCustomization の remoteDigests を applyPulledCustomizationMerge へ素通しする", async () => {
+    vi.mocked(getCurrentRemoteRevision).mockResolvedValue("101");
+    vi.mocked(loadAppRevision).mockResolvedValue({ revision: "100" });
+    mockAllPullsForce();
+
+    const remoteDigests = new Map([["desktop:js:a.js", "sha256:abc"]]);
+    vi.mocked(pullCustomization).mockResolvedValue({
+      mode: "merged",
+      merge: { entries: [], conflicts: [], hasConflict: false },
+      local: {},
+      remote: {},
+      remoteConfig: {},
+      remoteRevision: "101",
+      remoteDigests,
+    } as never);
+    vi.mocked(applyPulledCustomizationMerge).mockResolvedValue(undefined);
+
+    await pullAllForApp(makeArgs());
+
+    expect(applyPulledCustomizationMerge).toHaveBeenCalledWith(
+      expect.objectContaining({
+        input: expect.objectContaining({ remoteDigests }),
       }),
     );
   });

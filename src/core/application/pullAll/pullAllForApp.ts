@@ -255,6 +255,7 @@ function buildTasks(args: PullAllForAppInput): readonly PullTask[] {
             remote: result.remote,
             remoteConfig: result.remoteConfig,
             remoteRevision: result.remoteRevision,
+            remoteDigests: result.remoteDigests,
           },
         });
         return "merged";
