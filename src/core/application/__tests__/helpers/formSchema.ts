@@ -5,6 +5,8 @@ import type {
   ExpectedRevision,
   FormConfigurator,
 } from "@/core/domain/formSchema/ports/formConfigurator";
+import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
+import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import type { SchemaStateStorage } from "@/core/domain/formSchema/ports/schemaStateStorage";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
 import type {
@@ -26,9 +28,13 @@ export class InMemoryFormConfigurator
 {
   private fields: Map<FieldCode, FieldDefinition> = new Map();
   private layout: FormLayout = [];
+  private publishedFields: Map<FieldCode, FieldDefinition> = new Map();
+  private publishedLayout: FormLayout = [];
   private revision = "1";
   /** Records the expected revision passed to each mutation method, in order. */
   readonly expectedRevisions: Array<ExpectedRevision> = [];
+  /** Records the read target passed to each read method, in order. */
+  readonly readTargets: FormReadTarget[] = [];
   /**
    * When set, the next mutation (add/update/delete/layout) throws this error
    * before mutating. Used to simulate the kintone adapter translating an API
@@ -57,8 +63,14 @@ export class InMemoryFormConfigurator
     }
   }
 
-  async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
+  async getFields(
+    target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
+  ): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
     this.trackCall("getFields");
+    this.readTargets.push(target);
+    if (target === "published") {
+      return new Map(this.publishedFields);
+    }
     return new Map(this.fields);
   }
 
@@ -123,8 +135,14 @@ export class InMemoryFormConfigurator
     }
   }
 
-  async getLayout(): Promise<FormLayout> {
+  async getLayout(
+    target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
+  ): Promise<FormLayout> {
     this.trackCall("getLayout");
+    this.readTargets.push(target);
+    if (target === "published") {
+      return [...this.publishedLayout];
+    }
     return [...this.layout];
   }
 
@@ -144,6 +162,26 @@ export class InMemoryFormConfigurator
 
   setLayout(layout: FormLayout): void {
     this.layout = [...layout];
+  }
+
+  /**
+   * Published reads return no fields until a test sets them here. Deliberately
+   * not a fallback to the preview fields: that would let a test that forgets to
+   * set up published data pass even if the implementation ignored `target`
+   * entirely. The empty default is a test-double convention, not a model of a
+   * never-deployed app -- against the real adapter such a read fails rather
+   * than returning an empty form.
+   */
+  setPublishedFields(fields: ReadonlyMap<FieldCode, FieldDefinition>): void {
+    this.publishedFields = new Map(fields);
+  }
+
+  /**
+   * Published reads return an empty layout until a test sets one here, for the
+   * same reason as {@link InMemoryFormConfigurator.setPublishedFields}.
+   */
+  setPublishedLayout(layout: FormLayout): void {
+    this.publishedLayout = [...layout];
   }
 
   setRevision(revision: string): void {

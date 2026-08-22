@@ -55,6 +55,7 @@ import {
   printProcessDiffResult,
   printRecordPermissionDiffResult,
   printReportDiffResult,
+  printSchemaDiffTarget,
   printThreeWayDiffResult,
   printViewDiffResult,
 } from "../output";
@@ -72,6 +73,22 @@ function emptyResult(): DetectDiffOutput {
     hasLayoutChanges: false,
   };
 }
+
+describe("printSchemaDiffTarget", () => {
+  it("preview の場合、preview 比較である旨をログ出力する", () => {
+    printSchemaDiffTarget("preview");
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Comparing against the preview (unpublished) form.",
+    );
+  });
+
+  it("published の場合、2-way で base snapshot を使わない旨も示す", () => {
+    printSchemaDiffTarget("published");
+    expect(p.log.info).toHaveBeenCalledWith(
+      "Comparing against the published (deployed) form (2-way; base snapshot not used).",
+    );
+  });
+});
 
 describe("printDiffResult", () => {
   it("差分がない場合、'No changes detected.' とログ出力される", () => {
@@ -427,7 +444,6 @@ describe("printViewDiffResult", () => {
     const lines = noteBody.split("\n");
     expect(lines).toHaveLength(3);
     expect(lines[1]).toBe("    index: 0 -> 1");
-    // 2 エントリ目の見出し行はインデントされない
     expect(lines[2]).not.toMatch(/^\s/);
     expect(lines[2]).toContain("新規");
   });

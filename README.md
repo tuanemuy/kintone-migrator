@@ -183,7 +183,7 @@ Commands are organized into domain groups:
 | `schema` | `override` | Overwrite entire form from schema |
 | `schema` | `capture` | _Deprecated — use `schema pull`._ Save current form schema to file |
 | `schema` | `validate` | Validate schema file locally |
-| `schema` | `dump` | Dump raw field/layout JSON (for debugging) |
+| `schema` | `dump` | Dump raw field/layout JSON (debugging / preview-vs-published check) |
 | `seed` | `push` | Upsert seed data records (plain upsert; no 3-way merge) |
 | `seed` | `apply` | _Deprecated alias for `seed push`._ |
 | `seed` | `capture` | Capture records from kintone app |
@@ -249,12 +249,27 @@ Authentication settings are intentionally omitted from the generated config to a
 
 #### `schema diff`
 
-Detects differences between the schema file and the current kintone form.
+Detects differences between the schema file and the current kintone form. The output states which form generation the comparison used.
 
 ```bash
 kintone-migrator schema diff
 kintone-migrator schema diff --app customer
+kintone-migrator schema diff --published
 ```
+
+| Option | Description |
+|---|---|
+| `--published` | Compare against the published (deployed) form instead of the preview (unpublished) one. |
+
+Without `--published` the comparison is 3-way against the preview form: with a base snapshot it distinguishes local changes, remote drift, and conflicts.
+
+With `--published` the comparison is 2-way against the deployed form. The base snapshot is not used, so drift and conflicts are not detected -- "no changes" means only that the schema file matches what is currently published.
+
+This is the check to run after a deploy: if `schema diff --published` reports no changes, the schema file's contents are live on the published form.
+
+`--published` requires the app to have been deployed at least once. On an app that has never been deployed, the read fails with an error that identifies it as a published read and points at the likely cause. With `--all`, a single failing app stops the whole run (fail-fast) and the remaining apps are skipped.
+
+`--published` is accepted only by `schema dump` and `schema diff`. `schema pull`, `schema push`, `schema capture`, `schema migrate`, and `schema override` always target the preview generation, and passing `--published` to them is silently ignored.
 
 #### `schema migrate`
 
@@ -305,11 +320,52 @@ kintone-migrator schema validate -f my-schema.yaml
 
 #### `schema dump`
 
-Dumps raw kintone field definitions and layout as JSON. Outputs `fields.json` and `layout.json` (prefixed with app name in multi-app mode).
+Dumps raw kintone field definitions and layout as JSON. Outputs `fields.json` and `layout.json` (prefixed with app name in multi-app mode), or their `published-` counterparts with `--published`, so both generations can be dumped side by side and compared.
 
 ```bash
 kintone-migrator schema dump
+kintone-migrator schema dump --published
 ```
+
+| Option | Description |
+|---|---|
+| `--published` | Dump the published (deployed) form instead of the preview (unpublished) one. |
+
+With `--published` the output file names are prefixed with `published-`, so the two generations never overwrite each other: `published-fields.json` / `published-layout.json` (in multi-app mode, `<appName>-published-fields.json` / `<appName>-published-layout.json`).
+
+`--published` requires the app to have been deployed at least once. On an app that has never been deployed, the dump fails with an error that identifies it as a published read and points at the likely cause, and no file is written. With `--all`, a single failing app stops the whole run (fail-fast) and the remaining apps are skipped.
+
+`--published` is accepted only by `schema dump` and `schema diff`. `schema pull`, `schema push`, `schema capture`, `schema migrate`, and `schema override` always target the preview generation, and passing `--published` to them is silently ignored.
+
+Because the two dumps sit side by side, you can compare the preview form definition with the published one before pushing your own changes:
+
+```bash
+kintone-migrator schema dump              # fields.json / layout.json (preview)
+kintone-migrator schema dump --published  # published-fields.json / published-layout.json
+
+# revision can differ between generations, so exclude it from the comparison
+diff -I '"revision"' fields.json published-fields.json
+diff -I '"revision"' layout.json published-layout.json
+```
+
+In a multi-app project (a `kintone-migrator.yaml` is present), add `--app <name>` to both dumps -- with none of `--app`, `--all`, or `--app-id` the command only lists the available apps and writes no files. With `--app <name>` the output file names are prefixed with the app name (`--app-id` bypasses the project config and keeps the unprefixed names):
+
+```bash
+kintone-migrator schema dump --app customer              # customer-fields.json / customer-layout.json
+kintone-migrator schema dump --app customer --published  # customer-published-fields.json / customer-published-layout.json
+
+diff -I '"revision"' customer-fields.json customer-published-fields.json
+diff -I '"revision"' customer-layout.json customer-published-layout.json
+```
+
+The `-I '"revision"'` exclusion is needed because `dump` saves the kintone response as-is: both `fields.json` and `layout.json` carry a top-level `revision`, and its value can differ between the preview and published generations even when the form contents are identical. If the comparison reports differences other than `revision` -- for example the same fields serialized in a different key order -- normalize both files before comparing:
+
+```bash
+diff <(jq -S 'del(.revision)' fields.json) <(jq -S 'del(.revision)' published-fields.json)
+diff <(jq -S 'del(.revision)' layout.json) <(jq -S 'del(.revision)' published-layout.json)
+```
+
+No differences means the form definition in preview matches the one that is published. It does not mean that a deploy is safe in general: deploying publishes **all** pending preview settings for the app -- views, notifications, process management, the various permission settings, plugins, general settings -- while this check covers the form definition only. Someone else's undeployed work in those other areas would still go live.
 
 ### `seed` -- Seed Data Management
 

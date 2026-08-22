@@ -666,18 +666,24 @@ const SchemaValidator = {
 フォーム構成を取得・変更するためのインターフェース。
 
 ```typescript
+type FormReadTarget = "preview" | "published";
+
 interface FormConfigurator {
-  getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>>;
+  getFields(target?: FormReadTarget): Promise<ReadonlyMap<FieldCode, FieldDefinition>>;
   addFields(fields: readonly FieldDefinition[]): Promise<void>;
   updateFields(fields: readonly FieldDefinition[]): Promise<void>;
   deleteFields(fieldCodes: readonly FieldCode[]): Promise<void>;
-  getLayout(): Promise<FormLayout>;
+  getLayout(target?: FormReadTarget): Promise<FormLayout>;
   updateLayout(layout: FormLayout): Promise<void>;
 }
 ```
 
 - 外部から取得したフォーム情報をドメインの型（FieldDefinition）に変換する責務を持つ
 - `getFields()` はシステムフィールド（RECORD_NUMBER、CREATOR 等）を除外して返す。`FieldType` ユニオンにシステムフィールド型を含まないため、アダプター側でフィルタリングする
+- kintone のフォーム定義は preview（編集中）と published（公開済み）の2世代を持つ。read 系（`getFields` / `getLayout`）は `FormReadTarget` で読み取る世代を選べる。省略時は `"preview"` を読む
+- mutation 系（`addFields` / `updateFields` / `deleteFields` / `updateLayout`）は常に preview 世代を対象とする。kintone のフォーム API が変更できるのが preview だけであるため
+- published を読んだ場合、応答の revision はアダプターの revision 追跡に取り込まない。取り込むと後続 mutation の期待 revision が published 由来になる
+- published 読み取りの失敗は、HTTPステータスによらず published 読み取りであることを示すメッセージでラップする（未デプロイのアプリでは「アプリが見つかりません」と読める kintone のメッセージが返るため）
 - API通信に失敗した場合は `SystemError` をスローする
 
 ### SchemaStorage
@@ -711,12 +717,12 @@ interface SchemaStorage {
 スキーマと現在のフォーム設定の差分を検出する。
 
 - **対応シナリオ**: シナリオ1, シナリオ2, シナリオ3
-- **入力**: なし
+- **入力**: `{ target?: "preview" | "published" }`（省略時 preview）
 - **出力**: `FormDiff`
 - **処理フロー**:
     1. `SchemaStorage.get()` でスキーマテキストを取得する
     2. `SchemaParser.parse()` でスキーマにパースする
-    3. `FormConfigurator.getFields()` で現在のフォームフィールドを取得する
+    3. `FormConfigurator.getFields(target)` で現在のフォームフィールドを取得する。読み取る世代は入力の `target` で決まる
     4. `DiffDetector.detect()` で差分を検出する
     5. `FormDiff` を返却する
 - **エラー**:

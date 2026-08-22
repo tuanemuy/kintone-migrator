@@ -19,6 +19,7 @@ import type {
 } from "@/core/application/threeWay/threeWayDiff";
 import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
 import type { DiffResult, DiffSummary } from "@/core/domain/diff";
+import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
 import { logError } from "./handleError";
 
@@ -130,6 +131,18 @@ export function printCustomizationDiffResult(
       return `${colorize(prefix)} ${pc.dim("[")}${colorize(location)}${pc.dim("]")} ${entry.name}${pc.dim(":")} ${entry.details}`;
     },
   );
+}
+
+// With `--published` the comparison is 2-way, so conflict / remote-drift
+// detection is not in play; saying so prevents "no changes = safe" misreadings.
+export function printSchemaDiffTarget(target: FormReadTarget): void {
+  if (target === "published") {
+    p.log.info(
+      "Comparing against the published (deployed) form (2-way; base snapshot not used).",
+    );
+    return;
+  }
+  p.log.info("Comparing against the preview (unpublished) form.");
 }
 
 // printDiffResult does not use printGenericDiffResult because DetectDiffOutput
