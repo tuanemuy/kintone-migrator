@@ -131,15 +131,22 @@ apps:
 | `guestSpaceId` | No | Guest space ID |
 | `dependsOn` | No | List of app names this app depends on |
 
-Multi-app CLI options (available on all commands):
+Multi-app CLI options (available on every command except `init`):
 
 | CLI Argument | Description |
 |---|---|
 | `--app <name>` | Target a specific app by name |
-| `--all` | Run all apps in dependency order |
+| `--all` | Run all apps in dependency order (not supported by `<domain> push` / `<domain> pull` — see below) |
 | `--config`, `-c` | Config file path (default: `kintone-migrator.yaml`) |
 
 Apps are executed in topological order based on `dependsOn`. Circular dependencies are detected and reported as errors. `--all` stops on first failure (fail-fast).
+
+The per-domain `push` / `pull` commands (`schema push`, `customize push`, `customize pull`, `view pull`, ...) only run one app at a time: they accept `--app <name>` but reject `--all` with a validation error. To run every app, use the top-level aggregate `push` / `pull` commands, which cover every domain across every app in dependency order:
+
+```bash
+kintone-migrator push --all --yes    # every domain, every app
+kintone-migrator pull --all          # every domain, every app
+```
 
 Configuration merge priority (high to low): CLI arguments > environment variables > app-level settings > top-level settings.
 
@@ -214,7 +221,9 @@ Commands are organized into domain groups:
 
 > **Deprecation notice:** the `apply`/`capture`/`migrate` commands above are deprecated in favor of their per-domain `push`/`pull` successors and will be removed in a future major version. The top-level `apply`/`capture` aggregate commands are likewise superseded by the top-level `push`/`pull` aggregate commands (which run every domain at once), not by any single `<domain> push`/`<domain> pull`. `push` writes to kintone (with a drift guard; use `--force` for the legacy overwrite behavior) and `pull` reads from kintone (with 3-way merge; `--force` for legacy overwrite). `seed` is out of scope for 3-way merge, so it has `seed push` but no `seed pull` — keep using `seed capture` to read records.
 
-All commands support `--app <name>` and `--all` for [multi-app mode](#multi-app-project-config). Commands that modify data (`schema push`, `schema override`, `seed push --clean`, `customize push`) support `--yes` / `-y` to skip confirmation prompts.
+Every command except `init` supports `--app <name>` for [multi-app mode](#multi-app-project-config). `--all` is supported by the `apply` / `capture` / `diff` / `migrate` commands, `seed push`, and the top-level aggregate `push` / `pull`, but **not** by the per-domain `push` / `pull` commands (`schema push`, `schema pull`, `customize push`, `customize pull`, `view push`, ...) — those reject `--all` with a validation error. Run the top-level `push` / `pull` with `--all` to cover every app instead.
+
+Commands that modify data (`schema push`, `schema override`, `seed push --clean`, `customize push`) support `--yes` / `-y` to skip confirmation prompts.
 
 ### `init` -- Project Initialization
 
@@ -343,6 +352,8 @@ kintone-migrator seed capture --key-field customer_code
 | `--key-field`, `-k` | Key field code (required) |
 
 ### `customize` -- JS/CSS Customization
+
+> **Note:** `customize push` / `customize pull` handle one app per run — they accept `--app <name>` but reject `--all`. To apply customizations to every app at once, use the top-level aggregate `push` / `pull` (`kintone-migrator push --all --yes`), which runs every domain for every app in dependency order. The deprecated `customize apply` / `customize capture` still accept `--all`.
 
 #### `customize apply`
 
