@@ -9,8 +9,5 @@
  */
 export type FormReadTarget = "preview" | "published";
 
-/**
- * The generation read when a caller does not specify one. Preview keeps the
- * historical behaviour of every existing caller.
- */
+/** The generation read when a caller does not specify a target. */
 export const DEFAULT_FORM_READ_TARGET = "preview" satisfies FormReadTarget;

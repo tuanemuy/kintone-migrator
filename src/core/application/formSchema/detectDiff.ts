@@ -41,8 +41,9 @@ export type DetectDiffInput = {
   readonly target?: FormReadTarget;
 };
 
-// `input` is optional (rather than the usual required DTO object) so that every
-// existing caller that compares against the preview keeps its current form.
+// `input` is optional (rather than the usual required DTO object) because
+// comparing against the preview is the default contract: callers that want it
+// pass nothing.
 export type DetectDiffArgs = FormSchemaDiffServiceArgs & {
   input?: DetectDiffInput;
 };

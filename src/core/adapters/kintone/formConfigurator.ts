@@ -524,9 +524,8 @@ function toKintoneLayoutItem(item: LayoutItem): Record<string, unknown> {
   }
 }
 
-// Looking the message up by `target` (instead of comparing against one member)
-// keeps the failure wording exhaustive: adding a FormReadTarget member breaks
-// the build here instead of silently reusing the preview wording.
+// Keyed by `target` so adding a FormReadTarget member breaks the build here
+// instead of silently reusing the preview wording.
 const GET_FIELDS_FAILURE_MESSAGES = {
   preview: "Failed to get form fields",
   published:

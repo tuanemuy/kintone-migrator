@@ -7,7 +7,9 @@ export type DumpFormInput = {
   readonly target?: FormReadTarget;
 };
 
-// `input` is optional so that existing preview callers keep their current form.
+// `input` is optional (rather than the usual required DTO object) because
+// dumping the preview is the default contract: callers that want it pass
+// nothing.
 export type DumpFormArgs = DumpServiceArgs & {
   input?: DumpFormInput;
 };

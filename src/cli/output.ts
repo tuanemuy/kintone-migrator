@@ -133,9 +133,8 @@ export function printCustomizationDiffResult(
   );
 }
 
-// States which form generation `schema diff` is comparing against. With
-// `--published` the comparison is 2-way, so conflict / remote-drift detection
-// is not in play and saying so prevents "no changes = safe" misreadings.
+// With `--published` the comparison is 2-way, so conflict / remote-drift
+// detection is not in play; saying so prevents "no changes = safe" misreadings.
 export function printSchemaDiffTarget(target: FormReadTarget): void {
   if (target === "published") {
     p.log.info(

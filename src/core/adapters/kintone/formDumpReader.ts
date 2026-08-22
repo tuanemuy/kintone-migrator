@@ -7,9 +7,8 @@ import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarg
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import { wrapKintoneError } from "./wrapKintoneError";
 
-// Looking the message up by `target` (instead of comparing against one member)
-// keeps the failure wording exhaustive: adding a FormReadTarget member breaks
-// the build here instead of silently reusing the preview wording.
+// Keyed by `target` so adding a FormReadTarget member breaks the build here
+// instead of silently reusing the preview wording.
 const GET_RAW_FORM_DATA_FAILURE_MESSAGES = {
   preview: "Failed to fetch raw form data for dump",
   published:

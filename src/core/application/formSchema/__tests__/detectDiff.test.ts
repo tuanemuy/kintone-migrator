@@ -128,7 +128,6 @@ layout:
     container.formConfigurator.setFields(
       new Map([[FieldCode.create("name"), field]]),
     );
-    // 異なるレイアウト（空のレイアウト）
     container.formConfigurator.setLayout([]);
 
     const result = await detectDiff({ container });
@@ -297,7 +296,6 @@ layout:
     container.formConfigurator.setFields(
       new Map([[FieldCode.create("name"), field]]),
     );
-    // スキーマのレイアウトとは異なる(行が2つ)
     container.formConfigurator.setLayout([
       { type: "ROW", fields: [{ kind: "field", field }] },
       { type: "ROW", fields: [] },

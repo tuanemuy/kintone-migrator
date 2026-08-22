@@ -12,7 +12,6 @@ import type {
 } from "@/core/domain/formSchema/valueObject";
 import { KintoneFormConfigurator } from "../formConfigurator";
 
-// kintone REST API Client のモック
 function createMockClient(
   overrides: {
     getFormFields?: (params: unknown) => Promise<unknown>;
@@ -438,7 +437,6 @@ describe("KintoneFormConfigurator", () => {
       const adapter = new KintoneFormConfigurator(client, APP_ID);
       const fields = await adapter.getFields();
 
-      // SUBTABLE 本体
       const subtable = fields.get("items" as FieldCode);
       expect(subtable?.type).toBe("SUBTABLE");
       if (subtable?.type === "SUBTABLE") {
@@ -882,7 +880,6 @@ describe("KintoneFormConfigurator", () => {
 
       if (layout[0].type === "ROW") {
         const [recNum, creator] = layout[0].fields;
-        // システムフィールドは SystemFieldLayout として変換
         expect(recNum.kind).toBe("systemField");
         if (recNum.kind === "systemField") {
           expect(recNum.code).toBe("レコード番号");
@@ -1194,14 +1191,11 @@ describe("KintoneFormConfigurator", () => {
 
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
-      // getFields で取得
       const fields = await adapter.getFields();
       expect(fields.size).toBe(8);
 
-      // addFields で再投入
       await adapter.addFields([...fields.values()]);
 
-      // 変換されたプロパティがオリジナルと一致するか検証
       expect(capturedAddProperties).not.toBeNull();
       const props = capturedAddProperties as unknown as Record<
         string,
@@ -1210,12 +1204,10 @@ describe("KintoneFormConfigurator", () => {
       for (const [code, original] of Object.entries(kintoneProperties)) {
         const converted = props[code];
         expect(converted).toBeDefined();
-        // type, code, label は共通
         expect(converted.type).toBe(original.type);
         expect(converted.code).toBe(original.code);
         expect(converted.label).toBe(original.label);
 
-        // フィールドタイプ固有プロパティを検証
         for (const [key, value] of Object.entries(original)) {
           if (["type", "code", "label"].includes(key)) continue;
           expect(converted[key]).toEqual(value);
@@ -2085,8 +2077,6 @@ describe("KintoneFormConfigurator", () => {
     });
   });
 
-  // AC-2 (W-001): getRevision reads the current preview revision in a single
-  // API call and throws a SystemError when the API omits the revision.
   describe("getRevision", () => {
     it("preview: true で現在の revision を取得する", async () => {
       const client = createMockClient({
@@ -2129,12 +2119,11 @@ describe("KintoneFormConfigurator", () => {
     });
   });
 
-  // B-001 (ADR-005 / ADR-013): the expected revision must be resolved against
-  // the real adapter's mutation path, not just the in-memory fake. These tests
-  // exercise resolveMutationRevision through the kintone client mock so a
-  // regression where the monotonic tracker (max-採用) overrides the fixed
-  // expected revision — or where SKIP_REVISION_CHECK falls back to the tracker —
-  // is actually caught.
+  // The expected revision is resolved on the real adapter's mutation path, so
+  // these tests drive resolveMutationRevision through the kintone client mock
+  // rather than the in-memory fake. That is the only way to catch a regression
+  // where the monotonic tracker (max-採用) overrides the fixed expected
+  // revision, or where SKIP_REVISION_CHECK falls back to the tracker.
   describe("expectedRevision の送出（B-001）", () => {
     function addFieldsRevision(client: KintoneRestAPIClient): unknown {
       const calls = (client.app.addFormFields as ReturnType<typeof vi.fn>).mock
@@ -2179,7 +2168,7 @@ describe("KintoneFormConfigurator", () => {
     it("--force相当 (SKIP_REVISION_CHECK): field mutation は revision を送らない (tracker にフォールバックしない)", async () => {
       // The tracker is populated with a current revision by the drift snapshot
       // fetch. SKIP_REVISION_CHECK must NOT fall back to it, otherwise force
-      // could 409 when the remote drifted (B-001).
+      // could 409 when the remote drifted.
       const client = createMockClient({
         getFormFields: () =>
           Promise.resolve({ properties: {}, revision: "99" }),
