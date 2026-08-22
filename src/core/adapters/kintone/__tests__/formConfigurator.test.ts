@@ -2447,6 +2447,50 @@ describe("KintoneFormConfigurator", () => {
       );
     });
 
+    it("published の getLayout が 403 で失敗しても同じ published 向けメッセージになる（ステータスで出し分けない）", async () => {
+      const client = createMockClient({
+        getFormLayout: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_NO02",
+              message: "権限がありません。",
+            },
+            status: 403,
+            statusText: "Forbidden",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getLayout("published")).rejects.toThrow(
+        /^Failed to get published form layout \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("published の getLayout が 401 で失敗しても同じ published 向けメッセージになる", async () => {
+      const client = createMockClient({
+        getFormLayout: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_AU01",
+              message: "認証に失敗しました。",
+            },
+            status: 401,
+            statusText: "Unauthorized",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getLayout("published")).rejects.toThrow(
+        /^Failed to get published form layout \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
     it("preview の getLayout 失敗メッセージは従来のまま", async () => {
       const client = createMockClient({
         getFormLayout: () => {

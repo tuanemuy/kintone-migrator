@@ -120,6 +120,86 @@ describe("KintoneFormDumpReader", () => {
     );
   });
 
+  it("published 読み取りの失敗は fields 側が 403 でも同じメッセージになる（ステータスで出し分けない）", async () => {
+    const client = createMockClient({
+      getFormFields: () =>
+        Promise.reject(
+          new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_NO02",
+              message: "権限がありません。",
+            },
+            status: 403,
+            statusText: "Forbidden",
+            headers: {},
+          }),
+        ),
+    });
+    const reader = new KintoneFormDumpReader(client, APP_ID);
+
+    await expect(reader.getRawFormData("published")).rejects.toThrow(
+      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+    );
+  });
+
+  it("published 読み取りの失敗は fields 側が 401 でも同じメッセージになる", async () => {
+    const client = createMockClient({
+      getFormFields: () =>
+        Promise.reject(
+          new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_AU01",
+              message: "認証に失敗しました。",
+            },
+            status: 401,
+            statusText: "Unauthorized",
+            headers: {},
+          }),
+        ),
+    });
+    const reader = new KintoneFormDumpReader(client, APP_ID);
+
+    await expect(reader.getRawFormData("published")).rejects.toThrow(
+      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+    );
+  });
+
+  it("published 読み取りの失敗は layout 側が 404 でも同じメッセージになる", async () => {
+    const client = createMockClient({
+      getFormLayout: () => Promise.reject(notFoundError()),
+    });
+    const reader = new KintoneFormDumpReader(client, APP_ID);
+
+    await expect(reader.getRawFormData("published")).rejects.toThrow(
+      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+    );
+  });
+
+  it("published 読み取りの失敗は layout 側が 401 でも同じメッセージになる", async () => {
+    const client = createMockClient({
+      getFormLayout: () =>
+        Promise.reject(
+          new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_AU01",
+              message: "認証に失敗しました。",
+            },
+            status: 401,
+            statusText: "Unauthorized",
+            headers: {},
+          }),
+        ),
+    });
+    const reader = new KintoneFormDumpReader(client, APP_ID);
+
+    await expect(reader.getRawFormData("published")).rejects.toThrow(
+      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+    );
+  });
+
   it("preview 読み取りの失敗メッセージは従来のまま", async () => {
     const client = createMockClient({
       getFormFields: () => Promise.reject(notFoundError()),
