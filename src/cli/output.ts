@@ -197,6 +197,10 @@ export function printThreeWayDiffResult<TTwoWay>(
     return;
   }
 
+  for (const note of result.notes ?? []) {
+    p.log.warn(note);
+  }
+
   if (result.isEmpty) {
     p.log.info("No changes detected (local, remote, and base are in sync).");
     return;

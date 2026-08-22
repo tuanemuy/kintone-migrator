@@ -22,6 +22,7 @@
 - Use in-memory test containers from `helpers/` (e.g., `setupTestActionContainer()`)
 - Only when it is difficult to use actual adapters, prepare Empty adapters and mock it using `vi.spyOn`, etc.
 - Config parsing/serialization is tested at the adapter level (`configCodec.test.ts`) and application level (`parseConfigText`, `stringifyConfig`). Domain tests do not involve config format details.
+- Fakes default to the same behavior as the real dependency, and deviations are opt-in per call. File-reading fakes only return content that a test seeded: reading an unseeded path throws `SystemError(StorageError)`, and `setFailure(path)` makes an individual seeded path unreadable.
 
 ## Manual Testing (kintone Integration)
 

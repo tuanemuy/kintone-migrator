@@ -1,7 +1,6 @@
 import { basename, resolve } from "node:path";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import type { FileUploader } from "@/core/domain/customization/ports/fileUploader";
-import { computeCustomizationThreeWayMerge } from "@/core/domain/customization/services/customizationMerge";
 import { ResourceMerger } from "@/core/domain/customization/services/resourceMerger";
 import type {
   CustomizationPlatform,
@@ -12,8 +11,9 @@ import type {
 import type { CustomizationThreeWayServiceArgs } from "../container/customization";
 import { ValidationError, ValidationErrorCode } from "../error";
 import { buildDriftConflict } from "../threeWay/driftConflict";
-import { computeModifiedFileNames } from "./customizationRemote";
+import { computeSnapshotFileDigests } from "./customizationDigests";
 import { saveCustomizationSnapshotAndRevision } from "./customizationStateIo";
+import { buildCustomizationThreeWayMerge } from "./customizationThreeWayMerge";
 import { loadCustomizationThreeWayInputs } from "./loadCustomizationThreeWayInputs";
 
 export type PushCustomizationInput = {
@@ -29,6 +29,10 @@ export type PushCustomizationOutput = {
 
 /** Pull command name surfaced in the drift hint message. */
 const CUSTOMIZE_PULL_COMMAND = "customize pull";
+
+function inferredDriftHint(count: number): string {
+  return `Drift possibly inferred: no recorded content baseline for ${count} of the drifted file(s). Run \`customize diff\` for the affected file(s); the pull above also records the baseline.`;
+}
 
 async function resolvePlatform(
   platform: CustomizationPlatform,
@@ -59,10 +63,11 @@ async function resolvePlatform(
 /**
  * Applies the local customization config to the remote with drift detection.
  *
- * - Loads base/local/remote and computes the file-name-keyed 3-way merge. drift
- *   (remoteOnly or conflict entries) && !force → {@link buildDriftConflict}
- *   tagged with `ConfigDrift`. Same-name files whose content
- *   diverges count as conflicts and block a non-forced push.
+ * - Loads base/local/remote and computes the resource-key-keyed 3-way merge.
+ *   drift (remoteOnly or conflict entries) && !force → {@link buildDriftConflict}
+ *   tagged with `ConfigDrift`. A file edited only locally is a local change, not
+ *   drift, so it pushes without `--force`; a file whose remote body moved away
+ *   from the base blocks the push.
  * - Replaces the full js/css lists with the local config's resolved (uploaded)
  *   resources via `updateAppCustomize`, so renames are expressed as old-name
  *   removal + new-name add (full-list replace — NOT an inexpressible
@@ -76,7 +81,7 @@ export async function pushCustomization({
   container,
   input,
 }: CustomizationThreeWayServiceArgs<PushCustomizationInput>): Promise<PushCustomizationOutput> {
-  const { state, local, remote } =
+  const { state, baseRevision, local, remote } =
     await loadCustomizationThreeWayInputs(container);
 
   if (local === undefined) {
@@ -88,24 +93,39 @@ export async function pushCustomization({
 
   const firstTime = state === undefined;
 
-  if (!firstTime && !input.force) {
-    const modifiedFileNames = await computeModifiedFileNames(
-      local,
-      remote.raw,
-      input.basePath,
+  // Digest the local bodies *before* uploading them. The base records what the
+  // remote holds, and the uploader reads the files itself, so digesting after
+  // the upload could record content that was never sent — which would show up
+  // as remote drift and block the next non-forced push.
+  const localDigests = await computeSnapshotFileDigests(
+    local,
+    input.basePath,
+    container.fileContentReader,
+  );
+
+  if (state !== undefined && !input.force) {
+    const { merge, estimatedKeys } = await buildCustomizationThreeWayMerge({
       container,
-    );
-    const merge = computeCustomizationThreeWayMerge(
       state,
+      baseRevision,
       local,
-      remote.config,
-      modifiedFileNames,
-    );
-    const hasDrift = merge.entries.some(
-      (e) => e.change.kind === "remoteOnly" || e.change.kind === "conflict",
-    );
-    if (hasDrift) {
-      throw buildDriftConflict(CUSTOMIZE_PULL_COMMAND);
+      remote,
+      basePath: input.basePath,
+      localDigests,
+    });
+    const driftKeys = merge.entries
+      .filter(
+        (e) => e.change.kind === "remoteOnly" || e.change.kind === "conflict",
+      )
+      .map((e) => e.key);
+    if (driftKeys.length > 0) {
+      const inferred = driftKeys.filter((key) =>
+        estimatedKeys.conservative.has(key),
+      ).length;
+      throw buildDriftConflict(
+        CUSTOMIZE_PULL_COMMAND,
+        inferred > 0 ? inferredDriftHint(inferred) : undefined,
+      );
     }
   }
 
@@ -125,8 +145,6 @@ export async function pushCustomization({
   const { revision: newRevision } =
     await container.customizationConfigurator.updateCustomization({
       scope: local.scope,
-      // Full-list replace (authoritative): the local config is the source of
-      // truth, so renames/deletions are expressed by sending the complete lists.
       desktop: { js: desktop.js, css: desktop.css },
       mobile: { js: mobile.js, css: mobile.css },
       ...(expectedRevision !== undefined ? { revision: expectedRevision } : {}),
@@ -137,7 +155,12 @@ export async function pushCustomization({
     desktop: local.desktop,
     mobile: local.mobile,
   };
-  await saveCustomizationSnapshotAndRevision(container, newBase, newRevision);
+  await saveCustomizationSnapshotAndRevision(
+    container,
+    newBase,
+    localDigests,
+    newRevision,
+  );
 
   return {
     mode: firstTime ? "firstTime" : "push",

@@ -32,6 +32,7 @@ import type { PluginDiffEntry } from "@/core/application/plugin/detectPluginDiff
 import type { ProcessManagementDiffEntry } from "@/core/application/processManagement/detectProcessManagementDiff";
 import type { RecordPermissionDiffEntry } from "@/core/application/recordPermission/detectRecordPermissionDiff";
 import type { ReportDiffEntry } from "@/core/application/report/detectReportDiff";
+import type { ThreeWayDiffResult } from "@/core/application/threeWay/threeWayDiff";
 import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
 import type { DiffResult } from "@/core/domain/diff";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
@@ -54,6 +55,7 @@ import {
   printProcessDiffResult,
   printRecordPermissionDiffResult,
   printReportDiffResult,
+  printThreeWayDiffResult,
   printViewDiffResult,
 } from "../output";
 
@@ -102,11 +104,9 @@ describe("printDiffResult", () => {
 
     printDiffResult(result);
 
-    // Changes サマリーが出力される
     expect(p.log.info).toHaveBeenCalledWith(
       expect.stringContaining("+1 added"),
     );
-    // Diff Details ノートが出力される
     expect(p.note).toHaveBeenCalledWith(
       expect.stringContaining("name"),
       "Diff Details",
@@ -1091,6 +1091,80 @@ describe("printReportDiffResult", () => {
       expect.stringContaining("Sales Report"),
       "Report Diff Details",
       expect.objectContaining({ format: expect.any(Function) }),
+    );
+  });
+});
+
+describe("printThreeWayDiffResult", () => {
+  function threeWayResult(
+    overrides: Partial<
+      Extract<ThreeWayDiffResult<never>, { mode: "three-way" }>
+    > = {},
+  ): ThreeWayDiffResult<never> {
+    return {
+      mode: "three-way",
+      localChanges: [],
+      remoteDrift: [],
+      conflicts: [],
+      extras: [],
+      isEmpty: true,
+      ...overrides,
+    };
+  }
+
+  const printTwoWay = vi.fn();
+
+  it("notes が無く差分もない場合、同期済みのメッセージだけが出力される", () => {
+    printThreeWayDiffResult(threeWayResult(), printTwoWay);
+    expect(p.log.info).toHaveBeenCalledWith(
+      "No changes detected (local, remote, and base are in sync).",
+    );
+    expect(p.log.warn).not.toHaveBeenCalled();
+    expect(p.note).not.toHaveBeenCalled();
+  });
+
+  it("notes が無く差分がある場合、凡例と '3-way Diff Details' ノートが出力される", () => {
+    printThreeWayDiffResult(
+      threeWayResult({
+        localChanges: [
+          { key: "desktop:js:app.js", label: "app.js", kind: "localOnly" },
+        ],
+        conflicts: [
+          { key: "mobile:css:main.css", label: "main.css", kind: "conflict" },
+        ],
+        isEmpty: false,
+      }),
+      printTwoWay,
+    );
+    expect(p.log.warn).not.toHaveBeenCalled();
+    expect(p.log.info).toHaveBeenCalledWith(expect.stringContaining("=local"));
+    const noteBody = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(noteBody).toContain("desktop:js:app.js");
+    expect(noteBody).toContain("local change");
+    expect(noteBody).toContain("mobile:css:main.css");
+    expect(noteBody).toContain("conflict");
+    expect(vi.mocked(p.note).mock.calls[0][1]).toBe("3-way Diff Details");
+  });
+
+  it("notes がある場合、エントリより前に p.log.warn で出力される", () => {
+    printThreeWayDiffResult(
+      threeWayResult({
+        localChanges: [
+          { key: "desktop:js:app.js", label: "app.js", kind: "localOnly" },
+        ],
+        notes: ["first note", "second note"],
+        isEmpty: false,
+      }),
+      printTwoWay,
+    );
+    expect(p.log.warn).toHaveBeenCalledTimes(2);
+    expect(p.log.warn).toHaveBeenNthCalledWith(1, "first note");
+    expect(p.log.warn).toHaveBeenNthCalledWith(2, "second note");
+    const lastWarnOrder = vi
+      .mocked(p.log.warn)
+      .mock.invocationCallOrder.at(-1) as number;
+    expect(lastWarnOrder).toBeLessThan(
+      vi.mocked(p.note).mock.invocationCallOrder[0],
     );
   });
 });

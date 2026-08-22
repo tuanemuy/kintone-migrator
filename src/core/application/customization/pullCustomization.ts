@@ -4,25 +4,32 @@ import { CustomizationConfigSerializer } from "@/core/domain/customization/servi
 import {
   type CustomizationMergeResolution,
   type CustomizationThreeWayMerge,
-  computeCustomizationThreeWayMerge,
+  type EstimatedBaseKeys,
+  fileResourceKeys,
+  remoteFileResourceKey,
   resolveCustomizationMerge,
   resourceKey,
+  walkCustomizationBuckets,
 } from "@/core/domain/customization/services/customizationMerge";
-import {
-  remoteResourceName,
-  resourceName,
-} from "@/core/domain/customization/services/diffDetector";
+import { resourceName } from "@/core/domain/customization/services/diffDetector";
 import type {
-  CustomizationResource,
-  LocalFileResource,
+  ContentDigest,
+  CustomizationFileDigests,
   RemoteCustomization,
 } from "@/core/domain/customization/valueObject";
-import type { CustomizationThreeWayServiceArgs } from "../container/customization";
+import type {
+  CustomizationThreeWayContainer,
+  CustomizationThreeWayServiceArgs,
+} from "../container/customization";
 import { wrapBusinessRuleError } from "../error";
 import { stringifyConfig } from "../stringifyConfig";
 import { captureCustomization } from "./captureCustomization";
-import { computeModifiedFileNames } from "./customizationRemote";
+import {
+  computeFileDigests,
+  computeSnapshotFileDigests,
+} from "./customizationDigests";
 import { saveCustomizationSnapshotAndRevision } from "./customizationStateIo";
+import { buildCustomizationThreeWayMerge } from "./customizationThreeWayMerge";
 import { loadCustomizationThreeWayInputs } from "./loadCustomizationThreeWayInputs";
 
 export type PullCustomizationInput = {
@@ -49,6 +56,24 @@ export type PullCustomizationOutput =
       readonly remote: RemoteCustomization;
       readonly remoteConfig: CustomizationConfig;
       readonly remoteRevision: string;
+      /**
+       * Digests of the remote bodies fetched while computing the merge. Handed
+       * to {@link applyPulledCustomizationMerge} so the new base records what
+       * the remote holds (see its `remoteDigests`).
+       */
+      readonly remoteDigests: CustomizationFileDigests;
+      /**
+       * Keys whose base tag had to be estimated because no baseline digest was
+       * recorded. The CLI warns before asking which side of a conflict to keep:
+       * a conservatively estimated key may not be a real divergence at all.
+       */
+      readonly estimatedKeys: EstimatedBaseKeys;
+      /**
+       * Keys whose local body could not be read while classifying. The CLI warns
+       * before asking which side of a conflict to keep: such a key looks like a
+       * two-sided divergence only because the local content was unknown.
+       */
+      readonly unreadableLocalKeys: ReadonlySet<string>;
     };
 
 /**
@@ -66,7 +91,7 @@ export async function pullCustomization({
   container,
   input,
 }: CustomizationThreeWayServiceArgs<PullCustomizationInput>): Promise<PullCustomizationOutput> {
-  const { state, local, remote } =
+  const { state, baseRevision, local, remote } =
     await loadCustomizationThreeWayInputs(container);
 
   if (input.force || state === undefined || local === undefined) {
@@ -84,28 +109,35 @@ export async function pullCustomization({
       },
     });
     await container.customizationStorage.update(captured.configText);
+    // The bodies we just wrote are exactly what the remote holds, so digest them
+    // from disk. `input.basePath` (not `captureBasePath`) is what the captured
+    // config's paths resolve against — the two differ whenever a file prefix is
+    // in play, and reading from the wrong base would silently record nothing.
+    const fileDigests = await computeSnapshotFileDigests(
+      captured.config,
+      input.basePath,
+      container.fileContentReader,
+    );
     // Persist the config we actually wrote as the new base (base == local),
     // keeping pull symmetric with push instead of the basename-only remote view.
     await saveCustomizationSnapshotAndRevision(
       container,
       captured.config,
+      fileDigests,
       remote.revision,
     );
     return { mode: input.force ? "force" : "firstTime" };
   }
 
-  const modifiedFileNames = await computeModifiedFileNames(
-    local,
-    remote.raw,
-    input.basePath,
-    container,
-  );
-  const merge = computeCustomizationThreeWayMerge(
-    state,
-    local,
-    remote.config,
-    modifiedFileNames,
-  );
+  const { merge, remoteDigests, estimatedKeys, unreadableLocalKeys } =
+    await buildCustomizationThreeWayMerge({
+      container,
+      state,
+      baseRevision,
+      local,
+      remote,
+      basePath: input.basePath,
+    });
 
   return {
     mode: "merged",
@@ -114,6 +146,9 @@ export async function pullCustomization({
     remote: remote.raw,
     remoteConfig: remote.config,
     remoteRevision: remote.revision,
+    remoteDigests,
+    estimatedKeys,
+    unreadableLocalKeys,
   };
 }
 
@@ -125,6 +160,13 @@ export type ApplyPulledCustomizationMergeInput = {
   readonly remote: RemoteCustomization;
   readonly remoteConfig: CustomizationConfig;
   readonly remoteRevision: string;
+  /**
+   * `remoteDigests` from the first stage, passed through unchanged. Required
+   * rather than optional so a caller that forgets it fails to compile: a merge
+   * whose base digests came from disk would mark local-side wins as already
+   * uploaded and turn them into remote drift on the next run.
+   */
+  readonly remoteDigests: CustomizationFileDigests;
 };
 
 /**
@@ -150,34 +192,41 @@ export async function applyPulledCustomizationMerge({
     ),
   );
 
-  // File names whose body must be taken from the remote: every `remoteOnly`
+  // Merge keys whose body must be taken from the remote: every `remoteOnly`
   // entry plus every conflict resolved to `remote`. (`localOnly` / `bothSame` /
   // `unchanged` keep the local on-disk copy — same content, no re-download.)
+  // Keyed by the bucket-qualified merge identity, so a divergence in one bucket
+  // never drags a same-basename file of another bucket into the download set.
   const fromRemote = new Set<string>();
   for (const entry of input.merge.entries) {
-    const name = nameFromKey(entry.key);
-    if (name === undefined) continue;
     if (entry.change.kind === "remoteOnly") {
-      fromRemote.add(name);
+      fromRemote.add(entry.key);
     } else if (
       entry.change.kind === "conflict" &&
       input.resolution.get(entry.key) === "remote"
     ) {
-      fromRemote.add(name);
+      fromRemote.add(entry.key);
     }
   }
 
-  // Remote fileKey lookup by basename for files we must download.
   const remoteFileKeys = remoteFileKeyMap(input.remote);
 
   const downloads: Promise<void>[] = [];
-  for (const resource of allFileResources(merged)) {
-    const name = resourceName(resource);
-    if (!fromRemote.has(name)) {
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    merged,
+  )) {
+    if (resource.type !== "FILE") {
       continue;
     }
-    const fileKey = remoteFileKeys.get(name);
+    const key = resourceKey(platform, category, resourceName(resource));
+    if (!fromRemote.has(key)) {
+      continue;
+    }
+    const fileKey = remoteFileKeys.get(key);
     if (fileKey === undefined) {
+      // The remote side of this key is a URL: the merge took the remote side,
+      // but the rebuilt config keeps the locally declared FILE entry (path is a
+      // local-owned concern), so there is no remote body to fetch.
       continue;
     }
     const absolutePath = resolve(input.basePath, resource.path);
@@ -195,13 +244,57 @@ export async function applyPulledCustomizationMerge({
     CustomizationConfigSerializer.serialize(merged),
   );
   await container.customizationStorage.update(configText);
+  const fileDigests = await buildMergedBaseDigests(
+    merged,
+    input.basePath,
+    input.remoteDigests,
+    container,
+  );
   // Base == the config we just wrote locally (declared paths), so a subsequent
   // push sees no drift and `git diff` stays clean (push-symmetric).
   await saveCustomizationSnapshotAndRevision(
     container,
     merged,
+    fileDigests,
     input.remoteRevision,
   );
+}
+
+/**
+ * Base digests for a merge that was just applied.
+ *
+ * A key the remote still holds records the *remote's* digest, even when the
+ * local side won the merge: the base means "what local and remote last agreed
+ * on", and content that stayed local was never uploaded. Recording the on-disk
+ * bytes instead would make the very next diff report the local edit as remote
+ * drift and block the push. Keys the remote does not have (locally added files,
+ * or remote-only files freshly downloaded) take the on-disk digest.
+ */
+async function buildMergedBaseDigests(
+  merged: CustomizationConfig,
+  basePath: string,
+  remoteDigests: CustomizationFileDigests,
+  container: CustomizationThreeWayContainer,
+): Promise<CustomizationFileDigests> {
+  const mergedKeys = fileResourceKeys(merged);
+  const fromDisk = new Set(
+    [...mergedKeys].filter((key) => !remoteDigests.has(key)),
+  );
+  const diskDigests = await computeFileDigests(
+    merged,
+    basePath,
+    container.fileContentReader,
+    fromDisk,
+  );
+
+  const digests = new Map<string, ContentDigest>();
+  for (const key of mergedKeys) {
+    const digest = remoteDigests.get(key) ?? diskDigests.get(key);
+    if (digest !== undefined) {
+      digests.set(key, digest);
+    }
+  }
+  return digests;
 }
 
 /**
@@ -216,59 +309,37 @@ function buildPreservePaths(
   config: CustomizationConfig,
 ): ReadonlyMap<string, string> {
   const map = new Map<string, string>();
-  const add = (
-    platform: string,
-    category: string,
-    resources: readonly CustomizationResource[],
-  ) => {
-    for (const resource of resources) {
-      if (resource.type === "FILE") {
-        map.set(
-          resourceKey(platform, category, resourceName(resource)),
-          resource.path,
-        );
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    config,
+  )) {
+    if (resource.type === "FILE") {
+      map.set(
+        resourceKey(platform, category, resourceName(resource)),
+        resource.path,
+      );
     }
-  };
-  add("desktop", "js", config.desktop.js);
-  add("desktop", "css", config.desktop.css);
-  add("mobile", "js", config.mobile.js);
-  add("mobile", "css", config.mobile.css);
+  }
   return map;
 }
 
-function allFileResources(config: CustomizationConfig): LocalFileResource[] {
-  const all = [
-    ...config.desktop.js,
-    ...config.desktop.css,
-    ...config.mobile.js,
-    ...config.mobile.css,
-  ];
-  return all.filter((r): r is LocalFileResource => r.type === "FILE");
-}
-
 /**
- * Extracts the file/resource name from a merge key. Resource keys are
- * `platform:category:name`; the `config:scope` key has no resource name.
+ * Remote FILE `fileKey`s under the merge identity, so a body is looked up by the
+ * same key the merge decided to take from the remote. A flat basename map would
+ * make cross-bucket same-basename files (e.g. `desktop/js/main.js` and
+ * `mobile/js/main.js`) resolve to whichever bucket was registered last,
+ * overwriting one bucket's body with the other's.
  */
-function nameFromKey(key: string): string | undefined {
-  const parts = key.split(":");
-  if (parts.length < 3) return undefined;
-  return parts.slice(2).join(":");
-}
-
 function remoteFileKeyMap(remote: RemoteCustomization): Map<string, string> {
   const map = new Map<string, string>();
-  const add = (resources: RemoteCustomization["desktop"]["js"]) => {
-    for (const r of resources) {
-      if (r.type === "FILE") {
-        map.set(remoteResourceName(r), r.file.fileKey);
-      }
+  for (const { platform, category, resource } of walkCustomizationBuckets(
+    remote,
+  )) {
+    if (resource.type === "FILE") {
+      map.set(
+        remoteFileResourceKey(platform, category, resource.file.name),
+        resource.file.fileKey,
+      );
     }
-  };
-  add(remote.desktop.js);
-  add(remote.desktop.css);
-  add(remote.mobile.js);
-  add(remote.mobile.css);
+  }
   return map;
 }

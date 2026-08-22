@@ -161,6 +161,76 @@ describe("CustomizationConfigSerializer", () => {
     expect(parsed.mobile.css).toEqual([]);
   });
 
+  it("should let a decorator contribute extra keys", () => {
+    const config: CustomizationConfig = {
+      scope: "ALL",
+      desktop: {
+        js: [{ type: "FILE", path: "desktop/js/app.js" }],
+        css: [],
+      },
+      mobile: {
+        js: [],
+        css: [{ type: "URL", url: "https://cdn.example.com/style.css" }],
+      },
+    };
+
+    const result = CustomizationConfigSerializer.serialize(
+      config,
+      (platform, category) => ({ marker: `${platform}:${category}` }),
+    );
+
+    expect(result).toEqual({
+      scope: "ALL",
+      desktop: {
+        js: [{ type: "FILE", path: "desktop/js/app.js", marker: "desktop:js" }],
+      },
+      mobile: {
+        css: [
+          {
+            type: "URL",
+            url: "https://cdn.example.com/style.css",
+            marker: "mobile:css",
+          },
+        ],
+      },
+    });
+  });
+
+  it("should keep the resource's own keys when a decorator returns them", () => {
+    const config: CustomizationConfig = {
+      scope: "ALL",
+      desktop: {
+        js: [{ type: "FILE", path: "desktop/js/app.js" }],
+        css: [],
+      },
+      mobile: {
+        js: [{ type: "URL", url: "https://cdn.example.com/lib.js" }],
+        css: [],
+      },
+    };
+
+    const result = CustomizationConfigSerializer.serialize(config, () => ({
+      type: "URL",
+      path: "hijacked.js",
+      url: "https://evil.example.com/hijacked.js",
+      digest: "extra",
+    }));
+    const parsed = CustomizationConfigParser.parse(result);
+
+    expect(result.desktop).toMatchObject({
+      js: [{ type: "FILE", path: "desktop/js/app.js" }],
+    });
+    expect(result.mobile).toMatchObject({
+      js: [{ type: "URL", url: "https://cdn.example.com/lib.js" }],
+    });
+    expect(parsed.desktop.js).toEqual([
+      { type: "FILE", path: "desktop/js/app.js" },
+    ]);
+    expect(parsed.mobile.js).toEqual([
+      { type: "URL", url: "https://cdn.example.com/lib.js" },
+    ]);
+  });
+
   it("should round-trip when both desktop and mobile are empty without scope", () => {
     const config: CustomizationConfig = {
       scope: undefined,

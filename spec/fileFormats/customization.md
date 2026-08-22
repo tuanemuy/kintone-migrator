@@ -73,13 +73,62 @@ mobile:
 
 詳細な保存パス規則・衝突解決は [Customization ドメイン仕様](../domains/customization.md) の `captureCustomization` を参照。
 
+## state スナップショット
+
+`customize push` / `customize pull` は同期完了時のカスタマイズ設定を state スナップショットとして保存する。全ドメイン一括の `push` / `pull` コマンドも、その customize 経路で同じ state を書く。これは 3-way マージの共通祖先（base）であり、capture 出力と同じフォーマットに FILE リソースの内容ダイジェストを加えたもの。保存先は実行モードによって異なる。
+
+| 実行モード | state スナップショット | アプリ revision |
+| --- | --- | --- |
+| 単一アプリモード（既定） | `state/customize.yaml` | `state/revision.yaml` |
+| 複数アプリモード（`--app`、または一括 `push` / `pull` の `--all`） | `state/<appName>/customize.yaml` | `state/<appName>/revision.yaml` |
+
+`customize push` / `customize pull` が受け付けるのは `--app` までで、`--all` は拒否する。複数アプリを一括で処理するのは全ドメイン一括の `push` / `pull` コマンドのみ。
+
+```yaml
+scope: ALL
+desktop:
+  js:
+    - digest: sha256:2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824
+      type: FILE
+      path: desktop/js/app.js
+    - type: URL
+      url: https://cdn.example.com/lib.js
+```
+
+**StateResource**（state スナップショットの `desktop.js[]` 等の各要素）:
+
+| プロパティ | 型 | 必須 | 説明 |
+| --- | --- | --- | --- |
+| `type` | `"FILE"` \| `"URL"` | 必須 | リソースの種別 |
+| `path` | string | 任意 | FILE リソースのローカルパス（`type: FILE` のとき必須・非空） |
+| `url` | string | 任意 | URL リソースの URL（`type: URL` のとき必須・非空） |
+| `digest` | string | 任意 | FILE リソースの内容ダイジェスト（`sha256:<64桁の16進数（小文字）>`）。FILE リソースのみに付き、未記録のエントリは追跡外として扱う |
+
+- URL リソースの内容は本ツールの管理外のため `digest` は付かない
+- 形式は `sha256:<64桁の16進数（小文字）>`。バイト列をそのままハッシュし、改行コードや BOM の正規化は行わない
+- 値は原則としてリモートが保持している内容のダイジェストで、経路ごとに次のように決まる
+    - `customize push`: アップロードするローカルファイルの内容（反映後にリモートが保持する内容）のダイジェスト
+    - `customize pull`（`--force` / state が無い初回）: リモートからダウンロードして書き出したファイルの内容のダイジェスト
+    - `customize pull`（マージ適用）: リモートに同じキーが存在すればリモート側の内容のダイジェスト（ローカル側が採用されたエントリの内容はまだリモートに存在しないため）。リモートに存在しないキー（ローカルで追加され、まだアップロードされていないファイル）はディスク上の内容のダイジェスト
+- いずれの経路でも、内容を読み取れなかった FILE エントリには `digest` が付かない
+- アプリの revision はここには含まれない。上表のアプリ revision ファイルに別途保存される
+
+### digest が無い場合
+
+`digest` が無い FILE エントリは「追跡外」（保存時点の内容が不明）として扱う。内容が空のファイルも `digest` を持つため、両者は区別される。追跡外エントリの分類は次のように決まる。
+
+- `digest` を 1 件も持たない state（`digest` の導入前に作られたもの）で、アプリ revision ファイルの revision がリモートのアプリ revision と一致する場合は、リモートの内容を base とみなす
+- それ以外の場合は、リソースの存在有無と両側の内容一致から保守的に分類する（digest 導入前と同じ分類になる）
+
+いずれの場合も、`--force` なしの `customize push` / `customize pull` を一度通せば、リモートに存在するか、ローカルディスクから読めるファイルについて `digest` が記録され、以降は内容の厳密な比較になる。リモートにも存在せず、ディスクからも読めないファイル（宣言だけが残っている未生成のビルド成果物など）は追跡外のまま残る。
+
 ## バリデーション
 
 パース時に以下を検証する。詳細は [Customization ドメイン仕様](../domains/customization.md) を参照。
 
 | エラーコード | 条件 |
 | --- | --- |
-| `CZ_INVALID_CONFIG_STRUCTURE` | ルート構造が不正（オブジェクトでない、`desktop` / `mobile` が不正 等） |
+| `CZ_INVALID_CONFIG_STRUCTURE` | ルート構造が不正（オブジェクトでない、`desktop` / `mobile` が不正 等）、または state スナップショットの `digest` が `sha256:<64桁の16進数（小文字）>` 形式でない |
 | `CZ_INVALID_SCOPE` | `scope` が `ALL` / `ADMIN` / `NONE` 以外 |
 | `CZ_INVALID_RESOURCE_TYPE` | リソースの `type` が `FILE` / `URL` 以外、または必須の `path` / `url` 欠落・空 |
 | `CZ_TOO_MANY_FILES` | kintone のファイル数上限を超過 |

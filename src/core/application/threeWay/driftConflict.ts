@@ -18,10 +18,17 @@ export function buildDriftMessage(pullCommand: string): string {
  * The CLI distinguishes this snapshot drift from API optimistic-lock (TOCTOU)
  * conflicts by the `ConfigDrift` code, not by the message string, so the
  * message stays a free-form, domain-specific hint.
+ *
+ * `extraHint` appends a domain-specific caveat (e.g. customization's "this
+ * drift may be inferred") on its own line; omitted, the message is unchanged.
  */
-export function buildDriftConflict(pullCommand: string): ConflictError {
+export function buildDriftConflict(
+  pullCommand: string,
+  extraHint?: string,
+): ConflictError {
+  const message = buildDriftMessage(pullCommand);
   return new ConflictError(
     ConflictErrorCode.ConfigDrift,
-    buildDriftMessage(pullCommand),
+    extraHint === undefined ? message : `${message}\n${extraHint}`,
   );
 }

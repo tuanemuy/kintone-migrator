@@ -556,6 +556,107 @@ describe("captureCustomization", () => {
     expect(container.fileWriter.writtenFiles.size).toBe(4);
   });
 
+  it("matches preservePaths when the remote file name contains a separator", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-1",
+              // A manually uploaded file can carry a separator in its name.
+              name: "sub/main.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    const result = await captureCustomization({
+      container,
+      input: {
+        basePath,
+        filePrefix,
+        // Keys are produced from the declared path's trailing segment, so the
+        // remote name must be normalized the same way before lookup.
+        preservePaths: new Map([
+          ["desktop:js:main.js", "src/desktop/js/main.js"],
+        ]),
+      },
+    });
+
+    expect(result.config.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "src/desktop/js/main.js",
+    });
+    const parsed = parseCustomizationConfigText(configCodec, result.configText);
+    expect(parsed.desktop.js[0]).toEqual({
+      type: "FILE",
+      path: "src/desktop/js/main.js",
+    });
+    expect(
+      container.fileWriter.writtenFiles.has(
+        "/project/customize/myapp/src/desktop/js/main.js",
+      ),
+    ).toBe(true);
+    expect(
+      container.fileWriter.writtenFiles.has(
+        "/project/customize/myapp/desktop/js/main.js",
+      ),
+    ).toBe(false);
+  });
+
+  it("writes a preserved absolute declared path where push uploads from (W-006)", async () => {
+    setup();
+    container.customizationConfigurator.setCustomization({
+      scope: "ALL",
+      desktop: {
+        js: [
+          {
+            type: "FILE",
+            file: {
+              fileKey: "fk-abs",
+              name: "app.js",
+              contentType: "text/javascript",
+              size: "100",
+            },
+          },
+        ],
+        css: [],
+      },
+      mobile: { js: [], css: [] },
+      revision: "1",
+    });
+
+    await captureCustomization({
+      container,
+      input: {
+        basePath,
+        filePrefix,
+        // `configParser` only rejects empty paths, so an absolute declared path
+        // is writable. Push uploads from (and the snapshot digests) the
+        // `resolve`d location, so capture must write exactly there.
+        preservePaths: new Map([["desktop:js:app.js", "/abs/vendor/app.js"]]),
+      },
+    });
+
+    expect(container.fileWriter.writtenFiles.has("/abs/vendor/app.js")).toBe(
+      true,
+    );
+    expect(
+      container.fileWriter.writtenFiles.has(
+        "/project/customize/myapp/abs/vendor/app.js",
+      ),
+    ).toBe(false);
+  });
+
   it("returns the config it wrote and uses the normalized scheme when preservePaths is unset (AC-8)", async () => {
     setup();
     container.customizationConfigurator.setCustomization({

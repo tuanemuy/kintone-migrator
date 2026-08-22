@@ -1,7 +1,10 @@
-import { basename, extname, join } from "node:path";
+import { basename, extname, join, resolve } from "node:path";
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationConfigSerializer } from "@/core/domain/customization/services/configSerializer";
-import { resourceKey } from "@/core/domain/customization/services/customizationMerge";
+import {
+  type CustomizationPlatformName,
+  remoteFileResourceKey,
+} from "@/core/domain/customization/services/customizationMerge";
 import type {
   CustomizationPlatform,
   CustomizationResource,
@@ -22,10 +25,10 @@ export type CaptureCustomizationInput = {
    * Opt-in path preservation for `pull`. Keyed by the bucket-qualified identity
    * `resourceKey(platform, category, FILE basename)` — the same identity the
    * 3-way merge uses, so cross-bucket same-basename files stay distinct. The
-   * basename component is the remote FILE's `file.name` (as produced by
-   * `remoteResourceName`); the value is the existing local declared relative
-   * path. When a remote FILE's key is present, its config path and download
-   * target adopt the declared path instead of the capture-normalized scheme.
+   * basename component is the trailing path segment (as produced by
+   * `resourceName`); the value is the existing local declared relative path.
+   * When a remote FILE's key is present, its config path and download target
+   * adopt the declared path instead of the capture-normalized scheme.
    * Unset (the `capture` command) keeps the current normalization.
    */
   readonly preservePaths?: ReadonlyMap<string, string>;
@@ -57,8 +60,6 @@ function sanitizeFileName(name: string): string {
  * Unlike {@link deduplicateName} from `@/lib/deduplicateName`, this function is
  * file-name-aware: it inserts the counter before the extension (e.g. `file_1.js`)
  * rather than appending it at the end (which would produce `file.js_1`).
- * This extension-aware behavior cannot be achieved by the generic lib utility,
- * so a local implementation is necessary.
  */
 function deduplicateFileName(baseName: string, usedNames: Set<string>): string {
   if (!usedNames.has(baseName)) {
@@ -108,7 +109,7 @@ type PlanResult = {
 
 function planResources(
   resources: readonly RemoteResource[],
-  platformName: string,
+  platformName: CustomizationPlatformName,
   platformDir: string,
   resourceType: "js" | "css",
   relativeBaseDir: string,
@@ -129,19 +130,23 @@ function planResources(
         usedNames,
       );
       // Match on the bucket-qualified identity so a remote FILE only adopts a
-      // preserved path from the same (platform, category) bucket.
+      // preserved path from the same (platform, category) bucket, normalizing
+      // the remote name the same way the key producer normalizes the declared
+      // path so a name containing a separator still finds its entry.
       const declaredPath = preservePaths?.get(
-        resourceKey(platformName, resourceType, resource.file.name),
+        remoteFileResourceKey(platformName, resourceType, resource.file.name),
       );
       if (declaredPath !== undefined) {
         // Preserve the existing local declared path: path is a local-owned
         // concern, so keep it and resolve the download target against the same
         // content base push uploads from (`join(basePath, filePrefix)`).
+        // `resolve` (not `join`) so a declared absolute path lands where push
+        // uploads from and where the snapshot digest is read from.
         planned.push({ type: "FILE", path: declaredPath });
         filesToDownload.push({
           fileName,
           fileKey: resource.file.fileKey,
-          absolutePath: join(contentBase, declaredPath),
+          absolutePath: resolve(contentBase, declaredPath),
         });
       } else {
         const absolutePath = join(dir, fileName);
@@ -161,7 +166,7 @@ function planResources(
 
 function planPlatform(
   remotePlatform: RemotePlatform,
-  platformName: string,
+  platformName: CustomizationPlatformName,
   basePath: string,
   filePrefix: string,
   preservePaths: ReadonlyMap<string, string> | undefined,

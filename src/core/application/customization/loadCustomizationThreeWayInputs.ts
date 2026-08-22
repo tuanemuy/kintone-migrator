@@ -1,5 +1,6 @@
 import type { CustomizationConfig } from "@/core/domain/customization/entity";
 import { CustomizationStateParser } from "@/core/domain/customization/services/customizationStateParser";
+import type { CustomizationState } from "@/core/domain/customization/state";
 import type { RemoteCustomization } from "@/core/domain/customization/valueObject";
 import type { CustomizationThreeWayContainer } from "../container/customization";
 import {
@@ -22,8 +23,9 @@ export type CustomizationRemote = Readonly<{
 }>;
 
 export type CustomizationThreeWayInputs = ThreeWayInputs<
-  CustomizationConfig,
-  CustomizationRemote
+  CustomizationState,
+  CustomizationRemote,
+  CustomizationConfig
 >;
 
 /**
@@ -35,11 +37,15 @@ export type CustomizationThreeWayInputs = ThreeWayInputs<
 export async function loadCustomizationThreeWayInputs(
   container: CustomizationThreeWayContainer,
 ): Promise<CustomizationThreeWayInputs> {
-  return loadThreeWayInputs<CustomizationConfig, CustomizationRemote>({
+  return loadThreeWayInputs<
+    CustomizationState,
+    CustomizationRemote,
+    CustomizationConfig
+  >({
     codec: container.configCodec,
     stateStorage: container.customizationStateStorage,
     appRevisionStorage: container.appRevisionStorage,
-    parseState: (parsed) => CustomizationStateParser.parse(parsed).config,
+    parseState: (parsed) => CustomizationStateParser.parse(parsed),
     stateLabel: "Customization state",
     loadLocal: async () => {
       const result = await container.customizationStorage.get();
