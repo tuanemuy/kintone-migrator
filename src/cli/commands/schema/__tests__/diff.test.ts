@@ -118,6 +118,10 @@ function threeWayResult(): DetectSchemaThreeWayDiffOutput {
   };
 }
 
+function callOrder(fn: (...args: never[]) => unknown): number[] {
+  return vi.mocked(fn).mock.invocationCallOrder;
+}
+
 describe("diff コマンド", () => {
   it("state がない場合、2-way 結果が printer に渡される", async () => {
     const mockResult = twoWayResult();
@@ -165,6 +169,19 @@ describe("diff コマンド", () => {
     expect(printSchemaDiffTarget).toHaveBeenCalledWith("preview");
   });
 
+  // The label tells the user which generation is being compared, so it has to
+  // reach the terminal before the spinner takes over the line -- and before a
+  // failure can abort the run.
+  it("比較対象ラベルが spinner の開始より前に出力される", async () => {
+    vi.mocked(detectThreeWayDiff).mockResolvedValue(twoWayResult());
+
+    await command.run({ values: {} } as never);
+
+    expect(callOrder(printSchemaDiffTarget)[0]).toBeLessThan(
+      callOrder(mocks.spinnerStart)[0],
+    );
+  });
+
   describe("--published", () => {
     function diffResult(): DetectDiffOutput {
       return {
@@ -205,6 +222,61 @@ describe("diff コマンド", () => {
 
       expect(printSchemaDiffTarget).toHaveBeenCalledTimes(1);
       expect(printSchemaDiffTarget).toHaveBeenCalledWith("published");
+    });
+
+    it("比較対象ラベルが spinner の開始より前に出力される", async () => {
+      vi.mocked(detectDiff).mockResolvedValue(diffResult());
+
+      await command.run({ values: { published: true } } as never);
+
+      expect(callOrder(printSchemaDiffTarget)[0]).toBeLessThan(
+        callOrder(mocks.spinnerStart)[0],
+      );
+    });
+
+    it("detectDiff が失敗してもラベルは spinner の停止より前に出力済みである", async () => {
+      vi.mocked(detectDiff).mockRejectedValue(new Error("not deployed"));
+
+      await command.run({ values: { published: true } } as never);
+
+      expect(printSchemaDiffTarget).toHaveBeenCalledWith("published");
+      expect(callOrder(printSchemaDiffTarget)[0]).toBeLessThan(
+        callOrder(mocks.spinnerStop)[0],
+      );
+    });
+
+    it("--app <name> でも published が伝播しラベルが 1 回出る", async () => {
+      const mockResult = diffResult();
+      const config = { appId: "1" };
+      const container = { marker: "customer" };
+      vi.mocked(detectDiff).mockResolvedValue(mockResult);
+      vi.mocked(resolveAppCliConfig).mockReturnValueOnce(config as never);
+      vi.mocked(createCliContainer).mockReturnValueOnce(container as never);
+      vi.mocked(routeMultiApp).mockImplementationOnce((async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: unknown, projectConfig: unknown) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp({ name: "customer", appId: "1" }, {});
+      }) as never);
+
+      await command.run({
+        values: { published: true, app: "customer" },
+      } as never);
+
+      expect(createCliContainer).toHaveBeenCalledWith(config);
+      expect(detectDiff).toHaveBeenCalledTimes(1);
+      expect(detectDiff).toHaveBeenCalledWith({
+        container,
+        input: { target: "published" },
+      });
+      expect(detectThreeWayDiff).not.toHaveBeenCalled();
+      expect(printSchemaDiffTarget).toHaveBeenCalledTimes(1);
+      expect(printSchemaDiffTarget).toHaveBeenCalledWith("published");
+      expect(printDiffResult).toHaveBeenCalledWith(mockResult);
+      expect(printThreeWayDiffResult).not.toHaveBeenCalled();
+      expect(handleCliError).not.toHaveBeenCalled();
     });
 
     it("detectDiff が例外を投げると spinner が Comparison failed. で停止し handleCliError に到達する", async () => {
@@ -288,6 +360,46 @@ describe("diff コマンド", () => {
       expect(printDiffResult).toHaveBeenCalledTimes(2);
       expect(printThreeWayDiffResult).not.toHaveBeenCalled();
       expect(handleCliError).not.toHaveBeenCalled();
+    });
+
+    it("--all ではアプリごとに ヘッダー → ラベル → spinner の順で出力される", async () => {
+      const apps = [
+        { name: "a", appId: "11" },
+        { name: "b", appId: "22" },
+      ];
+      vi.mocked(detectDiff).mockResolvedValue(diffResult());
+      vi.mocked(routeMultiApp).mockImplementationOnce((async (
+        _values: unknown,
+        handlers: {
+          multiApp: (plan: unknown, projectConfig: unknown) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp({ orderedApps: apps }, { apps: new Map() });
+      }) as never);
+      vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce((async (
+        plan: { orderedApps: typeof apps },
+        executor: (app: (typeof apps)[number]) => Promise<void>,
+      ) => {
+        for (const app of plan.orderedApps) {
+          await executor(app);
+        }
+      }) as never);
+
+      await command.run({ values: { published: true, all: true } } as never);
+
+      const header = callOrder(printAppHeader);
+      const label = callOrder(printSchemaDiffTarget);
+      const start = callOrder(mocks.spinnerStart);
+      const stop = callOrder(mocks.spinnerStop);
+      expect([header, label, start, stop].map((o) => o.length)).toEqual([
+        2, 2, 2, 2,
+      ]);
+      for (const i of [0, 1]) {
+        expect(header[i]).toBeLessThan(label[i]);
+        expect(label[i]).toBeLessThan(start[i]);
+        expect(start[i]).toBeLessThan(stop[i]);
+      }
+      expect(stop[0]).toBeLessThan(header[1]);
     });
   });
 });

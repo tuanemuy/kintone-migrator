@@ -677,7 +677,7 @@ layout:
       const container = getContainer();
       const field = textField("name", "名前");
       container.schemaStorage.setContent(singleFieldSchema);
-      // preview は schema と一致、published はまだ空（＝未デプロイ）
+      // preview は schema と一致、published はテストダブルの規約どおり空のまま
       container.formConfigurator.setFields(
         new Map([[FieldCode.create("name"), field]]),
       );

@@ -680,7 +680,7 @@ interface FormConfigurator {
 
 - 外部から取得したフォーム情報をドメインの型（FieldDefinition）に変換する責務を持つ
 - `getFields()` はシステムフィールド（RECORD_NUMBER、CREATOR 等）を除外して返す。`FieldType` ユニオンにシステムフィールド型を含まないため、アダプター側でフィルタリングする
-- kintone のフォーム定義は preview（編集中）と published（公開済み）の2世代を持つ。read 系（`getFields` / `getLayout`）は `FormReadTarget` で読み取る世代を選べる。省略時は `"preview"` で従来どおり
+- kintone のフォーム定義は preview（編集中）と published（公開済み）の2世代を持つ。read 系（`getFields` / `getLayout`）は `FormReadTarget` で読み取る世代を選べる。省略時は `"preview"` を読む
 - mutation 系（`addFields` / `updateFields` / `deleteFields` / `updateLayout`）は常に preview 世代を対象とする。kintone のフォーム API が変更できるのが preview だけであるため
 - published を読んだ場合、応答の revision はアダプターの revision 追跡に取り込まない。取り込むと後続 mutation の期待 revision が published 由来になる
 - published 読み取りの失敗は、HTTPステータスによらず published 読み取りであることを示すメッセージでラップする（未デプロイのアプリでは「アプリが見つかりません」と読める kintone のメッセージが返るため）

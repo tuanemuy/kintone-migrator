@@ -165,16 +165,21 @@ export class InMemoryFormConfigurator
   }
 
   /**
-   * When unset, published reads return no fields (as for a never-deployed app).
-   * Deliberately not a fallback to the preview fields: that would let a test
-   * that forgets to set up published data pass even if the implementation
-   * ignored `target` entirely.
+   * Published reads return no fields until a test sets them here. Deliberately
+   * not a fallback to the preview fields: that would let a test that forgets to
+   * set up published data pass even if the implementation ignored `target`
+   * entirely. The empty default is a test-double convention, not a model of a
+   * never-deployed app -- against the real adapter such a read fails rather
+   * than returning an empty form.
    */
   setPublishedFields(fields: ReadonlyMap<FieldCode, FieldDefinition>): void {
     this.publishedFields = new Map(fields);
   }
 
-  /** When unset, published reads return an empty layout (never-deployed app). */
+  /**
+   * Published reads return an empty layout until a test sets one here, for the
+   * same reason as {@link InMemoryFormConfigurator.setPublishedFields}.
+   */
   setPublishedLayout(layout: FormLayout): void {
     this.publishedLayout = [...layout];
   }

@@ -348,7 +348,7 @@ diff -I '"revision"' fields.json published-fields.json
 diff -I '"revision"' layout.json published-layout.json
 ```
 
-In a multi-app project (a `kintone-migrator.yaml` is present), add `--app <name>` to both dumps -- with neither `--app` nor `--all` the command only lists the available apps and writes no files. The output file names are then prefixed with the app name:
+In a multi-app project (a `kintone-migrator.yaml` is present), add `--app <name>` to both dumps -- with none of `--app`, `--all`, or `--app-id` the command only lists the available apps and writes no files. With `--app <name>` the output file names are prefixed with the app name (`--app-id` bypasses the project config and keeps the unprefixed names):
 
 ```bash
 kintone-migrator schema dump --app customer              # customer-fields.json / customer-layout.json
