@@ -36,6 +36,32 @@ function notFoundError(): KintoneRestAPIError {
   });
 }
 
+function forbiddenError(): KintoneRestAPIError {
+  return new KintoneRestAPIError({
+    data: {
+      id: "test",
+      code: "CB_NO02",
+      message: "権限がありません。",
+    },
+    status: 403,
+    statusText: "Forbidden",
+    headers: {},
+  });
+}
+
+function unauthorizedError(): KintoneRestAPIError {
+  return new KintoneRestAPIError({
+    data: {
+      id: "test",
+      code: "CB_AU01",
+      message: "認証に失敗しました。",
+    },
+    status: 401,
+    statusText: "Unauthorized",
+    headers: {},
+  });
+}
+
 describe("KintoneFormDumpReader", () => {
   const APP_ID = "1";
 
@@ -86,7 +112,7 @@ describe("KintoneFormDumpReader", () => {
     expect(result.layout).toEqual(layout);
   });
 
-  it("published 読み取りの失敗は published 向けメッセージでラップされる", async () => {
+  it("published 読み取りの失敗は fields 側が 404 なら published 向けメッセージでラップされる", async () => {
     const client = createMockClient({
       getFormFields: () => Promise.reject(notFoundError()),
     });
@@ -97,21 +123,9 @@ describe("KintoneFormDumpReader", () => {
     );
   });
 
-  it("published 読み取りの失敗は 403 でも同じメッセージになる（ステータスで出し分けない）", async () => {
+  it("published 読み取りの失敗は layout 側が 403 でも同じメッセージになる（ステータスで出し分けない）", async () => {
     const client = createMockClient({
-      getFormLayout: () =>
-        Promise.reject(
-          new KintoneRestAPIError({
-            data: {
-              id: "test",
-              code: "CB_NO02",
-              message: "権限がありません。",
-            },
-            status: 403,
-            statusText: "Forbidden",
-            headers: {},
-          }),
-        ),
+      getFormLayout: () => Promise.reject(forbiddenError()),
     });
     const reader = new KintoneFormDumpReader(client, APP_ID);
 
@@ -122,19 +136,7 @@ describe("KintoneFormDumpReader", () => {
 
   it("published 読み取りの失敗は fields 側が 403 でも同じメッセージになる（ステータスで出し分けない）", async () => {
     const client = createMockClient({
-      getFormFields: () =>
-        Promise.reject(
-          new KintoneRestAPIError({
-            data: {
-              id: "test",
-              code: "CB_NO02",
-              message: "権限がありません。",
-            },
-            status: 403,
-            statusText: "Forbidden",
-            headers: {},
-          }),
-        ),
+      getFormFields: () => Promise.reject(forbiddenError()),
     });
     const reader = new KintoneFormDumpReader(client, APP_ID);
 
@@ -145,19 +147,7 @@ describe("KintoneFormDumpReader", () => {
 
   it("published 読み取りの失敗は fields 側が 401 でも同じメッセージになる", async () => {
     const client = createMockClient({
-      getFormFields: () =>
-        Promise.reject(
-          new KintoneRestAPIError({
-            data: {
-              id: "test",
-              code: "CB_AU01",
-              message: "認証に失敗しました。",
-            },
-            status: 401,
-            statusText: "Unauthorized",
-            headers: {},
-          }),
-        ),
+      getFormFields: () => Promise.reject(unauthorizedError()),
     });
     const reader = new KintoneFormDumpReader(client, APP_ID);
 
@@ -179,19 +169,7 @@ describe("KintoneFormDumpReader", () => {
 
   it("published 読み取りの失敗は layout 側が 401 でも同じメッセージになる", async () => {
     const client = createMockClient({
-      getFormLayout: () =>
-        Promise.reject(
-          new KintoneRestAPIError({
-            data: {
-              id: "test",
-              code: "CB_AU01",
-              message: "認証に失敗しました。",
-            },
-            status: 401,
-            statusText: "Unauthorized",
-            headers: {},
-          }),
-        ),
+      getFormLayout: () => Promise.reject(unauthorizedError()),
     });
     const reader = new KintoneFormDumpReader(client, APP_ID);
 
