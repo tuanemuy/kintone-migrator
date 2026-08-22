@@ -2355,7 +2355,7 @@ describe("KintoneFormConfigurator", () => {
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
       await expect(adapter.getFields("published")).rejects.toThrow(
-        /^Failed to get published form fields \(the app may not be deployed yet\): /,
+        /^Failed to get published form fields \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
       );
     });
 
@@ -2377,7 +2377,7 @@ describe("KintoneFormConfigurator", () => {
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
       await expect(adapter.getFields("published")).rejects.toThrow(
-        /^Failed to get published form fields \(the app may not be deployed yet\): /,
+        /^Failed to get published form fields \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
       );
     });
 
@@ -2399,7 +2399,7 @@ describe("KintoneFormConfigurator", () => {
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
       await expect(adapter.getFields("published")).rejects.toThrow(
-        /^Failed to get published form fields \(the app may not be deployed yet\): /,
+        /^Failed to get published form fields \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
       );
     });
 
@@ -2443,7 +2443,7 @@ describe("KintoneFormConfigurator", () => {
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
       await expect(adapter.getLayout("published")).rejects.toThrow(
-        /^Failed to get published form layout \(the app may not be deployed yet\): /,
+        /^Failed to get published form layout \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
       );
     });
 

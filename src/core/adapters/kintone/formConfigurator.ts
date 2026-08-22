@@ -524,6 +524,21 @@ function toKintoneLayoutItem(item: LayoutItem): Record<string, unknown> {
   }
 }
 
+// Looking the message up by `target` (instead of comparing against one member)
+// keeps the failure wording exhaustive: adding a FormReadTarget member breaks
+// the build here instead of silently reusing the preview wording.
+const GET_FIELDS_FAILURE_MESSAGES = {
+  preview: "Failed to get form fields",
+  published:
+    "Failed to get published form fields (the app may not be deployed yet, or the credentials may not be allowed to read it)",
+} satisfies Record<FormReadTarget, string>;
+
+const GET_LAYOUT_FAILURE_MESSAGES = {
+  preview: "Failed to get form layout",
+  published:
+    "Failed to get published form layout (the app may not be deployed yet, or the credentials may not be allowed to read it)",
+} satisfies Record<FormReadTarget, string>;
+
 export class KintoneFormConfigurator implements FormConfigurator {
   private readonly revisionTracker: RevisionTracker;
 
@@ -538,10 +553,11 @@ export class KintoneFormConfigurator implements FormConfigurator {
   async getFields(
     target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
   ): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
+    const preview = target === "preview";
     try {
       const { properties, revision } = await this.client.app.getFormFields({
         app: this.appId,
-        preview: target === "preview",
+        preview,
       });
       // Only preview revisions feed the tracker: with an uninitialised tracker
       // a published read would become the sole tracked value, and a later
@@ -569,12 +585,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
 
       return fields;
     } catch (error) {
-      throw wrapKintoneError(
-        error,
-        target === "published"
-          ? "Failed to get published form fields (the app may not be deployed yet)"
-          : "Failed to get form fields",
-      );
+      throw wrapKintoneError(error, GET_FIELDS_FAILURE_MESSAGES[target]);
     }
   }
 
@@ -688,10 +699,11 @@ export class KintoneFormConfigurator implements FormConfigurator {
   async getLayout(
     target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
   ): Promise<FormLayout> {
+    const preview = target === "preview";
     try {
       const response = await this.client.app.getFormLayout({
         app: this.appId,
-        preview: target === "preview",
+        preview,
       });
       // See getFields: published revisions must never reach the tracker.
       if (response.revision && target === "preview") {
@@ -702,12 +714,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         fromKintoneLayoutItem,
       );
     } catch (error) {
-      throw wrapKintoneError(
-        error,
-        target === "published"
-          ? "Failed to get published form layout (the app may not be deployed yet)"
-          : "Failed to get form layout",
-      );
+      throw wrapKintoneError(error, GET_LAYOUT_FAILURE_MESSAGES[target]);
     }
   }
 

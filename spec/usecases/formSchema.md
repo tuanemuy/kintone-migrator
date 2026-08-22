@@ -347,7 +347,7 @@ type ValidateSchemaOutput = Readonly<{
 
 | コマンド | `--all` 動作 |
 | --- | --- |
-| `diff` | 各アプリのdiffを依存順に表示 |
+| `diff` | 各アプリのdiffを依存順に表示（`--published` 指定時は各アプリで published との2-way比較） |
 | `migrate` | 全アプリの変更サマリー表示 → 1回確認 → 依存順にmigrate+deploy |
 | `override` | 警告表示 → 1回確認 → 依存順にoverride+deploy |
 | `override --reset` | 警告表示 → 1回確認 → 依存の逆順に各アプリをリセット |

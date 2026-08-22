@@ -81,9 +81,15 @@ vi.mock("@/cli/handleError", () => ({
 import { resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
-import { resolveAppCliConfig, routeMultiApp } from "@/cli/projectConfig";
+import { printAppHeader } from "@/cli/output";
+import {
+  resolveAppCliConfig,
+  routeMultiApp,
+  runMultiAppWithFailCheck,
+} from "@/cli/projectConfig";
 import { SystemError } from "@/core/application/error";
 import command from "../dump";
+import { formReadTargetArgs } from "../formReadTarget";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -174,6 +180,14 @@ describe("dump コマンド", () => {
   });
 
   describe("--published", () => {
+    // The other cases inject `values` directly, so they would still pass if the
+    // flag were dropped from `args` -- and gunshi silently ignores unknown
+    // options, making that break look like "published was read as preview".
+    it("gunshi の args に published が登録されている", () => {
+      expect(command.args).toHaveProperty("published");
+      expect(command.args?.published).toEqual(formReadTargetArgs.published);
+    });
+
     it("preview: false で API を呼び published- 前置のファイルに書き出す", async () => {
       const fieldsData = { properties: {}, revision: "9" };
       const layoutData = { layout: [], revision: "9" };
@@ -252,6 +266,74 @@ describe("dump コマンド", () => {
         expect.any(String),
         "utf-8",
       );
+    });
+
+    it("--all では各アプリに published が伝播し <name>-published-*.json に書き出す", async () => {
+      const apps = [
+        { name: "a", appId: "11" },
+        { name: "b", appId: "22" },
+      ];
+      mocks.getFormFields.mockResolvedValue({ properties: {} });
+      mocks.getFormLayout.mockResolvedValue({ layout: [] });
+      mocks.writeFile.mockResolvedValue(undefined);
+      for (const app of apps) {
+        vi.mocked(resolveAppCliConfig).mockReturnValueOnce({
+          baseUrl: "https://test.cybozu.com",
+          auth: { type: "password", username: "user", password: "pass" },
+          appId: app.appId,
+        } as never);
+      }
+      vi.mocked(routeMultiApp).mockImplementationOnce((async (
+        _values: unknown,
+        handlers: {
+          multiApp: (plan: unknown, projectConfig: unknown) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp({ orderedApps: apps }, {});
+      }) as never);
+      vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce((async (
+        plan: { orderedApps: typeof apps },
+        executor: (app: (typeof apps)[number]) => Promise<void>,
+      ) => {
+        for (const app of plan.orderedApps) {
+          await executor(app);
+        }
+      }) as never);
+
+      await command.run({ values: { published: true, all: true } } as never);
+
+      expect(printAppHeader).toHaveBeenCalledTimes(2);
+      expect(printAppHeader).toHaveBeenNthCalledWith(1, "a", "11");
+      expect(printAppHeader).toHaveBeenNthCalledWith(2, "b", "22");
+
+      expect(mocks.getFormFields).toHaveBeenCalledTimes(2);
+      expect(mocks.getFormFields).toHaveBeenNthCalledWith(1, {
+        app: "11",
+        preview: false,
+      });
+      expect(mocks.getFormFields).toHaveBeenNthCalledWith(2, {
+        app: "22",
+        preview: false,
+      });
+      expect(mocks.getFormLayout).toHaveBeenCalledTimes(2);
+      expect(mocks.getFormLayout).toHaveBeenNthCalledWith(1, {
+        app: "11",
+        preview: false,
+      });
+      expect(mocks.getFormLayout).toHaveBeenNthCalledWith(2, {
+        app: "22",
+        preview: false,
+      });
+
+      // Sorted so the fields/layout race inside `Promise.all` cannot flake,
+      // while still pinning the exact set (no missing or extra app prefix).
+      expect(mocks.writeFile.mock.calls.map((call) => call[0]).sort()).toEqual([
+        resolve(process.cwd(), "a-published-fields.json"),
+        resolve(process.cwd(), "a-published-layout.json"),
+        resolve(process.cwd(), "b-published-fields.json"),
+        resolve(process.cwd(), "b-published-layout.json"),
+      ]);
+      expect(handleCliError).not.toHaveBeenCalled();
     });
   });
 });

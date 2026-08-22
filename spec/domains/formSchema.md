@@ -722,7 +722,7 @@ interface SchemaStorage {
 - **処理フロー**:
     1. `SchemaStorage.get()` でスキーマテキストを取得する
     2. `SchemaParser.parse()` でスキーマにパースする
-    3. `FormConfigurator.getFields()` で現在のフォームフィールドを取得する。読み取る世代は入力の `target` で決まる
+    3. `FormConfigurator.getFields(target)` で現在のフォームフィールドを取得する。読み取る世代は入力の `target` で決まる
     4. `DiffDetector.detect()` で差分を検出する
     5. `FormDiff` を返却する
 - **エラー**:

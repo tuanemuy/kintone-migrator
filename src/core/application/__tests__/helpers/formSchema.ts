@@ -28,9 +28,8 @@ export class InMemoryFormConfigurator
 {
   private fields: Map<FieldCode, FieldDefinition> = new Map();
   private layout: FormLayout = [];
-  private publishedFields: Map<FieldCode, FieldDefinition> | undefined =
-    undefined;
-  private publishedLayout: FormLayout | undefined = undefined;
+  private publishedFields: Map<FieldCode, FieldDefinition> = new Map();
+  private publishedLayout: FormLayout = [];
   private revision = "1";
   /** Records the expected revision passed to each mutation method, in order. */
   readonly expectedRevisions: Array<ExpectedRevision> = [];
@@ -69,7 +68,7 @@ export class InMemoryFormConfigurator
   ): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
     this.trackCall("getFields");
     this.readTargets.push(target);
-    if (target === "published" && this.publishedFields !== undefined) {
+    if (target === "published") {
       return new Map(this.publishedFields);
     }
     return new Map(this.fields);
@@ -141,7 +140,7 @@ export class InMemoryFormConfigurator
   ): Promise<FormLayout> {
     this.trackCall("getLayout");
     this.readTargets.push(target);
-    if (target === "published" && this.publishedLayout !== undefined) {
+    if (target === "published") {
       return [...this.publishedLayout];
     }
     return [...this.layout];
@@ -165,12 +164,17 @@ export class InMemoryFormConfigurator
     this.layout = [...layout];
   }
 
-  /** When unset, published reads fall back to the preview fields. */
+  /**
+   * When unset, published reads return no fields (as for a never-deployed app).
+   * Deliberately not a fallback to the preview fields: that would let a test
+   * that forgets to set up published data pass even if the implementation
+   * ignored `target` entirely.
+   */
   setPublishedFields(fields: ReadonlyMap<FieldCode, FieldDefinition>): void {
     this.publishedFields = new Map(fields);
   }
 
-  /** When unset, published reads fall back to the preview layout. */
+  /** When unset, published reads return an empty layout (never-deployed app). */
   setPublishedLayout(layout: FormLayout): void {
     this.publishedLayout = [...layout];
   }

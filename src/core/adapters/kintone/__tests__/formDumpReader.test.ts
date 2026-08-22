@@ -93,7 +93,7 @@ describe("KintoneFormDumpReader", () => {
     const reader = new KintoneFormDumpReader(client, APP_ID);
 
     await expect(reader.getRawFormData("published")).rejects.toThrow(
-      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet\): /,
+      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
     );
   });
 
@@ -116,7 +116,7 @@ describe("KintoneFormDumpReader", () => {
     const reader = new KintoneFormDumpReader(client, APP_ID);
 
     await expect(reader.getRawFormData("published")).rejects.toThrow(
-      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet\): /,
+      /^Failed to fetch published raw form data for dump \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
     );
   });
 

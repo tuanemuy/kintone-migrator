@@ -42,6 +42,10 @@ export interface FormConfigurator {
    * Returns all non-system fields currently configured in the form.
    *
    * @param target which generation to read. Defaults to `"preview"`.
+   *   Implementations must read `DEFAULT_FORM_READ_TARGET` when `target` is
+   *   omitted. A TypeScript interface cannot declare a default value, so an
+   *   implementation that ignores the parameter still satisfies this signature
+   *   and no type error is raised -- the default is the implementer's duty.
    */
   getFields(
     target?: FormReadTarget,
@@ -85,6 +89,10 @@ export interface FormConfigurator {
    * Returns the form layout.
    *
    * @param target which generation to read. Defaults to `"preview"`.
+   *   Implementations must read `DEFAULT_FORM_READ_TARGET` when `target` is
+   *   omitted. A TypeScript interface cannot declare a default value, so an
+   *   implementation that ignores the parameter still satisfies this signature
+   *   and no type error is raised -- the default is the implementer's duty.
    */
   getLayout(target?: FormReadTarget): Promise<FormLayout>;
   updateLayout(

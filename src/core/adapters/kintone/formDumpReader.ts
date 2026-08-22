@@ -7,6 +7,15 @@ import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarg
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import { wrapKintoneError } from "./wrapKintoneError";
 
+// Looking the message up by `target` (instead of comparing against one member)
+// keeps the failure wording exhaustive: adding a FormReadTarget member breaks
+// the build here instead of silently reusing the preview wording.
+const GET_RAW_FORM_DATA_FAILURE_MESSAGES = {
+  preview: "Failed to fetch raw form data for dump",
+  published:
+    "Failed to fetch published raw form data for dump (the app may not be deployed yet, or the credentials may not be allowed to read it)",
+} satisfies Record<FormReadTarget, string>;
+
 export class KintoneFormDumpReader implements FormDumpReader {
   constructor(
     private readonly client: KintoneRestAPIClient,
@@ -30,12 +39,7 @@ export class KintoneFormDumpReader implements FormDumpReader {
         layout: layout as unknown,
       };
     } catch (error) {
-      throw wrapKintoneError(
-        error,
-        target === "published"
-          ? "Failed to fetch published raw form data for dump (the app may not be deployed yet)"
-          : "Failed to fetch raw form data for dump",
-      );
+      throw wrapKintoneError(error, GET_RAW_FORM_DATA_FAILURE_MESSAGES[target]);
     }
   }
 }

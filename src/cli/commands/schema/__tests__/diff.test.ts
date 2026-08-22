@@ -73,14 +73,22 @@ vi.mock("@/cli/handleError", () => ({
 
 import { handleCliError } from "@/cli/handleError";
 import {
+  printAppHeader,
   printDiffResult,
   printSchemaDiffTarget,
   printThreeWayDiffResult,
 } from "@/cli/output";
+import {
+  resolveAppCliConfig,
+  routeMultiApp,
+  runMultiAppWithFailCheck,
+} from "@/cli/projectConfig";
+import { createCliContainer } from "@/core/application/container/cli";
 import { detectDiff } from "@/core/application/formSchema/detectDiff";
 import { detectThreeWayDiff } from "@/core/application/formSchema/detectThreeWayDiff";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import command from "../diff";
+import { formReadTargetArgs } from "../formReadTarget";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -168,6 +176,14 @@ describe("diff コマンド", () => {
       };
     }
 
+    // The other cases inject `values` directly, so they would still pass if the
+    // flag were dropped from `args` -- and gunshi silently ignores unknown
+    // options, making that break look like "published was read as preview".
+    it("gunshi の args に published が登録されている", () => {
+      expect(command.args).toHaveProperty("published");
+      expect(command.args?.published).toEqual(formReadTargetArgs.published);
+    });
+
     it("detectThreeWayDiff を経由せず detectDiff + printDiffResult を使う", async () => {
       const mockResult = diffResult();
       vi.mocked(detectDiff).mockResolvedValue(mockResult);
@@ -212,6 +228,66 @@ describe("diff コマンド", () => {
 
       expect(mocks.spinnerStart).toHaveBeenCalledWith("Comparing schema...");
       expect(mocks.spinnerStop).toHaveBeenCalledWith("Comparison complete.");
+    });
+
+    it("--all では各アプリのコンテナに published が伝播しラベルもアプリごとに 1 回出る", async () => {
+      const apps = [
+        { name: "a", appId: "11" },
+        { name: "b", appId: "22" },
+      ];
+      const configs = apps.map((app) => ({ appId: app.appId }));
+      const containers = apps.map((app) => ({ marker: app.name }));
+      vi.mocked(detectDiff).mockResolvedValue(diffResult());
+      for (const config of configs) {
+        vi.mocked(resolveAppCliConfig).mockReturnValueOnce(config as never);
+      }
+      for (const container of containers) {
+        vi.mocked(createCliContainer).mockReturnValueOnce(container as never);
+      }
+      vi.mocked(routeMultiApp).mockImplementationOnce((async (
+        _values: unknown,
+        handlers: {
+          multiApp: (plan: unknown, projectConfig: unknown) => Promise<void>;
+        },
+      ) => {
+        await handlers.multiApp({ orderedApps: apps }, { apps: new Map() });
+      }) as never);
+      vi.mocked(runMultiAppWithFailCheck).mockImplementationOnce((async (
+        plan: { orderedApps: typeof apps },
+        executor: (app: (typeof apps)[number]) => Promise<void>,
+      ) => {
+        for (const app of plan.orderedApps) {
+          await executor(app);
+        }
+      }) as never);
+
+      await command.run({ values: { published: true, all: true } } as never);
+
+      expect(printAppHeader).toHaveBeenCalledTimes(2);
+      expect(printAppHeader).toHaveBeenNthCalledWith(1, "a", "11");
+      expect(printAppHeader).toHaveBeenNthCalledWith(2, "b", "22");
+
+      expect(createCliContainer).toHaveBeenCalledTimes(2);
+      expect(createCliContainer).toHaveBeenNthCalledWith(1, configs[0]);
+      expect(createCliContainer).toHaveBeenNthCalledWith(2, configs[1]);
+
+      expect(detectDiff).toHaveBeenCalledTimes(2);
+      expect(detectDiff).toHaveBeenNthCalledWith(1, {
+        container: containers[0],
+        input: { target: "published" },
+      });
+      expect(detectDiff).toHaveBeenNthCalledWith(2, {
+        container: containers[1],
+        input: { target: "published" },
+      });
+      expect(detectThreeWayDiff).not.toHaveBeenCalled();
+
+      expect(printSchemaDiffTarget).toHaveBeenCalledTimes(2);
+      expect(printSchemaDiffTarget).toHaveBeenNthCalledWith(1, "published");
+      expect(printSchemaDiffTarget).toHaveBeenNthCalledWith(2, "published");
+      expect(printDiffResult).toHaveBeenCalledTimes(2);
+      expect(printThreeWayDiffResult).not.toHaveBeenCalled();
+      expect(handleCliError).not.toHaveBeenCalled();
     });
   });
 });
