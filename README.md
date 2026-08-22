@@ -249,12 +249,23 @@ Authentication settings are intentionally omitted from the generated config to a
 
 #### `schema diff`
 
-Detects differences between the schema file and the current kintone form.
+Detects differences between the schema file and the current kintone form. The output states which form generation the comparison used.
 
 ```bash
 kintone-migrator schema diff
 kintone-migrator schema diff --app customer
+kintone-migrator schema diff --published
 ```
+
+| Option | Description |
+|---|---|
+| `--published` | Compare against the published (deployed) form instead of the preview (unpublished) one. |
+
+Without `--published` the comparison is 3-way against the preview form: with a base snapshot it distinguishes local changes, remote drift, and conflicts.
+
+With `--published` the comparison is 2-way against the deployed form. The base snapshot is not used, so drift and conflicts are not detected -- "no changes" means only that the schema file matches what is currently published.
+
+This is the check to run after a deploy: if `schema diff --published` reports no changes, the schema file's contents are live on the published form.
 
 #### `schema migrate`
 
@@ -309,7 +320,27 @@ Dumps raw kintone field definitions and layout as JSON. Outputs `fields.json` an
 
 ```bash
 kintone-migrator schema dump
+kintone-migrator schema dump --published
 ```
+
+| Option | Description |
+|---|---|
+| `--published` | Dump the published (deployed) form instead of the preview (unpublished) one. |
+
+With `--published` the output file names are prefixed with `published-`, so the two generations never overwrite each other: `published-fields.json` / `published-layout.json` (in multi-app mode, `<appName>-published-fields.json` / `<appName>-published-layout.json`).
+
+Because the two dumps sit side by side, you can verify that nothing is waiting to be deployed before pushing your own changes:
+
+```bash
+kintone-migrator schema dump              # fields.json / layout.json (preview)
+kintone-migrator schema dump --published  # published-fields.json / published-layout.json
+
+# revision differs between generations, so exclude it from the comparison
+diff -I '"revision"' fields.json published-fields.json
+diff -I '"revision"' layout.json published-layout.json
+```
+
+No differences means the preview and published forms match, so pushing will not sweep up someone else's undeployed edits. The `-I '"revision"'` exclusion is needed because `dump` saves the kintone response as-is: both `fields.json` and `layout.json` carry a top-level `revision`, and its value differs between the preview and published generations even when the form contents are identical.
 
 ### `seed` -- Seed Data Management
 

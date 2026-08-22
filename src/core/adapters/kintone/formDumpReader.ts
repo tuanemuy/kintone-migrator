@@ -3,6 +3,8 @@ import type {
   FormDumpReader,
   RawFormDump,
 } from "@/core/domain/formSchema/ports/formDumpReader";
+import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
+import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 export class KintoneFormDumpReader implements FormDumpReader {
@@ -11,11 +13,14 @@ export class KintoneFormDumpReader implements FormDumpReader {
     private readonly appId: string,
   ) {}
 
-  async getRawFormData(): Promise<RawFormDump> {
+  async getRawFormData(
+    target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
+  ): Promise<RawFormDump> {
+    const preview = target === "preview";
     try {
       const [fields, layout] = await Promise.all([
-        this.client.app.getFormFields({ app: this.appId, preview: true }),
-        this.client.app.getFormLayout({ app: this.appId, preview: true }),
+        this.client.app.getFormFields({ app: this.appId, preview }),
+        this.client.app.getFormLayout({ app: this.appId, preview }),
       ]);
 
       // Double cast through `unknown` is required because the SDK return types
@@ -25,7 +30,12 @@ export class KintoneFormDumpReader implements FormDumpReader {
         layout: layout as unknown,
       };
     } catch (error) {
-      throw wrapKintoneError(error, "Failed to fetch raw form data for dump");
+      throw wrapKintoneError(
+        error,
+        target === "published"
+          ? "Failed to fetch published raw form data for dump (the app may not be deployed yet)"
+          : "Failed to fetch raw form data for dump",
+      );
     }
   }
 }

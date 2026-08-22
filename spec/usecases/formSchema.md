@@ -8,13 +8,20 @@
 
 ### 入力DTO
 
-なし
+```typescript
+type DetectDiffInput = {
+  /** 比較対象のフォーム世代。省略時は "preview" */
+  target?: "preview" | "published";
+};
+```
+
+入力自体が省略可能。省略時は preview 世代と比較する（従来の呼び出し元はすべて無変更）。
 
 ### 処理フロー
 
 1. `SchemaStorage.get()` でスキーマテキストを取得する
 2. `SchemaParser.parse()` でスキーマをパースする
-3. `FormConfigurator.getFields()` と `FormConfigurator.getLayout()` を並行して実行し、現在のフィールド定義とレイアウトを取得する
+3. `FormConfigurator.getFields(target)` と `FormConfigurator.getLayout(target)` を並行して実行し、指定世代のフィールド定義とレイアウトを取得する
 4. `DiffDetector.detect()` でフィールドの差分を検出する
 5. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
 6. 結果をDTOに変換して返す
@@ -75,6 +82,9 @@ type DetectDiffOutput = {
 - `SchemaStorage.get()` の通信に失敗した場合、`SystemError` がスローされる
 - `FormConfigurator.getFields()` の通信に失敗した場合、`SystemError` がスローされる
 - `FormConfigurator.getLayout()` の通信に失敗した場合、`SystemError` がスローされる
+- 入力を省略した場合、`FormConfigurator` の read 系が `"preview"` を対象として呼ばれる
+- `input.target` に `"published"` を指定した場合、`FormConfigurator` の read 系が `"published"` を対象として呼ばれる
+- `"published"` 指定時は published 世代のフィールド・レイアウトに対して差分が計算される
 
 ---
 
@@ -342,6 +352,6 @@ type ValidateSchemaOutput = Readonly<{
 | `override` | 警告表示 → 1回確認 → 依存順にoverride+deploy |
 | `override --reset` | 警告表示 → 1回確認 → 依存の逆順に各アプリをリセット |
 | `capture` | 各アプリのスキーマを設定された `schemaFile` パスにキャプチャ |
-| `dump` | 各アプリのdumpを `<appName>-fields.json` / `<appName>-layout.json` に出力 |
+| `dump` | 各アプリのdumpを `<appName>-fields.json` / `<appName>-layout.json` に出力（`--published` 指定時は `<appName>-published-fields.json` / `<appName>-published-layout.json`） |
 
 失敗時はFail-Fast方式で即停止し、残りのアプリはスキップされる。

@@ -5,10 +5,15 @@ const mocks = vi.hoisted(() => ({
   getFormLayout: vi.fn(),
   writeFile: vi.fn(),
   mkdir: vi.fn(),
+  spinnerStart: vi.fn(),
+  spinnerStop: vi.fn(),
 }));
 
 vi.mock("@clack/prompts", () => ({
-  spinner: vi.fn(() => ({ start: vi.fn(), stop: vi.fn() })),
+  spinner: vi.fn(() => ({
+    start: mocks.spinnerStart,
+    stop: mocks.spinnerStop,
+  })),
   log: {
     info: vi.fn(),
     success: vi.fn(),
@@ -76,6 +81,7 @@ vi.mock("@/cli/handleError", () => ({
 import { resolve } from "node:path";
 import * as p from "@clack/prompts";
 import { handleCliError } from "@/cli/handleError";
+import { resolveAppCliConfig, routeMultiApp } from "@/cli/projectConfig";
 import { SystemError } from "@/core/application/error";
 import command from "../dump";
 
@@ -94,8 +100,12 @@ describe("dump コマンド", () => {
 
     await command.run({ values: {} } as never);
 
-    expect(mocks.getFormFields).toHaveBeenCalled();
-    expect(mocks.getFormLayout).toHaveBeenCalled();
+    expect(mocks.getFormFields).toHaveBeenCalledWith(
+      expect.objectContaining({ preview: true }),
+    );
+    expect(mocks.getFormLayout).toHaveBeenCalledWith(
+      expect.objectContaining({ preview: true }),
+    );
     expect(mocks.writeFile).toHaveBeenCalledWith(
       resolve(process.cwd(), "fields.json"),
       JSON.stringify(fieldsData, null, 2),
@@ -142,5 +152,106 @@ describe("dump コマンド", () => {
     await command.run({ values: {} } as never);
 
     expect(handleCliError).toHaveBeenCalledWith(expect.any(SystemError));
+  });
+
+  it("--published なしのスピナー文言と成功メッセージは従来と同一である", async () => {
+    mocks.getFormFields.mockResolvedValue({});
+    mocks.getFormLayout.mockResolvedValue({});
+    mocks.writeFile.mockResolvedValue(undefined);
+
+    await command.run({ values: {} } as never);
+
+    expect(mocks.spinnerStart).toHaveBeenCalledWith(
+      "Fetching form fields and layout...",
+    );
+    expect(mocks.spinnerStop).toHaveBeenCalledWith("Form data fetched.");
+    expect(p.log.success).toHaveBeenCalledWith(
+      expect.stringContaining("Saved "),
+    );
+    expect(p.log.success).not.toHaveBeenCalledWith(
+      expect.stringContaining("published-"),
+    );
+  });
+
+  describe("--published", () => {
+    it("preview: false で API を呼び published- 前置のファイルに書き出す", async () => {
+      const fieldsData = { properties: {}, revision: "9" };
+      const layoutData = { layout: [], revision: "9" };
+      mocks.getFormFields.mockResolvedValue(fieldsData);
+      mocks.getFormLayout.mockResolvedValue(layoutData);
+      mocks.writeFile.mockResolvedValue(undefined);
+
+      await command.run({ values: { published: true } } as never);
+
+      expect(mocks.getFormFields).toHaveBeenCalledWith(
+        expect.objectContaining({ preview: false }),
+      );
+      expect(mocks.getFormLayout).toHaveBeenCalledWith(
+        expect.objectContaining({ preview: false }),
+      );
+      expect(mocks.writeFile).toHaveBeenCalledWith(
+        resolve(process.cwd(), "published-fields.json"),
+        JSON.stringify(fieldsData, null, 2),
+        "utf-8",
+      );
+      expect(mocks.writeFile).toHaveBeenCalledWith(
+        resolve(process.cwd(), "published-layout.json"),
+        JSON.stringify(layoutData, null, 2),
+        "utf-8",
+      );
+    });
+
+    it("published 時のスピナー開始文言が差し替わり、成功メッセージが published- 前置のファイル名を示す", async () => {
+      mocks.getFormFields.mockResolvedValue({});
+      mocks.getFormLayout.mockResolvedValue({});
+      mocks.writeFile.mockResolvedValue(undefined);
+
+      await command.run({ values: { published: true } } as never);
+
+      expect(mocks.spinnerStart).toHaveBeenCalledWith(
+        "Fetching published form fields and layout...",
+      );
+      expect(mocks.spinnerStop).toHaveBeenCalledWith("Form data fetched.");
+      expect(p.log.success).toHaveBeenCalledWith(
+        expect.stringContaining("published-fields.json"),
+      );
+      expect(p.log.success).toHaveBeenCalledWith(
+        expect.stringContaining("published-layout.json"),
+      );
+    });
+
+    it("--app 相当のベース prefix と組み合わせると <name>-published-*.json になる", async () => {
+      mocks.getFormFields.mockResolvedValue({});
+      mocks.getFormLayout.mockResolvedValue({});
+      mocks.writeFile.mockResolvedValue(undefined);
+      vi.mocked(resolveAppCliConfig).mockReturnValue({
+        baseUrl: "https://test.cybozu.com",
+        auth: { type: "password", username: "user", password: "pass" },
+        appId: "1",
+      } as never);
+      vi.mocked(routeMultiApp).mockImplementationOnce((async (
+        _values: unknown,
+        handlers: {
+          singleApp: (app: unknown, projectConfig: unknown) => Promise<void>;
+        },
+      ) => {
+        await handlers.singleApp({ name: "orders", appId: "1" }, {});
+      }) as never);
+
+      await command.run({
+        values: { published: true, app: "orders" },
+      } as never);
+
+      expect(mocks.writeFile).toHaveBeenCalledWith(
+        resolve(process.cwd(), "orders-published-fields.json"),
+        expect.any(String),
+        "utf-8",
+      );
+      expect(mocks.writeFile).toHaveBeenCalledWith(
+        resolve(process.cwd(), "orders-published-layout.json"),
+        expect.any(String),
+        "utf-8",
+      );
+    });
   });
 });

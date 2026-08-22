@@ -1,4 +1,6 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
+import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
+import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
 import type {
@@ -34,9 +36,22 @@ function toFieldDto(field: FieldDefinition): DiffEntryDto["before"] {
   };
 }
 
+export type DetectDiffInput = {
+  /** Which form generation to compare against. Defaults to `"preview"`. */
+  readonly target?: FormReadTarget;
+};
+
+// `input` is optional (rather than the usual required DTO object) so that every
+// existing caller that compares against the preview keeps its current form.
+export type DetectDiffArgs = FormSchemaDiffServiceArgs & {
+  input?: DetectDiffInput;
+};
+
 export async function detectDiff({
   container,
-}: FormSchemaDiffServiceArgs): Promise<DetectDiffOutput> {
+  input,
+}: DetectDiffArgs): Promise<DetectDiffOutput> {
+  const target = input?.target ?? DEFAULT_FORM_READ_TARGET;
   const result = await container.schemaStorage.get();
   if (!result.exists) {
     throw new ValidationError(
@@ -46,8 +61,8 @@ export async function detectDiff({
   }
   const schema = parseSchemaText(container.configCodec, result.content);
   const [currentFields, currentLayout] = await Promise.all([
-    container.formConfigurator.getFields(),
-    container.formConfigurator.getLayout(),
+    container.formConfigurator.getFields(target),
+    container.formConfigurator.getLayout(target),
   ]);
   const diff = DiffDetector.detect(schema, currentFields);
   const enrichedCurrentLayout = enrichLayoutWithFields(

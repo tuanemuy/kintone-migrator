@@ -13,6 +13,8 @@ import type {
   FormConfigurator,
 } from "@/core/domain/formSchema/ports/formConfigurator";
 import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigurator";
+import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
+import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import type {
   ElementSize,
   FieldCode,
@@ -533,13 +535,18 @@ export class KintoneFormConfigurator implements FormConfigurator {
     this.revisionTracker = revisionTracker ?? new RevisionTracker();
   }
 
-  async getFields(): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
+  async getFields(
+    target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
+  ): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
     try {
       const { properties, revision } = await this.client.app.getFormFields({
         app: this.appId,
-        preview: true,
+        preview: target === "preview",
       });
-      if (revision) {
+      // Only preview revisions feed the tracker: with an uninitialised tracker
+      // a published read would become the sole tracked value, and a later
+      // mutation would send a published-derived expected revision.
+      if (revision && target === "preview") {
         this.revisionTracker.track(revision);
       }
 
@@ -562,7 +569,12 @@ export class KintoneFormConfigurator implements FormConfigurator {
 
       return fields;
     } catch (error) {
-      throw wrapKintoneError(error, "Failed to get form fields");
+      throw wrapKintoneError(
+        error,
+        target === "published"
+          ? "Failed to get published form fields (the app may not be deployed yet)"
+          : "Failed to get form fields",
+      );
     }
   }
 
@@ -673,13 +685,16 @@ export class KintoneFormConfigurator implements FormConfigurator {
     }
   }
 
-  async getLayout(): Promise<FormLayout> {
+  async getLayout(
+    target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
+  ): Promise<FormLayout> {
     try {
       const response = await this.client.app.getFormLayout({
         app: this.appId,
-        preview: true,
+        preview: target === "preview",
       });
-      if (response.revision) {
+      // See getFields: published revisions must never reach the tracker.
+      if (response.revision && target === "preview") {
         this.revisionTracker.track(response.revision);
       }
 
@@ -687,7 +702,12 @@ export class KintoneFormConfigurator implements FormConfigurator {
         fromKintoneLayoutItem,
       );
     } catch (error) {
-      throw wrapKintoneError(error, "Failed to get form layout");
+      throw wrapKintoneError(
+        error,
+        target === "published"
+          ? "Failed to get published form layout (the app may not be deployed yet)"
+          : "Failed to get form layout",
+      );
     }
   }
 

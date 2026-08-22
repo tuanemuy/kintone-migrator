@@ -1,3 +1,5 @@
+import type { FormReadTarget } from "./formReadTarget";
+
 /**
  * Port for reading raw form fields and layout JSON from kintone.
  *
@@ -10,5 +12,10 @@ export type RawFormDump = {
 };
 
 export interface FormDumpReader {
-  getRawFormData(): Promise<RawFormDump>;
+  /**
+   * Returns the raw fields/layout responses.
+   *
+   * @param target which generation to read. Defaults to `"preview"`.
+   */
+  getRawFormData(target?: FormReadTarget): Promise<RawFormDump>;
 }
