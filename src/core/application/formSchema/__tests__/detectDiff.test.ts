@@ -128,7 +128,6 @@ layout:
     container.formConfigurator.setFields(
       new Map([[FieldCode.create("name"), field]]),
     );
-    // 異なるレイアウト（空のレイアウト）
     container.formConfigurator.setLayout([]);
 
     const result = await detectDiff({ container });
@@ -297,7 +296,6 @@ layout:
     container.formConfigurator.setFields(
       new Map([[FieldCode.create("name"), field]]),
     );
-    // スキーマのレイアウトとは異なる(行が2つ)
     container.formConfigurator.setLayout([
       { type: "ROW", fields: [{ kind: "field", field }] },
       { type: "ROW", fields: [] },
@@ -642,5 +640,62 @@ layout:
     expect(fieldTypes).toContain("SUBTABLE");
     expect(fieldTypes).toContain("SINGLE_LINE_TEXT");
     expect(fieldTypes).toContain("NUMBER");
+  });
+
+  describe("読み取り対象", () => {
+    it("input 省略時は preview を読む", async () => {
+      const container = getContainer();
+      container.schemaStorage.setContent(singleFieldSchema);
+      container.formConfigurator.setFields(new Map());
+      container.formConfigurator.setLayout([]);
+
+      await detectDiff({ container });
+
+      expect(container.formConfigurator.readTargets).toEqual([
+        "preview",
+        "preview",
+      ]);
+    });
+
+    it("input.target が formConfigurator に伝播する", async () => {
+      const container = getContainer();
+      container.schemaStorage.setContent(singleFieldSchema);
+      container.formConfigurator.setFields(new Map());
+      container.formConfigurator.setLayout([]);
+
+      await detectDiff({ container, input: { target: "published" } });
+
+      expect(container.formConfigurator.readTargets).toEqual([
+        "published",
+        "published",
+      ]);
+    });
+
+    it("published 指定時は published 側のフィールド／レイアウトで差分が計算される", async () => {
+      const container = getContainer();
+      const field = textField("name", "名前");
+      container.schemaStorage.setContent(singleFieldSchema);
+      // preview は schema と一致、published はテストダブルの規約どおり空のまま
+      container.formConfigurator.setFields(
+        new Map([[FieldCode.create("name"), field]]),
+      );
+      container.formConfigurator.setLayout([
+        { type: "ROW", fields: [{ kind: "field", field }] },
+      ]);
+      container.formConfigurator.setPublishedFields(new Map());
+      container.formConfigurator.setPublishedLayout([]);
+
+      const previewResult = await detectDiff({ container });
+      expect(previewResult.isEmpty).toBe(true);
+
+      const publishedResult = await detectDiff({
+        container,
+        input: { target: "published" },
+      });
+      expect(publishedResult.isEmpty).toBe(false);
+      expect(publishedResult.entries).toHaveLength(1);
+      expect(publishedResult.entries[0].type).toBe("added");
+      expect(publishedResult.entries[0].fieldCode).toBe("name");
+    });
   });
 });

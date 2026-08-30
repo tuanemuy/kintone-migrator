@@ -6,13 +6,20 @@ import type {
   FormDumpReader,
   RawFormDump,
 } from "@/core/domain/formSchema/ports/formDumpReader";
+import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
+import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import { dumpForm } from "../dumpForm";
 
 class InMemoryFormDumpReader implements FormDumpReader {
   private data: RawFormDump = { fields: {}, layout: {} };
   private shouldFail = false;
+  /** Records the read target passed to each call, in order. */
+  readonly readTargets: FormReadTarget[] = [];
 
-  async getRawFormData(): Promise<RawFormDump> {
+  async getRawFormData(
+    target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
+  ): Promise<RawFormDump> {
+    this.readTargets.push(target);
     if (this.shouldFail) {
       throw new SystemError(
         SystemErrorCode.ExternalApiError,
@@ -131,5 +138,36 @@ describe("dumpForm", () => {
     dumpStorage.setFailOn("saveLayout");
 
     await expect(dumpForm({ container })).rejects.toThrow(SystemError);
+  });
+
+  describe("読み取り対象", () => {
+    it("input 省略時は preview を読む", async () => {
+      await dumpForm({ container });
+
+      expect(formDumpReader.readTargets).toEqual(["preview"]);
+    });
+
+    it("input.target が formDumpReader に伝播する", async () => {
+      await dumpForm({ container, input: { target: "published" } });
+
+      expect(formDumpReader.readTargets).toEqual(["published"]);
+    });
+
+    it("published 指定でも生レスポンスをそのまま保存する（revision を除去しない）", async () => {
+      const rawData: RawFormDump = {
+        fields: { properties: {}, revision: "9" },
+        layout: { layout: [], revision: "9" },
+      };
+      formDumpReader.setData(rawData);
+
+      await dumpForm({ container, input: { target: "published" } });
+
+      expect(dumpStorage.savedFields).toBe(
+        JSON.stringify(rawData.fields, null, 2),
+      );
+      expect(dumpStorage.savedLayout).toBe(
+        JSON.stringify(rawData.layout, null, 2),
+      );
+    });
   });
 });

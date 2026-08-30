@@ -12,7 +12,6 @@ import type {
 } from "@/core/domain/formSchema/valueObject";
 import { KintoneFormConfigurator } from "../formConfigurator";
 
-// kintone REST API Client のモック
 function createMockClient(
   overrides: {
     getFormFields?: (params: unknown) => Promise<unknown>;
@@ -438,7 +437,6 @@ describe("KintoneFormConfigurator", () => {
       const adapter = new KintoneFormConfigurator(client, APP_ID);
       const fields = await adapter.getFields();
 
-      // SUBTABLE 本体
       const subtable = fields.get("items" as FieldCode);
       expect(subtable?.type).toBe("SUBTABLE");
       if (subtable?.type === "SUBTABLE") {
@@ -882,7 +880,6 @@ describe("KintoneFormConfigurator", () => {
 
       if (layout[0].type === "ROW") {
         const [recNum, creator] = layout[0].fields;
-        // システムフィールドは SystemFieldLayout として変換
         expect(recNum.kind).toBe("systemField");
         if (recNum.kind === "systemField") {
           expect(recNum.code).toBe("レコード番号");
@@ -1194,14 +1191,11 @@ describe("KintoneFormConfigurator", () => {
 
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
-      // getFields で取得
       const fields = await adapter.getFields();
       expect(fields.size).toBe(8);
 
-      // addFields で再投入
       await adapter.addFields([...fields.values()]);
 
-      // 変換されたプロパティがオリジナルと一致するか検証
       expect(capturedAddProperties).not.toBeNull();
       const props = capturedAddProperties as unknown as Record<
         string,
@@ -1210,12 +1204,10 @@ describe("KintoneFormConfigurator", () => {
       for (const [code, original] of Object.entries(kintoneProperties)) {
         const converted = props[code];
         expect(converted).toBeDefined();
-        // type, code, label は共通
         expect(converted.type).toBe(original.type);
         expect(converted.code).toBe(original.code);
         expect(converted.label).toBe(original.label);
 
-        // フィールドタイプ固有プロパティを検証
         for (const [key, value] of Object.entries(original)) {
           if (["type", "code", "label"].includes(key)) continue;
           expect(converted[key]).toEqual(value);
@@ -2085,8 +2077,6 @@ describe("KintoneFormConfigurator", () => {
     });
   });
 
-  // AC-2 (W-001): getRevision reads the current preview revision in a single
-  // API call and throws a SystemError when the API omits the revision.
   describe("getRevision", () => {
     it("preview: true で現在の revision を取得する", async () => {
       const client = createMockClient({
@@ -2129,12 +2119,11 @@ describe("KintoneFormConfigurator", () => {
     });
   });
 
-  // B-001 (ADR-005 / ADR-013): the expected revision must be resolved against
-  // the real adapter's mutation path, not just the in-memory fake. These tests
-  // exercise resolveMutationRevision through the kintone client mock so a
-  // regression where the monotonic tracker (max-採用) overrides the fixed
-  // expected revision — or where SKIP_REVISION_CHECK falls back to the tracker —
-  // is actually caught.
+  // The expected revision is resolved on the real adapter's mutation path, so
+  // these tests drive resolveMutationRevision through the kintone client mock
+  // rather than the in-memory fake. That is the only way to catch a regression
+  // where the monotonic tracker (max-採用) overrides the fixed expected
+  // revision, or where SKIP_REVISION_CHECK falls back to the tracker.
   describe("expectedRevision の送出（B-001）", () => {
     function addFieldsRevision(client: KintoneRestAPIClient): unknown {
       const calls = (client.app.addFormFields as ReturnType<typeof vi.fn>).mock
@@ -2179,7 +2168,7 @@ describe("KintoneFormConfigurator", () => {
     it("--force相当 (SKIP_REVISION_CHECK): field mutation は revision を送らない (tracker にフォールバックしない)", async () => {
       // The tracker is populated with a current revision by the drift snapshot
       // fetch. SKIP_REVISION_CHECK must NOT fall back to it, otherwise force
-      // could 409 when the remote drifted (B-001).
+      // could 409 when the remote drifted.
       const client = createMockClient({
         getFormFields: () =>
           Promise.resolve({ properties: {}, revision: "99" }),
@@ -2232,6 +2221,298 @@ describe("KintoneFormConfigurator", () => {
       expect(client.app.updateFormLayout).toHaveBeenCalledWith(
         expect.objectContaining({ revision: 12 }),
       );
+    });
+  });
+
+  describe("読み取り対象 (preview / published)", () => {
+    it("getFields は引数省略時に preview: true で呼ぶ", async () => {
+      const client = createMockClient();
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields();
+
+      expect(client.app.getFormFields).toHaveBeenCalledWith({
+        app: APP_ID,
+        preview: true,
+      });
+    });
+
+    it('getFields("published") は preview: false で呼ぶ', async () => {
+      const client = createMockClient();
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields("published");
+
+      expect(client.app.getFormFields).toHaveBeenCalledWith({
+        app: APP_ID,
+        preview: false,
+      });
+    });
+
+    it("getLayout は引数省略時に preview: true で呼ぶ", async () => {
+      const client = createMockClient();
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getLayout();
+
+      expect(client.app.getFormLayout).toHaveBeenCalledWith({
+        app: APP_ID,
+        preview: true,
+      });
+    });
+
+    it('getLayout("published") は preview: false で呼ぶ', async () => {
+      const client = createMockClient();
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getLayout("published");
+
+      expect(client.app.getFormLayout).toHaveBeenCalledWith({
+        app: APP_ID,
+        preview: false,
+      });
+    });
+
+    it("published 読み取りの revision は tracker を汚染せず、後続の addFields は revision を送らない", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "42" }),
+        getFormLayout: () => Promise.resolve({ layout: [], revision: "42" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields("published");
+      await adapter.getLayout("published");
+      await adapter.addFields([]);
+
+      const addArg = (client.app.addFormFields as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as Record<string, unknown>;
+      expect(addArg).not.toHaveProperty("revision");
+    });
+
+    it("published 読み取りの revision は tracker を汚染せず、後続の updateLayout は -1 を送る", async () => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({ properties: {}, revision: "42" }),
+        getFormLayout: () => Promise.resolve({ layout: [], revision: "42" }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields("published");
+      await adapter.getLayout("published");
+      await adapter.updateLayout([]);
+
+      expect(client.app.updateFormLayout).toHaveBeenCalledWith(
+        expect.objectContaining({ revision: -1 }),
+      );
+    });
+
+    it("preview 読み取り後に published を読んでも期待 revision は preview 由来のまま", async () => {
+      const client = createMockClient({
+        getFormFields: ((params: { preview: boolean }) =>
+          Promise.resolve({
+            properties: {},
+            revision: params.preview ? "5" : "99",
+          })) as (params: unknown) => Promise<unknown>,
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields();
+      await adapter.getFields("published");
+      await adapter.addFields([]);
+
+      expect(client.app.addFormFields).toHaveBeenCalledWith(
+        expect.objectContaining({ revision: "5" }),
+      );
+    });
+
+    it("published の getFields が 404 で失敗すると published 向けメッセージでラップされる", async () => {
+      const client = createMockClient({
+        getFormFields: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "GAIA_AP01",
+              message: "指定したアプリが見つかりません。",
+            },
+            status: 404,
+            statusText: "Not Found",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getFields("published")).rejects.toThrow(
+        /^Failed to get published form fields \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("published の getFields が 403 で失敗しても同じ published 向けメッセージになる（ステータスで出し分けない）", async () => {
+      const client = createMockClient({
+        getFormFields: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_NO02",
+              message: "権限がありません。",
+            },
+            status: 403,
+            statusText: "Forbidden",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getFields("published")).rejects.toThrow(
+        /^Failed to get published form fields \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("published の getFields が 401 で失敗しても同じ published 向けメッセージになる", async () => {
+      const client = createMockClient({
+        getFormFields: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_AU01",
+              message: "認証に失敗しました。",
+            },
+            status: 401,
+            statusText: "Unauthorized",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getFields("published")).rejects.toThrow(
+        /^Failed to get published form fields \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("preview の getFields 失敗メッセージは従来のまま", async () => {
+      const client = createMockClient({
+        getFormFields: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "GAIA_AP01",
+              message: "指定したアプリが見つかりません。",
+            },
+            status: 404,
+            statusText: "Not Found",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getFields()).rejects.toThrow(
+        /^Failed to get form fields: /,
+      );
+    });
+
+    it("published の getLayout が失敗すると published 向けメッセージでラップされる", async () => {
+      const client = createMockClient({
+        getFormLayout: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "GAIA_AP01",
+              message: "指定したアプリが見つかりません。",
+            },
+            status: 404,
+            statusText: "Not Found",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getLayout("published")).rejects.toThrow(
+        /^Failed to get published form layout \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("published の getLayout が 403 で失敗しても同じ published 向けメッセージになる（ステータスで出し分けない）", async () => {
+      const client = createMockClient({
+        getFormLayout: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_NO02",
+              message: "権限がありません。",
+            },
+            status: 403,
+            statusText: "Forbidden",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getLayout("published")).rejects.toThrow(
+        /^Failed to get published form layout \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("published の getLayout が 401 で失敗しても同じ published 向けメッセージになる", async () => {
+      const client = createMockClient({
+        getFormLayout: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "CB_AU01",
+              message: "認証に失敗しました。",
+            },
+            status: 401,
+            statusText: "Unauthorized",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getLayout("published")).rejects.toThrow(
+        /^Failed to get published form layout \(the app may not be deployed yet, or the credentials may not be allowed to read it\): /,
+      );
+    });
+
+    it("preview の getLayout 失敗メッセージは従来のまま", async () => {
+      const client = createMockClient({
+        getFormLayout: () => {
+          throw new KintoneRestAPIError({
+            data: {
+              id: "test",
+              code: "GAIA_AP01",
+              message: "指定したアプリが見つかりません。",
+            },
+            status: 404,
+            statusText: "Not Found",
+            headers: {},
+          });
+        },
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await expect(adapter.getLayout()).rejects.toThrow(
+        /^Failed to get form layout: /,
+      );
+    });
+
+    it("getRevision は published 読み取りの有無にかかわらず preview を読む", async () => {
+      const client = createMockClient();
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+
+      await adapter.getFields("published");
+      await adapter.getRevision();
+
+      expect(client.app.getFormFields).toHaveBeenLastCalledWith({
+        app: APP_ID,
+        preview: true,
+      });
     });
   });
 });
