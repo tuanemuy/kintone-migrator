@@ -7,13 +7,14 @@ import {
 } from "@/core/domain/typeGuards";
 import type { ProcessManagementConfig, ProcessState } from "../entity";
 import { ProcessManagementErrorCode } from "../errorCode";
-import type {
-  ProcessAction,
-  ProcessActionType,
-  ProcessAssignee,
-  ProcessAssigneeType,
-  ProcessEntity,
-  ProcessEntityType,
+import {
+  describeProcessAction,
+  type ProcessAction,
+  type ProcessActionType,
+  type ProcessAssignee,
+  type ProcessAssigneeType,
+  type ProcessEntity,
+  type ProcessEntityType,
 } from "../valueObject";
 
 const VALID_ASSIGNEE_TYPES: ReadonlySet<ProcessAssigneeType> =
@@ -260,31 +261,19 @@ export const ProcessManagementConfigParser = {
       parseAction(item, i),
     );
 
-    // Validate duplicate action names
-    const actionNames = new Set<string>();
-    for (const action of actions) {
-      if (actionNames.has(action.name)) {
-        throw new BusinessRuleError(
-          ProcessManagementErrorCode.PmDuplicateActionName,
-          `Duplicate action name: "${action.name}"`,
-        );
-      }
-      actionNames.add(action.name);
-    }
-
     // Validate action from/to references
     const stateNames = new Set(Object.keys(states));
     for (const action of actions) {
       if (!stateNames.has(action.from)) {
         throw new BusinessRuleError(
           ProcessManagementErrorCode.PmInvalidActionReference,
-          `Action "${action.name}" references unknown "from" state: "${action.from}"`,
+          `Action "${describeProcessAction(action)}" references unknown "from" state: "${action.from}"`,
         );
       }
       if (!stateNames.has(action.to)) {
         throw new BusinessRuleError(
           ProcessManagementErrorCode.PmInvalidActionReference,
-          `Action "${action.name}" references unknown "to" state: "${action.to}"`,
+          `Action "${describeProcessAction(action)}" references unknown "to" state: "${action.to}"`,
         );
       }
     }

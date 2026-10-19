@@ -34,6 +34,15 @@ export type ProcessAction = Readonly<{
   }>;
 }>;
 
+/**
+ * Human-readable label of an action, e.g. `申請する (未申請 → 部長承認待ち)`.
+ * The name alone is ambiguous: kintone allows several actions with the same
+ * name, both from different states and as conditional branches from one state.
+ */
+export function describeProcessAction(action: ProcessAction): string {
+  return `${action.name} (${action.from} → ${action.to})`;
+}
+
 export type ProcessManagementDiffCategory = "enable" | "state" | "action";
 
 export type ProcessManagementDiffEntry = Readonly<{

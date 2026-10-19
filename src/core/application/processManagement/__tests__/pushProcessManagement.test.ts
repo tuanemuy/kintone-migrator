@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
-import { setupTestProcessManagementContainer } from "@/core/application/__tests__/helpers";
+import {
+  readProcessStateConfig,
+  SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+  serializeProcessConfig,
+  setupTestProcessManagementContainer,
+} from "@/core/application/__tests__/helpers";
 import type { TestProcessManagementContainer } from "@/core/application/__tests__/helpers/processManagement";
 import {
   ConflictError,
   ConflictErrorCode,
+  isSystemError,
   isValidationError,
 } from "@/core/application/error";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
@@ -124,5 +131,79 @@ describe("pushProcessManagement", () => {
     ).toBeUndefined();
     expect(container.processManagementStateStorage.callLog).toContain("update");
     expect(container.appRevisionStorage.callLog).toContain("update");
+  });
+
+  describe("same-named actions", () => {
+    it("rejects with ConfigDrift when the remote changed one repeat", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+        "2",
+      );
+
+      await expect(
+        pushProcessManagement({ container, input: {} }),
+      ).rejects.toSatisfy(
+        (e: unknown) =>
+          e instanceof ConflictError &&
+          e.code === ConflictErrorCode.ConfigDrift,
+      );
+      expect(container.processManagementConfigurator.callLog).not.toContain(
+        "updateProcessManagement",
+      );
+    });
+
+    it("sends and saves every action when the local changed one repeat", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+
+      const result = await pushProcessManagement({ container, input: {} });
+
+      expect(result.mode).toBe("push");
+      expect(
+        container.processManagementConfigurator.lastUpdateParams?.config,
+      ).toEqual(SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED);
+      expect(await readProcessStateConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+      );
+    });
+
+    it("keeps state and revision when kintone rejects the config", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+      container.processManagementConfigurator.setFailOn(
+        "updateProcessManagement",
+      );
+
+      await expect(
+        pushProcessManagement({ container, input: {} }),
+      ).rejects.toSatisfy(isSystemError);
+
+      expect(await readProcessStateConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG,
+      );
+      expect(container.processManagementStateStorage.callLog).not.toContain(
+        "update",
+      );
+      expect(container.appRevisionStorage.callLog).not.toContain("update");
+    });
   });
 });

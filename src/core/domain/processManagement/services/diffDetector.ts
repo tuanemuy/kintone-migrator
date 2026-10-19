@@ -1,11 +1,13 @@
+import { pairByKeyInOrder } from "@/lib/pairByKeyInOrder";
 import { buildDiffResult } from "../../diff";
 import { formatValue } from "../../services/formatValue";
 import type { ProcessManagementConfig } from "../entity";
-import type {
-  ProcessAction,
-  ProcessEntity,
-  ProcessManagementDiff,
-  ProcessManagementDiffEntry,
+import {
+  describeProcessAction,
+  type ProcessAction,
+  type ProcessEntity,
+  type ProcessManagementDiff,
+  type ProcessManagementDiffEntry,
 } from "../valueObject";
 
 function isEntityEqual(a: ProcessEntity, b: ProcessEntity): boolean {
@@ -42,12 +44,6 @@ function compareActions(
   remoteAction: ProcessAction,
 ): string[] {
   const diffs: string[] = [];
-  if (localAction.from !== remoteAction.from) {
-    diffs.push(`from: ${remoteAction.from} -> ${localAction.from}`);
-  }
-  if (localAction.to !== remoteAction.to) {
-    diffs.push(`to: ${remoteAction.to} -> ${localAction.to}`);
-  }
   if (localAction.filterCond !== remoteAction.filterCond) {
     diffs.push(
       `filterCond: "${remoteAction.filterCond}" -> "${localAction.filterCond}"`,
@@ -132,44 +128,60 @@ function compareStates(
   }
 }
 
+/**
+ * Identifies an action by name + from + to. kintone allows same-named actions
+ * both from different states and as conditional branches from one state.
+ * Repeats of the whole triple are not rejected either, so actions sharing a
+ * triple are told apart by their order of appearance.
+ */
+function transitionKey(action: ProcessAction): string {
+  return JSON.stringify([action.name, action.from, action.to]);
+}
+
+function actionLabel(action: ProcessAction, index: number): string {
+  const label = describeProcessAction(action);
+  return index === 0 ? label : `${label} #${index + 1}`;
+}
+
 function compareActionEntries(
   local: ProcessManagementConfig,
   remote: ProcessManagementConfig,
   entries: ProcessManagementDiffEntry[],
 ): void {
-  const localActionMap = new Map(local.actions.map((a) => [a.name, a]));
-  const remoteActionMap = new Map(remote.actions.map((a) => [a.name, a]));
-
-  for (const [name, localAction] of localActionMap) {
-    const remoteAction = remoteActionMap.get(name);
-    if (!remoteAction) {
-      entries.push({
-        type: "added",
-        category: "action",
-        name,
-        details: `${localAction.from} -> ${localAction.to}`,
-      });
-    } else {
-      const actionDiffs = compareActions(localAction, remoteAction);
-      if (actionDiffs.length > 0) {
+  for (const pair of pairByKeyInOrder(
+    local.actions,
+    remote.actions,
+    transitionKey,
+  )) {
+    switch (pair.kind) {
+      case "localOnly":
         entries.push({
-          type: "modified",
+          type: "added",
           category: "action",
-          name,
-          details: actionDiffs.join("\n"),
+          name: actionLabel(pair.local, pair.index),
+          details: `filterCond: "${pair.local.filterCond}"`,
         });
+        break;
+      case "remoteOnly":
+        entries.push({
+          type: "deleted",
+          category: "action",
+          name: actionLabel(pair.remote, pair.index),
+          details: `filterCond: "${pair.remote.filterCond}"`,
+        });
+        break;
+      case "both": {
+        const actionDiffs = compareActions(pair.local, pair.remote);
+        if (actionDiffs.length > 0) {
+          entries.push({
+            type: "modified",
+            category: "action",
+            name: actionLabel(pair.local, pair.index),
+            details: actionDiffs.join("\n"),
+          });
+        }
+        break;
       }
-    }
-  }
-
-  for (const [name, remoteAction] of remoteActionMap) {
-    if (!localActionMap.has(name)) {
-      entries.push({
-        type: "deleted",
-        category: "action",
-        name,
-        details: `${remoteAction.from} -> ${remoteAction.to}`,
-      });
     }
   }
 }

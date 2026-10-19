@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
-import { setupTestProcessManagementContainer } from "@/core/application/__tests__/helpers";
+import {
+  readLocalProcessConfig,
+  readProcessStateConfig,
+  SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+  serializeProcessConfig,
+  setupTestProcessManagementContainer,
+} from "@/core/application/__tests__/helpers";
 import type { TestProcessManagementContainer } from "@/core/application/__tests__/helpers/processManagement";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import { ProcessManagementStateSerializer } from "@/core/domain/processManagement/services/processManagementStateSerializer";
@@ -119,5 +126,55 @@ describe("pullProcessManagement", () => {
 
     expect(container.processManagementStorage.callLog).toContain("update");
     expect(container.appRevisionStorage.callLog).toContain("update");
+  });
+
+  describe("same-named actions", () => {
+    it("first run writes every action to local and state", async () => {
+      const container = getContainer();
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+
+      await pullProcessManagement({ container, input: {} });
+
+      expect(await readLocalProcessConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG,
+      );
+      expect(await readProcessStateConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG,
+      );
+    });
+
+    it("writes every action back when taking a remote change to one repeat", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+        "2",
+      );
+
+      const pull = await pullProcessManagement({ container, input: {} });
+      if (pull.mode !== "merged") throw new Error("expected merged");
+      await applyPulledProcessManagementMerge({
+        container,
+        input: {
+          merge: pull.merge,
+          resolution: "remote",
+          remoteConfig: pull.remoteConfig,
+          remoteRevision: pull.remoteRevision,
+        },
+      });
+
+      expect(await readLocalProcessConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+      );
+      expect(await readProcessStateConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+      );
+    });
   });
 });

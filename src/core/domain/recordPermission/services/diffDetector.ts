@@ -1,5 +1,5 @@
 import { deepEqual } from "@/lib/deepEqual";
-import { groupByKey } from "@/lib/groupByKey";
+import { pairByKeyInOrder } from "@/lib/pairByKeyInOrder";
 import { buildDiffResult } from "../../diff";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
 import type {
@@ -44,46 +44,6 @@ function describeRight(right: RecordRight): string {
   return perEntity.length > 0 ? perEntity.join(", ") : "no entities";
 }
 
-function compareRightsForFilter(
-  filterCond: string,
-  localRights: readonly RecordRight[],
-  remoteRights: readonly RecordRight[],
-  entries: RecordPermissionDiffEntry[],
-): void {
-  const maxLen = Math.max(localRights.length, remoteRights.length);
-
-  for (let i = 0; i < maxLen; i++) {
-    const localRight = localRights[i];
-    const remoteRight = remoteRights[i];
-
-    if (localRight && !remoteRight) {
-      entries.push({
-        type: "added",
-        filterCond,
-        details: describeRight(localRight),
-      });
-    } else if (!localRight && remoteRight) {
-      entries.push({
-        type: "deleted",
-        filterCond,
-        details: describeRight(remoteRight),
-      });
-    } else if (localRight && remoteRight) {
-      if (!isRightEqual(localRight, remoteRight)) {
-        const detail =
-          localRight.entities.length !== remoteRight.entities.length
-            ? `entities: ${remoteRight.entities.length} -> ${localRight.entities.length}`
-            : `entities: ${describeRight(remoteRight)} -> ${describeRight(localRight)}`;
-        entries.push({
-          type: "modified",
-          filterCond,
-          details: detail,
-        });
-      }
-    }
-  }
-}
-
 export const RecordPermissionDiffDetector = {
   // Partially order-sensitive: rights are grouped by filterCond, and within
   // each group, positional comparison is used (order matters). Across groups,
@@ -94,24 +54,40 @@ export const RecordPermissionDiffDetector = {
   ): RecordPermissionDiff => {
     const entries: RecordPermissionDiffEntry[] = [];
 
-    const localMulti = groupByKey(local.rights, (r) => r.filterCond);
-    const remoteMulti = groupByKey(remote.rights, (r) => r.filterCond);
-
-    for (const [filterCond, localRights] of localMulti) {
-      const remoteRights = remoteMulti.get(filterCond) ?? [];
-      compareRightsForFilter(filterCond, localRights, remoteRights, entries);
-    }
-
-    // Check for filterConds that only exist in remote
-    for (const [filterCond, remoteRights] of remoteMulti) {
-      if (!localMulti.has(filterCond)) {
-        for (const remoteRight of remoteRights) {
+    for (const pair of pairByKeyInOrder(
+      local.rights,
+      remote.rights,
+      (r) => r.filterCond,
+    )) {
+      const filterCond = pair.key;
+      switch (pair.kind) {
+        case "localOnly":
+          entries.push({
+            type: "added",
+            filterCond,
+            details: describeRight(pair.local),
+          });
+          break;
+        case "remoteOnly":
           entries.push({
             type: "deleted",
             filterCond,
-            details: describeRight(remoteRight),
+            details: describeRight(pair.remote),
           });
-        }
+          break;
+        case "both":
+          if (!isRightEqual(pair.local, pair.remote)) {
+            const detail =
+              pair.local.entities.length !== pair.remote.entities.length
+                ? `entities: ${pair.remote.entities.length} -> ${pair.local.entities.length}`
+                : `entities: ${describeRight(pair.remote)} -> ${describeRight(pair.local)}`;
+            entries.push({
+              type: "modified",
+              filterCond,
+              details: detail,
+            });
+          }
+          break;
       }
     }
 

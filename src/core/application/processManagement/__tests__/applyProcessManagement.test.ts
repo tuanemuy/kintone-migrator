@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { setupTestProcessManagementContainer } from "@/core/application/__tests__/helpers";
+import {
+  SAME_NAMED_ACTIONS_CONFIG,
+  serializeProcessConfig,
+  setupTestProcessManagementContainer,
+} from "@/core/application/__tests__/helpers";
 import { isSystemError, isValidationError } from "@/core/application/error";
 import { applyProcessManagement } from "../applyProcessManagement";
 
@@ -154,6 +158,22 @@ describe("applyProcessManagement", () => {
       await expect(applyProcessManagement({ container })).rejects.toSatisfy(
         isSystemError,
       );
+    });
+  });
+
+  describe("same-named actions", () => {
+    it("同名アクションをすべて順序どおり適用する", async () => {
+      const container = getContainer();
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+
+      await applyProcessManagement({ container });
+
+      expect(
+        container.processManagementConfigurator.lastUpdateParams?.config
+          .actions,
+      ).toEqual(SAME_NAMED_ACTIONS_CONFIG.actions);
     });
   });
 });
