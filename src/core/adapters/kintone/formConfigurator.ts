@@ -21,10 +21,11 @@ import type {
   FieldDefinition,
   FieldType,
   LayoutElement,
+  Lookup,
 } from "@/core/domain/formSchema/valueObject";
 import {
   FieldCode as FieldCodeVO,
-  omitEmptyLookupRelatedAppCode,
+  LookupRelatedApp,
 } from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -174,6 +175,47 @@ function normalizeDefaultValue(
   }
 }
 
+function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
+  assertRecord(value, fieldPath);
+  assertRecord(value.relatedApp, `${fieldPath}.relatedApp`);
+  const { app, code } = value.relatedApp;
+  assertString(app, `${fieldPath}.relatedApp.app`);
+  if (code !== undefined) {
+    assertString(code, `${fieldPath}.relatedApp.code`);
+  }
+  assertString(value.relatedKeyField, `${fieldPath}.relatedKeyField`);
+  if (!Array.isArray(value.fieldMappings)) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Expected array at ${fieldPath}.fieldMappings, got ${typeof value.fieldMappings}`,
+    );
+  }
+  const fieldMappings = value.fieldMappings.map(
+    (mapping: unknown, i: number) => {
+      const mappingPath = `${fieldPath}.fieldMappings[${i}]`;
+      assertRecord(mapping, mappingPath);
+      assertString(mapping.field, `${mappingPath}.field`);
+      assertString(mapping.relatedField, `${mappingPath}.relatedField`);
+      return { field: mapping.field, relatedField: mapping.relatedField };
+    },
+  );
+  assertStringArray(
+    value.lookupPickerFields,
+    `${fieldPath}.lookupPickerFields`,
+  );
+
+  return {
+    relatedApp: LookupRelatedApp.create(app, code),
+    relatedKeyField: value.relatedKeyField,
+    fieldMappings,
+    lookupPickerFields: value.lookupPickerFields,
+    ...(value.filterCond !== undefined
+      ? { filterCond: String(value.filterCond) }
+      : {}),
+    ...(value.sort !== undefined ? { sort: String(value.sort) } : {}),
+  };
+}
+
 function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   const { type, code, label, noLabel, ...rest } = prop;
   const base = {
@@ -263,12 +305,13 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   }
 
   normalizeDefaultValue(type, rest);
+  const { lookup, ...others } = rest;
+  const properties =
+    lookup === undefined
+      ? others
+      : { ...others, lookup: fromKintoneLookup(lookup, `${type}.lookup`) };
 
-  return {
-    ...base,
-    type,
-    properties: omitEmptyLookupRelatedAppCode(rest),
-  } as FieldDefinition;
+  return { ...base, type, properties } as FieldDefinition;
 }
 
 function toKintoneProperty(field: FieldDefinition): Record<string, unknown> {

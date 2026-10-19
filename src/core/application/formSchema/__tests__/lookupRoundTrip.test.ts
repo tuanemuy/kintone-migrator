@@ -1,86 +1,50 @@
-import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { describe, expect, it, vi } from "vitest";
-import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
-import {
-  createTestFormSchemaContainer,
-  type TestFormSchemaContainer,
-} from "@/core/application/__tests__/helpers";
+import { describe, expect, it } from "vitest";
+import { createKintoneBackedFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { isRecord } from "@/lib/typeGuards";
 import { captureSchema } from "../captureSchema";
 import { detectDiff } from "../detectDiff";
 import { detectThreeWayDiff } from "../detectThreeWayDiff";
 import { executeMigration } from "../executeMigration";
-import { pullSchema } from "../pullSchema";
+import { applyPulledMerge, pullSchema } from "../pullSchema";
 
 type RelatedApp = { app: string; code?: string };
 
-function createKintoneClient(relatedApp: RelatedApp) {
-  const mutation = () => Promise.resolve({ revision: "4" });
-  return {
-    app: {
-      getFormFields: () =>
-        Promise.resolve({
-          revision: "3",
-          properties: {
-            customer_code: {
-              type: "SINGLE_LINE_TEXT",
-              code: "customer_code",
-              label: "顧客コード",
-              noLabel: false,
-              required: false,
-              lookup: {
-                relatedApp,
-                relatedKeyField: "code",
-                fieldMappings: [
-                  { field: "customer_name", relatedField: "name" },
-                ],
-                lookupPickerFields: ["code", "name"],
-                filterCond: "",
-                sort: "レコード番号 desc",
-              },
-            },
-            customer_name: {
-              type: "SINGLE_LINE_TEXT",
-              code: "customer_name",
-              label: "顧客名",
-              noLabel: false,
-            },
-          },
-        }),
-      getFormLayout: () =>
-        Promise.resolve({
-          revision: "3",
-          layout: [
-            {
-              type: "ROW",
-              fields: [
-                { type: "SINGLE_LINE_TEXT", code: "customer_code" },
-                { type: "SINGLE_LINE_TEXT", code: "customer_name" },
-              ],
-            },
-          ],
-        }),
-      addFormFields: vi.fn(mutation),
-      updateFormFields: vi.fn(mutation),
-      deleteFormFields: vi.fn(mutation),
-      updateFormLayout: vi.fn(mutation),
-    },
-  };
-}
-
 function createContainer(remoteRelatedApp: RelatedApp) {
-  const client = createKintoneClient(remoteRelatedApp);
-  const container: Omit<TestFormSchemaContainer, "formConfigurator"> & {
-    formConfigurator: KintoneFormConfigurator;
-  } = {
-    ...createTestFormSchemaContainer(),
-    formConfigurator: new KintoneFormConfigurator(
-      client as unknown as KintoneRestAPIClient,
-      "1",
-    ),
-  };
-  return { container, client };
+  return createKintoneBackedFormSchemaContainer({
+    properties: {
+      customer_code: {
+        type: "SINGLE_LINE_TEXT",
+        code: "customer_code",
+        label: "顧客コード",
+        noLabel: false,
+        required: false,
+        lookup: {
+          relatedApp: remoteRelatedApp,
+          relatedKeyField: "code",
+          fieldMappings: [{ field: "customer_name", relatedField: "name" }],
+          lookupPickerFields: ["code", "name"],
+          filterCond: "",
+          sort: "レコード番号 desc",
+        },
+      },
+      customer_name: {
+        type: "SINGLE_LINE_TEXT",
+        code: "customer_name",
+        label: "顧客名",
+        noLabel: false,
+      },
+    },
+    layout: [
+      {
+        type: "ROW",
+        fields: [
+          { type: "SINGLE_LINE_TEXT", code: "customer_code" },
+          { type: "SINGLE_LINE_TEXT", code: "customer_name" },
+        ],
+      },
+    ],
+  });
 }
 
 function schemaWithRelatedApp(relatedApp: string): string {
@@ -125,11 +89,20 @@ function relatedAppOf(
   return isRecord(lookup) ? lookup.relatedApp : undefined;
 }
 
-function expectNoMutation(client: ReturnType<typeof createKintoneClient>) {
+type Client = ReturnType<typeof createContainer>["client"];
+
+function expectNoMutation(client: Client) {
   expect(client.app.addFormFields).not.toHaveBeenCalled();
   expect(client.app.updateFormFields).not.toHaveBeenCalled();
   expect(client.app.deleteFormFields).not.toHaveBeenCalled();
   expect(client.app.updateFormLayout).not.toHaveBeenCalled();
+}
+
+function sentRelatedApp(client: Client): unknown {
+  const params: unknown = client.app.updateFormFields.mock.calls[0]?.[0];
+  if (!isRecord(params) || !isRecord(params.properties)) return undefined;
+  const field = params.properties.customer_code;
+  return isRecord(field) ? relatedAppOf({ properties: field }) : undefined;
 }
 
 describe("lookup の relatedApp を含むフォームの diff / migrate", () => {
@@ -223,6 +196,24 @@ describe("lookup の relatedApp を含むフォームの diff / migrate", () => 
     });
     expect(entry?.details).toMatch(/^lookup: /);
   });
+
+  it.each<[string, string, RelatedApp]>([
+    ["code: '' の YAML", '{ app: "10", code: "" }', { app: "10" }],
+    ["code: に値を書かない YAML", '{ app: "10", code: }', { app: "10" }],
+    [
+      "非空の code の YAML",
+      '{ app: "10", code: "CUSTOMERS" }',
+      { app: "10", code: "CUSTOMERS" },
+    ],
+  ])("%s で migrate すると、空でない code だけを送る", async (_, local, sent) => {
+    const { container, client } = createContainer({ app: "11", code: "" });
+    container.schemaStorage.setContent(schemaWithRelatedApp(local));
+
+    await executeMigration({ container });
+
+    expect(client.app.updateFormFields).toHaveBeenCalledTimes(1);
+    expect(sentRelatedApp(client)).toStrictEqual(sent);
+  });
 });
 
 describe("lookup の relatedApp を含むフォームの capture / pull", () => {
@@ -239,7 +230,18 @@ describe("lookup の relatedApp を含むフォームの capture / pull", () => 
     expect(result.isEmpty).toBe(true);
   });
 
-  it("API が code: '' を返すとき、pull が書く YAML と state の relatedApp は code を持たない", async () => {
+  it("API が非空の code を返すとき、capture の YAML の relatedApp は code を保つ", async () => {
+    const { container } = createContainer({ app: "10", code: "CUSTOMERS" });
+
+    const { schemaText } = await captureSchema({ container });
+
+    expect(relatedAppIn(container.configCodec, schemaText)).toStrictEqual({
+      app: "10",
+      code: "CUSTOMERS",
+    });
+  });
+
+  it("初回の pull が書く YAML と state の relatedApp は、API の code: '' を持たない", async () => {
     const { container } = createContainer({ app: "10", code: "" });
 
     await pullSchema({ container, input: {} });
@@ -257,15 +259,36 @@ describe("lookup の relatedApp を含むフォームの capture / pull", () => 
     }
   });
 
-  it("API が非空の code を返すとき、capture の YAML の relatedApp は code を保つ", async () => {
-    const { container } = createContainer({ app: "10", code: "CUSTOMERS" });
+  it("リモートの変更を取り込む pull が書く YAML と state の relatedApp は、API の code: '' を持たない", async () => {
+    const { container } = createContainer({ app: "11", code: "" });
+    const base = schemaWithRelatedApp('{ app: "10", code: "" }');
+    container.schemaStateStorage.setContent(base);
+    container.schemaStorage.setContent(base);
 
-    const { schemaText } = await captureSchema({ container });
-
-    expect(relatedAppIn(container.configCodec, schemaText)).toStrictEqual({
-      app: "10",
-      code: "CUSTOMERS",
+    const result = await pullSchema({ container, input: {} });
+    expect(result.mode).toBe("merged");
+    if (result.mode !== "merged") return;
+    await applyPulledMerge({
+      container,
+      input: {
+        merge: result.merge,
+        resolution: { fields: new Map(), layout: "noConflict" },
+        remoteRevision: result.remoteRevision,
+        remoteSchema: result.remoteSchema,
+      },
     });
+
+    const local = await container.schemaStorage.get();
+    const state = await container.schemaStateStorage.get();
+    expect(local.exists && state.exists).toBe(true);
+    if (local.exists && state.exists) {
+      expect(relatedAppIn(container.configCodec, local.content)).toStrictEqual({
+        app: "11",
+      });
+      expect(relatedAppIn(container.configCodec, state.content)).toStrictEqual({
+        app: "11",
+      });
+    }
   });
 });
 

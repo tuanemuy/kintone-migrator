@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BusinessRuleError } from "@/core/domain/error";
 import { FormSchemaErrorCode } from "../errorCode";
-import { FieldCode, omitEmptyLookupRelatedAppCode } from "../valueObject";
+import { FieldCode, LookupRelatedApp } from "../valueObject";
 
 describe("FieldCode", () => {
   it("有効な文字列からFieldCodeを生成する", () => {
@@ -82,60 +82,20 @@ describe("FieldCode", () => {
   });
 });
 
-describe("omitEmptyLookupRelatedAppCode", () => {
-  const lookupWith = (relatedApp: unknown) => ({
-    required: true,
-    lookup: {
-      relatedApp,
-      relatedKeyField: "customer_code",
-      fieldMappings: [{ field: "name", relatedField: "customer_name" }],
-      lookupPickerFields: ["customer_name"],
-    },
-  });
-
-  it.each([
-    ["空文字", { app: "10", code: "" }],
-    ["値なし（null）", { app: "10", code: null }],
-  ])("relatedApp.code が%sなら code を省き、他のプロパティは保つ", (_, relatedApp) => {
-    expect(omitEmptyLookupRelatedAppCode(lookupWith(relatedApp))).toStrictEqual(
-      lookupWith({ app: "10" }),
-    );
-  });
-
-  it("relatedApp.code が非空ならそのまま返す", () => {
-    expect(
-      omitEmptyLookupRelatedAppCode(
-        lookupWith({ app: "10", code: "CUSTOMERS" }),
-      ),
-    ).toStrictEqual(lookupWith({ app: "10", code: "CUSTOMERS" }));
-  });
-
-  it("relatedApp が code を持たなければそのまま返す", () => {
-    expect(
-      omitEmptyLookupRelatedAppCode(lookupWith({ app: "10" })),
-    ).toStrictEqual(lookupWith({ app: "10" }));
-  });
-
-  it("lookup を持たないプロパティに lookup キーを足さない", () => {
-    expect(omitEmptyLookupRelatedAppCode({ required: true })).toStrictEqual({
-      required: true,
+describe("LookupRelatedApp", () => {
+  describe("create", () => {
+    it.each([
+      ["空文字", ""],
+      ["undefined", undefined],
+    ])("code が%sなら、code を持たない", (_, code) => {
+      expect(LookupRelatedApp.create("10", code)).toStrictEqual({ app: "10" });
     });
-  });
 
-  it.each([
-    ["lookup が record でない", { lookup: "x" }],
-    ["lookup が null", { lookup: null }],
-    ["relatedApp が record でない", { lookup: { relatedApp: "10" } }],
-    ["relatedApp が無い", { lookup: { relatedKeyField: "k" } }],
-  ])("%s ときは値を変えずに返す", (_, properties) => {
-    expect(omitEmptyLookupRelatedAppCode(properties)).toBe(properties);
-  });
-
-  it("引数のプロパティを書き換えない", () => {
-    const properties = lookupWith({ app: "10", code: "" });
-
-    omitEmptyLookupRelatedAppCode(properties);
-
-    expect(properties).toStrictEqual(lookupWith({ app: "10", code: "" }));
+    it("code が非空なら、code を持つ", () => {
+      expect(LookupRelatedApp.create("10", "CUSTOMERS")).toStrictEqual({
+        app: "10",
+        code: "CUSTOMERS",
+      });
+    });
   });
 });

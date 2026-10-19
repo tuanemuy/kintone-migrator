@@ -333,6 +333,135 @@ describe("SchemaParser", () => {
       }
     });
 
+    describe("lookup", () => {
+      const parseLookupOf = (lookup: unknown) =>
+        SchemaParser.parse({
+          layout: [
+            {
+              type: "ROW",
+              fields: [
+                {
+                  code: "customer",
+                  type: "SINGLE_LINE_TEXT",
+                  label: "顧客",
+                  lookup,
+                },
+              ],
+            },
+          ],
+        }).fields.get("customer" as FieldCode)?.properties;
+
+      it("数値で書いた値は文字列にし、lookup の外のキーは落とす", () => {
+        expect(
+          parseLookupOf({
+            relatedApp: { app: 10, code: 20 },
+            relatedKeyField: "customer_code",
+            fieldMappings: [{ field: "name", relatedField: "customer_name" }],
+            lookupPickerFields: ["customer_name", 30],
+            filterCond: 'status in ("active")',
+            sort: "customer_code asc",
+            unknownKey: "x",
+          }),
+        ).toStrictEqual({
+          lookup: {
+            relatedApp: { app: "10", code: "20" },
+            relatedKeyField: "customer_code",
+            fieldMappings: [{ field: "name", relatedField: "customer_name" }],
+            lookupPickerFields: ["customer_name", "30"],
+            filterCond: 'status in ("active")',
+            sort: "customer_code asc",
+          },
+        });
+      });
+
+      it("filterCond と sort は、省略か値なし（null）なら持たない", () => {
+        expect(
+          parseLookupOf({
+            relatedApp: { app: "10" },
+            relatedKeyField: "customer_code",
+            fieldMappings: [],
+            lookupPickerFields: [],
+            filterCond: null,
+          }),
+        ).toStrictEqual({
+          lookup: {
+            relatedApp: { app: "10" },
+            relatedKeyField: "customer_code",
+            fieldMappings: [],
+            lookupPickerFields: [],
+          },
+        });
+      });
+
+      it("relatedApp.app・relatedKeyField・fieldMappings の各キーの省略は空文字にし、検証に任せる", () => {
+        expect(
+          parseLookupOf({
+            relatedApp: {},
+            fieldMappings: [{}],
+            lookupPickerFields: [],
+          }),
+        ).toStrictEqual({
+          lookup: {
+            relatedApp: { app: "" },
+            relatedKeyField: "",
+            fieldMappings: [{ field: "", relatedField: "" }],
+            lookupPickerFields: [],
+          },
+        });
+      });
+
+      const validLookup = {
+        relatedApp: { app: "10" },
+        relatedKeyField: "customer_code",
+        fieldMappings: [{ field: "name", relatedField: "customer_name" }],
+        lookupPickerFields: ["customer_name"],
+      };
+
+      it.each([
+        ["lookup が文字列", "x", "must be an object"],
+        ["lookup が値なし（null）", null, "must be an object"],
+        [
+          "relatedApp が無い",
+          { ...validLookup, relatedApp: undefined },
+          '"relatedApp" object',
+        ],
+        [
+          "relatedApp が文字列",
+          { ...validLookup, relatedApp: "10" },
+          '"relatedApp" object',
+        ],
+        [
+          "fieldMappings が無い",
+          { ...validLookup, fieldMappings: undefined },
+          '"fieldMappings" array',
+        ],
+        [
+          "fieldMappings の要素が文字列",
+          { ...validLookup, fieldMappings: ["name"] },
+          'objects in "fieldMappings"',
+        ],
+        [
+          "lookupPickerFields が無い",
+          { ...validLookup, lookupPickerFields: undefined },
+          '"lookupPickerFields" array',
+        ],
+      ])("%s なら InvalidSchemaStructure エラーになる", (_, lookup, message) => {
+        try {
+          parseLookupOf(lookup);
+          expect.unreachable("should throw");
+        } catch (e) {
+          expect(e).toBeInstanceOf(BusinessRuleError);
+          expect((e as BusinessRuleError).code).toBe(
+            FormSchemaErrorCode.FsInvalidSchemaStructure,
+          );
+          expect((e as BusinessRuleError).message).toContain(
+            `Field "customer" lookup`,
+          );
+          expect((e as BusinessRuleError).message).toContain(message);
+        }
+      });
+    });
+
     describe("lookup.relatedApp.code", () => {
       const lookupWith = (relatedApp: Record<string, unknown>) => ({
         relatedApp,

@@ -15,10 +15,11 @@ import type {
   GroupFieldDefinition,
   LayoutElement,
   LayoutField,
+  Lookup,
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../valueObject";
-import { FieldCode, omitEmptyLookupRelatedAppCode } from "../valueObject";
+import { FieldCode, LookupRelatedApp } from "../valueObject";
 
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
 
@@ -352,6 +353,56 @@ function buildFieldDefinition(
   }
 }
 
+function invalidLookup(code: string, detail: string): BusinessRuleError {
+  return new BusinessRuleError(
+    FormSchemaErrorCode.FsInvalidSchemaStructure,
+    `Field "${code}" lookup ${detail}`,
+  );
+}
+
+function optionalString(value: unknown): string | undefined {
+  return value === undefined || value === null ? undefined : String(value);
+}
+
+function parseLookup(code: string, raw: unknown): Lookup {
+  if (!isRecord(raw)) {
+    throw invalidLookup(code, "must be an object");
+  }
+  if (!isRecord(raw.relatedApp)) {
+    throw invalidLookup(code, 'must have a "relatedApp" object');
+  }
+  if (!Array.isArray(raw.fieldMappings)) {
+    throw invalidLookup(code, 'must have a "fieldMappings" array');
+  }
+  if (!Array.isArray(raw.lookupPickerFields)) {
+    throw invalidLookup(code, 'must have a "lookupPickerFields" array');
+  }
+
+  const fieldMappings = raw.fieldMappings.map((mapping: unknown) => {
+    if (!isRecord(mapping)) {
+      throw invalidLookup(code, 'must have objects in "fieldMappings"');
+    }
+    return {
+      field: String(mapping.field ?? ""),
+      relatedField: String(mapping.relatedField ?? ""),
+    };
+  });
+  const filterCond = optionalString(raw.filterCond);
+  const sort = optionalString(raw.sort);
+
+  return {
+    relatedApp: LookupRelatedApp.create(
+      String(raw.relatedApp.app ?? ""),
+      optionalString(raw.relatedApp.code),
+    ),
+    relatedKeyField: String(raw.relatedKeyField ?? ""),
+    fieldMappings,
+    lookupPickerFields: raw.lookupPickerFields.map((f: unknown) => String(f)),
+    ...(filterCond !== undefined ? { filterCond } : {}),
+    ...(sort !== undefined ? { sort } : {}),
+  };
+}
+
 function parseReferenceTableField(
   raw: RawField,
   code: string,
@@ -472,7 +523,11 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
     return parseReferenceTableField(raw, code, base);
   }
 
-  const properties = omitEmptyLookupRelatedAppCode(extractProperties(raw));
+  const { lookup, ...others } = extractProperties(raw);
+  const properties =
+    lookup === undefined
+      ? others
+      : { ...others, lookup: parseLookup(code, lookup) };
   validateFieldProperties(code, fieldType, properties);
 
   return buildFieldDefinition(base, fieldType, properties);
