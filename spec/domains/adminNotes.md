@@ -57,7 +57,7 @@ type AdminNotesDiff = Readonly<{
 ```
 
 - `field` は差分のあったフィールド名（`content` または `includeInTemplateAndDuplicates`）
-- `details` は変更内容の要約テキスト（例: `"旧メモ..." -> "新メモ..."`、`content` は長い場合に先頭30文字へ切り詰める）
+- `details` は変更内容の要約テキスト（例: `"旧メモ..." -> "新メモ..."`）。`content` は長い場合に先頭30文字へ切り詰めて `...` を付け、その文字列を JSON 文字列にして示す
 - `summary.added` / `summary.deleted` は常に 0
 - `isEmpty` は差分がない場合に `true`
 
