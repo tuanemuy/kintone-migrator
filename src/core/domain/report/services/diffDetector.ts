@@ -9,7 +9,9 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
   const diffs: string[] = [];
 
   if (local.name !== remote.name) {
-    diffs.push(`name: "${remote.name}" -> "${local.name}"`);
+    diffs.push(
+      `name: ${formatValue(remote.name)} -> ${formatValue(local.name)}`,
+    );
   }
   if (local.chartType !== remote.chartType) {
     diffs.push(`chartType: ${remote.chartType} -> ${local.chartType}`);
@@ -23,7 +25,9 @@ function compareReports(local: ReportConfig, remote: ReportConfig): string[] {
     diffs.push(`index: ${remote.index} -> ${local.index}`);
   }
   if (local.filterCond !== remote.filterCond) {
-    diffs.push(`filterCond: "${remote.filterCond}" -> "${local.filterCond}"`);
+    diffs.push(
+      `filterCond: ${formatValue(remote.filterCond)} -> ${formatValue(local.filterCond)}`,
+    );
   }
   if (!deepEqual(local.groups, remote.groups)) {
     diffs.push(

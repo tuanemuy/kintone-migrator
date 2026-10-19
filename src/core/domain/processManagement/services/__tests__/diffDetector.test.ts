@@ -742,13 +742,30 @@ describe("ProcessManagementDiffDetector", () => {
           type: "added",
           category: "action",
           name: "承認 (一次承認待ち → 最終承認待ち) #3",
-          details: 'filterCond: "部署 in ("開発")"',
+          details: 'filterCond: "部署 in (\\"開発\\")"',
         },
         {
           type: "modified",
           category: "action",
           name: "承認 (一次承認待ち → 最終承認待ち) #2",
-          details: 'filterCond: "部署 in ("開発")" -> "部署 in ("人事")"',
+          details:
+            'filterCond: "部署 in (\\"開発\\")" -> "部署 in (\\"人事\\")"',
+        },
+      ]);
+    });
+
+    it("should escape double quotes in the filterCond of a deleted repeat", () => {
+      const local = makeConfig({ actions: [approveSales] });
+      const remote = makeConfig({ actions: [approveSales, approveDev] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toEqual([
+        {
+          type: "deleted",
+          category: "action",
+          name: "承認 (一次承認待ち → 最終承認待ち) #2",
+          details: 'filterCond: "部署 in (\\"開発\\")"',
         },
       ]);
     });

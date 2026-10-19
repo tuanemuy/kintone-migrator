@@ -12,7 +12,9 @@ function checkOptionalStringChange(
   remoteVal: string | undefined,
 ): void {
   if ((localVal ?? "") !== (remoteVal ?? "")) {
-    changes.push(`${field}: "${remoteVal ?? ""}" -> "${localVal ?? ""}"`);
+    changes.push(
+      `${field}: ${formatValue(remoteVal ?? "")} -> ${formatValue(localVal ?? "")}`,
+    );
   }
 }
 
