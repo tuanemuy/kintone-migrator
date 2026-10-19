@@ -37,7 +37,7 @@ describe("pairByKeyInOrder", () => {
     ]);
   });
 
-  it("returns keys only in local or only in remote after shared keys in local order", () => {
+  it("returns local keys in local order, then remote-only keys in remote order", () => {
     const result = pairByKeyInOrder(["b1", "a1"], ["c1", "a2", "c2"], keyOf);
 
     expect(result).toEqual([

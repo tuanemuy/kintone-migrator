@@ -10,6 +10,7 @@ import type { TestProcessManagementContainer } from "@/core/application/__tests_
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import { ProcessManagementStateSerializer } from "@/core/domain/processManagement/services/processManagementStateSerializer";
 import { detectProcessManagementThreeWayDiff } from "../detectProcessManagementThreeWayDiff";
+import { pullProcessManagement } from "../pullProcessManagement";
 
 const baseConfig: ProcessManagementConfig = {
   enable: false,
@@ -102,6 +103,22 @@ describe("detectProcessManagementThreeWayDiff", () => {
   });
 
   describe("same-named actions", () => {
+    it("reports no change right after the first pull", async () => {
+      const container = getContainer();
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+      await pullProcessManagement({ container, input: {} });
+
+      const result = await detectProcessManagementThreeWayDiff({ container });
+
+      expect(result.mode).toBe("three-way");
+      if (result.mode === "three-way") {
+        expect(result.isEmpty).toBe(true);
+      }
+    });
+
     it("reports no change when local, remote, and state match", async () => {
       const container = getContainer();
       setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
