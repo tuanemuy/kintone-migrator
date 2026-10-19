@@ -521,7 +521,7 @@ describe("KintoneFormConfigurator", () => {
       const field = fields.get("related" as FieldCode);
       expect(field?.type).toBe("REFERENCE_TABLE");
       if (field?.type === "REFERENCE_TABLE") {
-        expect(field.properties.referenceTable.relatedApp).toEqual({
+        expect(field.properties.referenceTable.relatedApp).toStrictEqual({
           app: "42",
         });
       }
