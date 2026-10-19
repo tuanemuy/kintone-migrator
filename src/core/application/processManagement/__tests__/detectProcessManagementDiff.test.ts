@@ -254,7 +254,7 @@ actions: []
         (e) => e.category === "action" && e.type === "added",
       );
       expect(addedAction).toBeDefined();
-      expect(addedAction?.name).toBe("承認");
+      expect(addedAction?.name).toBe("承認 (未処理 → 処理中)");
     });
 
     it("action の削除を検出する", async () => {
@@ -314,7 +314,7 @@ actions: []
         (e) => e.category === "action" && e.type === "deleted",
       );
       expect(deletedAction).toBeDefined();
-      expect(deletedAction?.name).toBe("承認");
+      expect(deletedAction?.name).toBe("承認 (未処理 → 処理中)");
     });
 
     it("action の変更を検出する（filterCond変更）", async () => {
@@ -355,7 +355,7 @@ actions: []
         (e) => e.category === "action" && e.type === "modified",
       );
       expect(modifiedAction).toBeDefined();
-      expect(modifiedAction?.name).toBe("承認");
+      expect(modifiedAction?.name).toBe("承認 (未処理 → 処理中)");
       expect(modifiedAction?.details).toContain("filterCond");
     });
 

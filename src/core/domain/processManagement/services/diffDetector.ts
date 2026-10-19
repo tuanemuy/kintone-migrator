@@ -1,11 +1,12 @@
 import { buildDiffResult } from "../../diff";
 import { formatValue } from "../../services/formatValue";
 import type { ProcessManagementConfig } from "../entity";
-import type {
-  ProcessAction,
-  ProcessEntity,
-  ProcessManagementDiff,
-  ProcessManagementDiffEntry,
+import {
+  describeProcessAction,
+  type ProcessAction,
+  type ProcessEntity,
+  type ProcessManagementDiff,
+  type ProcessManagementDiffEntry,
 } from "../valueObject";
 
 function isEntityEqual(a: ProcessEntity, b: ProcessEntity): boolean {
@@ -42,12 +43,6 @@ function compareActions(
   remoteAction: ProcessAction,
 ): string[] {
   const diffs: string[] = [];
-  if (localAction.from !== remoteAction.from) {
-    diffs.push(`from: ${remoteAction.from} -> ${localAction.from}`);
-  }
-  if (localAction.to !== remoteAction.to) {
-    diffs.push(`to: ${remoteAction.to} -> ${localAction.to}`);
-  }
   if (localAction.filterCond !== remoteAction.filterCond) {
     diffs.push(
       `filterCond: "${remoteAction.filterCond}" -> "${localAction.filterCond}"`,
@@ -132,22 +127,52 @@ function compareStates(
   }
 }
 
+type IdentifiedAction = Readonly<{
+  label: string;
+  action: ProcessAction;
+}>;
+
+/**
+ * Keys actions by name + from + to plus the occurrence order within that
+ * triple. kintone allows same-named actions both from different states and as
+ * conditional branches from one state, so the name alone would collapse them.
+ * The input may come from kintone or the state file without passing the
+ * parser, so no uniqueness is assumed.
+ */
+function identifyActions(
+  actions: readonly ProcessAction[],
+): ReadonlyMap<string, IdentifiedAction> {
+  const occurrences = new Map<string, number>();
+  const identified = new Map<string, IdentifiedAction>();
+  for (const action of actions) {
+    const transitionKey = JSON.stringify([action.name, action.from, action.to]);
+    const occurrence = (occurrences.get(transitionKey) ?? 0) + 1;
+    occurrences.set(transitionKey, occurrence);
+    const label = describeProcessAction(action);
+    identified.set(`${transitionKey}#${occurrence}`, {
+      label: occurrence === 1 ? label : `${label} #${occurrence}`,
+      action,
+    });
+  }
+  return identified;
+}
+
 function compareActionEntries(
   local: ProcessManagementConfig,
   remote: ProcessManagementConfig,
   entries: ProcessManagementDiffEntry[],
 ): void {
-  const localActionMap = new Map(local.actions.map((a) => [a.name, a]));
-  const remoteActionMap = new Map(remote.actions.map((a) => [a.name, a]));
+  const localActions = identifyActions(local.actions);
+  const remoteActions = identifyActions(remote.actions);
 
-  for (const [name, localAction] of localActionMap) {
-    const remoteAction = remoteActionMap.get(name);
+  for (const [key, { label, action: localAction }] of localActions) {
+    const remoteAction = remoteActions.get(key)?.action;
     if (!remoteAction) {
       entries.push({
         type: "added",
         category: "action",
-        name,
-        details: `${localAction.from} -> ${localAction.to}`,
+        name: label,
+        details: `filterCond: "${localAction.filterCond}"`,
       });
     } else {
       const actionDiffs = compareActions(localAction, remoteAction);
@@ -155,20 +180,20 @@ function compareActionEntries(
         entries.push({
           type: "modified",
           category: "action",
-          name,
+          name: label,
           details: actionDiffs.join("\n"),
         });
       }
     }
   }
 
-  for (const [name, remoteAction] of remoteActionMap) {
-    if (!localActionMap.has(name)) {
+  for (const [key, { label, action: remoteAction }] of remoteActions) {
+    if (!localActions.has(key)) {
       entries.push({
         type: "deleted",
         category: "action",
-        name,
-        details: `${remoteAction.from} -> ${remoteAction.to}`,
+        name: label,
+        details: `filterCond: "${remoteAction.filterCond}"`,
       });
     }
   }

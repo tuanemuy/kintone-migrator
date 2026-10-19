@@ -258,6 +258,76 @@ describe("ProcessManagementConfigParser", () => {
       });
       expect(config.actions[0].filterCond).toBe("");
     });
+
+    describe("same-named actions", () => {
+      const states = {
+        未処理: { index: 0, assignee: { type: "ONE", entities: [] } },
+        一次承認待ち: { index: 1, assignee: { type: "ONE", entities: [] } },
+        最終承認待ち: { index: 2, assignee: { type: "ONE", entities: [] } },
+      };
+
+      it("should keep same-named actions from different states in order", () => {
+        const actions = [
+          { name: "差し戻し", from: "一次承認待ち", to: "未処理" },
+          { name: "差し戻し", from: "最終承認待ち", to: "未処理" },
+        ];
+
+        const config = ProcessManagementConfigParser.parse({ states, actions });
+
+        expect(config.actions.map((a) => [a.name, a.from, a.to])).toEqual([
+          ["差し戻し", "一次承認待ち", "未処理"],
+          ["差し戻し", "最終承認待ち", "未処理"],
+        ]);
+      });
+
+      it("should keep conditional branches sharing name and from state", () => {
+        const actions = [
+          {
+            name: "申請する",
+            from: "未処理",
+            to: "一次承認待ち",
+            filterCond: "金額 < 500000",
+          },
+          {
+            name: "申請する",
+            from: "未処理",
+            to: "最終承認待ち",
+            filterCond: "金額 >= 500000",
+          },
+        ];
+
+        const config = ProcessManagementConfigParser.parse({ states, actions });
+
+        expect(config.actions.map((a) => [a.to, a.filterCond])).toEqual([
+          ["一次承認待ち", "金額 < 500000"],
+          ["最終承認待ち", "金額 >= 500000"],
+        ]);
+      });
+
+      it("should keep actions sharing name, from, and to", () => {
+        const actions = [
+          {
+            name: "承認",
+            from: "一次承認待ち",
+            to: "最終承認待ち",
+            filterCond: '部署 in ("営業")',
+          },
+          {
+            name: "承認",
+            from: "一次承認待ち",
+            to: "最終承認待ち",
+            filterCond: '部署 in ("開発")',
+          },
+        ];
+
+        const config = ProcessManagementConfigParser.parse({ states, actions });
+
+        expect(config.actions.map((a) => a.filterCond)).toEqual([
+          '部署 in ("営業")',
+          '部署 in ("開発")',
+        ]);
+      });
+    });
   });
 
   describe("error cases", () => {
@@ -641,28 +711,51 @@ describe("ProcessManagementConfigParser", () => {
       );
     });
 
-    it("should throw PmDuplicateActionName for duplicate action names", () => {
-      expect(() =>
+    it("should report which same-named action references a nonexistent state", () => {
+      const parse = () =>
         ProcessManagementConfigParser.parse({
           states: {
-            state1: {
+            申請中: {
               index: 0,
               assignee: { type: "ONE", entities: [] },
             },
-            state2: {
+            課長承認待ち: {
               index: 1,
               assignee: { type: "ONE", entities: [] },
             },
           },
           actions: [
-            { name: "action1", from: "state1", to: "state2" },
-            { name: "action1", from: "state2", to: "state1" },
+            { name: "申請する", from: "申請中", to: "課長承認待ち" },
+            { name: "申請する", from: "申請中", to: "部長承認待ち" },
+          ],
+        });
+
+      expect(parse).toThrow(
+        expect.objectContaining({
+          code: ProcessManagementErrorCode.PmInvalidActionReference,
+        }),
+      );
+      expect(parse).toThrow(
+        'Action "申請する (申請中 → 部長承認待ち)" references unknown "to" state: "部長承認待ち"',
+      );
+    });
+
+    it("should report the action label when from references a nonexistent state", () => {
+      expect(() =>
+        ProcessManagementConfigParser.parse({
+          states: {
+            未処理: {
+              index: 0,
+              assignee: { type: "ONE", entities: [] },
+            },
+          },
+          actions: [
+            { name: "差し戻し", from: "未処理", to: "未処理" },
+            { name: "差し戻し", from: "最終承認待ち", to: "未処理" },
           ],
         }),
       ).toThrow(
-        expect.objectContaining({
-          code: ProcessManagementErrorCode.PmDuplicateActionName,
-        }),
+        'Action "差し戻し (最終承認待ち → 未処理)" references unknown "from" state: "最終承認待ち"',
       );
     });
 

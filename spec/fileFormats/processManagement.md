@@ -69,7 +69,7 @@ actions:
 
 | プロパティ | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
-| `name` | string | 必須 | アクション名（`actions` 内で一意） |
+| `name` | string | 必須 | アクション名（重複可。[同名のアクション](#同名のアクション) を参照） |
 | `from` | string | 必須 | 遷移元ステータス名（`states` のキー） |
 | `to` | string | 必須 | 遷移先ステータス名（`states` のキー） |
 | `filterCond` | string | 任意 | 実行条件。省略時は空文字（`""`） |
@@ -79,9 +79,42 @@ actions:
 ## states と actions の参照整合性
 
 - `actions` の各要素の `from` / `to` は、`states` のキー（ステータス名）として存在していなければならない。存在しないステータスを参照するとエラーになる
-- アクション名（`name`）は `actions` 内で一意でなければならない
 - `type` を省略した場合は `PRIMARY` として扱う。`filterCond` を省略した場合は空文字（`""`）として扱う
 - `executableUser` は `type: SECONDARY` のアクションでのみ意味を持つ
+
+## 同名のアクション
+
+kintone と同じく、`actions` には同じ `name` のアクションを複数書ける。
+
+- 遷移元が違う同名アクション（例: どちらの承認待ちからも「差し戻し」）
+- 遷移元が同じで、実行条件と遷移先が違う同名アクション（条件分岐）
+- `name` / `from` / `to` がすべて同じで、実行条件などが違うアクション
+
+```yaml
+actions:
+  - name: 申請する
+    from: 未処理
+    to: 課長承認待ち
+    filterCond: 金額 < 500000
+    type: PRIMARY
+  - name: 申請する
+    from: 未処理
+    to: 部長承認待ち
+    filterCond: 金額 >= 500000
+    type: PRIMARY
+  - name: 差し戻し
+    from: 課長承認待ち
+    to: 未処理
+    filterCond: ""
+    type: PRIMARY
+  - name: 差し戻し
+    from: 部長承認待ち
+    to: 未処理
+    filterCond: ""
+    type: PRIMARY
+```
+
+差分検出ではアクションを `name` + `from` + `to` と、その組の中での出現順で識別する。詳細は [ProcessManagement ドメイン仕様](../domains/processManagement.md#processmanagementdiffdetector) を参照。
 
 ## エンティティ（entities）の指定
 
@@ -110,7 +143,6 @@ actions:
 | `PM_INVALID_ENTITY_TYPE` | エンティティの `type` が許容値以外 |
 | `PM_INVALID_BOOLEAN_FIELD` | `includeSubs` 等の真偽値フィールドが真偽値でない |
 | `PM_INVALID_ACTION_REFERENCE` | `actions[].from` / `to` が `states` に存在しない |
-| `PM_DUPLICATE_ACTION_NAME` | アクション名（`name`）が `actions` 内で重複している |
 
 ## エラーコード
 
@@ -121,4 +153,3 @@ actions:
 | `PmInvalidEntityType` | `PM_INVALID_ENTITY_TYPE` |
 | `PmInvalidBooleanField` | `PM_INVALID_BOOLEAN_FIELD` |
 | `PmInvalidActionReference` | `PM_INVALID_ACTION_REFERENCE` |
-| `PmDuplicateActionName` | `PM_DUPLICATE_ACTION_NAME` |

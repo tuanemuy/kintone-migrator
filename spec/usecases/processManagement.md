@@ -39,13 +39,13 @@ type ApplyProcessManagementOutput = {
 - 現在のrevisionが更新リクエストに渡される
 - `enable` が変化した場合、`enableChanged` が `true`、`newEnable` が適用後の値になる
 - `enable` が変化しない場合、`enableChanged` が `false` になる
+- 同名のアクション（遷移元が違う／遷移元が同じで条件と遷移先が違う／`name`・`from`・`to` がすべて同じ）をすべて順序どおり適用する
 
 #### 異常系
 
 - 設定ファイルが存在しない場合、`ValidationError` がスローされる
 - 設定テキストのYAMLフォーマットが不正な場合、`ValidationError` がスローされる
 - `action.from`/`action.to` が `states` に存在しないステータスを参照する場合、`ValidationError`（ドメインの `BusinessRuleError(PM_INVALID_ACTION_REFERENCE)` をラップ）がスローされる
-- アクション名が重複する場合、`ValidationError`（`BusinessRuleError(PM_DUPLICATE_ACTION_NAME)` をラップ）がスローされる
 - `ProcessManagementStorage.get()` の通信に失敗した場合、`SystemError` がスローされる
 - `ProcessManagementConfigurator.getProcessManagement()` の通信に失敗した場合、`SystemError` がスローされる
 - `ProcessManagementConfigurator.updateProcessManagement()` の通信に失敗した場合、`SystemError` がスローされる
@@ -141,6 +141,8 @@ type ProcessManagementDiff = {
 - ローカルとリモートに差分がない場合、`isEmpty` が `true` になる
 - `enable`・ステータス・アクションの追加/変更/削除が `entries` に分類される
 - `summary` に追加/変更/削除の件数と合計が集計される
+- 同名のアクションを含む設定を capture して保存した場合、差分がない
+- 同名のアクションの 1 件だけが変わった場合、その 1 件だけが差分に出る
 
 #### 異常系
 

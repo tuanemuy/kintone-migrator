@@ -4,7 +4,6 @@ export const ProcessManagementErrorCode = {
   PmInvalidEntityType: "PM_INVALID_ENTITY_TYPE",
   PmInvalidBooleanField: "PM_INVALID_BOOLEAN_FIELD",
   PmInvalidActionReference: "PM_INVALID_ACTION_REFERENCE",
-  PmDuplicateActionName: "PM_DUPLICATE_ACTION_NAME",
   PmUnresolvedConflict: "PM_UNRESOLVED_CONFLICT",
 } as const;
 

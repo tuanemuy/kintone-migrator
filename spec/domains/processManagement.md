@@ -51,7 +51,7 @@ type ProcessManagementConfig = Readonly<{
 
 - すべての `action.from` は `states` のキーに存在するステータス名でなければならない。存在しない場合は `BusinessRuleError(PM_INVALID_ACTION_REFERENCE)` をスローする
 - すべての `action.to` は `states` のキーに存在するステータス名でなければならない。存在しない場合は `BusinessRuleError(PM_INVALID_ACTION_REFERENCE)` をスローする
-- `actions` 内でアクション名（`name`）は一意でなければならない。重複する場合は `BusinessRuleError(PM_DUPLICATE_ACTION_NAME)` をスローする
+- `actions` 内のアクション名（`name`）は重複してよい。kintone は遷移元が違う同名アクションも、遷移元が同じで条件と遷移先が違う同名アクション（条件分岐）も受け付ける
 
 ## 値オブジェクト
 
@@ -127,13 +127,15 @@ type ProcessAction = Readonly<{
 }>;
 ```
 
-- `name` はアクション名
+- `name` はアクション名。同名のアクションを複数持てるので、アクションを識別するのは `name` + `from` + `to` の組と、その組の中での出現順（[ProcessManagementDiffDetector](#processmanagementdiffdetector) を参照）
 - `from` は遷移元ステータス名
 - `to` は遷移先ステータス名
 - `from`/`to` は `states` のキーに存在するステータス名でなければならない（[states と actions の参照整合性](#states-と-actions-の参照整合性) を参照）
 - `filterCond` は実行条件。省略時は空文字（`""`）とする
 - `type` はアクションの種別（プライマリ/セカンダリ）。省略時は `PRIMARY` とする
 - `executableUser` はアクション実行可能なユーザー。`type` が `SECONDARY` の場合にのみ意味を持ち保持される
+
+`describeProcessAction(action)` はアクションの表示名 `{name} ({from} → {to})` を返す。エラーメッセージと差分の表示で、同名のアクションを区別するために使う。
 
 ## ドメインサービス
 
@@ -152,8 +154,8 @@ const ProcessManagementConfigParser = {
 - `assignee.type` が不正な場合は `BusinessRuleError(PM_INVALID_ASSIGNEE_TYPE)` をスローする
 - エンティティの `type` が不正な場合は `BusinessRuleError(PM_INVALID_ENTITY_TYPE)` をスローする
 - `includeSubs` が真偽値でない場合は `BusinessRuleError(PM_INVALID_BOOLEAN_FIELD)` をスローする
-- アクション名が重複する場合は `BusinessRuleError(PM_DUPLICATE_ACTION_NAME)` をスローする
-- `action.from`/`action.to` が `states` に存在しないステータスを参照する場合は `BusinessRuleError(PM_INVALID_ACTION_REFERENCE)` をスローする
+- アクション名の重複は検証しない。同名アクションはすべて入力の順序のまま保持する
+- `action.from`/`action.to` が `states` に存在しないステータスを参照する場合は `BusinessRuleError(PM_INVALID_ACTION_REFERENCE)` をスローする。メッセージはアクションを表示名（`describeProcessAction`）で示す
 - ProcessManagementConfigSerializer が生成するデータとラウンドトリップ整合性を保つ
 
 #### 設定ファイルのフォーマット
@@ -172,6 +174,27 @@ const ProcessManagementConfigSerializer = {
 
 - `enable`・`states`・`actions` を出力する
 - `code`・`includeSubs`・`executableUser` などオプションプロパティは値が存在する場合のみ出力する
+
+### ProcessManagementDiffDetector
+
+ローカルとリモートの `ProcessManagementConfig` を比べ、`enable`・ステータス・アクションの差分を `ProcessManagementDiff` として返す純粋関数。3-way merge の等価判定（`isProcessManagementConfigEqual`）も、この関数が差分なしを返すかで判定する。
+
+```typescript
+const ProcessManagementDiffDetector = {
+  detect: (local: ProcessManagementConfig, remote: ProcessManagementConfig): ProcessManagementDiff;
+};
+```
+
+- ステータスはステータス名で突き合わせる
+- アクションは `name` + `from` + `to` の組と、その組の中での出現順（1 始まり、ローカルとリモートそれぞれの `actions` の中で数える）で突き合わせる
+    - リモートの設定は parser を通らないので、同じ組が重なる入力も潰さずに突き合わせる
+    - `from` または `to` を変えたアクションは、旧アクションの `deleted` と新アクションの `added` になる
+    - `name` / `from` / `to` がすべて同じアクション同士は出現順で突き合わせるので、それらの並べ替えや途中への挿入・途中の削除は、以降の組の `modified` と末尾の `added` / `deleted` として出る
+    - 組の異なるアクションの並び順は比べない。並び順だけの変更は差分にも 3-way merge の変更にも現れない
+- アクションの差分エントリは次のとおり
+    - `name` は表示名 `{name} ({from} → {to})`。同じ組の 2 件目以降は末尾に ` #{出現順}` を付ける（`added` / `modified` はローカル、`deleted` はリモートでの出現順）。表示名は識別子ではなく、別の組が同じ表示名になることがある
+    - `added` / `deleted` の `details` は `filterCond: "{filterCond}"`
+    - `modified` の `details` は `filterCond` / `type` / `executableUser` の変化を 1 行ずつ並べる
 
 ## ポート
 
