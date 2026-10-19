@@ -279,12 +279,16 @@ export const NotificationDiffDetector = {
           remote.reminder.notifications,
         ),
       );
-      if (local.reminder.timezone !== remote.reminder.timezone) {
+      // An unset local timezone is not managed, so it is not compared.
+      if (
+        local.reminder.timezone !== undefined &&
+        local.reminder.timezone !== remote.reminder.timezone
+      ) {
         entries.push({
           type: "modified",
           section: "reminder",
           name: "timezone",
-          details: `${remote.reminder.timezone} -> ${local.reminder.timezone}`,
+          details: `${remote.reminder.timezone ?? "(unset)"} -> ${local.reminder.timezone}`,
         });
       }
     } else if (local.reminder && !remote.reminder) {

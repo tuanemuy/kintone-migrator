@@ -20,6 +20,16 @@ export function isNotificationEntityType(
   return VALID_ENTITY_TYPES.has(value);
 }
 
+/**
+ * Normalizes a reminder timezone read at a boundary (kintone API or config
+ * file) to the domain form: `null` and `""` mean unset (`undefined`).
+ */
+export function normalizeReminderTimezone(
+  value: string | null,
+): string | undefined {
+  return value === null || value === "" ? undefined : value;
+}
+
 export type NotificationEntity = Readonly<{
   type: NotificationEntityType;
   code: string;

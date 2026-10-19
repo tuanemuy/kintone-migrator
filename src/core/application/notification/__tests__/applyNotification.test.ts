@@ -123,6 +123,35 @@ describe("applyNotification", () => {
       ]);
     });
 
+    it("should not send the reminder timezone when it is unset", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent(`
+reminder:
+  notifications: []
+`);
+
+      await applyNotification({ container });
+
+      expect(
+        container.notificationConfigurator.lastUpdateReminderParams,
+      ).toStrictEqual({ notifications: [], revision: "1" });
+    });
+
+    it("should send the reminder timezone when it is set", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent(`
+reminder:
+  timezone: UTC
+  notifications: []
+`);
+
+      await applyNotification({ container });
+
+      expect(
+        container.notificationConfigurator.lastUpdateReminderParams,
+      ).toStrictEqual({ timezone: "UTC", notifications: [], revision: "1" });
+    });
+
     it("should pass revision from current notifications", async () => {
       const container = getContainer();
       container.notificationStorage.setContent(VALID_GENERAL_ONLY);

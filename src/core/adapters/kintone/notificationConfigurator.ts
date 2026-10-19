@@ -8,7 +8,10 @@ import type {
 } from "@/core/domain/notification/entity";
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
 import type { NotificationEntity } from "@/core/domain/notification/valueObject";
-import { isNotificationEntityType } from "@/core/domain/notification/valueObject";
+import {
+  isNotificationEntityType,
+  normalizeReminderTimezone,
+} from "@/core/domain/notification/valueObject";
 import { parseKintoneIntegerField } from "./parseKintoneIntegerField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -327,7 +330,7 @@ export class KintoneNotificationConfigurator
   }
 
   async getReminderNotifications(): Promise<{
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   }> {
@@ -345,8 +348,18 @@ export class KintoneNotificationConfigurator
         response.notifications as unknown as KintoneReminderNotification[]
       ).map(fromKintoneReminderNotification);
 
+      // kintone returns `null` for an app whose reminders were never saved.
+      const rawTimezone: unknown = response.timezone ?? null;
+      if (rawTimezone !== null && typeof rawTimezone !== "string") {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected reminder timezone from kintone API: ${String(rawTimezone)}`,
+        );
+      }
+      const timezone = normalizeReminderTimezone(rawTimezone);
+
       return {
-        timezone: response.timezone as string,
+        ...(timezone !== undefined ? { timezone } : {}),
         notifications,
         revision: response.revision as string,
       };
@@ -356,16 +369,19 @@ export class KintoneNotificationConfigurator
   }
 
   async updateReminderNotifications(params: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
     try {
       const requestParams: Record<string, unknown> = {
         app: this.appId,
-        timezone: params.timezone,
         notifications: params.notifications.map(toKintoneReminderNotification),
       };
+
+      if (params.timezone !== undefined) {
+        requestParams.timezone = params.timezone;
+      }
 
       if (params.revision !== undefined) {
         requestParams.revision = params.revision;

@@ -10,6 +10,7 @@ import type {
 } from "@/core/domain/notification/entity";
 import { NotificationConfigSerializer } from "@/core/domain/notification/services/configSerializer";
 import { NotificationStateSerializer } from "@/core/domain/notification/services/notificationStateSerializer";
+import { detectNotificationThreeWayDiff } from "../detectNotificationThreeWayDiff";
 import {
   applyPulledNotificationMerge,
   pullNotification,
@@ -67,7 +68,9 @@ function setRemote(
     revision,
   });
   container.notificationConfigurator.setReminderNotifications({
-    timezone: remote.reminder?.timezone ?? "Asia/Tokyo",
+    ...(remote.reminder?.timezone !== undefined
+      ? { timezone: remote.reminder.timezone }
+      : {}),
     notifications: remote.reminder?.notifications ?? [],
     revision,
   });
@@ -268,5 +271,126 @@ describe("pullNotification", () => {
         },
       }),
     ).rejects.toSatisfy(isValidationError);
+  });
+
+  describe("reminder timezone", () => {
+    async function readLocal(container: TestNotificationContainer) {
+      const saved = await container.notificationStorage.get();
+      if (!saved.exists) throw new Error("expected local config");
+      return configCodec.parse(saved.content) as Record<string, unknown>;
+    }
+
+    async function pullAndApply(container: TestNotificationContainer) {
+      const result = await pullNotification({ container, input: {} });
+      if (result.mode !== "merged") throw new Error("expected merged");
+      await applyPulledNotificationMerge({
+        container,
+        input: {
+          merge: result.merge,
+          resolution: new Map(),
+          remoteConfig: result.remoteConfig,
+          remoteRevision: result.remoteRevision,
+        },
+      });
+    }
+
+    it("first run does not write a timezone for an app whose timezone is unset", async () => {
+      const container = getContainer();
+      setRemote(container, config({ reminder: { notifications: [] } }), "3");
+
+      await pullNotification({ container, input: {} });
+
+      expect((await readLocal(container)).reminder).toStrictEqual({
+        notifications: [],
+      });
+    });
+
+    it("force does not write a timezone for an app whose timezone is unset", async () => {
+      const container = getContainer();
+      setBase(container, config(), "1");
+      setLocal(container, config());
+      setRemote(container, config({ reminder: { notifications: [] } }), "2");
+
+      await pullNotification({ container, input: { force: true } });
+
+      expect((await readLocal(container)).reminder).toStrictEqual({
+        notifications: [],
+      });
+    });
+
+    it("keeps an unset local timezone unset even when the remote has one", async () => {
+      const container = getContainer();
+      const base = config({ reminder: { notifications: [] } });
+      setBase(container, base, "1");
+      setLocal(container, base);
+      setRemote(
+        container,
+        config({ reminder: { timezone: "Asia/Tokyo", notifications: [] } }),
+        "2",
+      );
+
+      await pullAndApply(container);
+
+      expect((await readLocal(container)).reminder).toStrictEqual({
+        notifications: [],
+      });
+    });
+
+    it("takes a remote timezone change when the local timezone is set", async () => {
+      const container = getContainer();
+      const base = config({
+        reminder: { timezone: "Asia/Tokyo", notifications: [] },
+      });
+      setBase(container, base, "1");
+      setLocal(container, base);
+      setRemote(
+        container,
+        config({ reminder: { timezone: "UTC", notifications: [] } }),
+        "2",
+      );
+
+      await pullAndApply(container);
+
+      expect((await readLocal(container)).reminder).toStrictEqual({
+        timezone: "UTC",
+        notifications: [],
+      });
+    });
+
+    it("converges to no diff after pulling an unset timezone recorded as null", async () => {
+      const container = getContainer();
+      const legacy = [
+        "general:",
+        "  notifyToCommenter: false",
+        "  notifications: []",
+        "perRecord: []",
+        "reminder:",
+        "  timezone: null",
+        "  notifications: []",
+        "",
+      ].join("\n");
+      container.notificationStateStorage.setContent(legacy);
+      container.appRevisionStorage.setContent(
+        configCodec.stringify({ revision: "1" }),
+      );
+      container.notificationStorage.setContent(legacy);
+      setRemote(
+        container,
+        config({
+          general: { notifyToCommenter: false, notifications: [] },
+          reminder: { notifications: [] },
+        }),
+        "1",
+      );
+
+      await pullAndApply(container);
+      const diff = await detectNotificationThreeWayDiff({ container });
+
+      if (diff.mode !== "three-way") throw new Error("expected three-way");
+      expect(diff.isEmpty).toBe(true);
+      expect((await readLocal(container)).reminder).toStrictEqual({
+        notifications: [],
+      });
+    });
   });
 });

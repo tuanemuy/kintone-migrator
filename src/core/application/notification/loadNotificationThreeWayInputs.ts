@@ -5,52 +5,16 @@ import {
   loadThreeWayInputs,
   type ThreeWayInputs,
 } from "../threeWay/loadThreeWayInputs";
+import {
+  loadNotificationRemote,
+  type NotificationRemote,
+} from "./loadNotificationRemote";
 import { parseNotificationConfigText } from "./parseConfig";
-
-/** Remote notification config carrying the revision it was observed at. */
-export type NotificationRemote = Readonly<{
-  config: NotificationConfig;
-  revision: string;
-}>;
 
 export type NotificationThreeWayInputs = ThreeWayInputs<
   NotificationConfig,
   NotificationRemote
 >;
-
-/**
- * Fetches the three remote sub-configs (general / perRecord / reminder) and
- * bundles them into a single {@link NotificationRemote}.
- *
- * The three getters each carry the app (preview) revision; since the revision is
- * app-scoped and the three are fetched at (essentially) the same moment, the
- * general getter's revision is used as the observed remote revision for the
- * TOCTOU guard. kintone always returns all three sections, so the bundled config
- * always has `general` / `perRecord` / `reminder` defined.
- */
-async function loadNotificationRemote(
-  container: NotificationDiffContainer,
-): Promise<NotificationRemote> {
-  const [general, perRecord, reminder] = await Promise.all([
-    container.notificationConfigurator.getGeneralNotifications(),
-    container.notificationConfigurator.getPerRecordNotifications(),
-    container.notificationConfigurator.getReminderNotifications(),
-  ]);
-
-  const config: NotificationConfig = {
-    general: {
-      notifyToCommenter: general.notifyToCommenter,
-      notifications: general.notifications,
-    },
-    perRecord: perRecord.notifications,
-    reminder: {
-      timezone: reminder.timezone,
-      notifications: reminder.notifications,
-    },
-  };
-
-  return { config, revision: general.revision };
-}
 
 /**
  * Loads the four inputs of a 3-way notification sync (base snapshot, base app

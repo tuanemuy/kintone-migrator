@@ -110,15 +110,17 @@ function buildThreeWay(
     conflicts,
     extras,
   );
-  pushScalar(
-    merge.reminderTimezone,
-    "reminder:timezone",
-    "timezone",
-    localChanges,
-    remoteDrift,
-    conflicts,
-    extras,
-  );
+  if (merge.reminderTimezone !== undefined) {
+    pushScalar(
+      merge.reminderTimezone,
+      "reminder:timezone",
+      "timezone",
+      localChanges,
+      remoteDrift,
+      conflicts,
+      extras,
+    );
+  }
 
   const isEmpty =
     localChanges.length === 0 &&

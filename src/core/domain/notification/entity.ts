@@ -37,7 +37,12 @@ export type ReminderNotification = Readonly<{
 }>;
 
 export type ReminderNotificationConfig = Readonly<{
-  timezone: string;
+  /**
+   * Reminder timezone. Absent means unset: kintone returns `null` for an app
+   * whose reminders were never saved, and a local config without it does not
+   * manage the timezone (it is neither compared nor sent).
+   */
+  timezone?: string;
   notifications: readonly ReminderNotification[];
 }>;
 

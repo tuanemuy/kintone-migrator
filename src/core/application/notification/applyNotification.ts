@@ -48,9 +48,9 @@ export async function applyNotification({
   if (config.reminder !== undefined) {
     const currentReminder =
       await container.notificationConfigurator.getReminderNotifications();
+    // Spreading keeps an unset timezone absent, so it is not sent.
     await container.notificationConfigurator.updateReminderNotifications({
-      timezone: config.reminder.timezone,
-      notifications: config.reminder.notifications,
+      ...config.reminder,
       revision: currentReminder.revision,
     });
   }

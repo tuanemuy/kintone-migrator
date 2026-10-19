@@ -358,9 +358,57 @@ describe("NotificationDiffDetector", () => {
         reminder: makeReminderConfig({ timezone: "Asia/Tokyo" }),
       };
       const result = NotificationDiffDetector.detect(local, remote);
-      expect(result.entries).toHaveLength(1);
-      expect(result.entries[0].section).toBe("reminder");
-      expect(result.entries[0].name).toBe("timezone");
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          section: "reminder",
+          name: "timezone",
+          details: "Asia/Tokyo -> America/New_York",
+        },
+      ]);
+    });
+
+    it("should report no changes when the timezone is unset on both sides", () => {
+      const local: NotificationConfig = { reminder: { notifications: [] } };
+      const remote: NotificationConfig = { reminder: { notifications: [] } };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should not compare the timezone when the local timezone is unset", () => {
+      const local: NotificationConfig = { reminder: { notifications: [] } };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({ timezone: "Asia/Tokyo" }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should detect a timezone set locally but unset remotely", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({ timezone: "Asia/Tokyo" }),
+      };
+      const remote: NotificationConfig = { reminder: { notifications: [] } };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          section: "reminder",
+          name: "timezone",
+          details: "(unset) -> Asia/Tokyo",
+        },
+      ]);
+    });
+
+    it("should report no changes when both timezones are the same", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({ timezone: "UTC" }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({ timezone: "UTC" }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.isEmpty).toBe(true);
     });
 
     it("should detect reminder section added", () => {

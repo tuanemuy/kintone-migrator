@@ -102,6 +102,24 @@ describe("NotificationConfigSerializer.serialize", () => {
     expect(result).toHaveProperty("reminder");
   });
 
+  it("reminderのtimezoneが未設定ならtimezoneキーを出力しない", () => {
+    const result = NotificationConfigSerializer.serialize({
+      reminder: { notifications: [] },
+    });
+
+    expect(result).toStrictEqual({ reminder: { notifications: [] } });
+  });
+
+  it("未設定のtimezoneはパースし直しても未設定のまま", () => {
+    const config: NotificationConfig = { reminder: { notifications: [] } };
+
+    const parsed = NotificationConfigParser.parse(
+      NotificationConfigSerializer.serialize(config),
+    );
+
+    expect(parsed).toStrictEqual(config);
+  });
+
   it("includeSubs falseをシリアライズできる", () => {
     const config: NotificationConfig = {
       general: {
