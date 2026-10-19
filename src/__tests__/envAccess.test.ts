@@ -229,6 +229,22 @@ describe("collectEnvAccess", () => {
       "declare function use(f: (o: { env: Record<string, string> }) => string): void;\ndeclare const d: any;\nuse(({ env } = d) => env.FOO);",
     ],
     [
+      "型注釈の付いた宣言の初期化子のリテラルの中の any",
+      "declare const a: any;\nconst { b: { env } }: { b: { env: Record<string, string> } } = { b: a };\nexport const x = env.FOO;",
+    ],
+    [
+      "型注釈の付いた宣言の初期化子の配列リテラルの中の any",
+      "declare const a: any;\nconst { b: [{ env }] }: { b: { env: Record<string, string> }[] } = { b: [a] };\nexport const x = env.FOO;",
+    ],
+    [
+      "文脈から型の付く引数の既定値のリテラルの中の any",
+      "declare function use(f: (o: { b: { env: Record<string, string> } }) => string): void;\ndeclare const a: any;\nuse(({ b: { env } } = { b: a }) => env.FOO);",
+    ],
+    [
+      "残余要素の内側の分割の宣言",
+      "declare const t: [{ env: number }[], any];\nconst [...[, { env }]] = t;\nexport const x = env;",
+    ],
+    [
       "require からの取り出し",
       'export const x = require("node:process").env.FOO;',
     ],
@@ -296,7 +312,7 @@ describe("collectEnvAccess", () => {
   it("型の付いた値から env を分割代入しても、process と無関係なら集めない", () => {
     expect(
       collectFromSource(
-        'const config = { env: { FOO: "x" } };\nconst { env } = config;\nconst { a: { env: e } = config }: { a?: { env: Record<string, string> } } = {};\nexport const f = ({ env: g } = config) => g.FOO;\nexport const x = env.FOO + e.FOO;',
+        'const config = { env: { FOO: "x" } };\nconst { env } = config;\nconst { a: { env: e } = config }: { a?: { env: Record<string, string> } } = {};\nexport const f = ({ env: g } = config) => g.FOO;\nconst [{ env: h }] = [config];\nconst { b: [{ env: i }] }: { b: { env: Record<string, string> }[] } = { b: [config] };\ndeclare const pair: [typeof config, any];\nconst [{ env: j }] = pair;\nconst { c: [{ env: k }] = [] }: { c?: (typeof config)[] } = {};\nexport const x = env.FOO + e.FOO + h.FOO + i.FOO + j.FOO + k.FOO;',
       ),
     ).toEqual({ names: [], unnamedCount: 0 });
   });

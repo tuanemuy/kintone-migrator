@@ -218,16 +218,20 @@ function concatTypes(
 
 // The types the member `key` of a `type` value may have, or `undefined` when
 // they cannot be determined. A key not known statically may take any member.
+// `absent` is the result for a key that is neither a property nor covered by
+// an index signature: a missing object property holds nothing, while an
+// element of an iterable that is not array-like cannot be followed.
 function memberTypes(
   checker: ts.TypeChecker,
   type: ts.Type,
   key: string | undefined,
+  absent: readonly ts.Type[] | undefined,
 ): readonly ts.Type[] | undefined {
   const value = checker.getNonNullableType(type);
   if (isAny(value)) return [value];
   if (value.isUnion()) {
     return concatTypes(
-      value.types.map((member) => memberTypes(checker, member, key)),
+      value.types.map((member) => memberTypes(checker, member, key, absent)),
     );
   }
   const property = key === undefined ? undefined : value.getProperty(key);
@@ -243,35 +247,89 @@ function memberTypes(
       ...indexTypes,
     ];
   }
-  return indexTypes.length > 0 ? indexTypes : undefined;
+  return indexTypes.length > 0 ? indexTypes : absent;
 }
 
 function memberTypesOf(
   checker: ts.TypeChecker,
   container: ts.Node,
   key: string | undefined,
+  absent: readonly ts.Type[] | undefined,
 ): readonly ts.Type[] | undefined {
-  const containerTypes = assignedTypes(checker, container);
+  const containerTypes = receivedTypes(checker, container);
   return (
     containerTypes &&
-    concatTypes(containerTypes.map((type) => memberTypes(checker, type, key)))
+    concatTypes(
+      containerTypes.map((type) => memberTypes(checker, type, key, absent)),
+    )
   );
 }
 
-// The types of the values a destructuring assignment target may receive, or
-// `undefined` when they cannot be determined statically. An element with a
-// default receives either the destructured value or the default.
-// `getTypeOfAssignmentPattern` is not used past the head of `for ... of`
-// because it gives only the default's type for such an element.
-function assignedTypes(
+function propertyTypesOf(
+  checker: ts.TypeChecker,
+  container: ts.Node,
+  name: ts.PropertyName | ts.BindingName,
+): readonly ts.Type[] | undefined {
+  return memberTypesOf(checker, container, propertyKeyOf(name), []);
+}
+
+function elementTypesOf(
+  checker: ts.TypeChecker,
+  container: ts.Node,
+  index: number,
+): readonly ts.Type[] | undefined {
+  return memberTypesOf(checker, container, String(index), undefined);
+}
+
+function typesOf(
+  checker: ts.TypeChecker,
+  node: ts.Expression | undefined,
+): readonly ts.Type[] {
+  return node === undefined ? [] : [checker.getTypeAtLocation(node)];
+}
+
+// A rest element (`...rest`) is not followed.
+function bindingElementTypes(
+  checker: ts.TypeChecker,
+  element: ts.BindingElement,
+): readonly ts.Type[] | undefined {
+  const container = element.parent;
+  if (element.dotDotDotToken !== undefined) return undefined;
+  return ts.isObjectBindingPattern(container)
+    ? propertyTypesOf(checker, container, element.propertyName ?? element.name)
+    : elementTypesOf(checker, container, container.elements.indexOf(element));
+}
+
+// The types of the values a destructuring target may receive, or `undefined`
+// when they cannot be determined statically. The value written after `=` (an
+// initializer, a default or the right side of an assignment) is followed
+// position by position, alongside the type TypeScript gives a declaration or
+// parameter, which comes from its annotation or context when there is one. An
+// element with a default receives either the destructured value or the
+// default. `getTypeOfAssignmentPattern` is not used past the head of
+// `for ... of` because it gives only the default's type for such an element.
+function receivedTypes(
   checker: ts.TypeChecker,
   target: ts.Node,
 ): readonly ts.Type[] | undefined {
   const { parent } = target;
+  if (ts.isVariableDeclaration(parent) || ts.isParameter(parent)) {
+    return [
+      checker.getTypeAtLocation(target),
+      ...typesOf(checker, parent.initializer),
+    ];
+  }
+  if (ts.isBindingElement(parent)) {
+    return concatTypes([
+      bindingElementTypes(checker, parent),
+      typesOf(checker, parent.initializer),
+    ]);
+  }
   if (isAssignment(parent)) {
-    const right = checker.getTypeAtLocation(parent.right);
-    if (!isAssignmentTarget(parent)) return [right];
-    return concatTypes([assignedTypes(checker, parent), [right]]);
+    const right = typesOf(checker, parent.right);
+    return isAssignmentTarget(parent)
+      ? concatTypes([receivedTypes(checker, parent), right])
+      : right;
   }
   if (
     ts.isForOfStatement(parent) &&
@@ -281,39 +339,19 @@ function assignedTypes(
     return [checker.getTypeOfAssignmentPattern(target)];
   }
   if (ts.isPropertyAssignment(parent)) {
-    return memberTypesOf(checker, parent.parent, propertyKeyOf(parent.name));
+    return propertyTypesOf(checker, parent.parent, parent.name);
   }
   if (ts.isArrayLiteralExpression(parent) && ts.isExpression(target)) {
-    const index = parent.elements.indexOf(target);
-    return memberTypesOf(checker, parent, String(index));
+    return elementTypesOf(checker, parent, parent.elements.indexOf(target));
   }
   return undefined;
 }
 
-// A destructuring assignment target whose value types cannot be determined
-// counts as untyped, so the guard fails rather than misses it.
+// A destructuring target whose value types cannot be determined counts as
+// untyped, so the guard fails rather than misses it.
 function receivesUntyped(checker: ts.TypeChecker, target: ts.Node): boolean {
-  const types = assignedTypes(checker, target);
+  const types = receivedTypes(checker, target);
   return types === undefined || types.some(isAny);
-}
-
-// Whether a binding pattern may take its value from an `any` value: its own
-// type, the value written after its `=` (an initializer or a default), or that
-// of an enclosing pattern. The value after `=` is checked separately because
-// TypeScript types the pattern by its annotation or context when there is one.
-function bindsUntyped(
-  checker: ts.TypeChecker,
-  pattern: ts.BindingPattern,
-): boolean {
-  if (isAny(checker.getTypeAtLocation(pattern))) return true;
-  const owner = pattern.parent;
-  if (
-    owner.initializer !== undefined &&
-    isAny(checker.getTypeAtLocation(owner.initializer))
-  ) {
-    return true;
-  }
-  return ts.isBindingElement(owner) && bindsUntyped(checker, owner.parent);
 }
 
 // `env` taken from an untyped (`any`) value cannot be followed by type:
@@ -322,10 +360,10 @@ function bindsUntyped(
 // statically (`const { env } = require("node:process")`,
 // `({ a: { env } } = v)`, `for ({ env } of values)`).
 function isEnvOfUntyped(checker: ts.TypeChecker, node: ts.Node): boolean {
-  if (ts.isObjectBindingPattern(node)) {
-    return mayTakeEnv(node) && bindsUntyped(checker, node);
-  }
-  if (ts.isObjectLiteralExpression(node) && isAssignmentTarget(node)) {
+  if (
+    ts.isObjectBindingPattern(node) ||
+    (ts.isObjectLiteralExpression(node) && isAssignmentTarget(node))
+  ) {
     return mayTakeEnv(node) && receivesUntyped(checker, node);
   }
   const owner = envOwnerOf(node);
