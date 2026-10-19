@@ -7,7 +7,7 @@ const CONTENT_TRUNCATE_LENGTH = 30;
 
 // The ellipsis stays outside the quotes so that the quoted part is always
 // literal content. Counting code points keeps surrogate pairs whole.
-function formatTruncated(text: string, maxLength: number): string {
+function formatContentPreview(text: string, maxLength: number): string {
   const codePoints = Array.from(text);
   if (codePoints.length <= maxLength) return formatValue(text);
   return `${formatValue(codePoints.slice(0, maxLength).join(""))}...`;
@@ -23,7 +23,7 @@ function compareConfigs(
     entries.push({
       type: "modified",
       field: "content",
-      details: `${formatTruncated(remote.content, CONTENT_TRUNCATE_LENGTH)} -> ${formatTruncated(local.content, CONTENT_TRUNCATE_LENGTH)}`,
+      details: `${formatContentPreview(remote.content, CONTENT_TRUNCATE_LENGTH)} -> ${formatContentPreview(local.content, CONTENT_TRUNCATE_LENGTH)}`,
     });
   }
 
