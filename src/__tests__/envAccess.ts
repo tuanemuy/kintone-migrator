@@ -168,42 +168,149 @@ function envOwnerOf(node: ts.Node): ts.Expression | undefined {
   return undefined;
 }
 
-function mayTakeEnv(keys: readonly (string | undefined)[]): boolean {
+function isAny(type: ts.Type): boolean {
+  return (type.flags & ts.TypeFlags.Any) !== 0;
+}
+
+// Whether a destructuring names `env` or a key not known statically. A rest
+// element (`...rest`) takes only the keys not named elsewhere.
+function mayTakeEnv(
+  pattern: ts.ObjectBindingPattern | ts.ObjectLiteralExpression,
+): boolean {
+  const keys = ts.isObjectBindingPattern(pattern)
+    ? pattern.elements
+        .filter((element) => element.dotDotDotToken === undefined)
+        .map((element) => propertyKeyOf(element.propertyName ?? element.name))
+    : pattern.properties.flatMap((property) =>
+        ts.isSpreadAssignment(property) ? [] : [propertyKeyOf(property.name)],
+      );
   return keys.some((key) => key === undefined || key === "env");
 }
 
-// The value that `env` may be taken from: the owner of `.env` / `["env"]`, or
-// the source of a destructuring that names `env` or a key not known statically
-// (`const { env } = v`, `function f({ env }: T)`, `({ env } = v)`).
-function envSourceOf(node: ts.Node): ts.Node | undefined {
-  if (ts.isObjectBindingPattern(node)) {
-    const keys = node.elements
-      .filter((element) => element.dotDotDotToken === undefined)
-      .map((element) => propertyKeyOf(element.propertyName ?? element.name));
-    return mayTakeEnv(keys) ? node : undefined;
-  }
-  if (
+function isAssignment(node: ts.Node): node is ts.BinaryExpression {
+  return (
     ts.isBinaryExpression(node) &&
-    node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
-    ts.isObjectLiteralExpression(node.left)
-  ) {
-    const keys = node.left.properties.flatMap((property) =>
-      ts.isSpreadAssignment(property) ? [] : [propertyKeyOf(property.name)],
-    );
-    return mayTakeEnv(keys) ? node.right : undefined;
-  }
-  return envOwnerOf(node);
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+  );
 }
 
-// `env` taken from an untyped (`any`) value, such as
-// `require("node:process").env` or `const { env } = require("node:process")`,
-// cannot be followed by type.
-function isEnvOfUntyped(checker: ts.TypeChecker, node: ts.Node): boolean {
-  const source = envSourceOf(node);
+// Whether `node` receives a value by destructuring assignment: the left side
+// of `=` (including an element with a default, `{ a: target = fallback }`),
+// the head of `for (target of values)`, or an element of such a target.
+function isAssignmentTarget(node: ts.Node): boolean {
+  const { parent } = node;
+  if (isAssignment(parent)) return parent.left === node;
+  if (ts.isForOfStatement(parent)) return parent.initializer === node;
+  if (ts.isPropertyAssignment(parent)) return isAssignmentTarget(parent.parent);
+  if (ts.isArrayLiteralExpression(parent) || ts.isSpreadElement(parent)) {
+    return isAssignmentTarget(parent);
+  }
+  return false;
+}
+
+function concatTypes(
+  lists: readonly (readonly ts.Type[] | undefined)[],
+): readonly ts.Type[] | undefined {
+  return lists.every((list): list is readonly ts.Type[] => list !== undefined)
+    ? lists.flat()
+    : undefined;
+}
+
+// The types the member `key` of a `type` value may have, or `undefined` when
+// they cannot be determined. A key not known statically may take any member.
+function memberTypes(
+  checker: ts.TypeChecker,
+  type: ts.Type,
+  key: string | undefined,
+): readonly ts.Type[] | undefined {
+  const value = checker.getNonNullableType(type);
+  if (isAny(value)) return [value];
+  if (value.isUnion()) {
+    return concatTypes(
+      value.types.map((member) => memberTypes(checker, member, key)),
+    );
+  }
+  const property = key === undefined ? undefined : value.getProperty(key);
+  if (property !== undefined) return [checker.getTypeOfSymbol(property)];
+  const indexTypes = checker
+    .getIndexInfosOfType(value)
+    .map((info) => info.type);
+  if (key === undefined) {
+    return [
+      ...checker
+        .getPropertiesOfType(value)
+        .map((member) => checker.getTypeOfSymbol(member)),
+      ...indexTypes,
+    ];
+  }
+  return indexTypes.length > 0 ? indexTypes : undefined;
+}
+
+function memberTypesOf(
+  checker: ts.TypeChecker,
+  container: ts.Node,
+  key: string | undefined,
+): readonly ts.Type[] | undefined {
+  const containerTypes = assignedTypes(checker, container);
   return (
-    source !== undefined &&
-    (checker.getTypeAtLocation(source).flags & ts.TypeFlags.Any) !== 0
+    containerTypes &&
+    concatTypes(containerTypes.map((type) => memberTypes(checker, type, key)))
   );
+}
+
+// The types of the values a destructuring assignment target may receive, or
+// `undefined` when they cannot be determined statically. An element with a
+// default receives either the destructured value or the default.
+// `getTypeOfAssignmentPattern` is not used past the head of `for ... of`
+// because it gives only the default's type for such an element.
+function assignedTypes(
+  checker: ts.TypeChecker,
+  target: ts.Node,
+): readonly ts.Type[] | undefined {
+  const { parent } = target;
+  if (isAssignment(parent)) {
+    const right = checker.getTypeAtLocation(parent.right);
+    if (!isAssignmentTarget(parent)) return [right];
+    return concatTypes([assignedTypes(checker, parent), [right]]);
+  }
+  if (
+    ts.isForOfStatement(parent) &&
+    (ts.isObjectLiteralExpression(target) ||
+      ts.isArrayLiteralExpression(target))
+  ) {
+    return [checker.getTypeOfAssignmentPattern(target)];
+  }
+  if (ts.isPropertyAssignment(parent)) {
+    return memberTypesOf(checker, parent.parent, propertyKeyOf(parent.name));
+  }
+  if (ts.isArrayLiteralExpression(parent) && ts.isExpression(target)) {
+    const index = parent.elements.indexOf(target);
+    return memberTypesOf(checker, parent, String(index));
+  }
+  return undefined;
+}
+
+// A destructuring assignment target whose value types cannot be determined
+// counts as untyped, so the guard fails rather than misses it.
+function receivesUntyped(checker: ts.TypeChecker, target: ts.Node): boolean {
+  const types = assignedTypes(checker, target);
+  return types === undefined || types.some(isAny);
+}
+
+// `env` taken from an untyped (`any`) value cannot be followed by type:
+// `.env` / `["env"]` of such a value (`require("node:process").env`), or a
+// destructuring of such a value that names `env` or a key not known
+// statically (`const { env } = require("node:process")`,
+// `({ a: { env } } = v)`, `for ({ env } of values)`).
+function isEnvOfUntyped(checker: ts.TypeChecker, node: ts.Node): boolean {
+  if (ts.isObjectBindingPattern(node)) {
+    return mayTakeEnv(node) && isAny(checker.getTypeAtLocation(node));
+  }
+  if (ts.isObjectLiteralExpression(node) && isAssignmentTarget(node)) {
+    return mayTakeEnv(node) && receivesUntyped(checker, node);
+  }
+  const owner = envOwnerOf(node);
+  return owner !== undefined && isAny(checker.getTypeAtLocation(owner));
 }
 
 function useOf(checker: ts.TypeChecker, node: ts.Node): Use | undefined {
@@ -219,7 +326,7 @@ function useOf(checker: ts.TypeChecker, node: ts.Node): Use | undefined {
  * by its type through aliases, destructuring and `node:process` imports. A use
  * that does not keep that type (a widening annotation, a call argument, a
  * spread, a dynamic key, optional chaining) is reported as unnamed, and so is
- * `.env` taken from an `any` value.
+ * `env` taken from an `any` value by access or destructuring.
  */
 export function collectEnvAccess(
   program: ts.Program,

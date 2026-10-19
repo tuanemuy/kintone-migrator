@@ -149,6 +149,66 @@ describe("collectEnvAccess", () => {
       "declare const p: any;\nlet env: any;\n({ env } = p);\nexport const x = env;",
     ],
     [
+      "any の値からのネストした分割代入式",
+      "declare const g: any;\nlet env: unknown;\n({ process: { env } } = g);\nexport const x = env;",
+    ],
+    [
+      "型の付いた値の any のプロパティからの分割代入式",
+      "declare const t: { a: any };\nlet env: unknown;\n({ a: { env } } = t);\nexport const x = env;",
+    ],
+    [
+      "計算されたキーで any のプロパティを選ぶ分割代入式",
+      'declare const t: { a: any; b: number };\ndeclare const k: "a" | "b";\nlet env: unknown;\n({ [k]: { env } } = t);\nexport const x = env;',
+    ],
+    [
+      "計算されたキーで union の片側にだけある any のプロパティを選ぶ分割代入式",
+      'declare const v: { a: any } | { b: number };\ndeclare const k: "a" | "b";\nlet env: unknown;\n({ [k]: { env } } = v);\nexport const x = env;',
+    ],
+    [
+      "any の値からの計算されたキーの分割代入式",
+      "declare const g: any;\ndeclare const k: string;\nlet e: unknown;\n({ [k]: e } = g);\nexport const x = e;",
+    ],
+    [
+      "残余要素の内側の分割代入式",
+      "declare const ps: any[];\nlet env: unknown;\n[...[{ env }]] = ps;\nexport const x = env;",
+    ],
+    [
+      "any の配列の要素からの分割代入式",
+      "declare const ps: any[];\nlet env: unknown;\n[{ env }] = ps;\nexport const x = env;",
+    ],
+    [
+      "for-of の頭での分割代入",
+      "declare const ps: any[];\nlet env: unknown;\nfor ({ env } of ps) {}\nexport const x = env;",
+    ],
+    [
+      "for-of の頭でのネストした分割代入",
+      "declare const rows: { a: any }[];\nlet env: unknown;\nfor ({ a: { env } } of rows) {}\nexport const x = env;",
+    ],
+    [
+      "元の値が any で既定値の付いた分割代入式",
+      "declare const t: { a: any };\nlet env: unknown;\n({ a: { env } = { env: 1 } } = t);\nexport const x = env;",
+    ],
+    [
+      "既定値が any の分割代入式",
+      "declare const t: { a?: { env: number } };\ndeclare const d: any;\nlet env: unknown;\n({ a: { env } = d } = t);\nexport const x = env;",
+    ],
+    [
+      "既定値の付いた要素の内側の分割代入式",
+      "declare const t: { a: any };\nlet env: unknown;\n({ a: { b: { env } } = { b: { env: 1 } } } = t);\nexport const x = env;",
+    ],
+    [
+      "既定値の付いた配列の要素からの分割代入式",
+      "declare const t: [any];\nlet env: unknown;\n[{ env } = { env: 1 }] = t;\nexport const x = env;",
+    ],
+    [
+      "既定値の付いた宣言の分割代入",
+      "declare const t: { a: any };\nconst { a: { env } = { env: 1 } } = t;\nexport const x = env;",
+    ],
+    [
+      "要素の型が静的に決まらない分割代入式",
+      "declare const s: Set<{ env: number }>;\nlet env: unknown;\n[{ env }] = s;\nexport const x = env;",
+    ],
+    [
       "require からの取り出し",
       'export const x = require("node:process").env.FOO;',
     ],
@@ -217,6 +277,36 @@ describe("collectEnvAccess", () => {
     expect(
       collectFromSource(
         'const config = { env: { FOO: "x" } };\nconst { env } = config;\nexport const x = env.FOO;',
+      ),
+    ).toEqual({ names: [], unnamedCount: 0 });
+  });
+
+  it("型の付いた値から env を分割代入式で取り出しても、process と無関係なら集めない", () => {
+    expect(
+      collectFromSource(
+        [
+          "declare const t: {",
+          "  a?: { env: number };",
+          "  b: { env: string }[];",
+          "  c: [{ env: number }, any];",
+          "  d: any;",
+          "  e?: { f: { env: number } };",
+          "};",
+          'declare const k: "a" | "c";',
+          "let env: unknown;",
+          "let o: unknown;",
+          "({ a: { env } } = { a: { env: 1 } });",
+          "({ a: { env } = { env: 2 } } = t);",
+          "({ [k]: { env } = { env: 3 } } = { a: { env: 4 }, c: { env: 5 } });",
+          "({ e: { f: { env } } } = t);",
+          "for ({ env } of t.b) {}",
+          "for (const row of [{ env: t.d }]) {}",
+          "[{ env }] = t.b;",
+          "[{ env } = { env: 6 }] = t.c;",
+          "({ b: [{ env }] } = t);",
+          "o = { [k]: { env: 7 }, d: t.d };",
+          "export { env, o };",
+        ].join("\n"),
       ),
     ).toEqual({ names: [], unnamedCount: 0 });
   });
