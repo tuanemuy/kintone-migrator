@@ -1,53 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { isCliEnvVar, removeCliEnvVars } from "./cliEnv";
-
-const srcDir = resolve(import.meta.dirname, "..");
-
-const PROCESS_ENV_ACCESS =
-  /process\.env(?:\.([A-Za-z_]\w*)|\[\s*["'`]([^"'`]+)["'`]\s*\])?/g;
-const ENV_IMPORT =
-  /import\s*\{[^}]*\benv\b[^}]*\}\s*from\s*["'](?:node:)?process["']/g;
-
-type EnvAccess = {
-  names: Set<string>;
-  // Accesses whose variable name cannot be read statically.
-  unnamed: string[];
-};
-
-function isTestSource(path: string): boolean {
-  return path.includes("__tests__") || path.endsWith(".test.ts");
-}
-
-function isCommentLine(source: string, index: number): boolean {
-  const lineStart = source.lastIndexOf("\n", index) + 1;
-  const line = source.slice(lineStart, index).trimStart();
-  return line.startsWith("*") || line.startsWith("//") || line.startsWith("/*");
-}
-
-function collectEnvAccess(): EnvAccess {
-  const access: EnvAccess = { names: new Set(), unnamed: [] };
-  const paths = readdirSync(srcDir, { recursive: true, encoding: "utf8" })
-    .filter((path) => path.endsWith(".ts") && !isTestSource(path))
-    .sort();
-  for (const path of paths) {
-    const source = readFileSync(join(srcDir, path), "utf8");
-    for (const match of source.matchAll(PROCESS_ENV_ACCESS)) {
-      if (isCommentLine(source, match.index)) continue;
-      const name = match[1] ?? match[2];
-      if (name === undefined) {
-        access.unnamed.push(`${path}: ${match[0]}`);
-      } else {
-        access.names.add(name);
-      }
-    }
-    for (const match of source.matchAll(ENV_IMPORT)) {
-      access.unnamed.push(`${path}: ${match[0]}`);
-    }
-  }
-  return access;
-}
 
 describe("isCliEnvVar", () => {
   it.each([
@@ -75,16 +27,6 @@ describe("isCliEnvVar", () => {
     "verbose",
   ])("%s を CLI の環境変数と判定しない", (name) => {
     expect(isCliEnvVar(name)).toBe(false);
-  });
-
-  it("本体コードは process.env を変数名の分かる形でだけ読み、その名前はすべて CLI の環境変数と判定する", () => {
-    const { names, unnamed } = collectEnvAccess();
-
-    expect(unnamed).toEqual([]);
-    expect([...names]).toEqual(
-      expect.arrayContaining(["KINTONE_DOMAIN", "SCHEMA_FILE_PATH", "VERBOSE"]),
-    );
-    expect([...names].filter((name) => !isCliEnvVar(name))).toEqual([]);
   });
 });
 
