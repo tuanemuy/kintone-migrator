@@ -83,6 +83,47 @@ describe("collectEnvAccess", () => {
     ],
     ["動的キー", "export const f = (n: string) => process.env[n];"],
     [
+      "要素アクセスの optional chaining",
+      'export const x = process.env?.["FOO"];',
+    ],
+    [
+      "型注釈で広げた process.env の別名",
+      "const e: Record<string, string | undefined> = process.env;\nexport const x = e.FOO;",
+    ],
+    [
+      "別名を経由して型注釈で広げた代入",
+      "const e = process.env;\nconst e2: Record<string, string | undefined> = e;\nexport const x = e2.FOO;",
+    ],
+    [
+      "型注釈で広げた process の別名",
+      "const p: { env: Record<string, string | undefined> } = process;\nexport const x = p.env.FOO;",
+    ],
+    [
+      "型注釈で広げた process からの分割代入",
+      "const { env }: { env: Record<string, string | undefined> } = process;\nexport const x = env.FOO;",
+    ],
+    [
+      "型注釈で広げた namespace import の別名",
+      'import * as p from "node:process";\nconst q: { env: Record<string, string | undefined> } = p;\nexport const x = q.env.FOO;',
+    ],
+    [
+      "型アサーション",
+      "export const x = (process.env as Record<string, string | undefined>).FOO;",
+    ],
+    ["process の残余の分割代入", "export const { ...rest } = process;"],
+    [
+      "process の計算されたプロパティ名の分割代入",
+      'const k = "env" as const;\nconst { [k]: e } = process;\nexport const x = e.FOO;',
+    ],
+    [
+      "process の動的キー",
+      'export const f = (k: "env" | "argv") => process[k];',
+    ],
+    [
+      "process の受け渡し",
+      "declare function f(p: unknown): void;\nf(process);",
+    ],
+    [
       "関数への受け渡し",
       "declare function f(e: unknown): void;\nf(process.env);",
     ],
@@ -111,6 +152,14 @@ describe("collectEnvAccess", () => {
     expect(
       collectFromSource(
         "export type E = NodeJS.ProcessEnv;\nexport type V = typeof process.env;",
+      ),
+    ).toEqual({ names: [], unnamedCount: 0 });
+  });
+
+  it("process の env 以外のプロパティは集めない", () => {
+    expect(
+      collectFromSource(
+        'export const cwd = process.cwd();\nexport const argv = process["argv"];\nconst { exit } = process;\nexport { exit };',
       ),
     ).toEqual({ names: [], unnamedCount: 0 });
   });
