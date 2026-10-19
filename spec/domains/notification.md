@@ -187,7 +187,7 @@ interface NotificationConfigurator {
 ```
 
 - `getGeneralNotifications()` / `getPerRecordNotifications()` / `getReminderNotifications()` は現在の通知設定をドメイン型に変換し、楽観ロック用の `revision` とともに返す
-- `getReminderNotifications()` は kintone の `timezone` が `null` または空文字なら `timezone` を省略して返す
+- `getReminderNotifications()` は kintone の `timezone` が `null` または空文字なら `timezone` を省略して返す。文字列でも `null` でもない値が返った場合は `SystemError(EXTERNAL_API_ERROR)` をスローする
 - `updateReminderNotifications()` は `timezone` が省略されていれば `timezone` パラメータを送らない
 - `updateGeneralNotifications()` / `updatePerRecordNotifications()` / `updateReminderNotifications()` は対応する通知設定を更新する。`revision` を渡すと楽観的同時実行制御を行い、省略すると強制書き込みになる。更新後の `revision` を返す
 - API通信に失敗した場合は `SystemError` をスローする

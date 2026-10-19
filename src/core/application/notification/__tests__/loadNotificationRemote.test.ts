@@ -12,10 +12,14 @@ describe("loadNotificationRemote", () => {
       notifications: [],
       revision: "7",
     });
+    container.notificationConfigurator.setPerRecordNotifications({
+      notifications: [],
+      revision: "8",
+    });
     container.notificationConfigurator.setReminderNotifications({
       timezone: "UTC",
       notifications: [],
-      revision: "7",
+      revision: "9",
     });
 
     const remote = await loadNotificationRemote(container);

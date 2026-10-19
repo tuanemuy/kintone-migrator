@@ -1,6 +1,6 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { describe, expect, it, vi } from "vitest";
-import { SystemError } from "@/core/application/error";
+import { SystemErrorCode } from "@/core/application/error";
 import { KintoneNotificationConfigurator } from "../notificationConfigurator";
 
 function createMockClient(app: Record<string, unknown>) {
@@ -34,7 +34,7 @@ describe("KintoneNotificationConfigurator", () => {
       const configurator = new KintoneNotificationConfigurator(client, "1");
 
       await expect(configurator.getReminderNotifications()).rejects.toThrow(
-        SystemError,
+        expect.objectContaining({ code: SystemErrorCode.ExternalApiError }),
       );
     });
 
