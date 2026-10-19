@@ -10,3 +10,16 @@ export function isCliEnvVar(name: string): boolean {
     name === "VERBOSE"
   );
 }
+
+/**
+ * Deletes the CLI's environment variables from `env`, leaving the others.
+ * Deleted directly rather than via `vi.stubEnv`, because `vi.unstubAllEnvs()`
+ * would restore the deleted values.
+ */
+export function removeCliEnvVars(env: NodeJS.ProcessEnv): void {
+  for (const name of Object.keys(env)) {
+    if (isCliEnvVar(name)) {
+      delete env[name];
+    }
+  }
+}

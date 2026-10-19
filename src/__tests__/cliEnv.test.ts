@@ -1,27 +1,52 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { isCliEnvVar } from "./cliEnv";
+import { isCliEnvVar, removeCliEnvVars } from "./cliEnv";
 
 const srcDir = resolve(import.meta.dirname, "..");
+
+const PROCESS_ENV_ACCESS =
+  /process\.env(?:\.([A-Za-z_]\w*)|\[\s*["'`]([^"'`]+)["'`]\s*\])?/g;
+const ENV_IMPORT =
+  /import\s*\{[^}]*\benv\b[^}]*\}\s*from\s*["'](?:node:)?process["']/g;
+
+type EnvAccess = {
+  names: Set<string>;
+  // Accesses whose variable name cannot be read statically.
+  unnamed: string[];
+};
 
 function isTestSource(path: string): boolean {
   return path.includes("__tests__") || path.endsWith(".test.ts");
 }
 
-function envNamesReadBySource(): Set<string> {
-  const names = new Set<string>();
-  const files = readdirSync(srcDir, { recursive: true, encoding: "utf8" })
+function isCommentLine(source: string, index: number): boolean {
+  const lineStart = source.lastIndexOf("\n", index) + 1;
+  const line = source.slice(lineStart, index).trimStart();
+  return line.startsWith("*") || line.startsWith("//") || line.startsWith("/*");
+}
+
+function collectEnvAccess(): EnvAccess {
+  const access: EnvAccess = { names: new Set(), unnamed: [] };
+  const paths = readdirSync(srcDir, { recursive: true, encoding: "utf8" })
     .filter((path) => path.endsWith(".ts") && !isTestSource(path))
-    .map((path) => readFileSync(join(srcDir, path), "utf8"));
-  for (const source of files) {
-    for (const match of source.matchAll(
-      /process\.env(?:\.([A-Za-z_]\w*)|\[\s*["'`]([^"'`]+)["'`]\s*\])/g,
-    )) {
-      names.add(match[1] ?? match[2]);
+    .sort();
+  for (const path of paths) {
+    const source = readFileSync(join(srcDir, path), "utf8");
+    for (const match of source.matchAll(PROCESS_ENV_ACCESS)) {
+      if (isCommentLine(source, match.index)) continue;
+      const name = match[1] ?? match[2];
+      if (name === undefined) {
+        access.unnamed.push(`${path}: ${match[0]}`);
+      } else {
+        access.names.add(name);
+      }
+    }
+    for (const match of source.matchAll(ENV_IMPORT)) {
+      access.unnamed.push(`${path}: ${match[0]}`);
     }
   }
-  return names;
+  return access;
 }
 
 describe("isCliEnvVar", () => {
@@ -52,13 +77,44 @@ describe("isCliEnvVar", () => {
     expect(isCliEnvVar(name)).toBe(false);
   });
 
-  it("本体コードが process.env から読む名前をすべて CLI の環境変数と判定する", () => {
-    const names = [...envNamesReadBySource()];
+  it("本体コードは process.env を変数名の分かる形でだけ読み、その名前はすべて CLI の環境変数と判定する", () => {
+    const { names, unnamed } = collectEnvAccess();
 
-    expect(names).toEqual(
+    expect(unnamed).toEqual([]);
+    expect([...names]).toEqual(
       expect.arrayContaining(["KINTONE_DOMAIN", "SCHEMA_FILE_PATH", "VERBOSE"]),
     );
-    expect(names.filter((name) => !isCliEnvVar(name))).toEqual([]);
+    expect([...names].filter((name) => !isCliEnvVar(name))).toEqual([]);
+  });
+});
+
+describe("removeCliEnvVars", () => {
+  it("CLI の環境変数だけを取り除き、それ以外を値ごと残す", () => {
+    const env: NodeJS.ProcessEnv = {
+      KINTONE_DOMAIN: "host.cybozu.com",
+      KINTONE_PASSWORD: "",
+      SCHEMA_FILE_PATH: "host-schema.yaml",
+      VERBOSE: "1",
+      PATH: "/usr/bin",
+      HOME: "/home/user",
+      VERBOSE_X: "x",
+    };
+
+    removeCliEnvVars(env);
+
+    expect(env).toStrictEqual({
+      PATH: "/usr/bin",
+      HOME: "/home/user",
+      VERBOSE_X: "x",
+    });
+  });
+
+  it("CLI の環境変数が無い場合は何も変えない", () => {
+    const env: NodeJS.ProcessEnv = { PATH: "/usr/bin" };
+
+    removeCliEnvVars(env);
+
+    expect(env).toStrictEqual({ PATH: "/usr/bin" });
   });
 });
 
