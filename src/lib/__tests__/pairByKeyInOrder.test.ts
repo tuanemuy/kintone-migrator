@@ -48,6 +48,17 @@ describe("pairByKeyInOrder", () => {
     ]);
   });
 
+  it("returns remote-only keys in remote first-appearance order", () => {
+    const result = pairByKeyInOrder(["a1"], ["d1", "c1", "a2", "d2"], keyOf);
+
+    expect(result).toEqual([
+      { kind: "both", key: "a", index: 0, local: "a1", remote: "a2" },
+      { kind: "remoteOnly", key: "d", index: 0, remote: "d1" },
+      { kind: "remoteOnly", key: "d", index: 1, remote: "d2" },
+      { kind: "remoteOnly", key: "c", index: 0, remote: "c1" },
+    ]);
+  });
+
   it("returns no pairs for empty inputs", () => {
     expect(pairByKeyInOrder([], [], keyOf)).toEqual([]);
   });
