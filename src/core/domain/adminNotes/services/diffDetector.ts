@@ -1,4 +1,5 @@
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type { AdminNotesConfig } from "../entity";
 import type { AdminNotesDiff, AdminNotesDiffEntry } from "../valueObject";
 
@@ -19,7 +20,7 @@ function compareConfigs(
     entries.push({
       type: "modified",
       field: "content",
-      details: `"${truncate(remote.content, CONTENT_TRUNCATE_LENGTH)}" -> "${truncate(local.content, CONTENT_TRUNCATE_LENGTH)}"`,
+      details: `${formatValue(truncate(remote.content, CONTENT_TRUNCATE_LENGTH))} -> ${formatValue(truncate(local.content, CONTENT_TRUNCATE_LENGTH))}`,
     });
   }
 

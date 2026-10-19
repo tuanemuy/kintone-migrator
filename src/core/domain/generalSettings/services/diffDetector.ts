@@ -31,7 +31,9 @@ function compareConfigs(
       entries.push({
         type: "modified",
         field,
-        details: suppressValues ? `${field} changed` : `"${rv}" -> "${lv}"`,
+        details: suppressValues
+          ? `${field} changed`
+          : `${formatValue(rv)} -> ${formatValue(lv)}`,
       });
     }
   }

@@ -116,7 +116,9 @@ function describePerRecordChanges(
 ): string {
   const diffs: string[] = [];
   if (local.title !== remote.title)
-    diffs.push(`title: "${remote.title}" -> "${local.title}"`);
+    diffs.push(
+      `title: ${formatValue(remote.title)} -> ${formatValue(local.title)}`,
+    );
   // filterCond is the grouping key — matched pairs always share the same value.
   if (!deepEqual(local.targets, remote.targets))
     diffs.push(
@@ -135,7 +137,9 @@ function describeReminderChanges(
   const diffs: string[] = [];
   // code is the Map key — matched pairs always share the same value.
   if (local.title !== remote.title)
-    diffs.push(`title: "${remote.title}" -> "${local.title}"`);
+    diffs.push(
+      `title: ${formatValue(remote.title)} -> ${formatValue(local.title)}`,
+    );
   if (local.daysLater !== remote.daysLater)
     diffs.push(`daysLater: ${remote.daysLater} -> ${local.daysLater}`);
   if ((local.hoursLater ?? 0) !== (remote.hoursLater ?? 0))
@@ -143,9 +147,13 @@ function describeReminderChanges(
       `hoursLater: ${remote.hoursLater ?? 0} -> ${local.hoursLater ?? 0}`,
     );
   if ((local.time ?? "") !== (remote.time ?? ""))
-    diffs.push(`time: "${remote.time ?? ""}" -> "${local.time ?? ""}"`);
+    diffs.push(
+      `time: ${formatValue(remote.time ?? "")} -> ${formatValue(local.time ?? "")}`,
+    );
   if (local.filterCond !== remote.filterCond)
-    diffs.push(`filterCond: "${remote.filterCond}" -> "${local.filterCond}"`);
+    diffs.push(
+      `filterCond: ${formatValue(remote.filterCond)} -> ${formatValue(local.filterCond)}`,
+    );
   if (!deepEqual(local.targets, remote.targets))
     diffs.push(
       `targets: ${formatValue(remote.targets)} -> ${formatValue(local.targets)}`,
@@ -211,7 +219,7 @@ function compareReminderSection(
         type: "added",
         section: "reminder",
         name: code,
-        details: `"${localNotif.title}"`,
+        details: formatValue(localNotif.title),
       });
     } else if (!deepEqual(localNotif, remoteNotif)) {
       entries.push({

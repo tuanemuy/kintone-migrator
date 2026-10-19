@@ -443,7 +443,8 @@ actions: []
           type: "modified",
           category: "action",
           name: "承認 (一次承認待ち → 最終承認待ち) #2",
-          details: 'filterCond: "部署 in ("開発")" -> "部署 in ("人事")"',
+          details:
+            'filterCond: "部署 in (\\"開発\\")" -> "部署 in (\\"人事\\")"',
         },
       ]);
     });

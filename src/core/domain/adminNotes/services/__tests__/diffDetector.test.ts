@@ -36,6 +36,17 @@ describe("AdminNotesDiffDetector", () => {
       expect(result.entries[0].details).toContain('"new content"');
     });
 
+    it("should truncate content to 30 characters before escaping it", () => {
+      const local = makeConfig({
+        content: '<p class="memo">管理者向けのメモです。内容は長いです。</p>',
+      });
+      const remote = makeConfig({ content: 'a "b"\nc' });
+      const result = AdminNotesDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        '"a \\"b\\"\\nc" -> "<p class=\\"memo\\">管理者向けのメモです。内容は..."',
+      );
+    });
+
     it("should detect includeInTemplateAndDuplicates change", () => {
       const local = makeConfig({ includeInTemplateAndDuplicates: true });
       const remote = makeConfig({ includeInTemplateAndDuplicates: false });

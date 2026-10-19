@@ -152,6 +152,48 @@ describe("ViewDiffDetector", () => {
       );
     });
 
+    it("should escape double quotes in filterCond", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "LIST",
+          name: "view1",
+          filterCond: '部署 in ("人事")',
+        }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "LIST",
+          name: "view1",
+          filterCond: '部署 in ("開発")',
+        }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries[0].details).toBe(
+        'filterCond: "部署 in (\\"開発\\")" -> "部署 in (\\"人事\\")"',
+      );
+    });
+
+    it("should escape newlines, backslashes and double quotes in html so each value stays on one line", () => {
+      const local: Record<string, ViewConfig> = {
+        view1: makeView({
+          type: "CUSTOM",
+          name: "view1",
+          html: '<div class="a">\n  C:\\new\n</div>',
+        }),
+      };
+      const remote: Record<string, ViewConfig> = {
+        view1: makeView({ type: "CUSTOM", name: "view1", html: "<div></div>" }),
+      };
+
+      const result = ViewDiffDetector.detect(local, remote);
+
+      expect(result.entries[0].details).toBe(
+        'html: "<div></div>" -> "<div class=\\"a\\">\\n  C:\\\\new\\n</div>"',
+      );
+    });
+
     it("should detect pager change", () => {
       const local: Record<string, ViewConfig> = {
         view1: makeView({ type: "CUSTOM", name: "view1", pager: true }),

@@ -17,7 +17,9 @@ function compareActions(local: ActionConfig, remote: ActionConfig): string[] {
     );
   }
   if (local.filterCond !== remote.filterCond) {
-    diffs.push(`filterCond: "${remote.filterCond}" -> "${local.filterCond}"`);
+    diffs.push(
+      `filterCond: ${formatValue(remote.filterCond)} -> ${formatValue(local.filterCond)}`,
+    );
   }
   if (!deepEqual(local.mappings, remote.mappings)) {
     diffs.push(

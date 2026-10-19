@@ -40,6 +40,12 @@ describe("PluginDiffDetector", () => {
       expect(result.entries[0].pluginId).toBe("plugin1");
       expect(result.summary.added).toBe(1);
     });
+
+    it("should escape double quotes in the name of an added plugin", () => {
+      const local = makeConfig([makePlugin({ name: '"Pro" Plugin' })]);
+      const result = PluginDiffDetector.detect(local, makeConfig());
+      expect(result.entries[0].details).toBe('"\\"Pro\\" Plugin"');
+    });
   });
 
   describe("deleted plugins", () => {
@@ -50,6 +56,12 @@ describe("PluginDiffDetector", () => {
       expect(result.entries[0].type).toBe("deleted");
       expect(result.entries[0].pluginId).toBe("plugin1");
       expect(result.summary.deleted).toBe(1);
+    });
+
+    it("should escape double quotes in the name of a deleted plugin", () => {
+      const remote = makeConfig([makePlugin({ name: '"Pro" Plugin' })]);
+      const result = PluginDiffDetector.detect(makeConfig(), remote);
+      expect(result.entries[0].details).toBe('"\\"Pro\\" Plugin"');
     });
   });
 
@@ -83,6 +95,15 @@ describe("PluginDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].details).toBe(
         'name: "Old Name" -> "New Name"\nenabled: true -> false',
+      );
+    });
+
+    it("should escape double quotes in a changed name", () => {
+      const local = makeConfig([makePlugin({ name: '"Pro" Plugin' })]);
+      const remote = makeConfig([makePlugin({ name: "Plugin" })]);
+      const result = PluginDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        'name: "Plugin" -> "\\"Pro\\" Plugin"',
       );
     });
   });
