@@ -209,6 +209,26 @@ describe("collectEnvAccess", () => {
       "declare const s: Set<{ env: number }>;\nlet env: unknown;\n[{ env }] = s;\nexport const x = env;",
     ],
     [
+      "型注釈の付いた宣言の any の初期化子からの分割代入",
+      "declare const p: any;\nconst { env }: { env: Record<string, string> } = p;\nexport const x = env.FOO;",
+    ],
+    [
+      "型注釈の付いた宣言の、any の初期化子から取り出す入れ子の分割代入",
+      "declare const p: any;\nconst { a: { env } }: { a: { env: Record<string, string> } } = p;\nexport const x = env.FOO;",
+    ],
+    [
+      "型注釈の付いた宣言の内側の any の既定値",
+      "declare const t: { a?: { env: Record<string, string> } };\ndeclare const d: any;\nconst { a: { env } = d }: { a?: { env: Record<string, string> } } = t;\nexport const x = env.FOO;",
+    ],
+    [
+      "型注釈の付いた引数の any の既定値",
+      "declare const d: any;\nexport function f({ env }: { env: Record<string, string> } = d) {\n  return env.FOO;\n}",
+    ],
+    [
+      "文脈から型の付く引数の any の既定値",
+      "declare function use(f: (o: { env: Record<string, string> }) => string): void;\ndeclare const d: any;\nuse(({ env } = d) => env.FOO);",
+    ],
+    [
       "require からの取り出し",
       'export const x = require("node:process").env.FOO;',
     ],
@@ -276,7 +296,7 @@ describe("collectEnvAccess", () => {
   it("型の付いた値から env を分割代入しても、process と無関係なら集めない", () => {
     expect(
       collectFromSource(
-        'const config = { env: { FOO: "x" } };\nconst { env } = config;\nexport const x = env.FOO;',
+        'const config = { env: { FOO: "x" } };\nconst { env } = config;\nconst { a: { env: e } = config }: { a?: { env: Record<string, string> } } = {};\nexport const f = ({ env: g } = config) => g.FOO;\nexport const x = env.FOO + e.FOO;',
       ),
     ).toEqual({ names: [], unnamedCount: 0 });
   });

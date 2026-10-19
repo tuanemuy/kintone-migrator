@@ -297,6 +297,25 @@ function receivesUntyped(checker: ts.TypeChecker, target: ts.Node): boolean {
   return types === undefined || types.some(isAny);
 }
 
+// Whether a binding pattern may take its value from an `any` value: its own
+// type, the value written after its `=` (an initializer or a default), or that
+// of an enclosing pattern. The value after `=` is checked separately because
+// TypeScript types the pattern by its annotation or context when there is one.
+function bindsUntyped(
+  checker: ts.TypeChecker,
+  pattern: ts.BindingPattern,
+): boolean {
+  if (isAny(checker.getTypeAtLocation(pattern))) return true;
+  const owner = pattern.parent;
+  if (
+    owner.initializer !== undefined &&
+    isAny(checker.getTypeAtLocation(owner.initializer))
+  ) {
+    return true;
+  }
+  return ts.isBindingElement(owner) && bindsUntyped(checker, owner.parent);
+}
+
 // `env` taken from an untyped (`any`) value cannot be followed by type:
 // `.env` / `["env"]` of such a value (`require("node:process").env`), or a
 // destructuring of such a value that names `env` or a key not known
@@ -304,7 +323,7 @@ function receivesUntyped(checker: ts.TypeChecker, target: ts.Node): boolean {
 // `({ a: { env } } = v)`, `for ({ env } of values)`).
 function isEnvOfUntyped(checker: ts.TypeChecker, node: ts.Node): boolean {
   if (ts.isObjectBindingPattern(node)) {
-    return mayTakeEnv(node) && isAny(checker.getTypeAtLocation(node));
+    return mayTakeEnv(node) && bindsUntyped(checker, node);
   }
   if (ts.isObjectLiteralExpression(node) && isAssignmentTarget(node)) {
     return mayTakeEnv(node) && receivesUntyped(checker, node);
