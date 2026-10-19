@@ -8,7 +8,10 @@ import type {
 } from "@/core/domain/notification/entity";
 import type { NotificationConfigurator } from "@/core/domain/notification/ports/notificationConfigurator";
 import type { NotificationEntity } from "@/core/domain/notification/valueObject";
-import { isNotificationEntityType } from "@/core/domain/notification/valueObject";
+import {
+  isNotificationEntityType,
+  normalizeReminderTimezone,
+} from "@/core/domain/notification/valueObject";
 import { parseKintoneIntegerField } from "./parseKintoneIntegerField";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -346,12 +349,17 @@ export class KintoneNotificationConfigurator
       ).map(fromKintoneReminderNotification);
 
       // kintone returns `null` for an app whose reminders were never saved.
-      const timezone: unknown = response.timezone;
+      const rawTimezone: unknown = response.timezone ?? null;
+      if (rawTimezone !== null && typeof rawTimezone !== "string") {
+        throw new SystemError(
+          SystemErrorCode.ExternalApiError,
+          `Unexpected reminder timezone from kintone API: ${String(rawTimezone)}`,
+        );
+      }
+      const timezone = normalizeReminderTimezone(rawTimezone);
 
       return {
-        ...(typeof timezone === "string" && timezone !== ""
-          ? { timezone }
-          : {}),
+        ...(timezone !== undefined ? { timezone } : {}),
         notifications,
         revision: response.revision as string,
       };

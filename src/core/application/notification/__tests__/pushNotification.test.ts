@@ -395,6 +395,30 @@ describe("pushNotification", () => {
       });
     });
 
+    it("takes the base timezone from the remote rather than the previous base when the local timezone is unset", async () => {
+      const container = getContainer();
+      const base = config({
+        reminder: { timezone: "UTC", notifications: [reminder()] },
+      });
+      const remote = config({
+        reminder: { timezone: "Asia/Tokyo", notifications: [reminder()] },
+      });
+      setBaseAndRemote(container, base, remote, "2");
+      setLocal(
+        container,
+        config({
+          reminder: { notifications: [reminder({ title: "local-changed" })] },
+        }),
+      );
+
+      await pushNotification({ container, input: {} });
+
+      expect(await savedBaseReminder(container)).toStrictEqual({
+        timezone: "Asia/Tokyo",
+        notifications: [reminder({ title: "local-changed" })],
+      });
+    });
+
     it("keeps the base timezone unset when both the local and the remote timezone are unset", async () => {
       const container = getContainer();
       const base = config({ reminder: { notifications: [reminder()] } });

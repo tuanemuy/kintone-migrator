@@ -305,6 +305,19 @@ describe("pullNotification", () => {
       });
     });
 
+    it("force does not write a timezone for an app whose timezone is unset", async () => {
+      const container = getContainer();
+      setBase(container, config(), "1");
+      setLocal(container, config());
+      setRemote(container, config({ reminder: { notifications: [] } }), "2");
+
+      await pullNotification({ container, input: { force: true } });
+
+      expect((await readLocal(container)).reminder).toStrictEqual({
+        notifications: [],
+      });
+    });
+
     it("keeps an unset local timezone unset even when the remote has one", async () => {
       const container = getContainer();
       const base = config({ reminder: { notifications: [] } });

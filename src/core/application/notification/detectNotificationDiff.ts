@@ -1,8 +1,8 @@
-import type { NotificationConfig } from "@/core/domain/notification/entity";
 import { NotificationDiffDetector } from "@/core/domain/notification/services/diffDetector";
 import type { NotificationDiff } from "@/core/domain/notification/valueObject";
 import type { NotificationDiffServiceArgs } from "../container/notification";
 import { ValidationError, ValidationErrorCode } from "../error";
+import { loadNotificationRemote } from "./loadNotificationRemote";
 import { parseNotificationConfigText } from "./parseConfig";
 
 export type { NotificationDiffEntry } from "@/core/domain/notification/valueObject";
@@ -10,13 +10,10 @@ export type { NotificationDiffEntry } from "@/core/domain/notification/valueObje
 export async function detectNotificationDiff({
   container,
 }: NotificationDiffServiceArgs): Promise<NotificationDiff> {
-  const [storageResult, generalResult, perRecordResult, reminderResult] =
-    await Promise.all([
-      container.notificationStorage.get(),
-      container.notificationConfigurator.getGeneralNotifications(),
-      container.notificationConfigurator.getPerRecordNotifications(),
-      container.notificationConfigurator.getReminderNotifications(),
-    ]);
+  const [storageResult, remote] = await Promise.all([
+    container.notificationStorage.get(),
+    loadNotificationRemote(container),
+  ]);
 
   if (!storageResult.exists) {
     throw new ValidationError(
@@ -29,20 +26,5 @@ export async function detectNotificationDiff({
     storageResult.content,
   );
 
-  // The kintone API always returns all three sections (general, perRecord, reminder)
-  // even when they are empty (empty arrays / default values). This matches the
-  // NotificationConfig shape and lets the detector compare sections consistently.
-  const remoteConfig: NotificationConfig = {
-    general: {
-      notifyToCommenter: generalResult.notifyToCommenter,
-      notifications: generalResult.notifications,
-    },
-    perRecord: perRecordResult.notifications,
-    reminder: {
-      timezone: reminderResult.timezone,
-      notifications: reminderResult.notifications,
-    },
-  };
-
-  return NotificationDiffDetector.detect(localConfig, remoteConfig);
+  return NotificationDiffDetector.detect(localConfig, remote.config);
 }

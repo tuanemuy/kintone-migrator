@@ -154,13 +154,15 @@ export type NotificationMergeEntry = ThreeWayEntry<string, unknown>;
  *   that live outside the keyed lists, so they are never dropped.
  *   `reminderTimezone` is absent when the local timezone is unset: an unset
  *   local timezone is not managed, so it is neither classified nor merged.
+ *   Within it, `null` stands for an unset base / remote timezone so that
+ *   `merged` stays defined for every non-conflict classification.
  * - `conflicts` / `hasConflict`: the union of conflicts across all of the above,
  *   each carrying a stable section-prefixed key for resolution.
  */
 export type NotificationThreeWayMerge = Readonly<{
   entries: readonly NotificationMergeEntry[];
   generalScalar: SingleThreeWayMerge<boolean>;
-  reminderTimezone?: SingleThreeWayMerge<string | undefined>;
+  reminderTimezone?: SingleThreeWayMerge<string | null>;
   conflicts: readonly { key: string }[];
   hasConflict: boolean;
 }>;
@@ -205,10 +207,10 @@ export function computeNotificationThreeWayMerge(
   );
   const reminderTimezone =
     local.reminder?.timezone !== undefined
-      ? computeSingleThreeWayMerge<string | undefined>(
-          base.reminder?.timezone,
+      ? computeSingleThreeWayMerge<string | null>(
+          base.reminder?.timezone ?? null,
           local.reminder.timezone,
-          remote.reminder?.timezone,
+          remote.reminder?.timezone ?? null,
           (a, b) => a === b,
         )
       : undefined;
@@ -224,7 +226,7 @@ export function computeNotificationThreeWayMerge(
     ...perRecord.conflicts.map((e) => ({ key: e.key })),
     ...reminder.conflicts.map((e) => ({ key: e.key })),
     ...scalarConflictKey(generalScalar, GENERAL_SCALAR_KEY),
-    ...(reminderTimezone
+    ...(reminderTimezone !== undefined
       ? scalarConflictKey(reminderTimezone, REMINDER_TIMEZONE_KEY)
       : []),
   ];
@@ -232,7 +234,7 @@ export function computeNotificationThreeWayMerge(
   return {
     entries,
     generalScalar,
-    ...(reminderTimezone ? { reminderTimezone } : {}),
+    ...(reminderTimezone !== undefined ? { reminderTimezone } : {}),
     conflicts,
     hasConflict: conflicts.length > 0,
   };
@@ -343,13 +345,14 @@ export function resolveNotificationMerge(
     resolution.get(GENERAL_SCALAR_KEY),
     NotificationErrorCode.NtUnresolvedConflict,
   );
-  const timezone = merge.reminderTimezone
-    ? resolveSingleMerge(
-        merge.reminderTimezone,
-        resolution.get(REMINDER_TIMEZONE_KEY),
-        NotificationErrorCode.NtUnresolvedConflict,
-      )
-    : undefined;
+  const timezone =
+    merge.reminderTimezone !== undefined
+      ? resolveSingleMerge(
+          merge.reminderTimezone,
+          resolution.get(REMINDER_TIMEZONE_KEY),
+          NotificationErrorCode.NtUnresolvedConflict,
+        )
+      : null;
 
   return {
     general: {
@@ -358,7 +361,7 @@ export function resolveNotificationMerge(
     },
     perRecord: collectPerRecordNotifications(merge.entries, resolution),
     reminder: {
-      ...(timezone !== undefined ? { timezone } : {}),
+      ...(timezone !== null ? { timezone } : {}),
       notifications: collectReminderNotifications(merge.entries, resolution),
     },
   };

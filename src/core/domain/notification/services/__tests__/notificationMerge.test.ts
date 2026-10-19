@@ -357,6 +357,31 @@ describe("resolveNotificationMerge", () => {
       );
     });
 
+    it("leaves the timezone unset on remoteOnly to an unset remote", () => {
+      const merge = computeNotificationThreeWayMerge(
+        config({ reminder: { timezone: "UTC", notifications: [] } }),
+        config({ reminder: { timezone: "UTC", notifications: [] } }),
+        config({ reminder: { notifications: [] } }),
+      );
+      expect(merge.reminderTimezone?.change.kind).toBe("remoteOnly");
+      expect(resolveNotificationMerge(merge, new Map()).reminder).toStrictEqual(
+        { notifications: [] },
+      );
+    });
+
+    it("leaves the timezone unset when a conflict takes an unset remote", () => {
+      const merge = computeNotificationThreeWayMerge(
+        config({ reminder: { timezone: "UTC", notifications: [] } }),
+        config({ reminder: { timezone: "Asia/Tokyo", notifications: [] } }),
+        config({ reminder: { notifications: [] } }),
+      );
+      const merged = resolveNotificationMerge(
+        merge,
+        new Map([["reminder:timezone", "remote"]]),
+      );
+      expect(merged.reminder).toStrictEqual({ notifications: [] });
+    });
+
     it.each([
       ["local", "UTC"],
       ["remote", "America/New_York"],

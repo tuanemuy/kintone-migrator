@@ -50,7 +50,10 @@ describe("detectNotificationDiff", () => {
       expect(result.summary.total).toBe(0);
     });
 
-    it("should detect no changes when the reminder timezone is null locally and unset remotely", async () => {
+    it.each([
+      ["null", "null"],
+      ["empty", '""'],
+    ])("should detect no changes when the reminder timezone is %s locally and unset remotely", async (_, yamlValue) => {
       const container = getContainer();
       container.notificationStorage.setContent(`
 general:
@@ -58,7 +61,7 @@ general:
   notifications: []
 perRecord: []
 reminder:
-  timezone: null
+  timezone: ${yamlValue}
   notifications: []
 `);
       container.notificationConfigurator.setReminderNotifications({

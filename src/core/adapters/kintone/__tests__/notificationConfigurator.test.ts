@@ -1,5 +1,6 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
 import { describe, expect, it, vi } from "vitest";
+import { SystemError } from "@/core/application/error";
 import { KintoneNotificationConfigurator } from "../notificationConfigurator";
 
 function createMockClient(app: Record<string, unknown>) {
@@ -22,6 +23,19 @@ describe("KintoneNotificationConfigurator", () => {
       const result = await configurator.getReminderNotifications();
 
       expect(result).toStrictEqual({ notifications: [], revision: "3" });
+    });
+
+    it("timezone が文字列でも null でもなければ SystemError をスローする", async () => {
+      const client = createMockClient({
+        getReminderNotifications: vi.fn(() =>
+          Promise.resolve({ timezone: 9, notifications: [], revision: "3" }),
+        ),
+      });
+      const configurator = new KintoneNotificationConfigurator(client, "1");
+
+      await expect(configurator.getReminderNotifications()).rejects.toThrow(
+        SystemError,
+      );
     });
 
     it("timezone が文字列ならそのまま返す", async () => {

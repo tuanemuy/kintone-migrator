@@ -1,7 +1,7 @@
-import type { NotificationConfig } from "@/core/domain/notification/entity";
 import { NotificationConfigSerializer } from "@/core/domain/notification/services/configSerializer";
 import type { NotificationServiceArgs } from "../container/notification";
 import { stringifyConfig } from "../stringifyConfig";
+import { loadNotificationRemote } from "./loadNotificationRemote";
 
 export type CaptureNotificationOutput = {
   readonly configText: string;
@@ -11,23 +11,7 @@ export type CaptureNotificationOutput = {
 export async function captureNotification({
   container,
 }: NotificationServiceArgs): Promise<CaptureNotificationOutput> {
-  const [general, perRecord, reminder] = await Promise.all([
-    container.notificationConfigurator.getGeneralNotifications(),
-    container.notificationConfigurator.getPerRecordNotifications(),
-    container.notificationConfigurator.getReminderNotifications(),
-  ]);
-
-  const config: NotificationConfig = {
-    general: {
-      notifyToCommenter: general.notifyToCommenter,
-      notifications: general.notifications,
-    },
-    perRecord: perRecord.notifications,
-    reminder: {
-      timezone: reminder.timezone,
-      notifications: reminder.notifications,
-    },
-  };
+  const { config } = await loadNotificationRemote(container);
 
   const configText = stringifyConfig(
     container.configCodec,

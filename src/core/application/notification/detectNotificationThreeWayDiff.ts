@@ -110,7 +110,7 @@ function buildThreeWay(
     conflicts,
     extras,
   );
-  if (merge.reminderTimezone) {
+  if (merge.reminderTimezone !== undefined) {
     pushScalar(
       merge.reminderTimezone,
       "reminder:timezone",

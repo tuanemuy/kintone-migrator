@@ -12,7 +12,10 @@ import type {
 } from "../entity";
 import { NotificationErrorCode } from "../errorCode";
 import type { NotificationEntity } from "../valueObject";
-import { isNotificationEntityType } from "../valueObject";
+import {
+  isNotificationEntityType,
+  normalizeReminderTimezone,
+} from "../valueObject";
 
 // kintone REST API が許容する daysLater/hoursLater の範囲（負値は基準日時より前を表す）
 const REMINDER_OFFSET_MIN = -10000;
@@ -294,23 +297,18 @@ function parseReminderConfig(raw: unknown): ReminderNotificationConfig {
     parseReminderNotification(item, i),
   );
 
-  if (
-    raw.timezone !== undefined &&
-    raw.timezone !== null &&
-    typeof raw.timezone !== "string"
-  ) {
+  const rawTimezone: unknown = raw.timezone ?? null;
+  if (rawTimezone !== null && typeof rawTimezone !== "string") {
     throw new BusinessRuleError(
       NotificationErrorCode.NtInvalidConfigStructure,
-      `"reminder" has non-string "timezone": ${String(raw.timezone)}`,
+      `"reminder" has non-string "timezone": ${String(rawTimezone)}`,
     );
   }
 
-  // null and "" mean unset, the same as omitting the key.
-  if (typeof raw.timezone === "string" && raw.timezone !== "") {
-    return { timezone: raw.timezone, notifications };
-  }
-
-  return { notifications };
+  const timezone = normalizeReminderTimezone(rawTimezone);
+  return timezone !== undefined
+    ? { timezone, notifications }
+    : { notifications };
 }
 
 export const NotificationConfigParser = {
