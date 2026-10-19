@@ -494,6 +494,39 @@ describe("KintoneFormConfigurator", () => {
       }
     });
 
+    it.each([
+      { app: "42", code: "" },
+      { app: "42", code: "CUSTOMERS" },
+    ])("REFERENCE_TABLE の relatedApp が %o のとき、ドメイン値は app だけを持つ", async (relatedApp) => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({
+            properties: {
+              related: {
+                type: "REFERENCE_TABLE",
+                code: "related",
+                label: "関連レコード",
+                referenceTable: {
+                  relatedApp,
+                  condition: { field: "key", relatedField: "rKey" },
+                  displayFields: ["col1"],
+                },
+              },
+            },
+          }),
+      });
+      const adapter = new KintoneFormConfigurator(client, APP_ID);
+      const fields = await adapter.getFields();
+
+      const field = fields.get("related" as FieldCode);
+      expect(field?.type).toBe("REFERENCE_TABLE");
+      if (field?.type === "REFERENCE_TABLE") {
+        expect(field.properties.referenceTable.relatedApp).toStrictEqual({
+          app: "42",
+        });
+      }
+    });
+
     it("RECORD_NUMBER や CREATOR 等のシステムフィールドは結果から除外される", async () => {
       const client = createMockClient({
         getFormFields: () =>

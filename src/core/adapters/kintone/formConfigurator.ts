@@ -234,7 +234,9 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
       type: "REFERENCE_TABLE",
       properties: {
         referenceTable: {
-          relatedApp: rt.relatedApp as { app: string },
+          // The API also returns `relatedApp.code` (the related app's app
+          // code), but the schema identifies the related app by ID only.
+          relatedApp: { app: rt.relatedApp.app },
           condition: {
             field: FieldCodeVO.create(condition.field),
             relatedField: FieldCodeVO.create(condition.relatedField),
