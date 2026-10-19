@@ -10,6 +10,7 @@ import { defineConfig } from "vite";
 export default defineConfig({
   test: {
     exclude: ["**/node_modules/**", "**/dist/**", "**/.direnv/**"],
+    setupFiles: ["./src/__tests__/setup.ts"],
     reporters: ["tree"],
     coverage: {
       provider: "v8",

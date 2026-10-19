@@ -22,6 +22,7 @@
 - Use in-memory test containers from `helpers/` (e.g., `setupTestActionContainer()`)
 - Only when it is difficult to use actual adapters, prepare Empty adapters and mock it using `vi.spyOn`, etc.
 - Config parsing/serialization is tested at the adapter level (`configCodec.test.ts`) and application level (`parseConfigText`, `stringifyConfig`). Domain tests do not involve config format details.
+- Tests do not inherit the CLI's environment variables (`KINTONE_*`, `*_FILE_PATH`, `VERBOSE`) from the host: `src/__tests__/setup.ts` removes them before each test file, so a test sees only the values it sets itself. `src/__tests__/envAccess.test.ts` fails when non-test code reads a variable outside these naming rules, or reads `process.env` without a static variable name, including `env` taken from an untyped (`any`) value. Values retyped by an annotation or assertion and read afterwards, keys built from strings, and reads through calls such as `Reflect.get` are beyond what it follows. CI runs the tests with these variables set to dummy values to keep that guarantee checked.
 - Fakes default to the same behavior as the real dependency, and deviations are opt-in per call. File-reading fakes only return content that a test seeded: reading an unseeded path throws `SystemError(StorageError)`, and `setFailure(path)` makes an individual seeded path unreadable.
 
 ## Manual Testing (kintone Integration)

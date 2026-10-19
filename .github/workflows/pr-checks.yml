@@ -39,3 +39,14 @@ jobs:
 
       - name: Test
         run: pnpm test
+        # Mirrors a developer shell with a `.env` loaded, so tests that
+        # inherit the CLI's variables from the host fail in CI too.
+        env:
+          KINTONE_DOMAIN: host.cybozu.com
+          KINTONE_API_TOKEN: host-token
+          KINTONE_USERNAME: host-user
+          KINTONE_PASSWORD: host-pass
+          KINTONE_APP_ID: "999"
+          KINTONE_GUEST_SPACE_ID: "998"
+          SCHEMA_FILE_PATH: host-schema.yaml
+          VERBOSE: "1"
