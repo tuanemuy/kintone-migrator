@@ -128,6 +128,27 @@ describe("collectEnvAccess", () => {
       'declare const p: any;\nexport const x = p["env"].FOO;',
     ],
     [
+      "require からの分割代入",
+      'const { env } = require("node:process");\nexport const x = env.FOO;',
+    ],
+    [
+      "any の値からの改名つきの分割代入",
+      "declare const p: any;\nconst { env: e } = p;\nexport const x = e.FOO;",
+    ],
+    [
+      "any の値からのネストした分割代入",
+      "declare const g: any;\nconst { process: { env } } = g;\nexport const x = env.FOO;",
+    ],
+    [
+      "any の値からの計算されたプロパティ名の分割代入",
+      'declare const p: any;\nconst k = "env";\nconst { [k]: e } = p;\nexport const x = e.FOO;',
+    ],
+    ["any の引数の分割代入", "export const f = ({ env }: any) => env.FOO;"],
+    [
+      "any の値からの分割代入式",
+      "declare const p: any;\nlet env: any;\n({ env } = p);\nexport const x = env;",
+    ],
+    [
       "require からの取り出し",
       'export const x = require("node:process").env.FOO;',
     ],
@@ -180,6 +201,22 @@ describe("collectEnvAccess", () => {
     expect(
       collectFromSource(
         'declare const p: any;\nexport const x = p.environment;\nexport const y = p["envs"];',
+      ),
+    ).toEqual({ names: [], unnamedCount: 0 });
+  });
+
+  it("any の値から env 以外を分割代入しても集めない", () => {
+    expect(
+      collectFromSource(
+        'declare const p: any;\nconst { argv, "cwd": c, ...env } = p;\nlet a: any;\nlet rest: any;\n({ a, ...rest } = p);\nexport const same = { env: 1 } === p;\nexport { argv, c, env, a, rest };',
+      ),
+    ).toEqual({ names: [], unnamedCount: 0 });
+  });
+
+  it("型の付いた値から env を分割代入しても、process と無関係なら集めない", () => {
+    expect(
+      collectFromSource(
+        'const config = { env: { FOO: "x" } };\nconst { env } = config;\nexport const x = env.FOO;',
       ),
     ).toEqual({ names: [], unnamedCount: 0 });
   });

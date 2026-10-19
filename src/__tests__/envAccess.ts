@@ -69,10 +69,14 @@ function isValueReference(checker: ts.TypeChecker, node: ts.Node): boolean {
   );
 }
 
-function bindingPropertyName(element: ts.BindingElement): string | undefined {
-  const property = element.propertyName ?? element.name;
-  return ts.isIdentifier(property) || ts.isStringLiteralLike(property)
-    ? property.text
+// The key a destructuring element or object literal property names, or
+// `undefined` when it is not known statically.
+function propertyKeyOf(
+  name: ts.PropertyName | ts.BindingName | undefined,
+): string | undefined {
+  return name !== undefined &&
+    (ts.isIdentifier(name) || ts.isStringLiteralLike(name))
+    ? name.text
     : undefined;
 }
 
@@ -84,7 +88,7 @@ function isTrackedDestructuring(
 ): boolean {
   return pattern.elements.every((element) => {
     if (element.dotDotDotToken !== undefined) return false;
-    const property = bindingPropertyName(element);
+    const property = propertyKeyOf(element.propertyName ?? element.name);
     if (property === undefined) return false;
     if (property !== "env") return true;
     return (
@@ -164,13 +168,41 @@ function envOwnerOf(node: ts.Node): ts.Expression | undefined {
   return undefined;
 }
 
-// `.env` taken from an untyped (`any`) value, such as
-// `require("node:process").env`, cannot be followed by type.
+function mayTakeEnv(keys: readonly (string | undefined)[]): boolean {
+  return keys.some((key) => key === undefined || key === "env");
+}
+
+// The value that `env` may be taken from: the owner of `.env` / `["env"]`, or
+// the source of a destructuring that names `env` or a key not known statically
+// (`const { env } = v`, `function f({ env }: T)`, `({ env } = v)`).
+function envSourceOf(node: ts.Node): ts.Node | undefined {
+  if (ts.isObjectBindingPattern(node)) {
+    const keys = node.elements
+      .filter((element) => element.dotDotDotToken === undefined)
+      .map((element) => propertyKeyOf(element.propertyName ?? element.name));
+    return mayTakeEnv(keys) ? node : undefined;
+  }
+  if (
+    ts.isBinaryExpression(node) &&
+    node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+    ts.isObjectLiteralExpression(node.left)
+  ) {
+    const keys = node.left.properties.flatMap((property) =>
+      ts.isSpreadAssignment(property) ? [] : [propertyKeyOf(property.name)],
+    );
+    return mayTakeEnv(keys) ? node.right : undefined;
+  }
+  return envOwnerOf(node);
+}
+
+// `env` taken from an untyped (`any`) value, such as
+// `require("node:process").env` or `const { env } = require("node:process")`,
+// cannot be followed by type.
 function isEnvOfUntyped(checker: ts.TypeChecker, node: ts.Node): boolean {
-  const owner = envOwnerOf(node);
+  const source = envSourceOf(node);
   return (
-    owner !== undefined &&
-    (checker.getTypeAtLocation(owner).flags & ts.TypeFlags.Any) !== 0
+    source !== undefined &&
+    (checker.getTypeAtLocation(source).flags & ts.TypeFlags.Any) !== 0
   );
 }
 
