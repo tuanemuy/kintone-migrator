@@ -22,7 +22,10 @@ import type {
   FieldType,
   LayoutElement,
 } from "@/core/domain/formSchema/valueObject";
-import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
+import {
+  FieldCode as FieldCodeVO,
+  omitEmptyLookupRelatedAppCode,
+} from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 const KNOWN_FIELD_TYPES: ReadonlySet<string> = new Set<FieldType>([
@@ -261,7 +264,11 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
 
   normalizeDefaultValue(type, rest);
 
-  return { ...base, type, properties: rest } as FieldDefinition;
+  return {
+    ...base,
+    type,
+    properties: omitEmptyLookupRelatedAppCode(rest),
+  } as FieldDefinition;
 }
 
 function toKintoneProperty(field: FieldDefinition): Record<string, unknown> {

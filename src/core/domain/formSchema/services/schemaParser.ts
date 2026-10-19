@@ -18,7 +18,7 @@ import type {
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../valueObject";
-import { FieldCode } from "../valueObject";
+import { FieldCode, omitEmptyLookupRelatedAppCode } from "../valueObject";
 
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
 
@@ -472,7 +472,7 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
     return parseReferenceTableField(raw, code, base);
   }
 
-  const properties = extractProperties(raw);
+  const properties = omitEmptyLookupRelatedAppCode(extractProperties(raw));
   validateFieldProperties(code, fieldType, properties);
 
   return buildFieldDefinition(base, fieldType, properties);

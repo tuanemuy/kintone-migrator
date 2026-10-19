@@ -333,6 +333,103 @@ describe("SchemaParser", () => {
       }
     });
 
+    describe("lookup.relatedApp.code", () => {
+      const lookupWith = (relatedApp: Record<string, unknown>) => ({
+        relatedApp,
+        relatedKeyField: "customer_code",
+        fieldMappings: [{ field: "name", relatedField: "customer_name" }],
+        lookupPickerFields: ["customer_name"],
+      });
+
+      it.each([
+        ["空文字", { app: "10", code: "" }],
+        ["値なし（null）", { app: "10", code: null }],
+        ["省略", { app: "10" }],
+      ])("code が%sのとき、relatedApp は app だけを持つ", (_, relatedApp) => {
+        const schema = SchemaParser.parse({
+          layout: [
+            {
+              type: "ROW",
+              fields: [
+                {
+                  code: "customer",
+                  type: "SINGLE_LINE_TEXT",
+                  label: "顧客",
+                  lookup: lookupWith(relatedApp),
+                },
+              ],
+            },
+          ],
+        });
+
+        expect(
+          schema.fields.get("customer" as FieldCode)?.properties,
+        ).toStrictEqual({
+          lookup: lookupWith({ app: "10" }),
+        });
+      });
+
+      it("code が非空のとき、relatedApp は code を保つ", () => {
+        const schema = SchemaParser.parse({
+          layout: [
+            {
+              type: "ROW",
+              fields: [
+                {
+                  code: "customer",
+                  type: "NUMBER",
+                  label: "顧客",
+                  lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
+                },
+              ],
+            },
+          ],
+        });
+
+        expect(
+          schema.fields.get("customer" as FieldCode)?.properties,
+        ).toStrictEqual({
+          lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
+        });
+      });
+
+      it.each([
+        "SINGLE_LINE_TEXT",
+        "NUMBER",
+        "LINK",
+      ])("SUBTABLE 内の %s でも、空の code を省く", (type) => {
+        const schema = SchemaParser.parse({
+          layout: [
+            {
+              type: "SUBTABLE",
+              code: "items",
+              label: "明細",
+              fields: [
+                {
+                  code: "customer",
+                  type,
+                  label: "顧客",
+                  lookup: lookupWith({ app: "10", code: "" }),
+                },
+              ],
+            },
+          ],
+        });
+
+        const expected = { lookup: lookupWith({ app: "10" }) };
+        expect(
+          schema.fields.get("customer" as FieldCode)?.properties,
+        ).toStrictEqual(expected);
+        const table = schema.fields.get("items" as FieldCode);
+        expect(table?.type).toBe("SUBTABLE");
+        if (table?.type === "SUBTABLE") {
+          expect(
+            table.properties.fields.get("customer" as FieldCode)?.properties,
+          ).toStrictEqual(expected);
+        }
+      });
+    });
+
     it("REFERENCE_TABLE の referenceTable プロパティが正しく設定される", () => {
       const input = {
         layout: [

@@ -527,6 +527,102 @@ describe("KintoneFormConfigurator", () => {
       }
     });
 
+    describe("lookup.relatedApp.code", () => {
+      const lookupWith = (relatedApp: Record<string, unknown>) => ({
+        relatedApp,
+        relatedKeyField: "customer_code",
+        fieldMappings: [{ field: "name", relatedField: "customer_name" }],
+        lookupPickerFields: ["customer_name"],
+        filterCond: "",
+        sort: "レコード番号 desc",
+      });
+
+      it.each([
+        "SINGLE_LINE_TEXT",
+        "NUMBER",
+        "LINK",
+      ])("%s の relatedApp.code が空文字なら、ドメイン値は code を持たない", async (type) => {
+        const client = createMockClient({
+          getFormFields: () =>
+            Promise.resolve({
+              properties: {
+                customer: {
+                  type,
+                  code: "customer",
+                  label: "顧客",
+                  lookup: lookupWith({ app: "10", code: "" }),
+                },
+              },
+            }),
+        });
+        const adapter = new KintoneFormConfigurator(client, APP_ID);
+        const fields = await adapter.getFields();
+
+        expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
+          lookup: lookupWith({ app: "10" }),
+        });
+      });
+
+      it("relatedApp.code が非空なら、ドメイン値は code を保つ", async () => {
+        const client = createMockClient({
+          getFormFields: () =>
+            Promise.resolve({
+              properties: {
+                customer: {
+                  type: "SINGLE_LINE_TEXT",
+                  code: "customer",
+                  label: "顧客",
+                  lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
+                },
+              },
+            }),
+        });
+        const adapter = new KintoneFormConfigurator(client, APP_ID);
+        const fields = await adapter.getFields();
+
+        expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
+          lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
+        });
+      });
+
+      it.each([
+        "SINGLE_LINE_TEXT",
+        "NUMBER",
+        "LINK",
+      ])("SUBTABLE 内の %s でも、空の relatedApp.code を省く", async (type) => {
+        const client = createMockClient({
+          getFormFields: () =>
+            Promise.resolve({
+              properties: {
+                items: {
+                  type: "SUBTABLE",
+                  code: "items",
+                  label: "明細",
+                  fields: {
+                    customer: {
+                      type,
+                      code: "customer",
+                      label: "顧客",
+                      lookup: lookupWith({ app: "10", code: "" }),
+                    },
+                  },
+                },
+              },
+            }),
+        });
+        const adapter = new KintoneFormConfigurator(client, APP_ID);
+        const fields = await adapter.getFields();
+
+        const table = fields.get("items" as FieldCode);
+        expect(table?.type).toBe("SUBTABLE");
+        if (table?.type === "SUBTABLE") {
+          expect(
+            table.properties.fields.get("customer" as FieldCode)?.properties,
+          ).toStrictEqual({ lookup: lookupWith({ app: "10" }) });
+        }
+      });
+    });
+
     it("RECORD_NUMBER や CREATOR 等のシステムフィールドは結果から除外される", async () => {
       const client = createMockClient({
         getFormFields: () =>
