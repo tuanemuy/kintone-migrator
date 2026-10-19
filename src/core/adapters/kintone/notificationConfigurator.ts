@@ -327,7 +327,7 @@ export class KintoneNotificationConfigurator
   }
 
   async getReminderNotifications(): Promise<{
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   }> {
@@ -345,8 +345,13 @@ export class KintoneNotificationConfigurator
         response.notifications as unknown as KintoneReminderNotification[]
       ).map(fromKintoneReminderNotification);
 
+      // kintone returns `null` for an app whose reminders were never saved.
+      const timezone: unknown = response.timezone;
+
       return {
-        timezone: response.timezone as string,
+        ...(typeof timezone === "string" && timezone !== ""
+          ? { timezone }
+          : {}),
         notifications,
         revision: response.revision as string,
       };
@@ -356,16 +361,19 @@ export class KintoneNotificationConfigurator
   }
 
   async updateReminderNotifications(params: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
     try {
       const requestParams: Record<string, unknown> = {
         app: this.appId,
-        timezone: params.timezone,
         notifications: params.notifications.map(toKintoneReminderNotification),
       };
+
+      if (params.timezone !== undefined) {
+        requestParams.timezone = params.timezone;
+      }
 
       if (params.revision !== undefined) {
         requestParams.revision = params.revision;

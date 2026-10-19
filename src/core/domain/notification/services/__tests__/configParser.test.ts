@@ -569,20 +569,41 @@ describe("NotificationConfigParser.parse", () => {
     expect(config.reminder?.notifications[0].title).toBe("");
   });
 
-  it("reminderのtimezone省略時はAsia/Tokyoにデフォルトされる", () => {
+  it.each([
+    ["省略", {}],
+    ["null", { timezone: null }],
+    ["空文字", { timezone: "" }],
+  ])("reminderのtimezoneが%sなら未設定（timezoneキーなし）になる", (_, timezone) => {
     const config = NotificationConfigParser.parse({
-      reminder: {
-        notifications: [
-          {
-            code: "due_date",
-            daysLater: 1,
-            hoursLater: 9,
-            targets: [{ entity: { type: "USER", code: "admin" } }],
-          },
-        ],
-      },
+      reminder: { ...timezone, notifications: [] },
     });
-    expect(config.reminder?.timezone).toBe("Asia/Tokyo");
+    expect(config.reminder).toStrictEqual({ notifications: [] });
+  });
+
+  it("reminderのtimezoneが文字列ならそのまま保持する", () => {
+    const config = NotificationConfigParser.parse({
+      reminder: { timezone: "UTC", notifications: [] },
+    });
+    expect(config.reminder).toStrictEqual({
+      timezone: "UTC",
+      notifications: [],
+    });
+  });
+
+  it.each([
+    ["数値", 9],
+    ["真偽値", true],
+    ["オブジェクト", { name: "Asia/Tokyo" }],
+  ])("reminderのtimezoneが%sならNtInvalidConfigStructureエラー", (_, timezone) => {
+    expect(() =>
+      NotificationConfigParser.parse({
+        reminder: { timezone, notifications: [] },
+      }),
+    ).toThrow(
+      expect.objectContaining({
+        code: NotificationErrorCode.NtInvalidConfigStructure,
+      }),
+    );
   });
 
   it("generalの通知が非オブジェクトでNtInvalidConfigStructureエラー", () => {

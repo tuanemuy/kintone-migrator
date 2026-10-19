@@ -26,12 +26,12 @@ export interface NotificationConfigurator {
   }): Promise<{ revision: string }>;
 
   getReminderNotifications(): Promise<{
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   }>;
   updateReminderNotifications(params: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }>;

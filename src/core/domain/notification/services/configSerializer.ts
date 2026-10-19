@@ -98,7 +98,9 @@ export const NotificationConfigSerializer = {
 
     if (config.reminder !== undefined) {
       serialized.reminder = {
-        timezone: config.reminder.timezone,
+        ...(config.reminder.timezone !== undefined
+          ? { timezone: config.reminder.timezone }
+          : {}),
         notifications: config.reminder.notifications.map(
           serializeReminderNotification,
         ),

@@ -19,7 +19,7 @@
 3. `NotificationConfigParser.parse()` で通知設定をパースする
 4. `general` セクションが記述されている場合、`getGeneralNotifications()` で現在のrevisionを取得し、`updateGeneralNotifications()` で更新する
 5. `perRecord` セクションが記述されている場合、`getPerRecordNotifications()` で現在のrevisionを取得し、`updatePerRecordNotifications()` で更新する
-6. `reminder` セクションが記述されている場合、`getReminderNotifications()` で現在のrevisionを取得し、`updateReminderNotifications()` で更新する
+6. `reminder` セクションが記述されている場合、`getReminderNotifications()` で現在のrevisionを取得し、`updateReminderNotifications()` で更新する。`timezone` が未設定なら `timezone` を渡さない
 
 ### 出力DTO
 
@@ -33,6 +33,7 @@
 - 各セクションの更新時に、そのセクションの現在のrevisionが更新リクエストに渡される
 - `general` のみ記述されている場合、`perRecord`/`reminder` の更新 API は呼ばれない
 - 全セクションが記述されている場合、3つの更新 API がそれぞれ呼ばれる
+- `reminder.timezone` が未設定なら `updateReminderNotifications()` に `timezone` を渡さず、設定されていれば渡す
 
 #### 異常系
 
@@ -78,6 +79,7 @@ type CaptureNotificationOutput = {
 #### 正常系
 
 - kintoneアプリから3種類の通知設定を取得し、`NotificationConfig` に組み立ててYAML文字列にシリアライズする
+- リモートの `reminder.timezone` が未設定なら、YAML に `timezone` キーを書かない
 - 既存ファイルがある場合、`hasExistingConfig` が `true` になる
 - 既存ファイルがない場合、`hasExistingConfig` が `false` になる
 
@@ -136,6 +138,8 @@ type NotificationDiff = {
 
 - ローカルとリモートに差分がない場合、`isEmpty` が `true` になる
 - 各セクション（general/perRecord/reminder）の通知の追加/変更/削除が `section` 付きで `entries` に分類される
+- ローカルの `reminder.timezone` が未設定なら、リモートの値によらず timezone の差分を出さない
+- ローカルの `reminder.timezone` が設定されていてリモートと異なる場合、`modified`（details `<remote> -> <local>`、リモート未設定は `(unset)`）になる
 - `summary` に追加/変更/削除の件数と合計が集計される
 
 #### 異常系

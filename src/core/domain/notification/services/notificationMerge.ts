@@ -29,7 +29,8 @@ import { NotificationErrorCode } from "../errorCode";
  * conflict-resolution namespace:
  *
  * - **reminder** = `code` stable key (`compareReminderSection`, diffDetector
- *   reminder map). Plus the `timezone` scalar as a single whole-entity 3-way.
+ *   reminder map). Plus the `timezone` scalar as a single whole-entity 3-way
+ *   when the local config manages it (sets a timezone).
  * - **perRecord** = group by `filterCond`, then within a group match by index
  *   (`filterCond#i` composite key — `comparePerRecordSection`). `perRecordLabel`
  *   is display-only and is NOT used as a match key.
@@ -151,13 +152,15 @@ export type NotificationMergeEntry = ThreeWayEntry<string, unknown>;
  *   reminder lists), classified by {@link classifyThreeWay}.
  * - `generalScalar` / `reminderTimezone`: whole-entity 3-way of the two scalars
  *   that live outside the keyed lists, so they are never dropped.
+ *   `reminderTimezone` is absent when the local timezone is unset: an unset
+ *   local timezone is not managed, so it is neither classified nor merged.
  * - `conflicts` / `hasConflict`: the union of conflicts across all of the above,
  *   each carrying a stable section-prefixed key for resolution.
  */
 export type NotificationThreeWayMerge = Readonly<{
   entries: readonly NotificationMergeEntry[];
   generalScalar: SingleThreeWayMerge<boolean>;
-  reminderTimezone: SingleThreeWayMerge<string>;
+  reminderTimezone?: SingleThreeWayMerge<string | undefined>;
   conflicts: readonly { key: string }[];
   hasConflict: boolean;
 }>;
@@ -200,12 +203,15 @@ export function computeNotificationThreeWayMerge(
     remote.general?.notifyToCommenter ?? false,
     (a, b) => a === b,
   );
-  const reminderTimezone = computeSingleThreeWayMerge<string>(
-    base.reminder?.timezone ?? "",
-    local.reminder?.timezone ?? "",
-    remote.reminder?.timezone ?? "",
-    (a, b) => a === b,
-  );
+  const reminderTimezone =
+    local.reminder?.timezone !== undefined
+      ? computeSingleThreeWayMerge<string | undefined>(
+          base.reminder?.timezone,
+          local.reminder.timezone,
+          remote.reminder?.timezone,
+          (a, b) => a === b,
+        )
+      : undefined;
 
   const entries: NotificationMergeEntry[] = [
     ...general.entries,
@@ -218,13 +224,15 @@ export function computeNotificationThreeWayMerge(
     ...perRecord.conflicts.map((e) => ({ key: e.key })),
     ...reminder.conflicts.map((e) => ({ key: e.key })),
     ...scalarConflictKey(generalScalar, GENERAL_SCALAR_KEY),
-    ...scalarConflictKey(reminderTimezone, REMINDER_TIMEZONE_KEY),
+    ...(reminderTimezone
+      ? scalarConflictKey(reminderTimezone, REMINDER_TIMEZONE_KEY)
+      : []),
   ];
 
   return {
     entries,
     generalScalar,
-    reminderTimezone,
+    ...(reminderTimezone ? { reminderTimezone } : {}),
     conflicts,
     hasConflict: conflicts.length > 0,
   };
@@ -335,11 +343,13 @@ export function resolveNotificationMerge(
     resolution.get(GENERAL_SCALAR_KEY),
     NotificationErrorCode.NtUnresolvedConflict,
   );
-  const timezone = resolveSingleMerge(
-    merge.reminderTimezone,
-    resolution.get(REMINDER_TIMEZONE_KEY),
-    NotificationErrorCode.NtUnresolvedConflict,
-  );
+  const timezone = merge.reminderTimezone
+    ? resolveSingleMerge(
+        merge.reminderTimezone,
+        resolution.get(REMINDER_TIMEZONE_KEY),
+        NotificationErrorCode.NtUnresolvedConflict,
+      )
+    : undefined;
 
   return {
     general: {
@@ -348,7 +358,7 @@ export function resolveNotificationMerge(
     },
     perRecord: collectPerRecordNotifications(merge.entries, resolution),
     reminder: {
-      timezone,
+      ...(timezone !== undefined ? { timezone } : {}),
       notifications: collectReminderNotifications(merge.entries, resolution),
     },
   };

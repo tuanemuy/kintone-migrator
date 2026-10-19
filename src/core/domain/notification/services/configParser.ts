@@ -294,10 +294,23 @@ function parseReminderConfig(raw: unknown): ReminderNotificationConfig {
     parseReminderNotification(item, i),
   );
 
-  return {
-    timezone: typeof raw.timezone === "string" ? raw.timezone : "Asia/Tokyo",
-    notifications,
-  };
+  if (
+    raw.timezone !== undefined &&
+    raw.timezone !== null &&
+    typeof raw.timezone !== "string"
+  ) {
+    throw new BusinessRuleError(
+      NotificationErrorCode.NtInvalidConfigStructure,
+      `"reminder" has non-string "timezone": ${String(raw.timezone)}`,
+    );
+  }
+
+  // null and "" mean unset, the same as omitting the key.
+  if (typeof raw.timezone === "string" && raw.timezone !== "") {
+    return { timezone: raw.timezone, notifications };
+  }
+
+  return { notifications };
 }
 
 export const NotificationConfigParser = {

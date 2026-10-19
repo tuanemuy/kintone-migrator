@@ -83,10 +83,18 @@ type ReminderNotification = Readonly<{
 
 ```typescript
 type ReminderNotificationConfig = Readonly<{
-  timezone: string;
+  timezone?: string;
   notifications: readonly ReminderNotification[];
 }>;
 ```
+
+- `timezone` はリマインダーのタイムゾーン（オプション）。省略は「未設定」を表す。kintone はリマインダーを一度も保存していないアプリで `null` を返し、これを未設定として扱う。既定値は補完しない
+- ローカル設定の `timezone` が未設定のときは、timezone を管理しない
+    - 差分検出（2-way / 3-way）で timezone を比較しない
+    - 適用（apply / push）で timezone を送らない。kintone はリマインダーを一度も保存していないアプリでは API 実行ユーザーのタイムゾーンを設定し、それ以外では値を変えない
+    - pull の 3-way マージ結果でも未設定のまま残す
+    - kintone では一度設定した timezone を未設定に戻せないため、未設定を値として比べると解消できない差分が残る
+- ローカル設定の `timezone` が設定されているときは、リモート・base の未設定を「値なし」として比較する
 
 ### NotificationConfig
 
@@ -166,12 +174,12 @@ interface NotificationConfigurator {
   }): Promise<{ revision: string }>;
 
   getReminderNotifications(): Promise<{
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   }>;
   updateReminderNotifications(params: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }>;
@@ -179,6 +187,8 @@ interface NotificationConfigurator {
 ```
 
 - `getGeneralNotifications()` / `getPerRecordNotifications()` / `getReminderNotifications()` は現在の通知設定をドメイン型に変換し、楽観ロック用の `revision` とともに返す
+- `getReminderNotifications()` は kintone の `timezone` が `null` または空文字なら `timezone` を省略して返す
+- `updateReminderNotifications()` は `timezone` が省略されていれば `timezone` パラメータを送らない
 - `updateGeneralNotifications()` / `updatePerRecordNotifications()` / `updateReminderNotifications()` は対応する通知設定を更新する。`revision` を渡すと楽観的同時実行制御を行い、省略すると強制書き込みになる。更新後の `revision` を返す
 - API通信に失敗した場合は `SystemError` をスローする
 

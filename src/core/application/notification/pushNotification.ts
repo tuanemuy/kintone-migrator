@@ -83,7 +83,7 @@ export async function pushNotification({
       ) ||
       (local.general !== undefined &&
         isDriftKind(merge.generalScalar.change.kind)) ||
-      (local.reminder !== undefined &&
+      (merge.reminderTimezone !== undefined &&
         isDriftKind(merge.reminderTimezone.change.kind));
     if (hasDrift) {
       throw buildDriftConflict(NOTIFICATION_PULL_COMMAND);
@@ -132,12 +132,18 @@ export async function pushNotification({
   if (local.reminder !== undefined) {
     const res =
       await container.notificationConfigurator.updateReminderNotifications({
-        timezone: local.reminder.timezone,
-        notifications: local.reminder.notifications,
+        ...local.reminder,
         ...(sendRevision ? { revision } : {}),
       });
     revision = res.revision;
-    newBase.reminder = local.reminder;
+    // An unset local timezone is not sent, so the base keeps the timezone the
+    // remote had before this push.
+    const timezone =
+      local.reminder.timezone ?? remote.config.reminder?.timezone;
+    newBase.reminder = {
+      ...(timezone !== undefined ? { timezone } : {}),
+      notifications: local.reminder.notifications,
+    };
   }
 
   // All updates succeeded: now (and only now) persist the new base so a

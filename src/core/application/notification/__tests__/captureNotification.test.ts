@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { configCodec } from "@/core/adapters/yaml/configCodec";
 import { setupTestNotificationContainer } from "@/core/application/__tests__/helpers";
 import { isSystemError } from "@/core/application/error";
 import { captureNotification } from "../captureNotification";
@@ -54,6 +55,22 @@ describe("captureNotification", () => {
       expect(result.configText).toContain("perRecord:");
       expect(result.configText).toContain("reminder:");
       expect(result.configText).toContain("admin");
+    });
+
+    it("should not write the reminder timezone when it is unset on the remote", async () => {
+      const container = getContainer();
+      container.notificationConfigurator.setReminderNotifications({
+        notifications: [],
+        revision: "1",
+      });
+
+      const result = await captureNotification({ container });
+
+      expect(configCodec.parse(result.configText)).toStrictEqual({
+        general: { notifyToCommenter: false, notifications: [] },
+        perRecord: [],
+        reminder: { notifications: [] },
+      });
     });
 
     it("should detect existing config file", async () => {

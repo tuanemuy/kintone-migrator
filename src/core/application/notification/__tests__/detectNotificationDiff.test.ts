@@ -50,6 +50,27 @@ describe("detectNotificationDiff", () => {
       expect(result.summary.total).toBe(0);
     });
 
+    it("should detect no changes when the reminder timezone is null locally and unset remotely", async () => {
+      const container = getContainer();
+      container.notificationStorage.setContent(`
+general:
+  notifyToCommenter: false
+  notifications: []
+perRecord: []
+reminder:
+  timezone: null
+  notifications: []
+`);
+      container.notificationConfigurator.setReminderNotifications({
+        notifications: [],
+        revision: "1",
+      });
+
+      const result = await detectNotificationDiff({ container });
+
+      expect(result.isEmpty).toBe(true);
+    });
+
     it("should detect changes when configs differ", async () => {
       const container = getContainer();
       container.notificationStorage.setContent(VALID_CONFIG);

@@ -85,7 +85,9 @@ function setRemote(
     revision: "1",
   });
   container.notificationConfigurator.setReminderNotifications({
-    timezone: remote.reminder?.timezone ?? "Asia/Tokyo",
+    ...(remote.reminder?.timezone !== undefined
+      ? { timezone: remote.reminder.timezone }
+      : {}),
     notifications: remote.reminder?.notifications ?? [],
     revision: "1",
   });
@@ -183,5 +185,92 @@ describe("detectNotificationThreeWayDiff", () => {
     if (result.mode !== "three-way") throw new Error("expected three-way");
     expect(result.conflicts.map((e) => e.key)).toContain("reminder:r1");
     expect(result.isEmpty).toBe(false);
+  });
+
+  describe("reminder timezone", () => {
+    const unsetReminder = { notifications: [] };
+
+    it.each([
+      ["null", "null"],
+      ["空文字", '""'],
+    ])("reports no changes when local and state hold timezone %s and the remote is unset", async (_, yamlValue) => {
+      const container = getContainer();
+      const text = [
+        "general:",
+        "  notifyToCommenter: false",
+        "  notifications: []",
+        "perRecord: []",
+        "reminder:",
+        `  timezone: ${yamlValue}`,
+        "  notifications: []",
+        "",
+      ].join("\n");
+      container.notificationStateStorage.setContent(text);
+      container.appRevisionStorage.setContent(
+        configCodec.stringify({ revision: "1" }),
+      );
+      container.notificationStorage.setContent(text);
+      setRemote(
+        container,
+        config({
+          general: { notifyToCommenter: false, notifications: [] },
+          reminder: unsetReminder,
+        }),
+      );
+
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("does not report remote drift when the local timezone is unset", async () => {
+      const container = getContainer();
+      const base = config({ reminder: unsetReminder });
+      setBase(container, base);
+      setLocal(container, base);
+      setRemote(
+        container,
+        config({ reminder: { timezone: "Asia/Tokyo", notifications: [] } }),
+      );
+
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("classifies a timezone set locally against an unset base and remote as a local change", async () => {
+      const container = getContainer();
+      const base = config({ reminder: unsetReminder });
+      setBase(container, base);
+      setLocal(
+        container,
+        config({ reminder: { timezone: "UTC", notifications: [] } }),
+      );
+      setRemote(container, base);
+
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.localChanges).toEqual([
+        { key: "reminder:timezone", label: "timezone", kind: "localOnly" },
+      ]);
+      expect(result.remoteDrift).toEqual([]);
+    });
+
+    it("classifies a remote timezone change as drift when the local timezone is set", async () => {
+      const container = getContainer();
+      const base = config({ reminder: { timezone: "UTC", notifications: [] } });
+      setBase(container, base);
+      setLocal(container, base);
+      setRemote(
+        container,
+        config({ reminder: { timezone: "Asia/Tokyo", notifications: [] } }),
+      );
+
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.remoteDrift).toEqual([
+        { key: "reminder:timezone", label: "timezone", kind: "remoteOnly" },
+      ]);
+    });
   });
 });

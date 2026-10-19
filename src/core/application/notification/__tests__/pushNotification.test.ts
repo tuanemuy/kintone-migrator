@@ -14,6 +14,7 @@ import type {
   ReminderNotification,
 } from "@/core/domain/notification/entity";
 import { NotificationConfigSerializer } from "@/core/domain/notification/services/configSerializer";
+import { NotificationStateParser } from "@/core/domain/notification/services/notificationStateParser";
 import { NotificationStateSerializer } from "@/core/domain/notification/services/notificationStateSerializer";
 import { pushNotification } from "../pushNotification";
 
@@ -87,7 +88,9 @@ function setBaseAndRemote(
     revision,
   });
   container.notificationConfigurator.setReminderNotifications({
-    timezone: remote.reminder?.timezone ?? "Asia/Tokyo",
+    ...(remote.reminder?.timezone !== undefined
+      ? { timezone: remote.reminder.timezone }
+      : {}),
     notifications: remote.reminder?.notifications ?? [],
     revision,
   });
@@ -357,5 +360,116 @@ describe("pushNotification", () => {
     expect(container.notificationConfigurator.callLog).not.toContain(
       "updateReminderNotifications",
     );
+  });
+
+  describe("reminder timezone", () => {
+    async function savedBaseReminder(container: TestNotificationContainer) {
+      const saved = await container.notificationStateStorage.get();
+      if (!saved.exists) throw new Error("expected saved state");
+      return NotificationStateParser.parse(configCodec.parse(saved.content))
+        .config.reminder;
+    }
+
+    it("does not send an unset local timezone and keeps the remote timezone in the base", async () => {
+      const container = getContainer();
+      const base = config();
+      setBaseAndRemote(container, base, base, "1");
+      setLocal(
+        container,
+        config({
+          reminder: { notifications: [reminder({ title: "local-changed" })] },
+        }),
+      );
+
+      await pushNotification({ container, input: {} });
+
+      expect(
+        container.notificationConfigurator.lastUpdateReminderParams,
+      ).toStrictEqual({
+        notifications: [reminder({ title: "local-changed" })],
+        revision: "2",
+      });
+      expect(await savedBaseReminder(container)).toStrictEqual({
+        timezone: "Asia/Tokyo",
+        notifications: [reminder({ title: "local-changed" })],
+      });
+    });
+
+    it("keeps the base timezone unset when both the local and the remote timezone are unset", async () => {
+      const container = getContainer();
+      const base = config({ reminder: { notifications: [reminder()] } });
+      setBaseAndRemote(container, base, base, "1");
+      setLocal(
+        container,
+        config({
+          reminder: { notifications: [reminder({ title: "local-changed" })] },
+        }),
+      );
+
+      await pushNotification({ container, input: {} });
+
+      expect(await savedBaseReminder(container)).toStrictEqual({
+        notifications: [reminder({ title: "local-changed" })],
+      });
+    });
+
+    it("sends a set local timezone and stores it in the base", async () => {
+      const container = getContainer();
+      const base = config();
+      setBaseAndRemote(container, base, base, "1");
+      setLocal(
+        container,
+        config({ reminder: { timezone: "UTC", notifications: [reminder()] } }),
+      );
+
+      await pushNotification({ container, input: {} });
+
+      expect(
+        container.notificationConfigurator.lastUpdateReminderParams,
+      ).toStrictEqual({
+        timezone: "UTC",
+        notifications: [reminder()],
+        revision: "2",
+      });
+      expect(await savedBaseReminder(container)).toStrictEqual({
+        timezone: "UTC",
+        notifications: [reminder()],
+      });
+    });
+
+    it("does not block the push on remote timezone drift when the local timezone is unset", async () => {
+      const container = getContainer();
+      const base = config();
+      const remote = config({
+        reminder: { timezone: "UTC", notifications: [reminder()] },
+      });
+      setBaseAndRemote(container, base, remote, "2");
+      setLocal(
+        container,
+        config({ reminder: { notifications: [reminder()] } }),
+      );
+
+      const result = await pushNotification({ container, input: {} });
+
+      expect(result.mode).toBe("push");
+    });
+
+    it("rejects with ConfigDrift on remote timezone drift when the local timezone is set", async () => {
+      const container = getContainer();
+      const base = config();
+      const remote = config({
+        reminder: { timezone: "UTC", notifications: [reminder()] },
+      });
+      setBaseAndRemote(container, base, remote, "2");
+      setLocal(container, base);
+
+      await expect(
+        pushNotification({ container, input: {} }),
+      ).rejects.toSatisfy(
+        (e: unknown) =>
+          e instanceof ConflictError &&
+          e.code === ConflictErrorCode.ConfigDrift,
+      );
+    });
   });
 });

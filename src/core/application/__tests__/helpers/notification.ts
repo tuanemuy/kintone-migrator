@@ -38,7 +38,7 @@ export class InMemoryNotificationConfigurator
     revision: "1",
   };
   private reminderNotifications: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   } = {
@@ -56,7 +56,7 @@ export class InMemoryNotificationConfigurator
     revision?: string;
   } | null = null;
   lastUpdateReminderParams: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision?: string;
   } | null = null;
@@ -104,7 +104,7 @@ export class InMemoryNotificationConfigurator
   }
 
   async getReminderNotifications(): Promise<{
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   }> {
@@ -113,7 +113,7 @@ export class InMemoryNotificationConfigurator
   }
 
   async updateReminderNotifications(params: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision?: string;
   }): Promise<{ revision: string }> {
@@ -140,7 +140,7 @@ export class InMemoryNotificationConfigurator
   }
 
   setReminderNotifications(data: {
-    timezone: string;
+    timezone?: string;
     notifications: readonly ReminderNotification[];
     revision: string;
   }): void {

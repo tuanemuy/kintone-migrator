@@ -96,7 +96,7 @@ reminder:
 
 | プロパティ | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
-| `timezone` | string | 任意 | リマインダーのタイムゾーン |
+| `timezone` | string | 任意 | リマインダーのタイムゾーン。省略・`null`・空文字は未設定 |
 | `notifications` | ReminderNotificationEntry[] | 必須 | リマインダー定義の配列 |
 
 **`reminder.notifications[]`**（ReminderNotificationEntry）:
@@ -117,6 +117,7 @@ reminder:
     - `type`: `USER` / `GROUP` / `ORGANIZATION` / `FIELD_ENTITY`（`FIELD_ENTITY` はフォーム上のユーザー選択フィールド。例: 作成者・担当者）
     - `code`: 空文字不可
 - `includeSubs`: サブ組織・サブグループを含めるか（真偽値、オプション）。`GROUP` / `ORGANIZATION` で意味を持つ
+- `reminder.timezone`: 未設定（省略・`null`・空文字）のときは timezone を管理しない。diff で比較せず、apply / push で送らない。capture / pull は kintone 側が未設定なら `timezone` キーを書かない。文字列・`null` 以外の値はエラー（`NT_INVALID_CONFIG_STRUCTURE`）
 - `reminder.notifications[]`
     - `daysLater`: 基準日時からの相対日数。**−10,000〜10,000 の整数**（負値は「基準日時より前」を表す正当な値、例: `-3`）。範囲外・非整数はエラー。必須
     - `hoursLater`: 追加時間（**−10,000〜10,000 の整数**、負値は基準日時より前、オプション）。`time` と同時に指定できない
