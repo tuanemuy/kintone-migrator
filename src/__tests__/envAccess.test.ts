@@ -120,6 +120,18 @@ describe("collectEnvAccess", () => {
       'export const f = (k: "env" | "argv") => process[k];',
     ],
     [
+      "any にした globalThis からの取り出し",
+      "export const x = (globalThis as any).process.env.FOO;",
+    ],
+    [
+      'any の値からの ["env"]',
+      'declare const p: any;\nexport const x = p["env"].FOO;',
+    ],
+    [
+      "require からの取り出し",
+      'export const x = require("node:process").env.FOO;',
+    ],
+    [
       "process の受け渡し",
       "declare function f(p: unknown): void;\nf(process);",
     ],
@@ -160,6 +172,14 @@ describe("collectEnvAccess", () => {
     expect(
       collectFromSource(
         'export const cwd = process.cwd();\nexport const argv = process["argv"];\nconst { exit } = process;\nexport { exit };',
+      ),
+    ).toEqual({ names: [], unnamedCount: 0 });
+  });
+
+  it("any の値の env 以外のプロパティは集めない", () => {
+    expect(
+      collectFromSource(
+        'declare const p: any;\nexport const x = p.environment;\nexport const y = p["envs"];',
       ),
     ).toEqual({ names: [], unnamedCount: 0 });
   });

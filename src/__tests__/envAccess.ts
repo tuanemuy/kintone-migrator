@@ -149,11 +149,45 @@ function classifyUse(
   return { kind: "unnamed" };
 }
 
+// The object an `.env` / `["env"]` access reads from.
+function envOwnerOf(node: ts.Node): ts.Expression | undefined {
+  if (ts.isPropertyAccessExpression(node) && node.name.text === "env") {
+    return node.expression;
+  }
+  if (
+    ts.isElementAccessExpression(node) &&
+    ts.isStringLiteralLike(node.argumentExpression) &&
+    node.argumentExpression.text === "env"
+  ) {
+    return node.expression;
+  }
+  return undefined;
+}
+
+// `.env` taken from an untyped (`any`) value, such as
+// `require("node:process").env`, cannot be followed by type.
+function isEnvOfUntyped(checker: ts.TypeChecker, node: ts.Node): boolean {
+  const owner = envOwnerOf(node);
+  return (
+    owner !== undefined &&
+    (checker.getTypeAtLocation(owner).flags & ts.TypeFlags.Any) !== 0
+  );
+}
+
+function useOf(checker: ts.TypeChecker, node: ts.Node): Use | undefined {
+  if (isEnvOfUntyped(checker, node)) return { kind: "unnamed" };
+  const kind = isValueReference(checker, node)
+    ? trackedKindOf(checker, node)
+    : undefined;
+  return kind === undefined ? undefined : classifyUse(checker, node, kind);
+}
+
 /**
  * Collects how the given files read `process.env`. The env object is followed
  * by its type through aliases, destructuring and `node:process` imports. A use
  * that does not keep that type (a widening annotation, a call argument, a
- * spread, a dynamic key, optional chaining) is reported as unnamed.
+ * spread, a dynamic key, optional chaining) is reported as unnamed, and so is
+ * `.env` taken from an `any` value.
  */
 export function collectEnvAccess(
   program: ts.Program,
@@ -169,19 +203,14 @@ export function collectEnvAccess(
       throw new Error(`Source file not found in program: ${fileName}`);
     }
     const visit = (node: ts.Node): void => {
-      const kind = isValueReference(checker, node)
-        ? trackedKindOf(checker, node)
-        : undefined;
-      if (kind !== undefined) {
-        const use = classifyUse(checker, node, kind);
-        if (use.kind === "named") {
-          names.add(use.name);
-        } else if (use.kind === "unnamed") {
-          const { line } = sourceFile.getLineAndCharacterOfPosition(
-            node.getStart(sourceFile),
-          );
-          unnamed.push(`${fileName}:${line + 1}: ${node.parent.getText()}`);
-        }
+      const use = useOf(checker, node);
+      if (use?.kind === "named") {
+        names.add(use.name);
+      } else if (use?.kind === "unnamed") {
+        const { line } = sourceFile.getLineAndCharacterOfPosition(
+          node.getStart(sourceFile),
+        );
+        unnamed.push(`${fileName}:${line + 1}: ${node.parent.getText()}`);
       }
       ts.forEachChild(node, visit);
     };
