@@ -1,5 +1,5 @@
 import { deepEqual } from "@/lib/deepEqual";
-import { groupByKey } from "@/lib/groupByKey";
+import { pairByKeyInOrder } from "@/lib/pairByKeyInOrder";
 import { buildDiffResult } from "../../diff";
 import { formatValue } from "../../services/formatValue";
 import type {
@@ -103,17 +103,6 @@ function compareGeneralSection(
   return entries;
 }
 
-/**
- * Groups per-record notifications by filterCond. Multiple notifications can share
- * the same filterCond, so notifications within a group are compared by position
- * (index-based matching).
- */
-function buildPerRecordMultiMap(
-  notifications: readonly PerRecordNotification[],
-): Map<string, PerRecordNotification[]> {
-  return groupByKey(notifications, (n) => n.filterCond);
-}
-
 function perRecordLabel(notif: PerRecordNotification): string {
   // Uses || intentionally: empty strings should fall through to the next option
   // since they carry no meaningful label information for display purposes.
@@ -170,57 +159,36 @@ function comparePerRecordSection(
 ): NotificationDiffEntry[] {
   const entries: NotificationDiffEntry[] = [];
 
-  const localMulti = buildPerRecordMultiMap(local);
-  const remoteMulti = buildPerRecordMultiMap(remote);
-
-  for (const [key, localNotifs] of localMulti) {
-    const remoteNotifs = remoteMulti.get(key) ?? [];
-    const maxLen = Math.max(localNotifs.length, remoteNotifs.length);
-
-    for (let i = 0; i < maxLen; i++) {
-      const localNotif = localNotifs[i];
-      const remoteNotif = remoteNotifs[i];
-
-      if (localNotif && !remoteNotif) {
+  // Multiple notifications can share a filterCond, so notifications with the
+  // same filterCond are matched by position.
+  for (const pair of pairByKeyInOrder(local, remote, (n) => n.filterCond)) {
+    switch (pair.kind) {
+      case "localOnly":
         entries.push({
           type: "added",
           section: "perRecord",
-          name: perRecordLabel(localNotif),
+          name: perRecordLabel(pair.local),
           details: "new notification",
         });
-      } else if (!localNotif && remoteNotif) {
+        break;
+      case "remoteOnly":
         entries.push({
           type: "deleted",
           section: "perRecord",
-          name: perRecordLabel(remoteNotif),
+          name: perRecordLabel(pair.remote),
           details: "removed",
         });
-      } else if (
-        localNotif &&
-        remoteNotif &&
-        !deepEqual(localNotif, remoteNotif)
-      ) {
-        const diffs = describePerRecordChanges(localNotif, remoteNotif);
-        entries.push({
-          type: "modified",
-          section: "perRecord",
-          name: perRecordLabel(localNotif),
-          details: diffs,
-        });
-      }
-    }
-  }
-
-  for (const [key, remoteNotifs] of remoteMulti) {
-    if (!localMulti.has(key)) {
-      for (const remoteNotif of remoteNotifs) {
-        entries.push({
-          type: "deleted",
-          section: "perRecord",
-          name: perRecordLabel(remoteNotif),
-          details: "removed",
-        });
-      }
+        break;
+      case "both":
+        if (!deepEqual(pair.local, pair.remote)) {
+          entries.push({
+            type: "modified",
+            section: "perRecord",
+            name: perRecordLabel(pair.local),
+            details: describePerRecordChanges(pair.local, pair.remote),
+          });
+        }
+        break;
     }
   }
 

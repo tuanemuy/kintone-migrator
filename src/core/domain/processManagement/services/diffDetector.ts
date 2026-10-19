@@ -1,3 +1,4 @@
+import { pairByKeyInOrder } from "@/lib/pairByKeyInOrder";
 import { buildDiffResult } from "../../diff";
 import { formatValue } from "../../services/formatValue";
 import type { ProcessManagementConfig } from "../entity";
@@ -127,34 +128,19 @@ function compareStates(
   }
 }
 
-type IdentifiedAction = Readonly<{
-  label: string;
-  action: ProcessAction;
-}>;
-
 /**
- * Keys actions by name + from + to plus the occurrence order within that
- * triple. kintone allows same-named actions both from different states and as
- * conditional branches from one state, so the name alone would collapse them.
- * The input may come from kintone or the state file without passing the
- * parser, so no uniqueness is assumed.
+ * Identifies an action by name + from + to. kintone allows same-named actions
+ * both from different states and as conditional branches from one state.
+ * Repeats of the whole triple are not rejected either, so actions sharing a
+ * triple are told apart by their order of appearance.
  */
-function identifyActions(
-  actions: readonly ProcessAction[],
-): ReadonlyMap<string, IdentifiedAction> {
-  const occurrences = new Map<string, number>();
-  const identified = new Map<string, IdentifiedAction>();
-  for (const action of actions) {
-    const transitionKey = JSON.stringify([action.name, action.from, action.to]);
-    const occurrence = (occurrences.get(transitionKey) ?? 0) + 1;
-    occurrences.set(transitionKey, occurrence);
-    const label = describeProcessAction(action);
-    identified.set(`${transitionKey}#${occurrence}`, {
-      label: occurrence === 1 ? label : `${label} #${occurrence}`,
-      action,
-    });
-  }
-  return identified;
+function transitionKey(action: ProcessAction): string {
+  return JSON.stringify([action.name, action.from, action.to]);
+}
+
+function actionLabel(action: ProcessAction, index: number): string {
+  const label = describeProcessAction(action);
+  return index === 0 ? label : `${label} #${index + 1}`;
 }
 
 function compareActionEntries(
@@ -162,39 +148,40 @@ function compareActionEntries(
   remote: ProcessManagementConfig,
   entries: ProcessManagementDiffEntry[],
 ): void {
-  const localActions = identifyActions(local.actions);
-  const remoteActions = identifyActions(remote.actions);
-
-  for (const [key, { label, action: localAction }] of localActions) {
-    const remoteAction = remoteActions.get(key)?.action;
-    if (!remoteAction) {
-      entries.push({
-        type: "added",
-        category: "action",
-        name: label,
-        details: `filterCond: "${localAction.filterCond}"`,
-      });
-    } else {
-      const actionDiffs = compareActions(localAction, remoteAction);
-      if (actionDiffs.length > 0) {
+  for (const pair of pairByKeyInOrder(
+    local.actions,
+    remote.actions,
+    transitionKey,
+  )) {
+    switch (pair.kind) {
+      case "localOnly":
         entries.push({
-          type: "modified",
+          type: "added",
           category: "action",
-          name: label,
-          details: actionDiffs.join("\n"),
+          name: actionLabel(pair.local, pair.index),
+          details: `filterCond: "${pair.local.filterCond}"`,
         });
+        break;
+      case "remoteOnly":
+        entries.push({
+          type: "deleted",
+          category: "action",
+          name: actionLabel(pair.remote, pair.index),
+          details: `filterCond: "${pair.remote.filterCond}"`,
+        });
+        break;
+      case "both": {
+        const actionDiffs = compareActions(pair.local, pair.remote);
+        if (actionDiffs.length > 0) {
+          entries.push({
+            type: "modified",
+            category: "action",
+            name: actionLabel(pair.local, pair.index),
+            details: actionDiffs.join("\n"),
+          });
+        }
+        break;
       }
-    }
-  }
-
-  for (const [key, { label, action: remoteAction }] of remoteActions) {
-    if (!localActions.has(key)) {
-      entries.push({
-        type: "deleted",
-        category: "action",
-        name: label,
-        details: `filterCond: "${remoteAction.filterCond}"`,
-      });
     }
   }
 }

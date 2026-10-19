@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
-import { setupTestProcessManagementContainer } from "@/core/application/__tests__/helpers";
+import {
+  SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+  serializeProcessConfig,
+  setupTestProcessManagementContainer,
+} from "@/core/application/__tests__/helpers";
 import type { TestProcessManagementContainer } from "@/core/application/__tests__/helpers/processManagement";
 import type { ProcessManagementConfig } from "@/core/domain/processManagement/entity";
 import { ProcessManagementStateSerializer } from "@/core/domain/processManagement/services/processManagementStateSerializer";
@@ -94,5 +99,68 @@ describe("detectProcessManagementThreeWayDiff", () => {
     if (result.mode === "three-way") {
       expect(result.conflicts.map((e) => e.key)).toEqual(["process"]);
     }
+  });
+
+  describe("same-named actions", () => {
+    it("reports no change when local, remote, and state match", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+
+      const result = await detectProcessManagementThreeWayDiff({ container });
+
+      expect(result.mode).toBe("three-way");
+      if (result.mode === "three-way") {
+        expect(result.isEmpty).toBe(true);
+      }
+    });
+
+    it("classifies a remote change to one repeat as remote drift", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+        "2",
+      );
+
+      const result = await detectProcessManagementThreeWayDiff({ container });
+
+      expect(result.mode).toBe("three-way");
+      if (result.mode === "three-way") {
+        expect(result.remoteDrift.map((e) => e.key)).toEqual(["process"]);
+        expect(result.localChanges).toHaveLength(0);
+        expect(result.conflicts).toHaveLength(0);
+      }
+    });
+
+    it("classifies a local change to one repeat as local-only", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+
+      const result = await detectProcessManagementThreeWayDiff({ container });
+
+      expect(result.mode).toBe("three-way");
+      if (result.mode === "three-way") {
+        expect(result.localChanges.map((e) => e.key)).toEqual(["process"]);
+        expect(result.remoteDrift).toHaveLength(0);
+        expect(result.conflicts).toHaveLength(0);
+      }
+    });
   });
 });

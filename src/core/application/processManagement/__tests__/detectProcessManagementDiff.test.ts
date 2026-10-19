@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { setupTestProcessManagementContainer } from "@/core/application/__tests__/helpers";
+import {
+  SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+  serializeProcessConfig,
+  setupTestProcessManagementContainer,
+} from "@/core/application/__tests__/helpers";
 import { isSystemError, isValidationError } from "@/core/application/error";
+import { captureProcessManagement } from "../captureProcessManagement";
 import { detectProcessManagementDiff } from "../detectProcessManagementDiff";
 
 const VALID_CONFIG = `
@@ -404,6 +410,42 @@ actions: []
       await expect(
         detectProcessManagementDiff({ container }),
       ).rejects.toSatisfy(isSystemError);
+    });
+  });
+
+  describe("same-named actions", () => {
+    it("capture したテキストを保存すると差分なし", async () => {
+      const container = getContainer();
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+      );
+
+      const { configText } = await captureProcessManagement({ container });
+      container.processManagementStorage.setContent(configText);
+      const result = await detectProcessManagementDiff({ container });
+
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("name・from・to が同じアクションの 2 件目だけの変更を検出する", async () => {
+      const container = getContainer();
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+      );
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED),
+      );
+
+      const result = await detectProcessManagementDiff({ container });
+
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          category: "action",
+          name: "承認 (一次承認待ち → 最終承認待ち) #2",
+          details: 'filterCond: "部署 in ("開発")" -> "部署 in ("人事")"',
+        },
+      ]);
     });
   });
 });
