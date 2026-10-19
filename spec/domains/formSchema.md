@@ -84,7 +84,7 @@ type Lookup = Readonly<{
 ```
 
 - ルックアップ対応フィールド（SINGLE_LINE_TEXT, NUMBER, LINK）の `lookup` プロパティで使用
-- `relatedApp` は参照先アプリの識別情報
+- `relatedApp` は参照先アプリの識別情報。`code` は非空のときだけ持つ。kintone API がアプリコードの無い参照先アプリについて返す `code: ""` と、スキーマファイルの `code: ""`・値のない `code:` は、`code` を省いた値に揃える（`omitEmptyLookupRelatedAppCode`）
 - `fieldMappings` は参照先フィールドとのマッピング定義
 
 ### FieldCode

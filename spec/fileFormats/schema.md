@@ -163,7 +163,7 @@ lookup:
 | プロパティ | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | `app` | string | Yes | 参照先アプリのアプリID |
-| `code` | string | No | 参照先アプリのアプリコード |
+| `code` | string | No | 参照先アプリのアプリコード。空文字と値なしは省略と同じに扱う。参照先アプリにアプリコードが無ければ、`schema capture` / `schema pull` は書き出さない |
 
 **LookupFieldMapping**:
 
