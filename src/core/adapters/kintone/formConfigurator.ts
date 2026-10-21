@@ -26,6 +26,7 @@ import type {
 import {
   FieldCode as FieldCodeVO,
   LookupRelatedApp,
+  unsetLookupListAsEmpty,
 } from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -180,11 +181,6 @@ function normalizeDefaultValue(
       rest.defaultValue = rest.defaultValue === "" ? [] : [rest.defaultValue];
     }
   }
-}
-
-/** kintone returns `""` in place of an empty list for an unset lookup list. */
-function unsetLookupListAsEmpty(value: unknown): unknown {
-  return value === "" ? [] : value;
 }
 
 function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {

@@ -19,7 +19,11 @@ import type {
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../valueObject";
-import { FieldCode, LookupRelatedApp } from "../valueObject";
+import {
+  FieldCode,
+  LookupRelatedApp,
+  unsetLookupListAsEmpty,
+} from "../valueObject";
 
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
 
@@ -364,21 +368,18 @@ function optionalString(value: unknown): string | undefined {
   return value === undefined || value === null ? undefined : String(value);
 }
 
-/**
- * Reads a lookup list that may be left out. Omitted, valueless, and `""`
- * (how kintone reports an unset list, kept by earlier captures) all mean an
- * empty list.
- */
+/** Reads a lookup list; an omitted or valueless list is the empty list. */
 function optionalLookupList(
   code: string,
   key: string,
   value: unknown,
 ): readonly unknown[] {
-  if (value === undefined || value === null || value === "") return [];
-  if (!Array.isArray(value)) {
+  if (value === undefined || value === null) return [];
+  const list = unsetLookupListAsEmpty(value);
+  if (!Array.isArray(list)) {
     throw invalidLookup(code, `must have a "${key}" array`);
   }
-  return value;
+  return list;
 }
 
 function parseLookup(code: string, raw: unknown): Lookup {

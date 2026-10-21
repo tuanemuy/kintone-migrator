@@ -27,6 +27,15 @@ export const LookupRelatedApp = {
       : { app, code: code as AppCode },
 };
 
+/**
+ * kintone represents an unset lookup list (`fieldMappings`,
+ * `lookupPickerFields`) as `""`; it reads as the empty list. Other values are
+ * returned as-is for the caller to check.
+ */
+export function unsetLookupListAsEmpty(value: unknown): unknown {
+  return value === "" ? [] : value;
+}
+
 export type Lookup = Readonly<{
   relatedApp: LookupRelatedApp;
   relatedKeyField: string;

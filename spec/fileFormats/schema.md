@@ -615,7 +615,7 @@ ROW 内の `fields` 配列に、フィールドと並べて装飾要素を配置
 | --- | --- |
 | `EMPTY_SCHEMA_TEXT` | スキーマテキストが空 |
 | `INVALID_SCHEMA_FORMAT` | YAML として不正なテキスト |
-| `INVALID_SCHEMA_STRUCTURE` | `layout` キーが存在しない、または配列でない。`lookup` の構造が不正（`lookup`・`relatedApp`・`fieldMappings` の要素がオブジェクトでない、`fieldMappings`・`lookupPickerFields` が配列・空文字・値なしのいずれでもない） |
+| `INVALID_SCHEMA_STRUCTURE` | `layout` キーが存在しない、または配列でない。`lookup` の構造が不正（`lookup`・`relatedApp`・`fieldMappings` の要素がオブジェクトでない、`fieldMappings`・`lookupPickerFields` が省略・値なし・空文字・配列のいずれでもない） |
 | `INVALID_FIELD_TYPE` | 未知のフィールド型 |
 | `INVALID_LAYOUT_STRUCTURE` | レイアウト要素の構造が不正 |
 | `INVALID_DECORATION_ELEMENT` | 装飾要素の構造が不正（`elementId` の欠落等） |
