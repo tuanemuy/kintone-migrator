@@ -19,11 +19,8 @@ import type {
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../valueObject";
-import {
-  FieldCode,
-  LookupRelatedApp,
-  unsetLookupListAsEmpty,
-} from "../valueObject";
+import { FieldCode, LookupRelatedApp } from "../valueObject";
+import { readLookupList } from "./lookupListReader";
 
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
 
@@ -375,8 +372,8 @@ function optionalLookupList(
   value: unknown,
 ): readonly unknown[] {
   if (value === undefined || value === null) return [];
-  const list = unsetLookupListAsEmpty(value);
-  if (!Array.isArray(list)) {
+  const list = readLookupList(value);
+  if (list === undefined) {
     throw invalidLookup(code, `must have a "${key}" array`);
   }
   return list;

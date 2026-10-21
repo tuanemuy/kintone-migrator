@@ -15,6 +15,7 @@ import type {
 import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
+import { readLookupList } from "@/core/domain/formSchema/services/lookupListReader";
 import type {
   ElementSize,
   FieldCode,
@@ -26,7 +27,6 @@ import type {
 import {
   FieldCode as FieldCodeVO,
   LookupRelatedApp,
-  unsetLookupListAsEmpty,
 } from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
 
@@ -125,23 +125,16 @@ function assertRecord(
   }
 }
 
-function assertArray(
+function assertStringArray(
   value: unknown,
   fieldPath: string,
-): asserts value is unknown[] {
+): asserts value is string[] {
   if (!Array.isArray(value)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Expected array at ${fieldPath}, got ${typeof value}`,
     );
   }
-}
-
-function assertStringArray(
-  value: unknown,
-  fieldPath: string,
-): asserts value is string[] {
-  assertArray(value, fieldPath);
   for (let i = 0; i < value.length; i++) {
     if (typeof value[i] !== "string") {
       throw new SystemError(
@@ -183,6 +176,20 @@ function normalizeDefaultValue(
   }
 }
 
+function readKintoneLookupList(
+  value: unknown,
+  fieldPath: string,
+): readonly unknown[] {
+  const list = readLookupList(value);
+  if (list === undefined) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Expected array at ${fieldPath}, got ${typeof value}`,
+    );
+  }
+  return list;
+}
+
 function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   assertRecord(value, fieldPath);
   assertRecord(value.relatedApp, `${fieldPath}.relatedApp`);
@@ -192,8 +199,10 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
     assertString(code, `${fieldPath}.relatedApp.code`);
   }
   assertString(value.relatedKeyField, `${fieldPath}.relatedKeyField`);
-  const rawFieldMappings = unsetLookupListAsEmpty(value.fieldMappings);
-  assertArray(rawFieldMappings, `${fieldPath}.fieldMappings`);
+  const rawFieldMappings = readKintoneLookupList(
+    value.fieldMappings,
+    `${fieldPath}.fieldMappings`,
+  );
   const fieldMappings = rawFieldMappings.map((mapping, i) => {
     const mappingPath = `${fieldPath}.fieldMappings[${i}]`;
     assertRecord(mapping, mappingPath);
@@ -201,7 +210,10 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
     assertString(mapping.relatedField, `${mappingPath}.relatedField`);
     return { field: mapping.field, relatedField: mapping.relatedField };
   });
-  const lookupPickerFields = unsetLookupListAsEmpty(value.lookupPickerFields);
+  const lookupPickerFields = readKintoneLookupList(
+    value.lookupPickerFields,
+    `${fieldPath}.lookupPickerFields`,
+  );
   assertStringArray(lookupPickerFields, `${fieldPath}.lookupPickerFields`);
   const { filterCond, sort } = value;
   if (filterCond !== undefined) {

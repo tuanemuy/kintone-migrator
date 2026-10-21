@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BusinessRuleError } from "@/core/domain/error";
 import { FormSchemaErrorCode } from "../errorCode";
-import {
-  FieldCode,
-  LookupRelatedApp,
-  unsetLookupListAsEmpty,
-} from "../valueObject";
+import { FieldCode, LookupRelatedApp } from "../valueObject";
 
 describe("FieldCode", () => {
   it("有効な文字列からFieldCodeを生成する", () => {
@@ -101,19 +97,5 @@ describe("LookupRelatedApp", () => {
         code: "CUSTOMERS",
       });
     });
-  });
-});
-
-describe("unsetLookupListAsEmpty", () => {
-  it("空文字は空配列にする", () => {
-    expect(unsetLookupListAsEmpty("")).toStrictEqual([]);
-  });
-
-  it.each([
-    ["配列", ["name"]],
-    ["空でない文字列", "name"],
-    ["undefined", undefined],
-  ])("%sはそのまま返す", (_, value) => {
-    expect(unsetLookupListAsEmpty(value)).toBe(value);
   });
 });
