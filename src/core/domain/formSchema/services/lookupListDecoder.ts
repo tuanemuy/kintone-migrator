@@ -3,7 +3,9 @@
  * value. kintone represents an unset list as `""`, which reads as the empty
  * list. Returns `undefined` when the value is not a list.
  */
-export function readLookupList(value: unknown): readonly unknown[] | undefined {
+export function decodeLookupList(
+  value: unknown,
+): readonly unknown[] | undefined {
   if (value === "") return [];
   return Array.isArray(value) ? value : undefined;
 }

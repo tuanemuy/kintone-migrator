@@ -15,7 +15,7 @@ import type {
 import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
-import { readLookupList } from "@/core/domain/formSchema/services/lookupListReader";
+import { decodeLookupList } from "@/core/domain/formSchema/services/lookupListDecoder";
 import type {
   ElementSize,
   FieldCode,
@@ -180,7 +180,7 @@ function readKintoneLookupList(
   value: unknown,
   fieldPath: string,
 ): readonly unknown[] {
-  const list = readLookupList(value);
+  const list = decodeLookupList(value);
   if (list === undefined) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,

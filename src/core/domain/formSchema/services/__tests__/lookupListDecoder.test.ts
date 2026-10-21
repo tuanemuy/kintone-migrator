@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { readLookupList } from "../lookupListReader";
+import { decodeLookupList } from "../lookupListDecoder";
 
-describe("readLookupList", () => {
+describe("decodeLookupList", () => {
   it("未設定を表す空文字は空配列にする", () => {
-    expect(readLookupList("")).toStrictEqual([]);
+    expect(decodeLookupList("")).toStrictEqual([]);
   });
 
   it("配列はそのまま返す", () => {
     const list = ["name"];
 
-    expect(readLookupList(list)).toBe(list);
+    expect(decodeLookupList(list)).toBe(list);
   });
 
   it.each([
@@ -18,6 +18,6 @@ describe("readLookupList", () => {
     ["undefined", undefined],
     ["null", null],
   ])("%sはリストでないので undefined を返す", (_, value) => {
-    expect(readLookupList(value)).toBeUndefined();
+    expect(decodeLookupList(value)).toBeUndefined();
   });
 });
