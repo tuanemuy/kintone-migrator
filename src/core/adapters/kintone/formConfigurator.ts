@@ -124,16 +124,23 @@ function assertRecord(
   }
 }
 
-function assertStringArray(
+function assertArray(
   value: unknown,
   fieldPath: string,
-): asserts value is string[] {
+): asserts value is unknown[] {
   if (!Array.isArray(value)) {
     throw new SystemError(
       SystemErrorCode.ExternalApiError,
       `Expected array at ${fieldPath}, got ${typeof value}`,
     );
   }
+}
+
+function assertStringArray(
+  value: unknown,
+  fieldPath: string,
+): asserts value is string[] {
+  assertArray(value, fieldPath);
   for (let i = 0; i < value.length; i++) {
     if (typeof value[i] !== "string") {
       throw new SystemError(
@@ -175,6 +182,11 @@ function normalizeDefaultValue(
   }
 }
 
+/** kintone returns `""` in place of an empty list for an unset lookup list. */
+function unsetLookupListAsEmpty(value: unknown): unknown {
+  return value === "" ? [] : value;
+}
+
 function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   assertRecord(value, fieldPath);
   assertRecord(value.relatedApp, `${fieldPath}.relatedApp`);
@@ -184,35 +196,32 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
     assertString(code, `${fieldPath}.relatedApp.code`);
   }
   assertString(value.relatedKeyField, `${fieldPath}.relatedKeyField`);
-  if (!Array.isArray(value.fieldMappings)) {
-    throw new SystemError(
-      SystemErrorCode.ExternalApiError,
-      `Expected array at ${fieldPath}.fieldMappings, got ${typeof value.fieldMappings}`,
-    );
+  const rawFieldMappings = unsetLookupListAsEmpty(value.fieldMappings);
+  assertArray(rawFieldMappings, `${fieldPath}.fieldMappings`);
+  const fieldMappings = rawFieldMappings.map((mapping, i) => {
+    const mappingPath = `${fieldPath}.fieldMappings[${i}]`;
+    assertRecord(mapping, mappingPath);
+    assertString(mapping.field, `${mappingPath}.field`);
+    assertString(mapping.relatedField, `${mappingPath}.relatedField`);
+    return { field: mapping.field, relatedField: mapping.relatedField };
+  });
+  const lookupPickerFields = unsetLookupListAsEmpty(value.lookupPickerFields);
+  assertStringArray(lookupPickerFields, `${fieldPath}.lookupPickerFields`);
+  const { filterCond, sort } = value;
+  if (filterCond !== undefined) {
+    assertString(filterCond, `${fieldPath}.filterCond`);
   }
-  const fieldMappings = value.fieldMappings.map(
-    (mapping: unknown, i: number) => {
-      const mappingPath = `${fieldPath}.fieldMappings[${i}]`;
-      assertRecord(mapping, mappingPath);
-      assertString(mapping.field, `${mappingPath}.field`);
-      assertString(mapping.relatedField, `${mappingPath}.relatedField`);
-      return { field: mapping.field, relatedField: mapping.relatedField };
-    },
-  );
-  assertStringArray(
-    value.lookupPickerFields,
-    `${fieldPath}.lookupPickerFields`,
-  );
+  if (sort !== undefined) {
+    assertString(sort, `${fieldPath}.sort`);
+  }
 
   return {
     relatedApp: LookupRelatedApp.create(app, code),
     relatedKeyField: value.relatedKeyField,
     fieldMappings,
-    lookupPickerFields: value.lookupPickerFields,
-    ...(value.filterCond !== undefined
-      ? { filterCond: String(value.filterCond) }
-      : {}),
-    ...(value.sort !== undefined ? { sort: String(value.sort) } : {}),
+    lookupPickerFields,
+    ...(filterCond !== undefined ? { filterCond } : {}),
+    ...(sort !== undefined ? { sort } : {}),
   };
 }
 
@@ -309,7 +318,10 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   const properties =
     lookup === undefined
       ? others
-      : { ...others, lookup: fromKintoneLookup(lookup, `${type}.lookup`) };
+      : {
+          ...others,
+          lookup: fromKintoneLookup(lookup, `${type} "${code}".lookup`),
+        };
 
   return { ...base, type, properties } as FieldDefinition;
 }

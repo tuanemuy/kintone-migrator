@@ -572,6 +572,54 @@ describe("KintoneFormConfigurator", () => {
         });
       });
 
+      it("未設定を表す空文字の fieldMappings と lookupPickerFields は空配列にする", async () => {
+        const fields = await getFieldsWithLookup({
+          ...validLookup,
+          fieldMappings: "",
+          lookupPickerFields: "",
+        });
+
+        expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
+          lookup: {
+            relatedApp: { app: "10" },
+            relatedKeyField: "customer_code",
+            fieldMappings: [],
+            lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
+          },
+        });
+      });
+
+      it("SUBTABLE 内のフィールドの lookup が不正なら、そのフィールドを示す SystemError をスローする", async () => {
+        const client = createMockClient({
+          getFormFields: () =>
+            Promise.resolve({
+              properties: {
+                items: {
+                  type: "SUBTABLE",
+                  code: "items",
+                  label: "明細",
+                  fields: {
+                    item_customer: {
+                      type: "NUMBER",
+                      code: "item_customer",
+                      label: "顧客",
+                      lookup: { ...validLookup, relatedKeyField: 1 },
+                    },
+                  },
+                },
+              },
+            }),
+        });
+        const result = new KintoneFormConfigurator(client, APP_ID).getFields();
+
+        await expect(result).rejects.toThrow(SystemError);
+        await expect(result).rejects.toThrow(
+          ' at NUMBER "item_customer".lookup.relatedKeyField, got',
+        );
+      });
+
       it("lookup を返さないフィールドは lookup を持たない", async () => {
         const fields = await getFieldsWithLookup(undefined);
 
@@ -581,56 +629,71 @@ describe("KintoneFormConfigurator", () => {
       });
 
       it.each([
-        ["lookup が文字列", "x", "SINGLE_LINE_TEXT.lookup"],
+        ["lookup が文字列", "x", 'SINGLE_LINE_TEXT "customer".lookup'],
         [
           "relatedApp が無い",
           { ...validLookup, relatedApp: undefined },
-          "SINGLE_LINE_TEXT.lookup.relatedApp",
+          'SINGLE_LINE_TEXT "customer".lookup.relatedApp',
         ],
         [
           "relatedApp.app が数値",
           { ...validLookup, relatedApp: { app: 10 } },
-          "SINGLE_LINE_TEXT.lookup.relatedApp.app",
+          'SINGLE_LINE_TEXT "customer".lookup.relatedApp.app',
         ],
         [
           "relatedApp.code が null",
           { ...validLookup, relatedApp: { app: "10", code: null } },
-          "SINGLE_LINE_TEXT.lookup.relatedApp.code",
+          'SINGLE_LINE_TEXT "customer".lookup.relatedApp.code',
         ],
         [
           "relatedKeyField が無い",
           { ...validLookup, relatedKeyField: undefined },
-          "SINGLE_LINE_TEXT.lookup.relatedKeyField",
+          'SINGLE_LINE_TEXT "customer".lookup.relatedKeyField',
         ],
         [
           "fieldMappings が無い",
           { ...validLookup, fieldMappings: undefined },
-          "SINGLE_LINE_TEXT.lookup.fieldMappings",
+          'SINGLE_LINE_TEXT "customer".lookup.fieldMappings',
+        ],
+        [
+          "fieldMappings が空でない文字列",
+          { ...validLookup, fieldMappings: "name" },
+          'SINGLE_LINE_TEXT "customer".lookup.fieldMappings',
+        ],
+        [
+          "filterCond が数値",
+          { ...validLookup, filterCond: 1 },
+          'SINGLE_LINE_TEXT "customer".lookup.filterCond',
+        ],
+        [
+          "sort が null",
+          { ...validLookup, sort: null },
+          'SINGLE_LINE_TEXT "customer".lookup.sort',
         ],
         [
           "fieldMappings の要素が文字列",
           { ...validLookup, fieldMappings: ["name"] },
-          "SINGLE_LINE_TEXT.lookup.fieldMappings[0]",
+          'SINGLE_LINE_TEXT "customer".lookup.fieldMappings[0]',
         ],
         [
           "fieldMappings の field が無い",
           { ...validLookup, fieldMappings: [{ relatedField: "n" }] },
-          "SINGLE_LINE_TEXT.lookup.fieldMappings[0].field",
+          'SINGLE_LINE_TEXT "customer".lookup.fieldMappings[0].field',
         ],
         [
           "fieldMappings の relatedField が無い",
           { ...validLookup, fieldMappings: [{ field: "n" }] },
-          "SINGLE_LINE_TEXT.lookup.fieldMappings[0].relatedField",
+          'SINGLE_LINE_TEXT "customer".lookup.fieldMappings[0].relatedField',
         ],
         [
           "lookupPickerFields に数値がある",
           { ...validLookup, lookupPickerFields: [1] },
-          "SINGLE_LINE_TEXT.lookup.lookupPickerFields[0]",
+          'SINGLE_LINE_TEXT "customer".lookup.lookupPickerFields[0]',
         ],
         [
           "lookupPickerFields が無い",
           { ...validLookup, lookupPickerFields: undefined },
-          "SINGLE_LINE_TEXT.lookup.lookupPickerFields",
+          'SINGLE_LINE_TEXT "customer".lookup.lookupPickerFields',
         ],
       ])("%s なら SystemError をスローする", async (_, lookup, path) => {
         const result = getFieldsWithLookup(lookup);

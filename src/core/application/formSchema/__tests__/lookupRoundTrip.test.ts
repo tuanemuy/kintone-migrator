@@ -10,7 +10,10 @@ import { applyPulledMerge, pullSchema } from "../pullSchema";
 
 type RelatedApp = { app: string; code?: string };
 
-function createContainer(remoteRelatedApp: RelatedApp) {
+function createContainer(
+  remoteRelatedApp: RelatedApp,
+  remoteLookup: Record<string, unknown> = {},
+) {
   return createKintoneBackedFormSchemaContainer({
     properties: {
       customer_code: {
@@ -26,6 +29,7 @@ function createContainer(remoteRelatedApp: RelatedApp) {
           lookupPickerFields: ["code", "name"],
           filterCond: "",
           sort: "レコード番号 desc",
+          ...remoteLookup,
         },
       },
       customer_name: {
@@ -213,6 +217,64 @@ describe("lookup の relatedApp を含むフォームの diff / migrate", () => 
 
     expect(client.app.updateFormFields).toHaveBeenCalledTimes(1);
     expect(sentRelatedApp(client)).toStrictEqual(sent);
+  });
+});
+
+describe("未設定の fieldMappings と lookupPickerFields", () => {
+  const unsetLists = { fieldMappings: "", lookupPickerFields: "" };
+  const schemaWithLists = (lists: string) => `layout:
+  - type: ROW
+    fields:
+      - code: customer_code
+        type: SINGLE_LINE_TEXT
+        label: 顧客コード
+        noLabel: false
+        required: false
+        lookup:
+          relatedApp: { app: "10" }
+          relatedKeyField: code
+${lists}
+          filterCond: ""
+          sort: レコード番号 desc
+      - code: customer_name
+        type: SINGLE_LINE_TEXT
+        label: 顧客名
+        noLabel: false
+`;
+
+  it.each([
+    [
+      "空文字を書いた YAML（旧版 capture の出力）",
+      '          fieldMappings: ""\n          lookupPickerFields: ""',
+    ],
+    ["キーを省いた YAML", ""],
+    [
+      "空配列を書いた YAML",
+      "          fieldMappings: []\n          lookupPickerFields: []",
+    ],
+  ])("%s と、空文字を返す API は差分なし", async (_, lists) => {
+    const { container } = createContainer({ app: "10", code: "" }, unsetLists);
+    container.schemaStorage.setContent(schemaWithLists(lists));
+
+    const result = await detectDiff({ container });
+
+    expect(result.isEmpty).toBe(true);
+  });
+
+  it("API が空文字を返すとき、capture の YAML は空配列を書き、直後の diff は差分なし", async () => {
+    const { container } = createContainer({ app: "10", code: "" }, unsetLists);
+
+    const { schemaText } = await captureSchema({ container });
+    container.schemaStorage.setContent(schemaText);
+    const result = await detectDiff({ container });
+
+    const parsed = container.configCodec.parse(schemaText) as {
+      layout: { fields: { lookup?: Record<string, unknown> }[] }[];
+    };
+    const lookup = parsed.layout[0]?.fields[0]?.lookup;
+    expect(lookup?.fieldMappings).toStrictEqual([]);
+    expect(lookup?.lookupPickerFields).toStrictEqual([]);
+    expect(result.isEmpty).toBe(true);
   });
 });
 

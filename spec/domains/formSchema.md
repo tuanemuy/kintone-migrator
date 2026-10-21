@@ -96,6 +96,7 @@ type Lookup = Readonly<{
 - `LookupRelatedApp.create` は `code` が空文字か `undefined` なら `code` を持たない値を作る。kintone API はアプリコードの無い参照先アプリについて `code: ""` を返し、スキーマファイルは同じアプリを `code` なしで書くため、両者を同じ値にする
 - `Lookup` は SchemaParser（スキーマファイル）と kintone アダプター（API レスポンス）がそれぞれ組み立て、未知のキーは持たない
 - `fieldMappings` は参照先フィールドとのマッピング定義
+- 未設定の `fieldMappings`・`lookupPickerFields` は空配列で表す。kintone API は未設定のこれらを空文字で返す
 
 ### FieldCode
 

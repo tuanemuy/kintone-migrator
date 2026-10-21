@@ -364,6 +364,23 @@ function optionalString(value: unknown): string | undefined {
   return value === undefined || value === null ? undefined : String(value);
 }
 
+/**
+ * Reads a lookup list that may be left out. Omitted, valueless, and `""`
+ * (how kintone reports an unset list, kept by earlier captures) all mean an
+ * empty list.
+ */
+function optionalLookupList(
+  code: string,
+  key: string,
+  value: unknown,
+): readonly unknown[] {
+  if (value === undefined || value === null || value === "") return [];
+  if (!Array.isArray(value)) {
+    throw invalidLookup(code, `must have a "${key}" array`);
+  }
+  return value;
+}
+
 function parseLookup(code: string, raw: unknown): Lookup {
   if (!isRecord(raw)) {
     throw invalidLookup(code, "must be an object");
@@ -371,14 +388,18 @@ function parseLookup(code: string, raw: unknown): Lookup {
   if (!isRecord(raw.relatedApp)) {
     throw invalidLookup(code, 'must have a "relatedApp" object');
   }
-  if (!Array.isArray(raw.fieldMappings)) {
-    throw invalidLookup(code, 'must have a "fieldMappings" array');
-  }
-  if (!Array.isArray(raw.lookupPickerFields)) {
-    throw invalidLookup(code, 'must have a "lookupPickerFields" array');
-  }
+  const rawFieldMappings = optionalLookupList(
+    code,
+    "fieldMappings",
+    raw.fieldMappings,
+  );
+  const lookupPickerFields = optionalLookupList(
+    code,
+    "lookupPickerFields",
+    raw.lookupPickerFields,
+  ).map((f) => String(f));
 
-  const fieldMappings = raw.fieldMappings.map((mapping: unknown) => {
+  const fieldMappings = rawFieldMappings.map((mapping) => {
     if (!isRecord(mapping)) {
       throw invalidLookup(code, 'must have objects in "fieldMappings"');
     }
@@ -397,7 +418,7 @@ function parseLookup(code: string, raw: unknown): Lookup {
     ),
     relatedKeyField: String(raw.relatedKeyField ?? ""),
     fieldMappings,
-    lookupPickerFields: raw.lookupPickerFields.map((f: unknown) => String(f)),
+    lookupPickerFields,
     ...(filterCond !== undefined ? { filterCond } : {}),
     ...(sort !== undefined ? { sort } : {}),
   };

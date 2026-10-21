@@ -351,25 +351,69 @@ describe("SchemaParser", () => {
           ],
         }).fields.get("customer" as FieldCode)?.properties;
 
-      it("数値で書いた値は文字列にし、lookup の外のキーは落とす", () => {
+      it("lookup の外のキーは落とす", () => {
         expect(
           parseLookupOf({
-            relatedApp: { app: 10, code: 20 },
+            relatedApp: { app: "10", code: "CUSTOMERS" },
             relatedKeyField: "customer_code",
             fieldMappings: [{ field: "name", relatedField: "customer_name" }],
-            lookupPickerFields: ["customer_name", 30],
+            lookupPickerFields: ["customer_name"],
             filterCond: 'status in ("active")',
             sort: "customer_code asc",
             unknownKey: "x",
           }),
         ).toStrictEqual({
           lookup: {
-            relatedApp: { app: "10", code: "20" },
+            relatedApp: { app: "10", code: "CUSTOMERS" },
             relatedKeyField: "customer_code",
             fieldMappings: [{ field: "name", relatedField: "customer_name" }],
-            lookupPickerFields: ["customer_name", "30"],
+            lookupPickerFields: ["customer_name"],
             filterCond: 'status in ("active")',
             sort: "customer_code asc",
+          },
+        });
+      });
+
+      it("数値で書いた値はすべて文字列にする", () => {
+        expect(
+          parseLookupOf({
+            relatedApp: { app: 10, code: 20 },
+            relatedKeyField: 30,
+            fieldMappings: [{ field: 40, relatedField: 50 }],
+            lookupPickerFields: [60],
+            filterCond: 70,
+            sort: 80,
+          }),
+        ).toStrictEqual({
+          lookup: {
+            relatedApp: { app: "10", code: "20" },
+            relatedKeyField: "30",
+            fieldMappings: [{ field: "40", relatedField: "50" }],
+            lookupPickerFields: ["60"],
+            filterCond: "70",
+            sort: "80",
+          },
+        });
+      });
+
+      it.each([
+        ["省略", undefined],
+        ["値なし（null）", null],
+        ["空文字", ""],
+      ])("fieldMappings と lookupPickerFields が%sなら空配列にする", (_, list) => {
+        expect(
+          parseLookupOf({
+            relatedApp: { app: "10" },
+            relatedKeyField: "customer_code",
+            fieldMappings: list,
+            lookupPickerFields: list,
+          }),
+        ).toStrictEqual({
+          lookup: {
+            relatedApp: { app: "10" },
+            relatedKeyField: "customer_code",
+            fieldMappings: [],
+            lookupPickerFields: [],
           },
         });
       });
@@ -431,8 +475,13 @@ describe("SchemaParser", () => {
           '"relatedApp" object',
         ],
         [
-          "fieldMappings が無い",
-          { ...validLookup, fieldMappings: undefined },
+          "fieldMappings が空でない文字列",
+          { ...validLookup, fieldMappings: "name" },
+          '"fieldMappings" array',
+        ],
+        [
+          "fieldMappings がオブジェクト",
+          { ...validLookup, fieldMappings: { field: "name" } },
           '"fieldMappings" array',
         ],
         [
@@ -441,8 +490,8 @@ describe("SchemaParser", () => {
           'objects in "fieldMappings"',
         ],
         [
-          "lookupPickerFields が無い",
-          { ...validLookup, lookupPickerFields: undefined },
+          "lookupPickerFields が空でない文字列",
+          { ...validLookup, lookupPickerFields: "customer_name" },
           '"lookupPickerFields" array',
         ],
       ])("%s なら InvalidSchemaStructure エラーになる", (_, lookup, message) => {
