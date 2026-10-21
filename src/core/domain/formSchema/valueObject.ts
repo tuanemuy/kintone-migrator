@@ -10,8 +10,25 @@ export type LookupFieldMapping = Readonly<{
   relatedField: string;
 }>;
 
+/** A related app's app code. Never empty. */
+export type AppCode = string & { readonly brand: "AppCode" };
+
+export type LookupRelatedApp = Readonly<{ app: string; code?: AppCode }>;
+
+export const LookupRelatedApp = {
+  /**
+   * kintone returns `code: ""` for a related app without an app code, while a
+   * schema leaves `code` out for the same app. Both build a related app
+   * without `code`, so only a non-empty `code` is kept.
+   */
+  create: (app: string, code: string | undefined): LookupRelatedApp =>
+    code === undefined || code === ""
+      ? { app }
+      : { app, code: code as AppCode },
+};
+
 export type Lookup = Readonly<{
-  relatedApp: Readonly<{ app: string; code?: string }>;
+  relatedApp: LookupRelatedApp;
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
