@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
   SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
   serializeProcessConfig,
   setupTestProcessManagementContainer,
@@ -444,6 +445,30 @@ actions: []
           category: "action",
           name: "承認 (一次承認待ち → 最終承認待ち) #2",
           details: 'filterCond: "部署 in ("開発")" -> "部署 in ("人事")"',
+        },
+      ]);
+    });
+  });
+
+  describe("action order", () => {
+    it("同じ遷移元のアクションの並べ替えを差分として検出する", async () => {
+      const container = getContainer();
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+      );
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED),
+      );
+
+      const result = await detectProcessManagementDiff({ container });
+
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          category: "action",
+          name: "(order) 未処理",
+          details:
+            "申請する (未処理 → 課長承認待ち), 申請する (未処理 → 一次承認待ち) -> 申請する (未処理 → 一次承認待ち), 申請する (未処理 → 課長承認待ち)",
         },
       ]);
     });

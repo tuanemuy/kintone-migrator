@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
 import {
   SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
   SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
   serializeProcessConfig,
   setupTestProcessManagementContainer,
@@ -174,6 +175,30 @@ describe("detectProcessManagementThreeWayDiff", () => {
 
       expect(result.mode).toBe("three-way");
       if (result.mode === "three-way") {
+        expect(result.localChanges.map((e) => e.key)).toEqual(["process"]);
+        expect(result.remoteDrift).toHaveLength(0);
+        expect(result.conflicts).toHaveLength(0);
+      }
+    });
+  });
+
+  describe("action order", () => {
+    it("classifies a local reorder of actions from one state as local-only", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+
+      const result = await detectProcessManagementThreeWayDiff({ container });
+
+      expect(result.mode).toBe("three-way");
+      if (result.mode === "three-way") {
+        expect(result.isEmpty).toBe(false);
         expect(result.localChanges.map((e) => e.key)).toEqual(["process"]);
         expect(result.remoteDrift).toHaveLength(0);
         expect(result.conflicts).toHaveLength(0);

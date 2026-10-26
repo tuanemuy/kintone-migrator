@@ -3,6 +3,7 @@ import { configCodec } from "@/core/adapters/yaml/configCodec";
 import {
   readProcessStateConfig,
   SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
   SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
   serializeProcessConfig,
   setupTestProcessManagementContainer,
@@ -204,6 +205,53 @@ describe("pushProcessManagement", () => {
         "update",
       );
       expect(container.appRevisionStorage.callLog).not.toContain("update");
+    });
+  });
+
+  describe("action order", () => {
+    it("rejects with ConfigDrift when the remote reordered actions from one state", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
+        "2",
+      );
+
+      await expect(
+        pushProcessManagement({ container, input: {} }),
+      ).rejects.toSatisfy(
+        (e: unknown) =>
+          e instanceof ConflictError &&
+          e.code === ConflictErrorCode.ConfigDrift,
+      );
+      expect(container.processManagementConfigurator.callLog).not.toContain(
+        "updateProcessManagement",
+      );
+    });
+
+    it("sends the local order when only the local reordered actions", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG,
+        "1",
+      );
+
+      const result = await pushProcessManagement({ container, input: {} });
+
+      expect(result.mode).toBe("push");
+      expect(
+        container.processManagementConfigurator.lastUpdateParams?.config,
+      ).toEqual(SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED);
+      expect(await readProcessStateConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
+      );
     });
   });
 });

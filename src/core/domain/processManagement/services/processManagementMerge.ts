@@ -11,14 +11,15 @@ import { ProcessManagementDiffDetector } from "./diffDetector";
 /**
  * Equality for two {@link ProcessManagementConfig} values, reusing the 2-way
  * diffDetector's "no changes" semantics (`enable` + order-sensitive entity
- * comparison for states/actions). Two configs are equal exactly when the
- * detector reports no differences, so the whole-entity 3-way merge granularity
- * matches `process diff`.
+ * comparison for states/actions + the order of actions sharing a `from`).
+ * Two configs are equal exactly when the detector reports no differences, so
+ * the whole-entity 3-way merge granularity matches `process diff`.
  *
  * Note: `ProcessManagementDiffDetector.detect` is not symmetric in its output
  * text, but it IS symmetric in `isEmpty` — it enumerates added/modified/deleted
- * over the union of state/action keys, so `detect(a, b).isEmpty` is true iff
- * every key matches, regardless of argument order.
+ * over the union of state/action keys and compares the order of the actions
+ * present on both sides, so `detect(a, b).isEmpty` is true iff every key and
+ * that order match, regardless of argument order.
  */
 export function isProcessManagementConfigEqual(
   a: ProcessManagementConfig,

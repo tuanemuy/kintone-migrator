@@ -698,15 +698,15 @@ describe("ProcessManagementDiffDetector", () => {
       ]);
     });
 
-    it("should report no diff when actions with different transitions are reordered", () => {
+    it("should report no diff when actions from different states are reordered", () => {
       const local = makeConfig({
         actions: [
-          approveSales,
-          applyToDirector,
-          sendBackFromFinal,
-          approveDev,
           applyToManager,
+          sendBackFromFinal,
           sendBackFromFirst,
+          applyToDirector,
+          approveSales,
+          approveDev,
         ],
       });
       const remote = makeConfig({ actions: allActions });
@@ -794,6 +794,239 @@ describe("ProcessManagementDiffDetector", () => {
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
       expect(result.entries.map((e) => e.type)).toEqual(["added", "deleted"]);
+    });
+  });
+
+  describe("action order", () => {
+    const approve = makeAction({ name: "承認", from: "未処理", to: "完了" });
+    const reject = makeAction({ name: "却下", from: "未処理", to: "却下済み" });
+    const withdraw = makeAction({
+      name: "取り下げ",
+      from: "未処理",
+      to: "取り下げ済み",
+    });
+    const sendBack = makeAction({
+      name: "差し戻し",
+      from: "確認中",
+      to: "未処理",
+    });
+    const confirm = makeAction({ name: "確認", from: "確認中", to: "完了" });
+
+    it("should report a reorder of actions from one state", () => {
+      const local = makeConfig({ actions: [reject, approve] });
+      const remote = makeConfig({ actions: [approve, reject] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.isEmpty).toBe(false);
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          category: "action",
+          name: "(order) 未処理",
+          details:
+            "承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了)",
+        },
+      ]);
+      expect(result.summary).toEqual({
+        added: 0,
+        modified: 1,
+        deleted: 0,
+        total: 1,
+      });
+    });
+
+    it("should report a reorder of conditional branches sharing a name", () => {
+      const toManager = makeAction({
+        name: "申請する",
+        to: "課長承認待ち",
+        filterCond: "金額 < 500000",
+      });
+      const toDirector = makeAction({
+        name: "申請する",
+        to: "部長承認待ち",
+        filterCond: "金額 >= 500000",
+      });
+      const local = makeConfig({ actions: [toDirector, toManager] });
+      const remote = makeConfig({ actions: [toManager, toDirector] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          category: "action",
+          name: "(order) 未処理",
+          details:
+            "申請する (未処理 → 課長承認待ち), 申請する (未処理 → 部長承認待ち) -> 申請する (未処理 → 部長承認待ち), 申請する (未処理 → 課長承認待ち)",
+        },
+      ]);
+    });
+
+    it("should report no diff when the order within each state is kept", () => {
+      const local = makeConfig({
+        actions: [sendBack, approve, confirm, reject],
+      });
+      const remote = makeConfig({
+        actions: [approve, reject, sendBack, confirm],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.isEmpty).toBe(true);
+    });
+
+    it("should report only the added action when it is inserted between kept ones", () => {
+      const local = makeConfig({ actions: [approve, withdraw, reject] });
+      const remote = makeConfig({ actions: [approve, reject] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries.map((e) => [e.type, e.name])).toEqual([
+        ["added", "取り下げ (未処理 → 取り下げ済み)"],
+      ]);
+    });
+
+    it("should report only the deleted action when the remaining order is kept", () => {
+      const local = makeConfig({ actions: [approve, reject] });
+      const remote = makeConfig({ actions: [approve, withdraw, reject] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries.map((e) => [e.type, e.name])).toEqual([
+        ["deleted", "取り下げ (未処理 → 取り下げ済み)"],
+      ]);
+    });
+
+    it("should compare the order over the actions present on both sides", () => {
+      const local = makeConfig({ actions: [withdraw, reject, approve] });
+      const remote = makeConfig({ actions: [approve, reject] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toEqual([
+        {
+          type: "added",
+          category: "action",
+          name: "取り下げ (未処理 → 取り下げ済み)",
+          details: 'filterCond: ""',
+        },
+        {
+          type: "modified",
+          category: "action",
+          name: "(order) 未処理",
+          details:
+            "承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了)",
+        },
+      ]);
+    });
+
+    it("should report both the content change and the reorder", () => {
+      const local = makeConfig({
+        actions: [reject, { ...approve, type: "SECONDARY" }],
+      });
+      const remote = makeConfig({ actions: [approve, reject] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          category: "action",
+          name: "承認 (未処理 → 完了)",
+          details: "type: PRIMARY -> SECONDARY",
+        },
+        {
+          type: "modified",
+          category: "action",
+          name: "(order) 未処理",
+          details:
+            "承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了)",
+        },
+      ]);
+    });
+
+    it("should report the order of repeats when another action moves between them", () => {
+      const repeatA = makeAction({
+        name: "申請",
+        to: "審査中",
+        filterCond: "c1",
+      });
+      const repeatB = { ...repeatA, filterCond: "c2" };
+      const cancel = makeAction({ name: "取消", to: "取消済み" });
+      const local = makeConfig({ actions: [repeatB, cancel, repeatA] });
+      const remote = makeConfig({ actions: [repeatA, repeatB, cancel] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries).toEqual([
+        {
+          type: "modified",
+          category: "action",
+          name: "申請 (未処理 → 審査中)",
+          details: 'filterCond: "c1" -> "c2"',
+        },
+        {
+          type: "modified",
+          category: "action",
+          name: "申請 (未処理 → 審査中) #2",
+          details: 'filterCond: "c2" -> "c1"',
+        },
+        {
+          type: "modified",
+          category: "action",
+          name: "(order) 未処理",
+          details:
+            "申請 (未処理 → 審査中), 申請 (未処理 → 審査中) #2, 取消 (未処理 → 取消済み) -> 申請 (未処理 → 審査中), 取消 (未処理 → 取消済み), 申請 (未処理 → 審査中) #2",
+        },
+      ]);
+    });
+
+    it("should report one entry per state in local first-appearance order after other action entries", () => {
+      const local = makeConfig({
+        actions: [
+          reject,
+          approve,
+          confirm,
+          sendBack,
+          { ...withdraw, filterCond: "x" },
+        ],
+      });
+      const remote = makeConfig({
+        actions: [sendBack, confirm, withdraw, approve, reject],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries.map((e) => [e.type, e.name, e.details])).toEqual([
+        [
+          "modified",
+          "取り下げ (未処理 → 取り下げ済み)",
+          'filterCond: "" -> "x"',
+        ],
+        [
+          "modified",
+          "(order) 未処理",
+          "取り下げ (未処理 → 取り下げ済み), 承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了), 取り下げ (未処理 → 取り下げ済み)",
+        ],
+        [
+          "modified",
+          "(order) 確認中",
+          "差し戻し (確認中 → 未処理), 確認 (確認中 → 完了) -> 確認 (確認中 → 完了), 差し戻し (確認中 → 未処理)",
+        ],
+      ]);
+    });
+
+    it("should report the order entry regardless of which side has an added action", () => {
+      const local = makeConfig({ actions: [reject, approve] });
+      const remote = makeConfig({ actions: [approve, withdraw, reject] });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries.map((e) => [e.type, e.name])).toEqual([
+        ["modified", "(order) 未処理"],
+        ["deleted", "取り下げ (未処理 → 取り下げ済み)"],
+      ]);
     });
   });
 
