@@ -41,6 +41,22 @@ describe("GeneralSettingsDiffDetector", () => {
       expect(result.entries[0].details).toContain("New Name");
     });
 
+    it("should escape double quotes in name", () => {
+      const local = makeConfig({ name: '"新" 案件管理' });
+      const remote = makeConfig({ name: "案件管理" });
+      const result = GeneralSettingsDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        '"案件管理" -> "\\"新\\" 案件管理"',
+      );
+    });
+
+    it("should show an unset name as an empty string", () => {
+      const local = makeConfig({ name: "案件管理" });
+      const remote = makeConfig({ name: undefined });
+      const result = GeneralSettingsDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe('"" -> "案件管理"');
+    });
+
     it("should detect description change with suppressed values", () => {
       const local = makeConfig({ description: "new desc" });
       const remote = makeConfig({ description: "old desc" });

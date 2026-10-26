@@ -127,6 +127,28 @@ describe("ReportDiffDetector", () => {
       expect(result.entries[0].details).toContain('"" -> "status = 1"');
     });
 
+    it("should escape double quotes in name", () => {
+      const local = makeConfig({ r1: makeReport({ name: '"月次" 売上' }) });
+      const remote = makeConfig({ r1: makeReport({ name: "売上" }) });
+      const result = ReportDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        'name: "売上" -> "\\"月次\\" 売上"',
+      );
+    });
+
+    it("should escape double quotes in filterCond", () => {
+      const local = makeConfig({
+        r1: makeReport({ filterCond: '部署 in ("人事")' }),
+      });
+      const remote = makeConfig({
+        r1: makeReport({ filterCond: '部署 in ("開発")' }),
+      });
+      const result = ReportDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        'filterCond: "部署 in (\\"開発\\")" -> "部署 in (\\"人事\\")"',
+      );
+    });
+
     it("should detect periodicReport change", () => {
       const local = makeConfig({
         r1: makeReport({

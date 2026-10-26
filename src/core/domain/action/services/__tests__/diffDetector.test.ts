@@ -99,6 +99,19 @@ describe("ActionDiffDetector", () => {
       expect(result.entries[0].details).toContain('"" -> "field = 1"');
     });
 
+    it("should escape double quotes in filterCond", () => {
+      const local = makeConfig({
+        a: makeAction({ filterCond: '部署 in ("人事")' }),
+      });
+      const remote = makeConfig({
+        a: makeAction({ filterCond: '部署 in ("開発")' }),
+      });
+      const result = ActionDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        'filterCond: "部署 in (\\"開発\\")" -> "部署 in (\\"人事\\")"',
+      );
+    });
+
     it("should detect mappings change", () => {
       const local = makeConfig({
         a: makeAction({

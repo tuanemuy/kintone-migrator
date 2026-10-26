@@ -1,12 +1,16 @@
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type { AdminNotesConfig } from "../entity";
 import type { AdminNotesDiff, AdminNotesDiffEntry } from "../valueObject";
 
 const CONTENT_TRUNCATE_LENGTH = 30;
 
-function truncate(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  return `${text.slice(0, maxLength)}...`;
+// The ellipsis stays outside the quotes so that the quoted part is always
+// literal content. Counting code points keeps surrogate pairs whole.
+function formatContentPreview(text: string, maxLength: number): string {
+  const codePoints = Array.from(text);
+  if (codePoints.length <= maxLength) return formatValue(text);
+  return `${formatValue(codePoints.slice(0, maxLength).join(""))}...`;
 }
 
 function compareConfigs(
@@ -19,7 +23,7 @@ function compareConfigs(
     entries.push({
       type: "modified",
       field: "content",
-      details: `"${truncate(remote.content, CONTENT_TRUNCATE_LENGTH)}" -> "${truncate(local.content, CONTENT_TRUNCATE_LENGTH)}"`,
+      details: `${formatContentPreview(remote.content, CONTENT_TRUNCATE_LENGTH)} -> ${formatContentPreview(local.content, CONTENT_TRUNCATE_LENGTH)}`,
     });
   }
 
