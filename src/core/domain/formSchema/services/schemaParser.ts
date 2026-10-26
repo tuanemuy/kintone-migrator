@@ -15,10 +15,12 @@ import type {
   GroupFieldDefinition,
   LayoutElement,
   LayoutField,
+  Lookup,
   ReferenceTableFieldDefinition,
   SubtableFieldDefinition,
 } from "../valueObject";
-import { FieldCode } from "../valueObject";
+import { FieldCode, LookupRelatedApp } from "../valueObject";
+import { decodeLookupList } from "./lookupListDecoder";
 
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
 
@@ -352,6 +354,74 @@ function buildFieldDefinition(
   }
 }
 
+function invalidLookup(code: string, detail: string): BusinessRuleError {
+  return new BusinessRuleError(
+    FormSchemaErrorCode.FsInvalidSchemaStructure,
+    `Field "${code}" lookup ${detail}`,
+  );
+}
+
+function optionalString(value: unknown): string | undefined {
+  return value === undefined || value === null ? undefined : String(value);
+}
+
+/** Reads a lookup list; an omitted or valueless list is the empty list. */
+function optionalLookupList(
+  code: string,
+  key: string,
+  value: unknown,
+): readonly unknown[] {
+  if (value === undefined || value === null) return [];
+  const list = decodeLookupList(value);
+  if (list === undefined) {
+    throw invalidLookup(code, `must have a "${key}" array`);
+  }
+  return list;
+}
+
+function parseLookup(code: string, raw: unknown): Lookup {
+  if (!isRecord(raw)) {
+    throw invalidLookup(code, "must be an object");
+  }
+  if (!isRecord(raw.relatedApp)) {
+    throw invalidLookup(code, 'must have a "relatedApp" object');
+  }
+  const rawFieldMappings = optionalLookupList(
+    code,
+    "fieldMappings",
+    raw.fieldMappings,
+  );
+  const lookupPickerFields = optionalLookupList(
+    code,
+    "lookupPickerFields",
+    raw.lookupPickerFields,
+  ).map((f) => String(f));
+
+  const fieldMappings = rawFieldMappings.map((mapping) => {
+    if (!isRecord(mapping)) {
+      throw invalidLookup(code, 'must have objects in "fieldMappings"');
+    }
+    return {
+      field: String(mapping.field ?? ""),
+      relatedField: String(mapping.relatedField ?? ""),
+    };
+  });
+  const filterCond = optionalString(raw.filterCond);
+  const sort = optionalString(raw.sort);
+
+  return {
+    relatedApp: LookupRelatedApp.create(
+      String(raw.relatedApp.app ?? ""),
+      optionalString(raw.relatedApp.code),
+    ),
+    relatedKeyField: String(raw.relatedKeyField ?? ""),
+    fieldMappings,
+    lookupPickerFields,
+    ...(filterCond !== undefined ? { filterCond } : {}),
+    ...(sort !== undefined ? { sort } : {}),
+  };
+}
+
 function parseReferenceTableField(
   raw: RawField,
   code: string,
@@ -472,7 +542,11 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
     return parseReferenceTableField(raw, code, base);
   }
 
-  const properties = extractProperties(raw);
+  const { lookup, ...others } = extractProperties(raw);
+  const properties =
+    lookup === undefined
+      ? others
+      : { ...others, lookup: parseLookup(code, lookup) };
   validateFieldProperties(code, fieldType, properties);
 
   return buildFieldDefinition(base, fieldType, properties);

@@ -1,3 +1,6 @@
+import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
+import { vi } from "vitest";
+import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { ConflictError, ConflictErrorCode } from "@/core/application/error";
 import type { FormLayout } from "@/core/domain/formSchema/entity";
@@ -218,4 +221,38 @@ export function createTestFormSchemaContainer(): TestFormSchemaContainer {
 
 export function setupTestFormSchemaContainer(): () => TestFormSchemaContainer {
   return setupContainer(createTestFormSchemaContainer);
+}
+
+/**
+ * Builds a container whose form configurator is the kintone adapter over a
+ * stub client serving `form`, so services see fields and layout as converted
+ * from kintone API responses. The stub's write methods are spies.
+ */
+export function createKintoneBackedFormSchemaContainer(form: {
+  readonly properties: Record<string, unknown>;
+  readonly layout: readonly unknown[];
+}) {
+  const mutation = (_params: unknown) => Promise.resolve({ revision: "4" });
+  const client = {
+    app: {
+      getFormFields: () =>
+        Promise.resolve({ revision: "3", properties: form.properties }),
+      getFormLayout: () =>
+        Promise.resolve({ revision: "3", layout: form.layout }),
+      addFormFields: vi.fn(mutation),
+      updateFormFields: vi.fn(mutation),
+      deleteFormFields: vi.fn(mutation),
+      updateFormLayout: vi.fn(mutation),
+    },
+  };
+  const container: Omit<TestFormSchemaContainer, "formConfigurator"> & {
+    formConfigurator: KintoneFormConfigurator;
+  } = {
+    ...createTestFormSchemaContainer(),
+    formConfigurator: new KintoneFormConfigurator(
+      client as unknown as KintoneRestAPIClient,
+      "1",
+    ),
+  };
+  return { container, client };
 }

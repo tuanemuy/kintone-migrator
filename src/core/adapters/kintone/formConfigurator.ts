@@ -15,14 +15,19 @@ import type {
 import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigurator";
 import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
+import { decodeLookupList } from "@/core/domain/formSchema/services/lookupListDecoder";
 import type {
   ElementSize,
   FieldCode,
   FieldDefinition,
   FieldType,
   LayoutElement,
+  Lookup,
 } from "@/core/domain/formSchema/valueObject";
-import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
+import {
+  FieldCode as FieldCodeVO,
+  LookupRelatedApp,
+} from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 const KNOWN_FIELD_TYPES: ReadonlySet<string> = new Set<FieldType>([
@@ -171,6 +176,63 @@ function normalizeDefaultValue(
   }
 }
 
+function readKintoneLookupList(
+  value: unknown,
+  fieldPath: string,
+): readonly unknown[] {
+  const list = decodeLookupList(value);
+  if (list === undefined) {
+    throw new SystemError(
+      SystemErrorCode.ExternalApiError,
+      `Expected array at ${fieldPath}, got ${typeof value}`,
+    );
+  }
+  return list;
+}
+
+function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
+  assertRecord(value, fieldPath);
+  assertRecord(value.relatedApp, `${fieldPath}.relatedApp`);
+  const { app, code } = value.relatedApp;
+  assertString(app, `${fieldPath}.relatedApp.app`);
+  if (code !== undefined) {
+    assertString(code, `${fieldPath}.relatedApp.code`);
+  }
+  assertString(value.relatedKeyField, `${fieldPath}.relatedKeyField`);
+  const rawFieldMappings = readKintoneLookupList(
+    value.fieldMappings,
+    `${fieldPath}.fieldMappings`,
+  );
+  const fieldMappings = rawFieldMappings.map((mapping, i) => {
+    const mappingPath = `${fieldPath}.fieldMappings[${i}]`;
+    assertRecord(mapping, mappingPath);
+    assertString(mapping.field, `${mappingPath}.field`);
+    assertString(mapping.relatedField, `${mappingPath}.relatedField`);
+    return { field: mapping.field, relatedField: mapping.relatedField };
+  });
+  const lookupPickerFields = readKintoneLookupList(
+    value.lookupPickerFields,
+    `${fieldPath}.lookupPickerFields`,
+  );
+  assertStringArray(lookupPickerFields, `${fieldPath}.lookupPickerFields`);
+  const { filterCond, sort } = value;
+  if (filterCond !== undefined) {
+    assertString(filterCond, `${fieldPath}.filterCond`);
+  }
+  if (sort !== undefined) {
+    assertString(sort, `${fieldPath}.sort`);
+  }
+
+  return {
+    relatedApp: LookupRelatedApp.create(app, code),
+    relatedKeyField: value.relatedKeyField,
+    fieldMappings,
+    lookupPickerFields,
+    ...(filterCond !== undefined ? { filterCond } : {}),
+    ...(sort !== undefined ? { sort } : {}),
+  };
+}
+
 function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   const { type, code, label, noLabel, ...rest } = prop;
   const base = {
@@ -260,8 +322,16 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
   }
 
   normalizeDefaultValue(type, rest);
+  const { lookup, ...others } = rest;
+  const properties =
+    lookup === undefined
+      ? others
+      : {
+          ...others,
+          lookup: fromKintoneLookup(lookup, `${type} "${code}".lookup`),
+        };
 
-  return { ...base, type, properties: rest } as FieldDefinition;
+  return { ...base, type, properties } as FieldDefinition;
 }
 
 function toKintoneProperty(field: FieldDefinition): Record<string, unknown> {
