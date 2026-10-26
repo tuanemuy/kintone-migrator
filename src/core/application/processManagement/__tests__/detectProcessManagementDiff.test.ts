@@ -465,8 +465,8 @@ actions: []
       expect(result.entries).toEqual([
         {
           type: "modified",
-          category: "action",
-          name: "(order) 未処理",
+          category: "actionOrder",
+          name: "未処理",
           details:
             "申請する (未処理 → 課長承認待ち), 申請する (未処理 → 一次承認待ち) -> 申請する (未処理 → 一次承認待ち), 申請する (未処理 → 課長承認待ち)",
         },

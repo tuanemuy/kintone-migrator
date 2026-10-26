@@ -43,7 +43,11 @@ export function describeProcessAction(action: ProcessAction): string {
   return `${action.name} (${action.from} → ${action.to})`;
 }
 
-export type ProcessManagementDiffCategory = "enable" | "state" | "action";
+export type ProcessManagementDiffCategory =
+  | "enable"
+  | "state"
+  | "action"
+  | "actionOrder";
 
 export type ProcessManagementDiffEntry = Readonly<{
   type: "added" | "modified" | "deleted";

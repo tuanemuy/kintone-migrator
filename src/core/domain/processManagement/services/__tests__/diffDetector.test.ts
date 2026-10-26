@@ -822,8 +822,8 @@ describe("ProcessManagementDiffDetector", () => {
       expect(result.entries).toEqual([
         {
           type: "modified",
-          category: "action",
-          name: "(order) 未処理",
+          category: "actionOrder",
+          name: "未処理",
           details:
             "承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了)",
         },
@@ -855,8 +855,8 @@ describe("ProcessManagementDiffDetector", () => {
       expect(result.entries).toEqual([
         {
           type: "modified",
-          category: "action",
-          name: "(order) 未処理",
+          category: "actionOrder",
+          name: "未処理",
           details:
             "申請する (未処理 → 課長承認待ち), 申請する (未処理 → 部長承認待ち) -> 申請する (未処理 → 部長承認待ち), 申請する (未処理 → 課長承認待ち)",
         },
@@ -913,8 +913,8 @@ describe("ProcessManagementDiffDetector", () => {
         },
         {
           type: "modified",
-          category: "action",
-          name: "(order) 未処理",
+          category: "actionOrder",
+          name: "未処理",
           details:
             "承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了)",
         },
@@ -938,8 +938,8 @@ describe("ProcessManagementDiffDetector", () => {
         },
         {
           type: "modified",
-          category: "action",
-          name: "(order) 未処理",
+          category: "actionOrder",
+          name: "未処理",
           details:
             "承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了)",
         },
@@ -974,15 +974,15 @@ describe("ProcessManagementDiffDetector", () => {
         },
         {
           type: "modified",
-          category: "action",
-          name: "(order) 未処理",
+          category: "actionOrder",
+          name: "未処理",
           details:
             "申請 (未処理 → 審査中), 申請 (未処理 → 審査中) #2, 取消 (未処理 → 取消済み) -> 申請 (未処理 → 審査中), 取消 (未処理 → 取消済み), 申請 (未処理 → 審査中) #2",
         },
       ]);
     });
 
-    it("should report one entry per state in local first-appearance order after other action entries", () => {
+    it("should report one entry per state in local first-appearance order after other modified entries", () => {
       const local = makeConfig({
         actions: [
           reject,
@@ -998,22 +998,88 @@ describe("ProcessManagementDiffDetector", () => {
 
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
-      expect(result.entries.map((e) => [e.type, e.name, e.details])).toEqual([
+      expect(
+        result.entries.map((e) => [e.type, e.category, e.name, e.details]),
+      ).toEqual([
         [
           "modified",
+          "action",
           "取り下げ (未処理 → 取り下げ済み)",
           'filterCond: "" -> "x"',
         ],
         [
           "modified",
-          "(order) 未処理",
+          "actionOrder",
+          "未処理",
           "取り下げ (未処理 → 取り下げ済み), 承認 (未処理 → 完了), 却下 (未処理 → 却下済み) -> 却下 (未処理 → 却下済み), 承認 (未処理 → 完了), 取り下げ (未処理 → 取り下げ済み)",
         ],
         [
           "modified",
-          "(order) 確認中",
+          "actionOrder",
+          "確認中",
           "差し戻し (確認中 → 未処理), 確認 (確認中 → 完了) -> 確認 (確認中 → 完了), 差し戻し (確認中 → 未処理)",
         ],
+      ]);
+    });
+
+    it("should order the entries by the first appearance of each state among all local actions", () => {
+      const fromA = (name: string, to: string) =>
+        makeAction({ name, from: "A", to });
+      const fromB = (name: string, to: string) =>
+        makeAction({ name, from: "B", to });
+      const local = makeConfig({
+        actions: [
+          fromA("新規", "Z"),
+          fromB("q", "Y"),
+          fromA("y", "Y"),
+          fromA("x", "X"),
+          fromB("p", "X"),
+        ],
+      });
+      const remote = makeConfig({
+        actions: [
+          fromB("p", "X"),
+          fromB("q", "Y"),
+          fromA("x", "X"),
+          fromA("y", "Y"),
+        ],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries.map((e) => [e.type, e.category, e.name])).toEqual([
+        ["added", "action", "新規 (A → Z)"],
+        ["modified", "actionOrder", "A"],
+        ["modified", "actionOrder", "B"],
+      ]);
+    });
+
+    it("should not confuse an order entry with an action whose label looks alike", () => {
+      const local = makeConfig({
+        actions: [
+          makeAction({ name: "(order) x", from: "y", to: "z" }),
+          makeAction({ name: "b", from: "x (y → z)", to: "w" }),
+          makeAction({ name: "a", from: "x (y → z)", to: "v" }),
+        ],
+      });
+      const remote = makeConfig({
+        actions: [
+          makeAction({
+            name: "(order) x",
+            from: "y",
+            to: "z",
+            type: "SECONDARY",
+          }),
+          makeAction({ name: "a", from: "x (y → z)", to: "v" }),
+          makeAction({ name: "b", from: "x (y → z)", to: "w" }),
+        ],
+      });
+
+      const result = ProcessManagementDiffDetector.detect(local, remote);
+
+      expect(result.entries.map((e) => [e.category, e.name])).toEqual([
+        ["action", "(order) x (y → z)"],
+        ["actionOrder", "x (y → z)"],
       ]);
     });
 
@@ -1023,9 +1089,9 @@ describe("ProcessManagementDiffDetector", () => {
 
       const result = ProcessManagementDiffDetector.detect(local, remote);
 
-      expect(result.entries.map((e) => [e.type, e.name])).toEqual([
-        ["modified", "(order) 未処理"],
-        ["deleted", "取り下げ (未処理 → 取り下げ済み)"],
+      expect(result.entries.map((e) => [e.type, e.category, e.name])).toEqual([
+        ["modified", "actionOrder", "未処理"],
+        ["deleted", "action", "取り下げ (未処理 → 取り下げ済み)"],
       ]);
     });
   });

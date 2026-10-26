@@ -116,7 +116,7 @@ type CaptureProcessManagementOutput = {
 ```typescript
 type ProcessManagementDiffEntry = {
   readonly type: "added" | "modified" | "deleted";
-  readonly category: "enable" | "state" | "action";
+  readonly category: "enable" | "state" | "action" | "actionOrder";
   readonly name: string;
   readonly details: string;
 };

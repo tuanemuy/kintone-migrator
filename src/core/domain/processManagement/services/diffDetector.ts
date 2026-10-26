@@ -164,13 +164,16 @@ type MatchedAction = Readonly<{
  * sides; added and deleted actions are reported by their own entries.
  */
 function compareActionOrder(
+  localActions: readonly ProcessAction[],
   matched: readonly MatchedAction[],
   entries: ProcessManagementDiffEntry[],
 ): void {
   const byLocalPosition = [...matched].sort(
     (a, b) => a.localPosition - b.localPosition,
   );
-  for (const [from, localOrder] of groupByKey(byLocalPosition, (m) => m.from)) {
+  const localOrders = groupByKey(byLocalPosition, (m) => m.from);
+  for (const from of new Set(localActions.map((a) => a.from))) {
+    const localOrder = localOrders.get(from) ?? [];
     const remoteOrder = [...localOrder].sort(
       (a, b) => a.remotePosition - b.remotePosition,
     );
@@ -179,8 +182,8 @@ function compareActionOrder(
       order.map((m) => m.label).join(", ");
     entries.push({
       type: "modified",
-      category: "action",
-      name: `(order) ${from}`,
+      category: "actionOrder",
+      name: from,
       details: `${labels(remoteOrder)} -> ${labels(localOrder)}`,
     });
   }
@@ -240,7 +243,7 @@ function compareActionEntries(
     }
   }
 
-  compareActionOrder(matched, entries);
+  compareActionOrder(local.actions, matched, entries);
 }
 
 function compareConfigs(

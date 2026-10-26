@@ -177,7 +177,7 @@ const ProcessManagementConfigSerializer = {
 
 ### ProcessManagementDiffDetector
 
-ローカルとリモートの `ProcessManagementConfig` を比べ、`enable`・ステータス・アクションの差分を `ProcessManagementDiff` として返す純粋関数。3-way merge の等価判定（`isProcessManagementConfigEqual`）も、この関数が差分なしを返すかで判定する。
+ローカルとリモートの `ProcessManagementConfig` を比べ、`enable`・ステータス・アクション・アクションの並び順の差分を `ProcessManagementDiff` として返す純粋関数。3-way merge の等価判定（`isProcessManagementConfigEqual`）も、この関数が差分なしを返すかで判定する。
 
 ```typescript
 const ProcessManagementDiffDetector = {
@@ -199,8 +199,10 @@ const ProcessManagementDiffDetector = {
     - `name` は表示名 `{name} ({from} → {to})`。同じ組の 2 件目以降は末尾に ` #{出現順}` を付ける（`added` / `modified` はローカル、`deleted` はリモートでの出現順）。表示名は識別子ではなく、別の組が同じ表示名になることがある
     - `added` / `deleted` の `details` は `filterCond: "{filterCond}"`
     - `modified` の `details` は `filterCond` / `type` / `executableUser` の変化を 1 行ずつ並べる
-    - 並び順が変わった `from` ごとに `modified` を 1 件出す。`name` は `(order) {from}`、`details` は `{リモートの並び} -> {ローカルの並び}` で、並びは突き合ったアクションの表示名を `, ` で区切る。突き合ったアクションは両側で同じ出現順を持つので、表示名も両側で同じになる
-    - 並び順のエントリは同じ種類のアクションのエントリの後に、ローカルでの `from` の初出順で並ぶ
+- 並び順の差分エントリは次のとおり
+    - 並び順が変わった `from` ごとに `type: "modified"`・`category: "actionOrder"` を 1 件出す。`name` は `from`
+    - `details` は `{リモートの並び} -> {ローカルの並び}`。並びは突き合ったアクションの表示名を `, ` で区切る。突き合ったアクションは両側で同じ出現順を持つので、表示名も両側で同じになる
+    - アクションの `modified` の後に、ローカルの `actions` で `from` が初めて出る順で並ぶ
 
 ## ポート
 
