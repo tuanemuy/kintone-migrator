@@ -388,6 +388,40 @@ describe("SchemaValidator", () => {
       ).toBe(true);
     });
 
+    it.each([
+      [
+        "field が空",
+        { field: "", relatedField: "name" },
+        "fieldMappings[1].field",
+      ],
+      [
+        "relatedField が空白だけ",
+        { field: "name", relatedField: " " },
+        "fieldMappings[1].relatedField",
+      ],
+    ])("lookup の fieldMappings の %s 場合エラーになる", (_, mapping, path) => {
+      const field: SingleLineTextFieldDefinition = {
+        code: "text" as FieldCode,
+        type: "SINGLE_LINE_TEXT",
+        label: "テキスト",
+        properties: {
+          lookup: {
+            relatedApp: { app: "1" },
+            relatedKeyField: "key",
+            fieldMappings: [{ field: "code", relatedField: "code" }, mapping],
+            lookupPickerFields: [],
+          },
+        },
+      };
+      const result = SchemaValidator.validate(createSchema([field]));
+      expect(result.isValid).toBe(false);
+      expect(
+        result.issues
+          .filter((i) => i.rule === "INVALID_LOOKUP")
+          .map((i) => i.message),
+      ).toStrictEqual([`Field "text" lookup must have a non-empty "${path}"`]);
+    });
+
     it("lookup が正しい場合エラーにならない", () => {
       const field: SingleLineTextFieldDefinition = {
         code: "text" as FieldCode,
@@ -397,7 +431,7 @@ describe("SchemaValidator", () => {
           lookup: {
             relatedApp: { app: "1" },
             relatedKeyField: "key",
-            fieldMappings: [],
+            fieldMappings: [{ field: "name", relatedField: "name" }],
             lookupPickerFields: [],
           },
         },

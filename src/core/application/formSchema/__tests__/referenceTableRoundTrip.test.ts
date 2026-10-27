@@ -1,10 +1,5 @@
-import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { describe, expect, it, vi } from "vitest";
-import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
-import {
-  createTestFormSchemaContainer,
-  type TestFormSchemaContainer,
-} from "@/core/application/__tests__/helpers";
+import { describe, expect, it } from "vitest";
+import { createKintoneBackedFormSchemaContainer } from "@/core/application/__tests__/helpers";
 import { captureSchema } from "../captureSchema";
 import { detectDiff } from "../detectDiff";
 import { detectThreeWayDiff } from "../detectThreeWayDiff";
@@ -13,69 +8,40 @@ import { pullSchema } from "../pullSchema";
 
 type RelatedApp = { app: string; code?: string };
 
-function createKintoneClient(relatedApp: RelatedApp) {
-  const mutation = () => Promise.resolve({ revision: "4" });
-  return {
-    app: {
-      getFormFields: () =>
-        Promise.resolve({
-          revision: "3",
-          properties: {
-            company: {
-              type: "SINGLE_LINE_TEXT",
-              code: "company",
-              label: "企業名",
-              noLabel: false,
-            },
-            members: {
-              type: "REFERENCE_TABLE",
-              code: "members",
-              label: "関連担当者情報",
-              noLabel: false,
-              referenceTable: {
-                relatedApp,
-                condition: { field: "company", relatedField: "company_name" },
-                filterCond: "",
-                displayFields: ["member_name", "email"],
-                sort: "レコード番号 desc",
-                size: "5",
-              },
-            },
-          },
-        }),
-      getFormLayout: () =>
-        Promise.resolve({
-          revision: "3",
-          layout: [
-            {
-              type: "ROW",
-              fields: [
-                { type: "SINGLE_LINE_TEXT", code: "company" },
-                { type: "REFERENCE_TABLE", code: "members" },
-              ],
-            },
-          ],
-        }),
-      addFormFields: vi.fn(mutation),
-      updateFormFields: vi.fn(mutation),
-      deleteFormFields: vi.fn(mutation),
-      updateFormLayout: vi.fn(mutation),
-    },
-  };
-}
-
 function createContainer(remoteRelatedApp: RelatedApp) {
-  const client = createKintoneClient(remoteRelatedApp);
-  const container: Omit<TestFormSchemaContainer, "formConfigurator"> & {
-    formConfigurator: KintoneFormConfigurator;
-  } = {
-    ...createTestFormSchemaContainer(),
-    formConfigurator: new KintoneFormConfigurator(
-      client as unknown as KintoneRestAPIClient,
-      "1",
-    ),
-  };
-  return { container, client };
+  return createKintoneBackedFormSchemaContainer({
+    properties: {
+      company: {
+        type: "SINGLE_LINE_TEXT",
+        code: "company",
+        label: "企業名",
+        noLabel: false,
+      },
+      members: {
+        type: "REFERENCE_TABLE",
+        code: "members",
+        label: "関連担当者情報",
+        noLabel: false,
+        referenceTable: {
+          relatedApp: remoteRelatedApp,
+          condition: { field: "company", relatedField: "company_name" },
+          filterCond: "",
+          displayFields: ["member_name", "email"],
+          sort: "レコード番号 desc",
+          size: "5",
+        },
+      },
+    },
+    layout: [
+      {
+        type: "ROW",
+        fields: [
+          { type: "SINGLE_LINE_TEXT", code: "company" },
+          { type: "REFERENCE_TABLE", code: "members" },
+        ],
+      },
+    ],
+  });
 }
 
 function schemaWithRelatedApp(relatedApp: string): string {

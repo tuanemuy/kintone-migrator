@@ -1,4 +1,5 @@
 import { buildDiffResult } from "../../diff";
+import { formatValue } from "../../services/formatValue";
 import type { PluginsConfig } from "../entity";
 import type { PluginDiff, PluginDiffEntry } from "../valueObject";
 
@@ -15,12 +16,14 @@ export const PluginDiffDetector = {
         entries.push({
           type: "added",
           pluginId: id,
-          details: `"${localPlugin.name}"`,
+          details: formatValue(localPlugin.name),
         });
       } else {
         const diffs: string[] = [];
         if (localPlugin.name !== remotePlugin.name) {
-          diffs.push(`name: "${remotePlugin.name}" -> "${localPlugin.name}"`);
+          diffs.push(
+            `name: ${formatValue(remotePlugin.name)} -> ${formatValue(localPlugin.name)}`,
+          );
         }
         if (localPlugin.enabled !== remotePlugin.enabled) {
           diffs.push(
@@ -42,7 +45,7 @@ export const PluginDiffDetector = {
         entries.push({
           type: "deleted",
           pluginId: id,
-          details: `"${remotePlugin.name}"`,
+          details: formatValue(remotePlugin.name),
         });
       }
     }

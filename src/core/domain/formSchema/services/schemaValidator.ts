@@ -262,6 +262,22 @@ function validateLookupStructure(field: FieldDefinition): ValidationIssue[] {
     );
   }
 
+  lookup.fieldMappings.forEach((mapping, i) => {
+    for (const key of ["field", "relatedField"] as const) {
+      if (mapping[key].trim().length === 0) {
+        issues.push(
+          issue(
+            "error",
+            field.code,
+            field.type,
+            "INVALID_LOOKUP",
+            `Field "${field.code}" lookup must have a non-empty "fieldMappings[${i}].${key}"`,
+          ),
+        );
+      }
+    }
+  });
+
   return issues;
 }
 

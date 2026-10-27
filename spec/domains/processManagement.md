@@ -197,8 +197,8 @@ const ProcessManagementDiffDetector = {
     - `name` / `from` / `to` がすべて同じアクション同士だけの入れ替えは出現順の突き合わせを変えないので、並び順のエントリにならない
 - アクションの差分エントリは次のとおり
     - `name` は表示名 `{name} ({from} → {to})`。同じ組の 2 件目以降は末尾に ` #{出現順}` を付ける（`added` / `modified` はローカル、`deleted` はリモートでの出現順）。表示名は識別子ではなく、別の組が同じ表示名になることがある
-    - `added` / `deleted` の `details` は `filterCond: "{filterCond}"`
-    - `modified` の `details` は `filterCond` / `type` / `executableUser` の変化を 1 行ずつ並べる
+    - `added` / `deleted` の `details` は `filterCond: {filterCond を JSON 文字列にしたもの}`（例: `filterCond: "部署 in (\"営業\")"`）
+    - `modified` の `details` は `filterCond` / `type` / `executableUser` の変化を 1 行ずつ並べる。`filterCond` は変更前後を JSON 文字列で示す
 - 並び順の差分エントリは次のとおり
     - 並び順が変わった `from` ごとに `type: "modified"`・`category: "actionOrder"` を 1 件出す。`name` は `from`
     - `details` は `{リモートの並び} -> {ローカルの並び}`。並びは突き合ったアクションの表示名を `, ` で区切る。突き合ったアクションは両側で同じ出現順を持つので、表示名も両側で同じになる

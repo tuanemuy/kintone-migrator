@@ -332,6 +332,19 @@ describe("NotificationDiffDetector", () => {
       );
       expect(result.entries[0].details).toContain('"user1"');
     });
+
+    it("should escape double quotes in title", () => {
+      const local: NotificationConfig = {
+        perRecord: [makePerRecord({ title: '"承認" 依頼' })],
+      };
+      const remote: NotificationConfig = {
+        perRecord: [makePerRecord({ title: "依頼" })],
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        'title: "依頼" -> "\\"承認\\" 依頼"',
+      );
+    });
   });
 
   describe("reminder section", () => {
@@ -348,6 +361,69 @@ describe("NotificationDiffDetector", () => {
       expect(result.entries).toHaveLength(1);
       expect(result.entries[0].type).toBe("added");
       expect(result.entries[0].section).toBe("reminder");
+    });
+
+    it("should escape double quotes in the title of an added reminder notification", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ title: '"期限" 通知' })],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig(),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe('"\\"期限\\" 通知"');
+    });
+
+    it("should escape double quotes in title, time and filterCond of a modified reminder notification", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({
+              code: "r1",
+              title: '"期限" 通知',
+              time: '"09:00"',
+              filterCond: '部署 in ("人事")',
+            }),
+          ],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [
+            makeReminder({
+              code: "r1",
+              title: "通知",
+              time: "18:00",
+              filterCond: '部署 in ("開発")',
+            }),
+          ],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        [
+          'title: "通知" -> "\\"期限\\" 通知"',
+          'time: "18:00" -> "\\"09:00\\""',
+          'filterCond: "部署 in (\\"開発\\")" -> "部署 in (\\"人事\\")"',
+        ].join("\n"),
+      );
+    });
+
+    it("should show an unset reminder time as an empty string", () => {
+      const local: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ code: "r1", time: "09:00" })],
+        }),
+      };
+      const remote: NotificationConfig = {
+        reminder: makeReminderConfig({
+          notifications: [makeReminder({ code: "r1" })],
+        }),
+      };
+      const result = NotificationDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe('time: "" -> "09:00"');
     });
 
     it("should detect timezone change", () => {

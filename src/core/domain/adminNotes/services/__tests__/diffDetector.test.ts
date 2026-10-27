@@ -36,6 +36,34 @@ describe("AdminNotesDiffDetector", () => {
       expect(result.entries[0].details).toContain('"new content"');
     });
 
+    it("should escape content and put the ellipsis of truncated content outside the quotes", () => {
+      const local = makeConfig({
+        content: '<p class="memo">管理者向けのメモです。内容は長いです。</p>',
+      });
+      const remote = makeConfig({ content: 'a "b"\nc' });
+      const result = AdminNotesDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        '"a \\"b\\"\\nc" -> "<p class=\\"memo\\">管理者向けのメモです。内容は"...',
+      );
+    });
+
+    it("should not truncate content of exactly 30 characters and should truncate content of 31", () => {
+      const thirty = `${"a".repeat(27)}...`;
+      const local = makeConfig({ content: `${thirty}b` });
+      const remote = makeConfig({ content: thirty });
+      const result = AdminNotesDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(`"${thirty}" -> "${thirty}"...`);
+    });
+
+    it("should count characters by code point so that a surrogate pair is not split", () => {
+      const local = makeConfig({ content: `${"a".repeat(29)}😀b` });
+      const remote = makeConfig({ content: "old" });
+      const result = AdminNotesDiffDetector.detect(local, remote);
+      expect(result.entries[0].details).toBe(
+        `"old" -> "${"a".repeat(29)}😀"...`,
+      );
+    });
+
     it("should detect includeInTemplateAndDuplicates change", () => {
       const local = makeConfig({ includeInTemplateAndDuplicates: true });
       const remote = makeConfig({ includeInTemplateAndDuplicates: false });

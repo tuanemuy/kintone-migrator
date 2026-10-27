@@ -47,7 +47,7 @@ function compareActions(
   const diffs: string[] = [];
   if (localAction.filterCond !== remoteAction.filterCond) {
     diffs.push(
-      `filterCond: "${remoteAction.filterCond}" -> "${localAction.filterCond}"`,
+      `filterCond: ${formatValue(remoteAction.filterCond)} -> ${formatValue(localAction.filterCond)}`,
     );
   }
   if (localAction.type !== remoteAction.type) {
@@ -207,7 +207,7 @@ function compareActionEntries(
           type: "added",
           category: "action",
           name: actionLabel(pair.local.action, pair.index),
-          details: `filterCond: "${pair.local.action.filterCond}"`,
+          details: `filterCond: ${formatValue(pair.local.action.filterCond)}`,
         });
         break;
       case "remoteOnly":
@@ -215,7 +215,7 @@ function compareActionEntries(
           type: "deleted",
           category: "action",
           name: actionLabel(pair.remote.action, pair.index),
-          details: `filterCond: "${pair.remote.action.filterCond}"`,
+          details: `filterCond: ${formatValue(pair.remote.action.filterCond)}`,
         });
         break;
       case "both": {
