@@ -44,14 +44,14 @@ export async function detectRecordPermissionThreeWayDiff({
   );
 
   // Label by the right's filterCond (the human-meaningful grouping). The entry
-  // type allows every side to be absent, so fall back to the key's display form.
+  // type allows every side to be absent, so fall back to the key.
   return buildRecordThreeWayDiff(
     merge,
     (entry) => {
       const right = entry.local ?? entry.remote ?? entry.base;
       return right
         ? describeRecordPermissionFilter(right.filterCond)
-        : describeRecordPermissionMergeKey(entry.key);
+        : entry.key;
     },
     { describeKey: describeRecordPermissionMergeKey },
   );

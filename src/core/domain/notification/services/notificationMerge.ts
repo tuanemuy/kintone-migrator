@@ -46,23 +46,25 @@ import { NotificationErrorCode } from "../errorCode";
 
 // --- Section keys (kept stable for conflict resolution / diff labels). ---
 
-const GENERAL_SCALAR_KEY = "general:notifyToCommenter";
-const REMINDER_TIMEZONE_KEY = "reminder:timezone";
+const GENERAL_KEY_PREFIX = "general:";
+const PER_RECORD_KEY_PREFIX = "perRecord:";
+const REMINDER_KEY_PREFIX = "reminder:";
+
+const GENERAL_SCALAR_KEY = `${GENERAL_KEY_PREFIX}notifyToCommenter`;
+const REMINDER_TIMEZONE_KEY = `${REMINDER_KEY_PREFIX}timezone`;
 
 function generalEntityKey(notif: GeneralNotification): string {
   // ":" is safe: kintone entity types are uppercase alpha and codes do not
   // contain ":", so the serialized form is unambiguous (matches diffDetector).
-  return `general:${notif.entity.type}:${notif.entity.code}`;
+  return `${GENERAL_KEY_PREFIX}${notif.entity.type}:${notif.entity.code}`;
 }
-
-const PER_RECORD_KEY_PREFIX = "perRecord:";
 
 function perRecordCompositeKey(filterCond: string, index: number): string {
   return `${PER_RECORD_KEY_PREFIX}${filterCondKey(filterCond, index)}`;
 }
 
 function reminderKey(notif: ReminderNotification): string {
-  return `reminder:${notif.code}`;
+  return `${REMINDER_KEY_PREFIX}${notif.code}`;
 }
 
 /**
@@ -289,7 +291,10 @@ function collectGeneralNotifications(
 ): GeneralNotification[] {
   const result: GeneralNotification[] = [];
   for (const entry of entries) {
-    if (!entry.key.startsWith("general:") || entry.key === GENERAL_SCALAR_KEY) {
+    if (
+      !entry.key.startsWith(GENERAL_KEY_PREFIX) ||
+      entry.key === GENERAL_SCALAR_KEY
+    ) {
       continue;
     }
     const value = resolveEntryValue(
@@ -330,7 +335,7 @@ function collectReminderNotifications(
   const result: ReminderNotification[] = [];
   for (const entry of entries) {
     if (
-      !entry.key.startsWith("reminder:") ||
+      !entry.key.startsWith(REMINDER_KEY_PREFIX) ||
       entry.key === REMINDER_TIMEZONE_KEY
     ) {
       continue;

@@ -43,7 +43,10 @@ import type {
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { handleCliError } from "../../handleError";
 import { routeMultiApp } from "../../projectConfig";
-import { createPullCommand } from "../pullCommandFactory";
+import {
+  createPullCommand,
+  nameConflictAsDiffLine,
+} from "../pullCommandFactory";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -227,21 +230,27 @@ describe("createPullCommand — conflict prompt", () => {
     );
   });
 
-  it("names a conflicting key by its display form in brackets and resolves it by the key", async () => {
+  it("names a conflicting key with nameConflict and resolves it by the key", async () => {
     const config = makeConfig({
       pullFn: conflicting("k1"),
-      describeConflictKey: (key) => `<${key}>`,
+      nameConflict: (key) => `<${key}>`,
     });
 
     await createPullCommand(config).run({ values: {} } as never);
 
     expect(p.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Conflict on entry [<k1>]. Keep which side?",
+        message: "Conflict on entry <k1>. Keep which side?",
       }),
     );
     expect(config.applyMerge).toHaveBeenCalledWith(
       expect.objectContaining({ resolution: new Map([["k1", "remote"]]) }),
     );
+  });
+});
+
+describe("nameConflictAsDiffLine", () => {
+  it("brackets the display form of the key", () => {
+    expect(nameConflictAsDiffLine((key) => `"${key}"#0`)("a")).toBe('["a"#0]');
   });
 });

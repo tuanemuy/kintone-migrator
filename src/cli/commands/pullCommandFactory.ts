@@ -27,6 +27,18 @@ export type PullMergeView = {
 };
 
 /**
+ * Names a conflict as the 3-way diff line does (`[{display form}]`), for
+ * domains whose keys embed values quoted in display (see
+ * `ThreeWayDiffEntry.key`): the display form carries its own quotes, so
+ * wrapping it in more quotes would blur where it ends again.
+ */
+export function nameConflictAsDiffLine(
+  describeKey: (key: string) => string,
+): (key: string) => string {
+  return (key) => `[${describeKey(key)}]`;
+}
+
+/**
  * Discriminated result of a pull usecase's first stage. `merged` carries the
  * domain merge object `TMerged`; the factory reads its conflicts via
  * `getMergeView` and applies the resolution via `applyMerge`.
@@ -55,13 +67,10 @@ type PullCommandConfig<
   /** What a conflicting entity is called in prompts, e.g. "view". */
   readonly conflictNoun: string;
   /**
-   * Display form of a conflicting key, for domains whose keys embed values
-   * that are quoted in display (see `ThreeWayDiffEntry.key`). When given, the
-   * prompt names the conflict as `[{display form}]`, as the 3-way diff line
-   * does, since the display form carries its own quotes; otherwise as
-   * `"{key}"`.
+   * How the prompt names a conflicting key after `conflictNoun`. Defaults to
+   * the key in double quotes.
    */
-  readonly describeConflictKey?: (key: string) => string;
+  readonly nameConflict?: (key: string) => string;
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly pullFn: (args: {
     container: TContainer;
@@ -102,9 +111,8 @@ export function createPullCommand<
 >(
   config: PullCommandConfig<TContainerConfig, TContainer, TCliValues, TMerged>,
 ) {
-  const { describeConflictKey } = config;
-  const nameConflict = (key: string): string =>
-    describeConflictKey ? `[${describeConflictKey(key)}]` : `"${key}"`;
+  const nameConflict =
+    config.nameConflict ?? ((key: string): string => `"${key}"`);
   const notSupportedAll = new ValidationError(
     ValidationErrorCode.InvalidInput,
     `${config.description} does not support --all yet. Use --app <name> or a single app.`,

@@ -34,9 +34,7 @@ function entryLabel(entry: NotificationMergeEntry): string {
   const value = entry.local ?? entry.remote ?? entry.base;
   if (entry.key.startsWith("perRecord:")) {
     const n = value as PerRecordNotification | undefined;
-    return n
-      ? describePerRecordNotification(n)
-      : describeNotificationMergeKey(entry.key);
+    return n ? describePerRecordNotification(n) : entry.key;
   }
   if (entry.key.startsWith("reminder:")) {
     const n = value as ReminderNotification | undefined;
