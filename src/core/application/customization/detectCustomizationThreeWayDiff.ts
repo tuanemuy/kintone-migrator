@@ -130,10 +130,7 @@ export async function detectCustomizationThreeWayDiff({
   );
 
   // The merge key (`platform:category:name` / `config:scope`) is also the label.
-  return buildRecordThreeWayDiff(
-    merge,
-    (entry) => entry.key,
-    [],
-    buildNotes(estimatedKeys, unreadableLocalKeys, changedKeys),
-  );
+  return buildRecordThreeWayDiff(merge, (entry) => entry.key, {
+    notes: buildNotes(estimatedKeys, unreadableLocalKeys, changedKeys),
+  });
 }

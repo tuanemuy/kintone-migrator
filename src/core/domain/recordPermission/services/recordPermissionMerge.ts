@@ -6,6 +6,10 @@ import {
   type RecordThreeWayMerge,
   resolveRecordMerge,
 } from "../../recordMerge";
+import {
+  describeFilterCondKey,
+  filterCondKey,
+} from "../../services/filterCondKey";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
 import { RecordPermissionErrorCode } from "../errorCode";
 
@@ -22,11 +26,9 @@ import { RecordPermissionErrorCode } from "../errorCode";
  * indices, matching the existing 2-way detector.
  */
 
-function compositeKey(filterCond: string, index: number): string {
-  // "#" is safe: kintone filterCond strings can contain arbitrary characters,
-  // but the index suffix is appended after the full filterCond, so the
-  // group-local index is unambiguous within a single grouping pass.
-  return `${filterCond}#${index}`;
+/** Display form of a merge key, with its filterCond quoted. */
+export function describeRecordPermissionMergeKey(key: string): string {
+  return describeFilterCondKey(key);
 }
 
 /** Converts the ordered `rights` list into a record keyed by `filterCond#i`. */
@@ -37,7 +39,7 @@ function toRecord(
   const grouped = groupByKey(config.rights, (r) => r.filterCond);
   for (const [filterCond, group] of grouped) {
     group.forEach((right, i) => {
-      record[compositeKey(filterCond, i)] = right;
+      record[filterCondKey(filterCond, i)] = right;
     });
   }
   return record;

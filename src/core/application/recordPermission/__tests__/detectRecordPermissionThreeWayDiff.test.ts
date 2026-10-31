@@ -64,7 +64,7 @@ describe("detectRecordPermissionThreeWayDiff", () => {
     expect(result.mode).toBe("two-way");
   });
 
-  it("classifies a local-only change keyed by filterCond#i", async () => {
+  it("classifies a local-only change keyed by the quoted filterCond and its index", async () => {
     const container = getContainer();
     setState(container, baseConfig, "1");
     container.recordPermissionStorage.setContent(
@@ -79,7 +79,7 @@ describe("detectRecordPermissionThreeWayDiff", () => {
 
     expect(result.mode).toBe("three-way");
     if (result.mode === "three-way") {
-      expect(result.localChanges.map((e) => e.key)).toContain("x = 1#0");
+      expect(result.localChanges.map((e) => e.key)).toContain('"x = 1"#0');
       expect(result.conflicts).toHaveLength(0);
     }
   });
@@ -97,7 +97,7 @@ describe("detectRecordPermissionThreeWayDiff", () => {
 
     expect(result.mode).toBe("three-way");
     if (result.mode === "three-way") {
-      expect(result.remoteDrift.map((e) => e.key)).toContain("x = 1#0");
+      expect(result.remoteDrift.map((e) => e.key)).toContain('"x = 1"#0');
     }
   });
 
@@ -129,7 +129,7 @@ describe("detectRecordPermissionThreeWayDiff", () => {
 
     expect(result.mode).toBe("three-way");
     if (result.mode === "three-way") {
-      expect(result.conflicts.map((e) => e.key)).toContain("x = 1#0");
+      expect(result.conflicts.map((e) => e.key)).toContain('"x = 1"#0');
     }
   });
 
@@ -148,7 +148,7 @@ describe("detectRecordPermissionThreeWayDiff", () => {
 
     if (result.mode !== "three-way") throw new Error("expected three-way");
     expect(result.localChanges).toEqual([
-      { key: "x = 1#0", label: '"x = 1"', kind: "localOnly" },
+      { key: '"x = 1"#0', label: '"x = 1"', kind: "localOnly" },
     ]);
   });
 
@@ -166,7 +166,34 @@ describe("detectRecordPermissionThreeWayDiff", () => {
 
     if (result.mode !== "three-way") throw new Error("expected three-way");
     expect(result.remoteDrift).toEqual([
-      { key: "#0", label: "(all records)", kind: "remoteOnly" },
+      { key: '""#0', label: "(all records)", kind: "remoteOnly" },
+    ]);
+  });
+
+  it("keeps a filterCond with ']', '#', '\"' or a newline inside the quotes of the key", async () => {
+    const container = getContainer();
+    const filterCond = 'a ]: "b"#1\nc';
+    const special: RecordPermissionConfig = {
+      rights: [right(filterCond, true), right(filterCond, true)],
+    };
+    setState(container, special, "1");
+    container.recordPermissionStorage.setContent(
+      yamlOf({ rights: [right(filterCond, true), right(filterCond, false)] }),
+    );
+    container.recordPermissionConfigurator.setPermissions({
+      rights: special.rights,
+      revision: "1",
+    });
+
+    const result = await detectRecordPermissionThreeWayDiff({ container });
+
+    if (result.mode !== "three-way") throw new Error("expected three-way");
+    expect(result.localChanges).toEqual([
+      {
+        key: '"a ]: \\"b\\"#1\\nc"#1',
+        label: '"a ]: \\"b\\"#1\\nc"',
+        kind: "localOnly",
+      },
     ]);
   });
 

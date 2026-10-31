@@ -35,6 +35,7 @@ vi.mock("../../projectConfig", () => ({
   runMultiAppWithHeaders: vi.fn(),
 }));
 
+import * as p from "@clack/prompts";
 import type {
   AppEntry,
   ProjectConfig,
@@ -42,7 +43,10 @@ import type {
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { handleCliError } from "../../handleError";
 import { routeMultiApp } from "../../projectConfig";
-import { createPullCommand } from "../pullCommandFactory";
+import {
+  createPullCommand,
+  nameConflictAsDiffLine,
+} from "../pullCommandFactory";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -204,5 +208,49 @@ describe("createPullCommand — multiApp route is rejected by the factory", () =
     expect((passed as Error).message).toContain(
       "--ours and --theirs cannot be used together",
     );
+  });
+});
+
+describe("createPullCommand — conflict prompt", () => {
+  const conflicting = (key: string) =>
+    vi.fn().mockResolvedValue({
+      mode: "merged",
+      merged: { hasConflict: true, conflicts: [{ key }] },
+    });
+
+  it("names a conflicting key in double quotes by default", async () => {
+    const config = makeConfig({ pullFn: conflicting("k1") });
+
+    await createPullCommand(config).run({ values: {} } as never);
+
+    expect(p.select).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Conflict on entry "k1". Keep which side?',
+      }),
+    );
+  });
+
+  it("names a conflicting key with nameConflict and resolves it by the key", async () => {
+    const config = makeConfig({
+      pullFn: conflicting("k1"),
+      nameConflict: (key) => `<${key}>`,
+    });
+
+    await createPullCommand(config).run({ values: {} } as never);
+
+    expect(p.select).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Conflict on entry <k1>. Keep which side?",
+      }),
+    );
+    expect(config.applyMerge).toHaveBeenCalledWith(
+      expect.objectContaining({ resolution: new Map([["k1", "remote"]]) }),
+    );
+  });
+});
+
+describe("nameConflictAsDiffLine", () => {
+  it("brackets the display form of the key", () => {
+    expect(nameConflictAsDiffLine((key) => `"${key}"#0`)("a")).toBe('["a"#0]');
   });
 });

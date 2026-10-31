@@ -6,6 +6,7 @@ import type {
   ProjectConfig,
 } from "@/core/domain/projectConfig/entity";
 import { handleCliError } from "../handleError";
+import { frameThreeWayKey } from "../output";
 import type { MultiAppCliValues } from "../projectConfig";
 import { routeMultiApp } from "../projectConfig";
 
@@ -18,13 +19,25 @@ export type ConflictResolution = Map<string, "local" | "remote">;
 
 /**
  * The minimal merge shape the factory needs to drive conflict resolution. Each
- * conflict exposes a stable `key` used both as the prompt label and the
- * resolution map key.
+ * conflict exposes a stable `key` used as the resolution map key and to name
+ * the conflict in the prompt.
  */
 export type PullMergeView = {
   readonly hasConflict: boolean;
   readonly conflicts: readonly { readonly key: string }[];
 };
+
+/**
+ * Names a conflict as the 3-way diff line does ({@link frameThreeWayKey}), for
+ * domains whose keys embed values quoted in display (see
+ * `ThreeWayDiffEntry.key`): the display form carries its own quotes, so
+ * wrapping it in more quotes would blur where it ends again.
+ */
+export function nameConflictAsDiffLine(
+  describeKey: (key: string) => string,
+): (key: string) => string {
+  return (key) => frameThreeWayKey(describeKey(key));
+}
 
 /**
  * Discriminated result of a pull usecase's first stage. `merged` carries the
@@ -54,6 +67,11 @@ type PullCommandConfig<
   readonly subject: string;
   /** What a conflicting entity is called in prompts, e.g. "view". */
   readonly conflictNoun: string;
+  /**
+   * How the prompt names a conflicting key after `conflictNoun`. Defaults to
+   * the key in double quotes.
+   */
+  readonly nameConflict?: (key: string) => string;
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly pullFn: (args: {
     container: TContainer;
@@ -94,6 +112,8 @@ export function createPullCommand<
 >(
   config: PullCommandConfig<TContainerConfig, TContainer, TCliValues, TMerged>,
 ) {
+  const nameConflict =
+    config.nameConflict ?? ((key: string): string => `"${key}"`);
   const notSupportedAll = new ValidationError(
     ValidationErrorCode.InvalidInput,
     `${config.description} does not support --all yet. Use --app <name> or a single app.`,
@@ -116,7 +136,7 @@ export function createPullCommand<
         continue;
       }
       const selected = await p.select({
-        message: `Conflict on ${config.conflictNoun} "${conflict.key}". Keep which side?`,
+        message: `Conflict on ${config.conflictNoun} ${nameConflict(conflict.key)}. Keep which side?`,
         options: [
           { value: "local", label: "local (ours)" },
           { value: "remote", label: "remote (theirs)" },

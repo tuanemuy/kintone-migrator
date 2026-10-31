@@ -7,6 +7,10 @@ import {
 } from "@/core/domain/singleMerge";
 import { deepEqual } from "@/lib/deepEqual";
 import { groupByKey } from "@/lib/groupByKey";
+import {
+  describeFilterCondKey,
+  filterCondKey,
+} from "../../services/filterCondKey";
 import type {
   GeneralNotification,
   GeneralNotificationConfig,
@@ -42,21 +46,38 @@ import { NotificationErrorCode } from "../errorCode";
 
 // --- Section keys (kept stable for conflict resolution / diff labels). ---
 
-const GENERAL_SCALAR_KEY = "general:notifyToCommenter";
-const REMINDER_TIMEZONE_KEY = "reminder:timezone";
+const GENERAL_KEY_PREFIX = "general:";
+const PER_RECORD_KEY_PREFIX = "perRecord:";
+const REMINDER_KEY_PREFIX = "reminder:";
+
+const GENERAL_SCALAR_KEY = `${GENERAL_KEY_PREFIX}notifyToCommenter`;
+const REMINDER_TIMEZONE_KEY = `${REMINDER_KEY_PREFIX}timezone`;
 
 function generalEntityKey(notif: GeneralNotification): string {
   // ":" is safe: kintone entity types are uppercase alpha and codes do not
   // contain ":", so the serialized form is unambiguous (matches diffDetector).
-  return `general:${notif.entity.type}:${notif.entity.code}`;
+  return `${GENERAL_KEY_PREFIX}${notif.entity.type}:${notif.entity.code}`;
 }
 
 function perRecordCompositeKey(filterCond: string, index: number): string {
-  return `perRecord:${filterCond}#${index}`;
+  return `${PER_RECORD_KEY_PREFIX}${filterCondKey(filterCond, index)}`;
 }
 
 function reminderKey(notif: ReminderNotification): string {
-  return `reminder:${notif.code}`;
+  return `${REMINDER_KEY_PREFIX}${notif.code}`;
+}
+
+/**
+ * Display form of a merge key. A perRecord key carries a filterCond, which is
+ * quoted ({@link describeFilterCondKey}); the other keys are built from names
+ * and are shown as they are.
+ */
+export function describeNotificationMergeKey(key: string): string {
+  if (!key.startsWith(PER_RECORD_KEY_PREFIX)) {
+    return key;
+  }
+  const filterCondPart = key.slice(PER_RECORD_KEY_PREFIX.length);
+  return `${PER_RECORD_KEY_PREFIX}${describeFilterCondKey(filterCondPart)}`;
 }
 
 // --- Equality (matches diffDetector's "no changes" semantics). ---
@@ -270,7 +291,10 @@ function collectGeneralNotifications(
 ): GeneralNotification[] {
   const result: GeneralNotification[] = [];
   for (const entry of entries) {
-    if (!entry.key.startsWith("general:") || entry.key === GENERAL_SCALAR_KEY) {
+    if (
+      !entry.key.startsWith(GENERAL_KEY_PREFIX) ||
+      entry.key === GENERAL_SCALAR_KEY
+    ) {
       continue;
     }
     const value = resolveEntryValue(
@@ -290,7 +314,7 @@ function collectPerRecordNotifications(
 ): PerRecordNotification[] {
   const result: PerRecordNotification[] = [];
   for (const entry of entries) {
-    if (!entry.key.startsWith("perRecord:")) {
+    if (!entry.key.startsWith(PER_RECORD_KEY_PREFIX)) {
       continue;
     }
     const value = resolveEntryValue(
@@ -311,7 +335,7 @@ function collectReminderNotifications(
   const result: ReminderNotification[] = [];
   for (const entry of entries) {
     if (
-      !entry.key.startsWith("reminder:") ||
+      !entry.key.startsWith(REMINDER_KEY_PREFIX) ||
       entry.key === REMINDER_TIMEZONE_KEY
     ) {
       continue;

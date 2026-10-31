@@ -4,12 +4,16 @@ import {
   applyPulledNotificationMerge,
   pullNotification,
 } from "@/core/application/notification/pullNotification";
+import { describeNotificationMergeKey } from "@/core/domain/notification/services/notificationMerge";
 import {
   notificationArgs,
   resolveNotificationAppContainerConfig,
   resolveNotificationContainerConfig,
 } from "../../notificationConfig";
-import { createPullCommand } from "../pullCommandFactory";
+import {
+  createPullCommand,
+  nameConflictAsDiffLine,
+} from "../pullCommandFactory";
 
 type NotificationMerged = Extract<PullNotificationOutput, { mode: "merged" }>;
 
@@ -24,6 +28,7 @@ export default createPullCommand<
   args: notificationArgs,
   subject: "notification config",
   conflictNoun: "notification",
+  nameConflict: nameConflictAsDiffLine(describeNotificationMergeKey),
   createContainer: createNotificationCliContainer,
   pullFn: async ({ container, input }) => {
     const result = await pullNotification({ container, input });

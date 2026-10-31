@@ -4,12 +4,16 @@ import {
   applyPulledRecordPermissionMerge,
   pullRecordPermission,
 } from "@/core/application/recordPermission/pullRecordPermission";
+import { describeRecordPermissionMergeKey } from "@/core/domain/recordPermission/services/recordPermissionMerge";
 import {
   recordAclArgs,
   resolveRecordAclAppContainerConfig,
   resolveRecordAclContainerConfig,
 } from "../../recordAclConfig";
-import { createPullCommand } from "../pullCommandFactory";
+import {
+  createPullCommand,
+  nameConflictAsDiffLine,
+} from "../pullCommandFactory";
 
 type RecordAclMerged = Extract<PullRecordPermissionOutput, { mode: "merged" }>;
 
@@ -24,6 +28,7 @@ export default createPullCommand<
   args: recordAclArgs,
   subject: "record permission config",
   conflictNoun: "record permission",
+  nameConflict: nameConflictAsDiffLine(describeRecordPermissionMergeKey),
   createContainer: createRecordPermissionCliContainer,
   pullFn: async ({ container, input }) => {
     const result = await pullRecordPermission({ container, input });

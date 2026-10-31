@@ -9,6 +9,7 @@ import type {
 import { NotificationErrorCode } from "../../errorCode";
 import {
   computeNotificationThreeWayMerge,
+  describeNotificationMergeKey,
   resolveNotificationMerge,
 } from "../notificationMerge";
 
@@ -414,5 +415,52 @@ describe("resolveNotificationMerge", () => {
         }),
       );
     });
+  });
+});
+
+describe("describeNotificationMergeKey", () => {
+  function keysOf(cfg: NotificationConfig): string[] {
+    return computeNotificationThreeWayMerge(cfg, cfg, cfg).entries.map(
+      (e) => e.key,
+    );
+  }
+
+  it("quotes the filterCond of a perRecord key", () => {
+    const keys = keysOf(
+      config({ perRecord: [perRecord({ filterCond: "a ]: b\nc" })] }),
+    );
+    expect(keys.map(describeNotificationMergeKey)).toEqual([
+      'perRecord:"a ]: b\\nc"#0',
+    ]);
+  });
+
+  it("shows an empty perRecord filterCond as an empty quoted string", () => {
+    const keys = keysOf(config({ perRecord: [perRecord(), perRecord()] }));
+    expect(keys.map(describeNotificationMergeKey)).toEqual([
+      'perRecord:""#0',
+      'perRecord:""#1',
+    ]);
+  });
+
+  it("shows general and reminder keys as they are", () => {
+    const keys = keysOf(
+      config({
+        general: { notifyToCommenter: false, notifications: [general("u1")] },
+        reminder: { timezone: "Asia/Tokyo", notifications: [reminder("r1")] },
+      }),
+    );
+    expect(keys.map(describeNotificationMergeKey)).toEqual([
+      "general:USER:u1",
+      "reminder:r1",
+    ]);
+  });
+
+  it("shows the scalar keys as they are", () => {
+    expect(describeNotificationMergeKey("general:notifyToCommenter")).toBe(
+      "general:notifyToCommenter",
+    );
+    expect(describeNotificationMergeKey("reminder:timezone")).toBe(
+      "reminder:timezone",
+    );
   });
 });

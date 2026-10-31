@@ -40,6 +40,17 @@ function reminder(
   };
 }
 
+function perRecord(
+  overrides: Partial<PerRecordNotification> = {},
+): PerRecordNotification {
+  return {
+    filterCond: 'status = "A"',
+    title: "承認",
+    targets: [{ entity: { type: "USER", code: "bob" } }],
+    ...overrides,
+  };
+}
+
 function config(over: Partial<NotificationConfig> = {}): NotificationConfig {
   return {
     general: { notifyToCommenter: false, notifications: [general()] },
@@ -140,18 +151,77 @@ describe("detectNotificationThreeWayDiff", () => {
     expect(result.conflicts).toHaveLength(0);
   });
 
-  describe("perRecord labels", () => {
-    function perRecord(
-      overrides: Partial<PerRecordNotification> = {},
-    ): PerRecordNotification {
-      return {
-        filterCond: 'status = "A"',
-        title: "承認",
-        targets: [{ entity: { type: "USER", code: "bob" } }],
-        ...overrides,
-      };
-    }
+  describe("perRecord keys", () => {
+    it("shows the key with its filterCond quoted, the label unchanged", async () => {
+      const container = getContainer();
+      const filterCond = 'a ]: "b"#1\nc';
+      const base = config({
+        perRecord: [perRecord({ filterCond }), perRecord({ filterCond })],
+      });
+      setBase(container, base);
+      setLocal(
+        container,
+        config({
+          perRecord: [
+            perRecord({ filterCond }),
+            perRecord({ filterCond, targets: [] }),
+          ],
+        }),
+      );
+      setRemote(container, base);
 
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.localChanges).toEqual([
+        {
+          key: 'perRecord:"a ]: \\"b\\"#1\\nc"#1',
+          label: "承認",
+          kind: "localOnly",
+        },
+      ]);
+    });
+
+    it("shows an empty filterCond in the key as an empty quoted string", async () => {
+      const container = getContainer();
+      const base = config({ perRecord: [perRecord({ filterCond: "" })] });
+      setBase(container, base);
+      setLocal(container, base);
+      setRemote(
+        container,
+        config({ perRecord: [perRecord({ filterCond: "", targets: [] })] }),
+      );
+
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.remoteDrift).toEqual([
+        { key: 'perRecord:""#0', label: "承認", kind: "remoteOnly" },
+      ]);
+    });
+
+    it("shows a general entity key as it is", async () => {
+      const container = getContainer();
+      const base = config();
+      setBase(container, base);
+      setLocal(
+        container,
+        config({
+          general: {
+            notifyToCommenter: false,
+            notifications: [general({ recordEdited: true })],
+          },
+        }),
+      );
+      setRemote(container, base);
+
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      expect(result.localChanges.map((e) => e.key)).toEqual([
+        "general:USER:alice",
+      ]);
+    });
+  });
+
+  describe("perRecord labels", () => {
     async function labelsOfLocalChanges(
       container: TestNotificationContainer,
       before: PerRecordNotification,
