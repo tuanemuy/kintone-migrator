@@ -15,28 +15,40 @@ import { forceOverrideForm } from "../forceOverrideForm";
 import { applyPulledMerge, pullSchema } from "../pullSchema";
 import { pushSchema } from "../pushSchema";
 
-type RelatedApp = Record<string, unknown>;
+/** `relatedApp` as written in a schema file or returned by the kintone API. */
+type RawRelatedApp = Record<string, unknown>;
 
-/** Where the lookup field sits: in a row, or inside the subtable `items`. */
-type Placement = "row" | "subtable";
+type LookupFieldType = "SINGLE_LINE_TEXT" | "NUMBER" | "LINK";
 
-type FormOptions = {
-  readonly placement?: Placement;
-  readonly remoteLookup?: Record<string, unknown>;
+/**
+ * The lookup field `customer_code`: its type, and where it sits (in a row, or
+ * inside the subtable `items`).
+ */
+type LookupForm = Readonly<{
+  placement: "row" | "subtable";
+  fieldType: LookupFieldType;
+}>;
+
+type LocalOptions = Partial<LookupForm> & {
   readonly nameLabel?: string;
 };
 
+type RemoteOptions = LocalOptions & {
+  readonly remoteLookup?: Record<string, unknown>;
+};
+
 function createContainer(
-  remoteRelatedApp: RelatedApp,
+  remoteRelatedApp: RawRelatedApp,
   {
     placement = "row",
+    fieldType = "SINGLE_LINE_TEXT",
     remoteLookup = {},
     nameLabel = "顧客名",
-  }: FormOptions = {},
+  }: RemoteOptions = {},
 ) {
   const fields = {
     customer_code: {
-      type: "SINGLE_LINE_TEXT",
+      type: fieldType,
       code: "customer_code",
       label: "顧客コード",
       noLabel: false,
@@ -59,7 +71,7 @@ function createContainer(
     },
   };
   const layoutFields = [
-    { type: "SINGLE_LINE_TEXT", code: "customer_code" },
+    { type: fieldType, code: "customer_code" },
     { type: "SINGLE_LINE_TEXT", code: "customer_name" },
   ];
   return createKintoneBackedFormSchemaContainer(
@@ -76,7 +88,11 @@ function createContainer(
 
 function schemaWithRelatedApp(
   relatedApp: string,
-  { placement = "row", nameLabel = "顧客名" }: FormOptions = {},
+  {
+    placement = "row",
+    fieldType = "SINGLE_LINE_TEXT",
+    nameLabel = "顧客名",
+  }: LocalOptions = {},
 ): string {
   const container =
     placement === "row"
@@ -85,7 +101,7 @@ function schemaWithRelatedApp(
   return `layout:
 ${container}    fields:
       - code: customer_code
-        type: SINGLE_LINE_TEXT
+        type: ${fieldType}
         label: 顧客コード
         noLabel: false
         required: false
@@ -135,7 +151,7 @@ function sentRelatedApp(client: Client): unknown {
   return field.lookup.relatedApp;
 }
 
-const remoteRelatedApps: readonly [string, RelatedApp][] = [
+const remoteRelatedApps: readonly [string, RawRelatedApp][] = [
   ["非空の code を返す API", { app: "10", code: "CUSTOMERS" }],
   ["code: '' を返す API", { app: "10", code: "" }],
 ];
@@ -149,17 +165,23 @@ const localRelatedApps: readonly [string, string][] = [
   ["code を数値で書いた YAML", '{ app: "10", code: 20 }'],
 ];
 
-describe.each<Placement>([
-  "row",
-  "subtable",
-])("lookup の relatedApp（%s に置いたフィールド）", (placement) => {
+const lookupForms: readonly LookupForm[] = (
+  ["row", "subtable"] as const
+).flatMap((placement) =>
+  (["SINGLE_LINE_TEXT", "NUMBER", "LINK"] as const).map((fieldType) => ({
+    placement,
+    fieldType,
+  })),
+);
+
+describe.each(
+  lookupForms,
+)("lookup の relatedApp（$placement に置いた $fieldType）", (form) => {
   describe("diff / migrate", () => {
     describe.each(remoteRelatedApps)("%s", (_, remote) => {
       it.each(localRelatedApps)("%s の diff は差分なし", async (_, local) => {
-        const { container } = createContainer(remote, { placement });
-        container.schemaStorage.setContent(
-          schemaWithRelatedApp(local, { placement }),
-        );
+        const { container } = createContainer(remote, form);
+        container.schemaStorage.setContent(schemaWithRelatedApp(local, form));
 
         const result = await detectDiff({ container });
 
@@ -171,10 +193,8 @@ describe.each<Placement>([
       it.each(
         localRelatedApps,
       )("%s の migrate は何も送らない", async (_, local) => {
-        const { container, client } = createContainer(remote, { placement });
-        container.schemaStorage.setContent(
-          schemaWithRelatedApp(local, { placement }),
-        );
+        const { container, client } = createContainer(remote, form);
+        container.schemaStorage.setContent(schemaWithRelatedApp(local, form));
 
         await executeMigration({ container });
 
@@ -185,10 +205,10 @@ describe.each<Placement>([
     it("app が違えば変更として検出し、details に code を出さない", async () => {
       const { container } = createContainer(
         { app: "11", code: "CLIENTS" },
-        { placement },
+        form,
       );
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', form),
       );
 
       const result = await detectDiff({ container });
@@ -206,10 +226,10 @@ describe.each<Placement>([
     it("code を書いた YAML で migrate すると、relatedApp は app だけを送る", async () => {
       const { container, client } = createContainer(
         { app: "11", code: "CLIENTS" },
-        { placement },
+        form,
       );
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', form),
       );
 
       await executeMigration({ container });
@@ -221,10 +241,10 @@ describe.each<Placement>([
     it("code を書いた YAML で override すると、relatedApp は app だけを送る", async () => {
       const { container, client } = createContainer(
         { app: "11", code: "CLIENTS" },
-        { placement },
+        form,
       );
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', form),
       );
 
       await forceOverrideForm({ container });
@@ -236,10 +256,10 @@ describe.each<Placement>([
     it("app を書かず code だけの YAML は、migrate が検証エラーで止まり何も送らない", async () => {
       const { container, client } = createContainer(
         { app: "10", code: "CUSTOMERS" },
-        { placement },
+        form,
       );
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ code: "CUSTOMERS" }', form),
       );
 
       const result = executeMigration({ container });
@@ -254,7 +274,7 @@ describe.each<Placement>([
     it.each(
       remoteRelatedApps,
     )("%s のとき、capture の YAML の relatedApp は app だけを持ち、直後の diff は差分なし", async (_, remote) => {
-      const { container } = createContainer(remote, { placement });
+      const { container } = createContainer(remote, form);
 
       const { schemaText } = await captureSchema({ container });
       container.schemaStorage.setContent(schemaText);
@@ -269,7 +289,7 @@ describe.each<Placement>([
     it("非空の code を返す API から初回の pull が書く YAML と state の relatedApp は、app だけを持つ", async () => {
       const { container } = createContainer(
         { app: "10", code: "CUSTOMERS" },
-        { placement },
+        form,
       );
 
       await pullSchema({ container, input: {} });
@@ -287,7 +307,7 @@ describe.each<Placement>([
       }
     });
 
-    it.each<[string, RelatedApp, FormOptions, RelatedApp]>([
+    it.each<[string, RawRelatedApp, LocalOptions, RawRelatedApp]>([
       [
         "relatedApp.app が変わった",
         { app: "11", code: "CLIENTS" },
@@ -301,10 +321,11 @@ describe.each<Placement>([
         { app: "10" },
       ],
     ])("%s リモートを pull で取り込むと、code を書いた YAML と state の relatedApp は app だけになる", async (_, remote, options, expected) => {
-      const { container } = createContainer(remote, { ...options, placement });
-      const base = schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', {
-        placement,
-      });
+      const { container } = createContainer(remote, { ...options, ...form });
+      const base = schemaWithRelatedApp(
+        '{ app: "10", code: "CUSTOMERS" }',
+        form,
+      );
       container.schemaStateStorage.setContent(base);
       container.schemaStorage.setContent(base);
 
@@ -349,14 +370,12 @@ describe.each<Placement>([
       )("%s と、非空の code を返すリモートは差分なし", async (_, local) => {
         const { container } = createContainer(
           { app: "10", code: "CUSTOMERS" },
-          { placement },
+          form,
         );
         container.schemaStateStorage.setContent(
-          schemaWithRelatedApp(base, { placement }),
+          schemaWithRelatedApp(base, form),
         );
-        container.schemaStorage.setContent(
-          schemaWithRelatedApp(local, { placement }),
-        );
+        container.schemaStorage.setContent(schemaWithRelatedApp(local, form));
 
         const result = await detectThreeWayDiff({ container });
 
@@ -371,9 +390,9 @@ describe.each<Placement>([
       });
     });
 
-    const changedKey = placement === "row" ? "customer_code" : "items";
+    const changedKey = form.placement === "row" ? "customer_code" : "items";
 
-    it.each<[string, string, string, RelatedApp, Record<string, unknown>]>([
+    it.each<[string, string, string, RawRelatedApp, Record<string, unknown>]>([
       [
         "リモートだけ app が変わると remote drift",
         '{ app: "10", code: "CUSTOMERS" }',
@@ -396,13 +415,9 @@ describe.each<Placement>([
         { conflicts: [{ key: changedKey, kind: "conflict" }] },
       ],
     ])("%s として検出する", async (_, base, local, remote, expected) => {
-      const { container } = createContainer(remote, { placement });
-      container.schemaStateStorage.setContent(
-        schemaWithRelatedApp(base, { placement }),
-      );
-      container.schemaStorage.setContent(
-        schemaWithRelatedApp(local, { placement }),
-      );
+      const { container } = createContainer(remote, form);
+      container.schemaStateStorage.setContent(schemaWithRelatedApp(base, form));
+      container.schemaStorage.setContent(schemaWithRelatedApp(local, form));
 
       const result = await detectThreeWayDiff({ container });
 
@@ -422,13 +437,11 @@ describe.each<Placement>([
     ])("%s と、非空の code を返すリモートで push すると、drift とせず app だけを送り、state にも code を書かない", async (_, base) => {
       const { container, client } = createContainer(
         { app: "11", code: "CLIENTS" },
-        { placement },
+        form,
       );
-      container.schemaStateStorage.setContent(
-        schemaWithRelatedApp(base, { placement }),
-      );
+      container.schemaStateStorage.setContent(schemaWithRelatedApp(base, form));
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', form),
       );
 
       await pushSchema({ container, input: {} });
@@ -447,13 +460,13 @@ describe.each<Placement>([
     it("リモートの app が base から変わっていれば、push は drift として止まる", async () => {
       const { container, client } = createContainer(
         { app: "11", code: "CLIENTS" },
-        { placement },
+        form,
       );
       container.schemaStateStorage.setContent(
-        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ app: "10", code: "CUSTOMERS" }', form),
       );
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ app: "12" }', { placement }),
+        schemaWithRelatedApp('{ app: "12" }', form),
       );
 
       await expect(pushSchema({ container, input: {} })).rejects.toThrow(
@@ -465,12 +478,12 @@ describe.each<Placement>([
     it("app を書かず code だけの YAML は、push が検証エラーで止まり何も送らない", async () => {
       const { container, client } = createContainer(
         { app: "10", code: "CUSTOMERS" },
-        { placement },
+        form,
       );
-      const base = schemaWithRelatedApp('{ app: "10" }', { placement });
+      const base = schemaWithRelatedApp('{ app: "10" }', form);
       container.schemaStateStorage.setContent(base);
       container.schemaStorage.setContent(
-        schemaWithRelatedApp('{ code: "CUSTOMERS" }', { placement }),
+        schemaWithRelatedApp('{ code: "CUSTOMERS" }', form),
       );
 
       const result = pushSchema({ container, input: {} });

@@ -204,6 +204,10 @@ function fromKintoneRelatedApp(value: unknown, fieldPath: string): RelatedApp {
 
 function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   assertRecord(value, fieldPath);
+  const relatedApp = fromKintoneRelatedApp(
+    value.relatedApp,
+    `${fieldPath}.relatedApp`,
+  );
   assertString(value.relatedKeyField, `${fieldPath}.relatedKeyField`);
   const rawFieldMappings = readKintoneLookupList(
     value.fieldMappings,
@@ -222,10 +226,7 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   );
   assertStringArray(lookupPickerFields, `${fieldPath}.lookupPickerFields`);
   return {
-    relatedApp: fromKintoneRelatedApp(
-      value.relatedApp,
-      `${fieldPath}.relatedApp`,
-    ),
+    relatedApp,
     relatedKeyField: value.relatedKeyField,
     fieldMappings,
     lookupPickerFields,

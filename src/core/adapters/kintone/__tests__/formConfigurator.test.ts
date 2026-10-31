@@ -683,6 +683,16 @@ describe("KintoneFormConfigurator", () => {
           'SINGLE_LINE_TEXT "customer".lookup.relatedKeyField',
         ],
         [
+          "relatedApp と relatedKeyField が両方不正",
+          { ...validLookup, relatedApp: "x", relatedKeyField: undefined },
+          'SINGLE_LINE_TEXT "customer".lookup.relatedApp',
+        ],
+        [
+          "relatedApp.app と fieldMappings が両方不正",
+          { ...validLookup, relatedApp: { app: 10 }, fieldMappings: 1 },
+          'SINGLE_LINE_TEXT "customer".lookup.relatedApp.app',
+        ],
+        [
           "fieldMappings が無い",
           { ...validLookup, fieldMappings: undefined },
           'SINGLE_LINE_TEXT "customer".lookup.fieldMappings',
