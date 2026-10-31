@@ -262,12 +262,13 @@ ${lists}
     container.schemaStorage.setContent(schemaText);
     const result = await detectDiff({ container });
 
-    const parsed = container.configCodec.parse(schemaText) as {
-      layout: { fields: { lookup?: Record<string, unknown> }[] }[];
-    };
-    const lookup = parsed.layout[0]?.fields[0]?.lookup;
-    expect(lookup?.fieldMappings).toStrictEqual([]);
-    expect(lookup?.lookupPickerFields).toStrictEqual([]);
+    const lookup = schemaFieldIn(
+      container.configCodec,
+      schemaText,
+      "customer_code",
+    )?.lookup;
+    expect(isRecord(lookup) && lookup.fieldMappings).toStrictEqual([]);
+    expect(isRecord(lookup) && lookup.lookupPickerFields).toStrictEqual([]);
     expect(result.isEmpty).toBe(true);
   });
 });
