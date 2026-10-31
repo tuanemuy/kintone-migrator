@@ -1,3 +1,4 @@
+import { groupByKey } from "@/lib/groupByKey";
 import { pairByKeyInOrder } from "@/lib/pairByKeyInOrder";
 import { buildDiffResult } from "../../diff";
 import { formatValue } from "../../services/formatValue";
@@ -143,47 +144,106 @@ function actionLabel(action: ProcessAction, index: number): string {
   return index === 0 ? label : `${label} #${index + 1}`;
 }
 
+type PositionedAction = Readonly<{ action: ProcessAction; position: number }>;
+
+function withPositions(actions: readonly ProcessAction[]): PositionedAction[] {
+  return actions.map((action, position) => ({ action, position }));
+}
+
+type MatchedAction = Readonly<{
+  from: string;
+  label: string;
+  localPosition: number;
+  remotePosition: number;
+}>;
+
+/**
+ * The record screen shows the actions available from the current state as
+ * buttons in `actions` order, so only the relative order of actions sharing a
+ * `from` is observable. Compares that order over the actions present on both
+ * sides; added and deleted actions are reported by their own entries.
+ */
+function compareActionOrder(
+  localActions: readonly ProcessAction[],
+  matched: readonly MatchedAction[],
+  entries: ProcessManagementDiffEntry[],
+): void {
+  const byLocalPosition = [...matched].sort(
+    (a, b) => a.localPosition - b.localPosition,
+  );
+  const localOrders = groupByKey(byLocalPosition, (m) => m.from);
+  for (const from of new Set(localActions.map((a) => a.from))) {
+    const localOrder = localOrders.get(from) ?? [];
+    const remoteOrder = [...localOrder].sort(
+      (a, b) => a.remotePosition - b.remotePosition,
+    );
+    if (remoteOrder.every((m, i) => m === localOrder[i])) continue;
+    const labels = (order: readonly MatchedAction[]) =>
+      order.map((m) => m.label).join(", ");
+    entries.push({
+      type: "modified",
+      category: "actionOrder",
+      name: from,
+      details: `${labels(remoteOrder)} -> ${labels(localOrder)}`,
+    });
+  }
+}
+
 function compareActionEntries(
   local: ProcessManagementConfig,
   remote: ProcessManagementConfig,
   entries: ProcessManagementDiffEntry[],
 ): void {
+  const matched: MatchedAction[] = [];
+
   for (const pair of pairByKeyInOrder(
-    local.actions,
-    remote.actions,
-    transitionKey,
+    withPositions(local.actions),
+    withPositions(remote.actions),
+    (p) => transitionKey(p.action),
   )) {
     switch (pair.kind) {
       case "localOnly":
         entries.push({
           type: "added",
           category: "action",
-          name: actionLabel(pair.local, pair.index),
-          details: `filterCond: ${formatValue(pair.local.filterCond)}`,
+          name: actionLabel(pair.local.action, pair.index),
+          details: `filterCond: ${formatValue(pair.local.action.filterCond)}`,
         });
         break;
       case "remoteOnly":
         entries.push({
           type: "deleted",
           category: "action",
-          name: actionLabel(pair.remote, pair.index),
-          details: `filterCond: ${formatValue(pair.remote.filterCond)}`,
+          name: actionLabel(pair.remote.action, pair.index),
+          details: `filterCond: ${formatValue(pair.remote.action.filterCond)}`,
         });
         break;
       case "both": {
-        const actionDiffs = compareActions(pair.local, pair.remote);
+        const label = actionLabel(pair.local.action, pair.index);
+        const actionDiffs = compareActions(
+          pair.local.action,
+          pair.remote.action,
+        );
         if (actionDiffs.length > 0) {
           entries.push({
             type: "modified",
             category: "action",
-            name: actionLabel(pair.local, pair.index),
+            name: label,
             details: actionDiffs.join("\n"),
           });
         }
+        matched.push({
+          from: pair.local.action.from,
+          label,
+          localPosition: pair.local.position,
+          remotePosition: pair.remote.position,
+        });
         break;
       }
     }
   }
+
+  compareActionOrder(local.actions, matched, entries);
 }
 
 function compareConfigs(

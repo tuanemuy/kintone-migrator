@@ -4,6 +4,7 @@ import {
   readLocalProcessConfig,
   readProcessStateConfig,
   SAME_NAMED_ACTIONS_CONFIG,
+  SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
   SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
   serializeProcessConfig,
   setupTestProcessManagementContainer,
@@ -174,6 +175,40 @@ describe("pullProcessManagement", () => {
       );
       expect(await readProcessStateConfig(container)).toEqual(
         SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED,
+      );
+    });
+  });
+
+  describe("action order", () => {
+    it("writes the remote order back when taking a remote reorder", async () => {
+      const container = getContainer();
+      setState(container, SAME_NAMED_ACTIONS_CONFIG, "1");
+      container.processManagementStorage.setContent(
+        serializeProcessConfig(SAME_NAMED_ACTIONS_CONFIG),
+      );
+      container.processManagementConfigurator.setConfig(
+        SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
+        "2",
+      );
+
+      const pull = await pullProcessManagement({ container, input: {} });
+      if (pull.mode !== "merged") throw new Error("expected merged");
+      expect(pull.merge.change.kind).toBe("remoteOnly");
+      await applyPulledProcessManagementMerge({
+        container,
+        input: {
+          merge: pull.merge,
+          resolution: "remote",
+          remoteConfig: pull.remoteConfig,
+          remoteRevision: pull.remoteRevision,
+        },
+      });
+
+      expect(await readLocalProcessConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
+      );
+      expect(await readProcessStateConfig(container)).toEqual(
+        SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED,
       );
     });
   });

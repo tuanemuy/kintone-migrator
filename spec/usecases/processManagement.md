@@ -116,7 +116,7 @@ type CaptureProcessManagementOutput = {
 ```typescript
 type ProcessManagementDiffEntry = {
   readonly type: "added" | "modified" | "deleted";
-  readonly category: "enable" | "state" | "action";
+  readonly category: "enable" | "state" | "action" | "actionOrder";
   readonly name: string;
   readonly details: string;
 };
@@ -143,6 +143,7 @@ type ProcessManagementDiff = {
 - `summary` に追加/変更/削除の件数と合計が集計される
 - 同名のアクションを含む設定を capture して保存した場合、差分がない
 - 同名のアクションの 1 件だけが変わった場合、その 1 件だけが差分に出る
+- 同じ `from` のアクションを並べ替えた場合、その `from` の並び順が差分に出る
 
 #### 異常系
 

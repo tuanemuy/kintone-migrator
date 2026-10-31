@@ -114,7 +114,9 @@ actions:
     type: PRIMARY
 ```
 
-差分検出ではアクションを `name` + `from` + `to` と、その組の中での出現順で識別する。詳細は [ProcessManagement ドメイン仕様](../domains/processManagement.md#processmanagementdiffdetector) を参照。
+`actions` の並び順は、レコード画面で同じステータスから出るアクションのボタンの並びになる。
+
+差分検出ではアクションを `name` + `from` + `to` と、その組の中での出現順で識別し、`from` が同じアクション同士の並び順の変更も差分にする。詳細は [ProcessManagement ドメイン仕様](../domains/processManagement.md#processmanagementdiffdetector) を参照。
 
 ## エンティティ（entities）の指定
 

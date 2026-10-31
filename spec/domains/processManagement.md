@@ -177,7 +177,7 @@ const ProcessManagementConfigSerializer = {
 
 ### ProcessManagementDiffDetector
 
-ローカルとリモートの `ProcessManagementConfig` を比べ、`enable`・ステータス・アクションの差分を `ProcessManagementDiff` として返す純粋関数。3-way merge の等価判定（`isProcessManagementConfigEqual`）も、この関数が差分なしを返すかで判定する。
+ローカルとリモートの `ProcessManagementConfig` を比べ、`enable`・ステータス・アクション・アクションの並び順の差分を `ProcessManagementDiff` として返す純粋関数。3-way merge の等価判定（`isProcessManagementConfigEqual`）も、この関数が差分なしを返すかで判定する。
 
 ```typescript
 const ProcessManagementDiffDetector = {
@@ -190,11 +190,19 @@ const ProcessManagementDiffDetector = {
     - kintone も ConfigParser も `name` / `from` / `to` がすべて同じアクションを受け付けるので、ローカル・リモートのどちらでも同じ組が重なる入力を潰さずに突き合わせる
     - `from` または `to` を変えたアクションは、旧アクションの `deleted` と新アクションの `added` になる
     - `name` / `from` / `to` がすべて同じアクション同士は出現順で突き合わせるので、それらの並べ替えや途中への挿入・途中の削除は、以降の組の `modified` と末尾の `added` / `deleted` として出る
-    - 組の異なるアクションの並び順は比べない。並び順だけの変更は差分にも 3-way merge の変更にも現れない
+- アクションの並び順は、`from` が同じアクション同士の相対順だけを比べる
+    - レコード画面は現在のステータスから出るアクションを `actions` の並び順でボタンにする。条件を満たす同名の分岐もそれぞれボタンになり、どれを実行するかは利用者が選ぶ。並び順で分岐が選ばれることはない
+    - `from` が違うアクション同士の並び順は画面に出ないので比べない
+    - 比べるのは両側で突き合ったアクションの並びだけ。追加・削除されたアクションの位置は、その `added` / `deleted` で表す
+    - `name` / `from` / `to` がすべて同じアクション同士だけの入れ替えは出現順の突き合わせを変えないので、並び順のエントリにならない
 - アクションの差分エントリは次のとおり
     - `name` は表示名 `{name} ({from} → {to})`。同じ組の 2 件目以降は末尾に ` #{出現順}` を付ける（`added` / `modified` はローカル、`deleted` はリモートでの出現順）。表示名は識別子ではなく、別の組が同じ表示名になることがある
     - `added` / `deleted` の `details` は `filterCond: {filterCond を JSON 文字列にしたもの}`（例: `filterCond: "部署 in (\"営業\")"`）
     - `modified` の `details` は `filterCond` / `type` / `executableUser` の変化を 1 行ずつ並べる。`filterCond` は変更前後を JSON 文字列で示す
+- 並び順の差分エントリは次のとおり
+    - 並び順が変わった `from` ごとに `type: "modified"`・`category: "actionOrder"` を 1 件出す。`name` は `from`
+    - `details` は `{リモートの並び} -> {ローカルの並び}`。並びは突き合ったアクションの表示名を `, ` で区切る。突き合ったアクションは両側で同じ出現順を持つので、表示名も両側で同じになる
+    - アクションの `modified` の後に、ローカルの `actions` で `from` が初めて出る順で並ぶ
 
 ## ポート
 

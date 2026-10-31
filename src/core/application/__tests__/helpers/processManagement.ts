@@ -138,6 +138,19 @@ export const SAME_NAMED_ACTIONS_CONFIG_SECOND_REPEAT_CHANGED: ProcessManagementC
     ),
   };
 
+/** {@link SAME_NAMED_ACTIONS_CONFIG} with the two `申請する` branches from `未処理` swapped. */
+export const SAME_NAMED_ACTIONS_CONFIG_BRANCHES_REORDERED: ProcessManagementConfig =
+  {
+    ...SAME_NAMED_ACTIONS_CONFIG,
+    actions: [
+      SAME_NAMED_ACTIONS_CONFIG.actions[0],
+      SAME_NAMED_ACTIONS_CONFIG.actions[1],
+      SAME_NAMED_ACTIONS_CONFIG.actions[3],
+      SAME_NAMED_ACTIONS_CONFIG.actions[2],
+      ...SAME_NAMED_ACTIONS_CONFIG.actions.slice(4),
+    ],
+  };
+
 export function serializeProcessConfig(
   config: ProcessManagementConfig,
 ): string {
