@@ -1,3 +1,4 @@
+import { formatValue } from "../services/formatValue";
 import type { NotificationEntity } from "./valueObject";
 
 export type GeneralNotification = Readonly<{
@@ -25,6 +26,19 @@ export type PerRecordNotification = Readonly<{
   title: string;
   targets: readonly NotificationTarget[];
 }>;
+
+/**
+ * Display name of a per-record notification: the title as a name, otherwise
+ * the filterCond quoted as a value so that it is distinguishable from a title
+ * and its extent is readable.
+ */
+export function describePerRecordNotification(
+  notif: PerRecordNotification,
+): string {
+  if (notif.title !== "") return notif.title;
+  if (notif.filterCond !== "") return formatValue(notif.filterCond);
+  return "(empty filter)";
+}
 
 export type ReminderNotification = Readonly<{
   code: string;

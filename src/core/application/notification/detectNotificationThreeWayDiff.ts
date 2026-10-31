@@ -1,9 +1,9 @@
-import type {
-  GeneralNotification,
-  PerRecordNotification,
-  ReminderNotification,
+import {
+  describePerRecordNotification,
+  type GeneralNotification,
+  type PerRecordNotification,
+  type ReminderNotification,
 } from "@/core/domain/notification/entity";
-import { perRecordLabel } from "@/core/domain/notification/services/diffDetector";
 import {
   computeNotificationThreeWayMerge,
   type NotificationMergeEntry,
@@ -25,14 +25,15 @@ export type DetectNotificationThreeWayDiffOutput =
 
 /**
  * Human label for a merge entry. Uses the section-appropriate display value
- * (`perRecordLabel` for perRecord, `code`/title for reminder, the
- * entity key for general) without affecting the match key.
+ * (`describePerRecordNotification` for perRecord, the title or else the
+ * `code` for reminder, the entity key for general) without affecting the
+ * match key.
  */
 function entryLabel(entry: NotificationMergeEntry): string {
   const value = entry.local ?? entry.remote ?? entry.base;
   if (entry.key.startsWith("perRecord:")) {
     const n = value as PerRecordNotification | undefined;
-    return n ? perRecordLabel(n) : entry.key;
+    return n ? describePerRecordNotification(n) : entry.key;
   }
   if (entry.key.startsWith("reminder:")) {
     const n = value as ReminderNotification | undefined;
