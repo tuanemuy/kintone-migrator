@@ -1,5 +1,5 @@
 import type { KintoneRestAPIClient } from "@kintone/rest-api-client";
-import { vi } from "vitest";
+import { expect, vi } from "vitest";
 import { KintoneFormConfigurator } from "@/core/adapters/kintone/formConfigurator";
 import type { FormSchemaContainer } from "@/core/application/container/formSchema";
 import { ConflictError, ConflictErrorCode } from "@/core/application/error";
@@ -16,6 +16,8 @@ import type {
   FieldCode,
   FieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
+import type { ConfigCodec } from "@/core/domain/ports/configCodec";
+import { isRecord } from "@/lib/typeGuards";
 import {
   FakeBase,
   InMemoryAppDeployer,
@@ -255,4 +257,32 @@ export function createKintoneBackedFormSchemaContainer(form: {
     ),
   };
   return { container, client };
+}
+
+type KintoneBackedClient = ReturnType<
+  typeof createKintoneBackedFormSchemaContainer
+>["client"];
+
+/** Asserts that no form write reached the stub client. */
+export function expectNoFormMutation(client: KintoneBackedClient): void {
+  expect(client.app.addFormFields).not.toHaveBeenCalled();
+  expect(client.app.updateFormFields).not.toHaveBeenCalled();
+  expect(client.app.deleteFormFields).not.toHaveBeenCalled();
+  expect(client.app.updateFormLayout).not.toHaveBeenCalled();
+}
+
+/** Finds the field `fieldCode` in the first layout row of a schema text. */
+export function schemaFieldIn(
+  codec: ConfigCodec,
+  schemaText: string,
+  fieldCode: string,
+): Record<string, unknown> | undefined {
+  const parsed = codec.parse(schemaText);
+  if (!isRecord(parsed) || !Array.isArray(parsed.layout)) return undefined;
+  const [row] = parsed.layout;
+  if (!isRecord(row) || !Array.isArray(row.fields)) return undefined;
+  return row.fields.find(
+    (field): field is Record<string, unknown> =>
+      isRecord(field) && field.code === fieldCode,
+  );
 }

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createKintoneBackedFormSchemaContainer } from "@/core/application/__tests__/helpers";
+import {
+  createKintoneBackedFormSchemaContainer,
+  expectNoFormMutation,
+  schemaFieldIn,
+} from "@/core/application/__tests__/helpers";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { isRecord } from "@/lib/typeGuards";
 import { captureSchema } from "../captureSchema";
@@ -139,14 +143,11 @@ const unsetRemotes: readonly [string, Clauses][] = [
 const setRemote = { filterCond: 'status in ("active")', sort: "code asc" };
 const setClauses = `          filterCond: 'status in ("active")'\n          sort: code asc\n`;
 
-type Client = ReturnType<typeof createContainer>["client"];
-
-function expectNoMutation(client: Client) {
-  expect(client.app.addFormFields).not.toHaveBeenCalled();
-  expect(client.app.updateFormFields).not.toHaveBeenCalled();
-  expect(client.app.deleteFormFields).not.toHaveBeenCalled();
-  expect(client.app.updateFormLayout).not.toHaveBeenCalled();
-}
+const unsetSchemas: readonly [string, string][] = [
+  ["キーを省いた YAML", omitted],
+  ["値を書かない YAML", valueless],
+  ['"" と書いた YAML', empty],
+];
 
 function clausesIn(sent: unknown, kind: FieldKind): Clauses | undefined {
   if (!isRecord(sent) || !isRecord(sent.properties)) return undefined;
@@ -162,11 +163,7 @@ function clausesInSchema(
   text: string,
   kind: FieldKind,
 ): Clauses | undefined {
-  const parsed = codec.parse(text) as {
-    layout: { fields: Record<string, unknown>[] }[];
-  };
-  const field = parsed.layout[0]?.fields.find((f) => f.code === kind.fieldCode);
-  const holder = field?.[kind.clauseKey];
+  const holder = schemaFieldIn(codec, text, kind.fieldCode)?.[kind.clauseKey];
   if (!isRecord(holder)) return undefined;
   return { filterCond: holder.filterCond, sort: holder.sort };
 }
@@ -196,11 +193,9 @@ describe.each([
   referenceTableKind,
 ])("$name の filterCond・sort", (kind) => {
   describe.each(unsetRemotes)("%s", (_, remote) => {
-    it.each([
-      ["キーを省いた YAML", omitted],
-      ["値を書かない YAML", valueless],
-      ['"" と書いた YAML', empty],
-    ])("%s の diff は差分なし、migrate は何も送らない", async (_, clauses) => {
+    it.each(
+      unsetSchemas,
+    )("%s の diff は差分なし、migrate は何も送らない", async (_, clauses) => {
       const { container, client } = createContainer(
         kind,
         kind.remoteField(remote),
@@ -213,7 +208,7 @@ describe.each([
       expect(diff.entries).toEqual([]);
       expect(diff.hasLayoutChanges).toBe(false);
       expect(diff.isEmpty).toBe(true);
-      expectNoMutation(client);
+      expectNoFormMutation(client);
     });
 
     it("capture の YAML は空文字を書き、直後の diff は差分なし", async () => {
@@ -402,25 +397,27 @@ describe("SUBTABLE 内の lookup の filterCond・sort", () => {
           relatedKeyField: code
 `;
 
-  it.each(
-    unsetRemotes,
-  )("キーを省いた YAML と %s の diff は差分なし、migrate は何も送らない", async (_, clauses) => {
-    const { container, client } = createKintoneBackedFormSchemaContainer({
-      properties: { items: remoteSubtable(clauses) },
-      layout: [
-        {
-          type: "SUBTABLE",
-          code: "items",
-          fields: [{ type: "NUMBER", code: "item_customer" }],
-        },
-      ],
+  describe.each(unsetRemotes)("%s", (_, clauses) => {
+    it.each(
+      unsetSchemas,
+    )("%s の diff は差分なし、migrate は何も送らない", async (_, schemaClauses) => {
+      const { container, client } = createKintoneBackedFormSchemaContainer({
+        properties: { items: remoteSubtable(clauses) },
+        layout: [
+          {
+            type: "SUBTABLE",
+            code: "items",
+            fields: [{ type: "NUMBER", code: "item_customer" }],
+          },
+        ],
+      });
+      container.schemaStorage.setContent(schema + schemaClauses);
+
+      const diff = await detectDiff({ container });
+      await executeMigration({ container });
+
+      expect(diff.isEmpty).toBe(true);
+      expectNoFormMutation(client);
     });
-    container.schemaStorage.setContent(schema);
-
-    const diff = await detectDiff({ container });
-    await executeMigration({ container });
-
-    expect(diff.isEmpty).toBe(true);
-    expectNoMutation(client);
   });
 });

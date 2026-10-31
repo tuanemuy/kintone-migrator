@@ -693,8 +693,10 @@ describe("SchemaParser", () => {
       it.each([
         ["省略", undefined],
         ["値なし（null）", null],
-      ])("size が%sなら size を持たない", (_, size) => {
-        expect(parseReferenceTableOf({ size })).not.toHaveProperty("size");
+      ])("size が%sなら、size を書かないのと同じ値になる", (_, size) => {
+        expect(parseReferenceTableOf({ size })).toStrictEqual(
+          parseReferenceTableOf({}),
+        );
       });
 
       it("数値で書いた size は文字列にする", () => {
