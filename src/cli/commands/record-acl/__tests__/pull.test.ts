@@ -92,4 +92,17 @@ describe("record-acl pull command", () => {
       ?.input;
     expect(input?.resolution).toEqual(new Map([["#0", "local"]]));
   });
+
+  it("resolves a conflict by the merge key with --theirs", async () => {
+    vi.mocked(pullRecordPermission).mockResolvedValue(
+      mergedWithConflict('status = "A"#1'),
+    );
+
+    await command.run({ values: { theirs: true } } as never);
+
+    expect(p.select).not.toHaveBeenCalled();
+    const input = vi.mocked(applyPulledRecordPermissionMerge).mock.calls[0]?.[0]
+      ?.input;
+    expect(input?.resolution).toEqual(new Map([['status = "A"#1', "remote"]]));
+  });
 });

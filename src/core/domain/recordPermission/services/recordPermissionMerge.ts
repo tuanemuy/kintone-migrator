@@ -6,7 +6,10 @@ import {
   type RecordThreeWayMerge,
   resolveRecordMerge,
 } from "../../recordMerge";
-import { filterCondKey } from "../../services/filterCondKey";
+import {
+  describeFilterCondKey,
+  filterCondKey,
+} from "../../services/filterCondKey";
 import type { RecordPermissionConfig, RecordRight } from "../entity";
 import { RecordPermissionErrorCode } from "../errorCode";
 
@@ -22,6 +25,11 @@ import { RecordPermissionErrorCode } from "../errorCode";
  * means a reordering within a filterCond is seen as content changes at those
  * indices, matching the existing 2-way detector.
  */
+
+/** Display form of a merge key, with its filterCond quoted. */
+export function describeRecordPermissionMergeKey(key: string): string {
+  return describeFilterCondKey(key);
+}
 
 /** Converts the ordered `rights` list into a record keyed by `filterCond#i`. */
 function toRecord(

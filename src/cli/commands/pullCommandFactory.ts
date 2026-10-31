@@ -18,8 +18,8 @@ export type ConflictResolution = Map<string, "local" | "remote">;
 
 /**
  * The minimal merge shape the factory needs to drive conflict resolution. Each
- * conflict exposes a stable `key` used as the resolution map key and, through
- * `describeConflict`, to name the conflict in the prompt.
+ * conflict exposes a stable `key` used as the resolution map key and to name
+ * the conflict in the prompt.
  */
 export type PullMergeView = {
   readonly hasConflict: boolean;
@@ -55,10 +55,13 @@ type PullCommandConfig<
   /** What a conflicting entity is called in prompts, e.g. "view". */
   readonly conflictNoun: string;
   /**
-   * How a conflicting key is named in the prompt after `conflictNoun`.
-   * Defaults to the key in double quotes.
+   * Display form of a conflicting key, for domains whose keys embed values
+   * that are quoted in display (see `ThreeWayDiffEntry.key`). When given, the
+   * prompt names the conflict as `[{display form}]`, as the 3-way diff line
+   * does, since the display form carries its own quotes; otherwise as
+   * `"{key}"`.
    */
-  readonly describeConflict?: (key: string) => string;
+  readonly describeConflictKey?: (key: string) => string;
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly pullFn: (args: {
     container: TContainer;
@@ -99,8 +102,9 @@ export function createPullCommand<
 >(
   config: PullCommandConfig<TContainerConfig, TContainer, TCliValues, TMerged>,
 ) {
-  const describeConflict =
-    config.describeConflict ?? ((key: string) => `"${key}"`);
+  const { describeConflictKey } = config;
+  const nameConflict = (key: string): string =>
+    describeConflictKey ? `[${describeConflictKey(key)}]` : `"${key}"`;
   const notSupportedAll = new ValidationError(
     ValidationErrorCode.InvalidInput,
     `${config.description} does not support --all yet. Use --app <name> or a single app.`,
@@ -123,7 +127,7 @@ export function createPullCommand<
         continue;
       }
       const selected = await p.select({
-        message: `Conflict on ${config.conflictNoun} ${describeConflict(conflict.key)}. Keep which side?`,
+        message: `Conflict on ${config.conflictNoun} ${nameConflict(conflict.key)}. Keep which side?`,
         options: [
           { value: "local", label: "local (ours)" },
           { value: "remote", label: "remote (theirs)" },

@@ -32,10 +32,11 @@ export type ThreeWayDiffExtra = Readonly<{
  * Generic 3-way diff result shared by every config domain.
  *
  * - `three-way`: a state (base snapshot) exists; changes are split into
- *   local-only, remote drift, and conflicts. `extraLines` carries domain-
- *   specific tail lines (e.g. schema's layout status) already formatted.
+ *   local-only, remote drift, and conflicts. `extras` carries domain-specific
+ *   tail entries (e.g. schema's layout status).
  * - `two-way`: no state exists; the domain falls back to its existing 2-way
- *   diff, rendered by `render` so the printer stays domain-agnostic.
+ *   diff, which the CLI renders with the domain's 2-way printer so the 3-way
+ *   printer stays domain-agnostic.
  */
 export type ThreeWayDiffResult<TTwoWay = unknown> =
   | Readonly<{
@@ -68,8 +69,9 @@ type RecordThreeWayDiffOptions = Readonly<{
 
 /**
  * Builds the three-way portion of a {@link ThreeWayDiffResult} from a
- * record-keyed merge (view / report / action / plugin). The caller supplies a
- * `label` extractor (e.g. the view's name) for display.
+ * record-keyed merge (view / report / action / plugin / customization / field
+ * permission / app permission / record permission). The caller supplies a
+ * `label` extractor (e.g. the view's type) for display.
  */
 export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
   merge: RecordThreeWayMerge<V>,

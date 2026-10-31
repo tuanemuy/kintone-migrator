@@ -55,8 +55,10 @@ function generalEntityKey(notif: GeneralNotification): string {
   return `general:${notif.entity.type}:${notif.entity.code}`;
 }
 
+const PER_RECORD_KEY_PREFIX = "perRecord:";
+
 function perRecordCompositeKey(filterCond: string, index: number): string {
-  return `perRecord:${filterCondKey(filterCond, index)}`;
+  return `${PER_RECORD_KEY_PREFIX}${filterCondKey(filterCond, index)}`;
 }
 
 function reminderKey(notif: ReminderNotification): string {
@@ -69,10 +71,11 @@ function reminderKey(notif: ReminderNotification): string {
  * and are shown as they are.
  */
 export function describeNotificationMergeKey(key: string): string {
-  if (!key.startsWith("perRecord:")) {
+  if (!key.startsWith(PER_RECORD_KEY_PREFIX)) {
     return key;
   }
-  return `perRecord:${describeFilterCondKey(key.slice("perRecord:".length))}`;
+  const filterCondPart = key.slice(PER_RECORD_KEY_PREFIX.length);
+  return `${PER_RECORD_KEY_PREFIX}${describeFilterCondKey(filterCondPart)}`;
 }
 
 // --- Equality (matches diffDetector's "no changes" semantics). ---
@@ -306,7 +309,7 @@ function collectPerRecordNotifications(
 ): PerRecordNotification[] {
   const result: PerRecordNotification[] = [];
   for (const entry of entries) {
-    if (!entry.key.startsWith("perRecord:")) {
+    if (!entry.key.startsWith(PER_RECORD_KEY_PREFIX)) {
       continue;
     }
     const value = resolveEntryValue(

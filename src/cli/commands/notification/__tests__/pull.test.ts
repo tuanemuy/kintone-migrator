@@ -89,4 +89,45 @@ describe("notification pull command", () => {
     );
     expect(handleCliError).not.toHaveBeenCalled();
   });
+
+  it("names reminder and scalar conflicts in the same bracket form", async () => {
+    vi.mocked(pullNotification).mockResolvedValue(
+      mergedWithConflicts([
+        "reminder:r1",
+        "general:notifyToCommenter",
+        "reminder:timezone",
+      ]),
+    );
+
+    await command.run({ values: {} } as never);
+
+    expect(
+      vi.mocked(p.select).mock.calls.map(([opts]) => opts.message),
+    ).toEqual([
+      "Conflict on notification [reminder:r1]. Keep which side?",
+      "Conflict on notification [general:notifyToCommenter]. Keep which side?",
+      "Conflict on notification [reminder:timezone]. Keep which side?",
+    ]);
+  });
+
+  it.each([
+    ["ours", "local"],
+    ["theirs", "remote"],
+  ] as const)("resolves every conflict by the merge key with --%s", async (flag, side) => {
+    vi.mocked(pullNotification).mockResolvedValue(
+      mergedWithConflicts(["perRecord:a ]: b\nc#0", "reminder:r1"]),
+    );
+
+    await command.run({ values: { [flag]: true } } as never);
+
+    expect(p.select).not.toHaveBeenCalled();
+    const input = vi.mocked(applyPulledNotificationMerge).mock.calls[0]?.[0]
+      ?.input;
+    expect(input?.resolution).toEqual(
+      new Map([
+        ["perRecord:a ]: b\nc#0", side],
+        ["reminder:r1", side],
+      ]),
+    );
+  });
 });

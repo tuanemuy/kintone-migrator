@@ -227,17 +227,17 @@ describe("createPullCommand — conflict prompt", () => {
     );
   });
 
-  it("names a conflicting key with describeConflict and resolves it by the key", async () => {
+  it("names a conflicting key by its display form in brackets and resolves it by the key", async () => {
     const config = makeConfig({
       pullFn: conflicting("k1"),
-      describeConflict: (key) => `<${key}>`,
+      describeConflictKey: (key) => `<${key}>`,
     });
 
     await createPullCommand(config).run({ values: {} } as never);
 
     expect(p.select).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: "Conflict on entry <k1>. Keep which side?",
+        message: "Conflict on entry [<k1>]. Keep which side?",
       }),
     );
     expect(config.applyMerge).toHaveBeenCalledWith(

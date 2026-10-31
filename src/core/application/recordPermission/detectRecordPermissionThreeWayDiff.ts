@@ -1,9 +1,11 @@
-import { computeRecordPermissionThreeWayMerge } from "@/core/domain/recordPermission/services/recordPermissionMerge";
+import {
+  computeRecordPermissionThreeWayMerge,
+  describeRecordPermissionMergeKey,
+} from "@/core/domain/recordPermission/services/recordPermissionMerge";
 import {
   describeRecordPermissionFilter,
   type RecordPermissionDiff,
 } from "@/core/domain/recordPermission/valueObject";
-import { describeFilterCondKey } from "@/core/domain/services/filterCondKey";
 import type { RecordPermissionDiffServiceArgs } from "../container/recordPermission";
 import {
   buildRecordThreeWayDiff,
@@ -41,16 +43,16 @@ export async function detectRecordPermissionThreeWayDiff({
     remote.config,
   );
 
-  // Label by the right's filterCond (the human-meaningful grouping), falling
-  // back to the composite key when no value is present (deletions on both ends).
+  // Label by the right's filterCond (the human-meaningful grouping). The entry
+  // type allows every side to be absent, so fall back to the key's display form.
   return buildRecordThreeWayDiff(
     merge,
     (entry) => {
       const right = entry.local ?? entry.remote ?? entry.base;
       return right
         ? describeRecordPermissionFilter(right.filterCond)
-        : entry.key;
+        : describeRecordPermissionMergeKey(entry.key);
     },
-    { describeKey: describeFilterCondKey },
+    { describeKey: describeRecordPermissionMergeKey },
   );
 }
