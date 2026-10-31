@@ -73,16 +73,10 @@ type LookupFieldMapping = Readonly<{
   relatedField: string;
 }>;
 
-type AppCode = string & { readonly brand: "AppCode" };
-
-type LookupRelatedApp = Readonly<{ app: string; code?: AppCode }>;
-
-const LookupRelatedApp = {
-  create: (app: string, code: string | undefined): LookupRelatedApp;
-};
+type RelatedApp = Readonly<{ app: string }>;
 
 type Lookup = Readonly<{
-  relatedApp: LookupRelatedApp;
+  relatedApp: RelatedApp;
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
@@ -92,8 +86,8 @@ type Lookup = Readonly<{
 ```
 
 - ルックアップ対応フィールド（SINGLE_LINE_TEXT, NUMBER, LINK）の `lookup` プロパティで使用
-- `relatedApp` は参照先アプリの識別情報。`AppCode` は参照先アプリのアプリコードで、空文字にならない
-- `LookupRelatedApp.create` は `code` が空文字か `undefined` なら `code` を持たない値を作る。kintone API はアプリコードの無い参照先アプリについて `code: ""` を返し、スキーマファイルは同じアプリを `code` なしで書くため、両者を同じ値にする
+- `RelatedApp` は参照先アプリをアプリ ID で表す。`Lookup` と `ReferenceTableFieldDefinition` が共有する
+- kintone API は参照先アプリのアプリコードも `relatedApp.code` として返すが、`RelatedApp` は持たない。アプリコードはフィールドの設定ではなく、参照先アプリの属性（API がアプリ ID から導いて返す値）であるため。SchemaParser と kintone アダプターは `code` を捨てて `RelatedApp` を組み立てる
 - `Lookup` は SchemaParser（スキーマファイル）と kintone アダプター（API レスポンス）がそれぞれ組み立て、未知のキーは持たない
 - `fieldMappings` は参照先フィールドとのマッピング定義
 - 未設定の `fieldMappings`・`lookupPickerFields` は空配列で表す。kintone API は未設定のこれらを空文字で返す
@@ -385,7 +379,7 @@ type ReferenceTableFieldDefinition = FieldDefinitionBase &
     type: "REFERENCE_TABLE";
     properties: Readonly<{
       referenceTable: Readonly<{
-        relatedApp: Readonly<{ app: string }>;
+        relatedApp: RelatedApp;
         condition: Readonly<{
           field: FieldCode;
           relatedField: FieldCode;

@@ -58,7 +58,7 @@
       "properties": {
         "protocol": "WEB",
         "lookup": {
-          "relatedApp": { "app": "20", "code": "URL_MASTER" },
+          "relatedApp": { "app": "20" },
           "relatedKeyField": "url",
           "fieldMappings": [],
           "lookupPickerFields": ["url", "title"]

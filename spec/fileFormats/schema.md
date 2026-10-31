@@ -165,7 +165,8 @@ lookup:
 | プロパティ | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
 | `app` | string | Yes | 参照先アプリのアプリID |
-| `code` | string | No | 参照先アプリのアプリコード。空文字と値なしは省略と同じに扱う。kintone から取り込んだスキーマ（`schema capture`・`schema pull`・`init`）には、参照先アプリにアプリコードが無ければ書き出さない |
+
+`relatedApp` に `code`（参照先アプリのアプリコード）を書いても読み捨てる。参照先はアプリ ID だけで決まり、`code` は比較にも、kintone への送信にも使わない。kintone から取り込んだスキーマ（`schema capture`・`schema pull`・`init`）にも書き出さない。
 
 **LookupFieldMapping**:
 
@@ -524,7 +525,7 @@ lookup:
 
 | プロパティ | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
-| `relatedApp` | `{ app: string }` | Yes | 関連先アプリ（アプリIDを文字列で指定） |
+| `relatedApp` | RelatedApp | Yes | 関連先アプリ。Lookup の RelatedApp と同じに扱う |
 | `condition` | `{ field: string, relatedField: string }` | Yes | 紐付け条件（自アプリのフィールドコードと関連先のフィールドコード） |
 | `filterCond` | string | No | レコード絞り込み条件。省略・値なしは空文字（絞り込みなし）と同じに扱う |
 | `displayFields` | string[] | Yes | 表示するフィールドコードの配列 |

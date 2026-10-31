@@ -17,9 +17,10 @@ import type {
   LayoutField,
   Lookup,
   ReferenceTableFieldDefinition,
+  RelatedApp,
   SubtableFieldDefinition,
 } from "../valueObject";
-import { FieldCode, LookupRelatedApp } from "../valueObject";
+import { FieldCode } from "../valueObject";
 import { decodeLookupList } from "./lookupListDecoder";
 
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
@@ -387,6 +388,11 @@ function optionalLookupList(
   return list;
 }
 
+/** Reads `relatedApp` by its app ID; a written `code` is dropped. */
+function parseRelatedApp(raw: Readonly<Record<string, unknown>>): RelatedApp {
+  return { app: String(raw.app ?? "") };
+}
+
 function parseLookup(code: string, raw: unknown): Lookup {
   if (!isRecord(raw)) {
     throw invalidLookup(code, "must be an object");
@@ -415,10 +421,7 @@ function parseLookup(code: string, raw: unknown): Lookup {
     };
   });
   return {
-    relatedApp: LookupRelatedApp.create(
-      String(raw.relatedApp.app ?? ""),
-      optionalString(raw.relatedApp.code),
-    ),
+    relatedApp: parseRelatedApp(raw.relatedApp),
     relatedKeyField: String(raw.relatedKeyField ?? ""),
     fieldMappings,
     lookupPickerFields,
@@ -469,7 +472,6 @@ function parseReferenceTableField(
   const displayFields = (refTable.displayFields as string[]).map((f) =>
     FieldCode.create(f),
   );
-  const relatedApp = refTable.relatedApp as Record<string, unknown>;
   const conditionField = String(condition.field ?? "");
   const conditionRelatedField = String(condition.relatedField ?? "");
   const size = optionalString(refTable.size);
@@ -490,7 +492,7 @@ function parseReferenceTableField(
     type: "REFERENCE_TABLE",
     properties: {
       referenceTable: {
-        relatedApp: { app: String(relatedApp.app ?? "") },
+        relatedApp: parseRelatedApp(refTable.relatedApp),
         condition: {
           field: FieldCode.create(conditionField),
           relatedField: FieldCode.create(conditionRelatedField),

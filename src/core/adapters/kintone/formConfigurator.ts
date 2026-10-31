@@ -23,11 +23,9 @@ import type {
   FieldType,
   LayoutElement,
   Lookup,
+  RelatedApp,
 } from "@/core/domain/formSchema/valueObject";
-import {
-  FieldCode as FieldCodeVO,
-  LookupRelatedApp,
-} from "@/core/domain/formSchema/valueObject";
+import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
 
 const KNOWN_FIELD_TYPES: ReadonlySet<string> = new Set<FieldType>([
@@ -197,14 +195,15 @@ function readKintoneQueryClause(value: unknown, fieldPath: string): string {
   return value;
 }
 
+/** Reads `relatedApp` by its app ID; the returned `code` is dropped. */
+function fromKintoneRelatedApp(value: unknown, fieldPath: string): RelatedApp {
+  assertRecord(value, fieldPath);
+  assertString(value.app, `${fieldPath}.app`);
+  return { app: value.app };
+}
+
 function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   assertRecord(value, fieldPath);
-  assertRecord(value.relatedApp, `${fieldPath}.relatedApp`);
-  const { app, code } = value.relatedApp;
-  assertString(app, `${fieldPath}.relatedApp.app`);
-  if (code !== undefined) {
-    assertString(code, `${fieldPath}.relatedApp.code`);
-  }
   assertString(value.relatedKeyField, `${fieldPath}.relatedKeyField`);
   const rawFieldMappings = readKintoneLookupList(
     value.fieldMappings,
@@ -223,7 +222,10 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   );
   assertStringArray(lookupPickerFields, `${fieldPath}.lookupPickerFields`);
   return {
-    relatedApp: LookupRelatedApp.create(app, code),
+    relatedApp: fromKintoneRelatedApp(
+      value.relatedApp,
+      `${fieldPath}.relatedApp`,
+    ),
     relatedKeyField: value.relatedKeyField,
     fieldMappings,
     lookupPickerFields,
@@ -287,20 +289,15 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
       FieldCodeVO.create(f),
     );
 
-    assertRecord(rt.relatedApp, "REFERENCE_TABLE.referenceTable.relatedApp");
-    assertString(
-      rt.relatedApp.app,
-      "REFERENCE_TABLE.referenceTable.relatedApp.app",
-    );
-
     return {
       ...base,
       type: "REFERENCE_TABLE",
       properties: {
         referenceTable: {
-          // The API also returns `relatedApp.code` (the related app's app
-          // code), but the schema identifies the related app by ID only.
-          relatedApp: { app: rt.relatedApp.app },
+          relatedApp: fromKintoneRelatedApp(
+            rt.relatedApp,
+            "REFERENCE_TABLE.referenceTable.relatedApp",
+          ),
           condition: {
             field: FieldCodeVO.create(condition.field),
             relatedField: FieldCodeVO.create(condition.relatedField),

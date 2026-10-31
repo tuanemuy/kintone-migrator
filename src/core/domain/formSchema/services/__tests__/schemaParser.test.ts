@@ -354,7 +354,7 @@ describe("SchemaParser", () => {
       it("lookup の外のキーは落とす", () => {
         expect(
           parseLookupOf({
-            relatedApp: { app: "10", code: "CUSTOMERS" },
+            relatedApp: { app: "10" },
             relatedKeyField: "customer_code",
             fieldMappings: [{ field: "name", relatedField: "customer_name" }],
             lookupPickerFields: ["customer_name"],
@@ -364,7 +364,7 @@ describe("SchemaParser", () => {
           }),
         ).toStrictEqual({
           lookup: {
-            relatedApp: { app: "10", code: "CUSTOMERS" },
+            relatedApp: { app: "10" },
             relatedKeyField: "customer_code",
             fieldMappings: [{ field: "name", relatedField: "customer_name" }],
             lookupPickerFields: ["customer_name"],
@@ -377,7 +377,7 @@ describe("SchemaParser", () => {
       it("数値で書いた値はすべて文字列にする", () => {
         expect(
           parseLookupOf({
-            relatedApp: { app: 10, code: 20 },
+            relatedApp: { app: 10 },
             relatedKeyField: 30,
             fieldMappings: [{ field: 40, relatedField: 50 }],
             lookupPickerFields: [60],
@@ -386,7 +386,7 @@ describe("SchemaParser", () => {
           }),
         ).toStrictEqual({
           lookup: {
-            relatedApp: { app: "10", code: "20" },
+            relatedApp: { app: "10" },
             relatedKeyField: "30",
             fieldMappings: [{ field: "40", relatedField: "50" }],
             lookupPickerFields: ["60"],
@@ -532,11 +532,22 @@ describe("SchemaParser", () => {
         sort: "",
       });
 
-      it.each([
-        ["空文字", { app: "10", code: "" }],
-        ["値なし（null）", { app: "10", code: null }],
-        ["省略", { app: "10" }],
-      ])("code が%sのとき、relatedApp は app だけを持つ", (_, relatedApp) => {
+      it.each(
+        ["SINGLE_LINE_TEXT", "NUMBER", "LINK"].flatMap((type) =>
+          (
+            [
+              ["非空", { app: "10", code: "CUSTOMERS" }],
+              ["空文字", { app: "10", code: "" }],
+              ["値なし（null）", { app: "10", code: null }],
+              ["数値", { app: "10", code: 20 }],
+              ["省略", { app: "10" }],
+            ] as const satisfies readonly (readonly [
+              string,
+              Record<string, unknown>,
+            ])[]
+          ).map(([label, relatedApp]) => [type, label, relatedApp] as const),
+        ),
+      )("%s の code が%sのとき、relatedApp は app だけを持つ", (type, _, relatedApp) => {
         const schema = SchemaParser.parse({
           layout: [
             {
@@ -544,7 +555,7 @@ describe("SchemaParser", () => {
               fields: [
                 {
                   code: "customer",
-                  type: "SINGLE_LINE_TEXT",
+                  type,
                   label: "顧客",
                   lookup: lookupWith(relatedApp),
                 },
@@ -560,35 +571,11 @@ describe("SchemaParser", () => {
         });
       });
 
-      it("code が非空のとき、relatedApp は code を保つ", () => {
-        const schema = SchemaParser.parse({
-          layout: [
-            {
-              type: "ROW",
-              fields: [
-                {
-                  code: "customer",
-                  type: "NUMBER",
-                  label: "顧客",
-                  lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
-                },
-              ],
-            },
-          ],
-        });
-
-        expect(
-          schema.fields.get("customer" as FieldCode)?.properties,
-        ).toStrictEqual({
-          lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
-        });
-      });
-
       it.each([
         "SINGLE_LINE_TEXT",
         "NUMBER",
         "LINK",
-      ])("SUBTABLE 内の %s でも、空の code を省く", (type) => {
+      ])("SUBTABLE 内の %s でも、code を落とす", (type) => {
         const schema = SchemaParser.parse({
           layout: [
             {
@@ -600,7 +587,7 @@ describe("SchemaParser", () => {
                   code: "customer",
                   type,
                   label: "顧客",
-                  lookup: lookupWith({ app: "10", code: "" }),
+                  lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
                 },
               ],
             },

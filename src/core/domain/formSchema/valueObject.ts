@@ -10,25 +10,17 @@ export type LookupFieldMapping = Readonly<{
   relatedField: string;
 }>;
 
-/** A related app's app code. Never empty. */
-export type AppCode = string & { readonly brand: "AppCode" };
-
-export type LookupRelatedApp = Readonly<{ app: string; code?: AppCode }>;
-
-export const LookupRelatedApp = {
-  /**
-   * kintone returns `code: ""` for a related app without an app code, while a
-   * schema leaves `code` out for the same app. Both build a related app
-   * without `code`, so only a non-empty `code` is kept.
-   */
-  create: (app: string, code: string | undefined): LookupRelatedApp =>
-    code === undefined || code === ""
-      ? { app }
-      : { app, code: code as AppCode },
-};
+/**
+ * The app a lookup or a reference table refers to, identified by app ID.
+ *
+ * kintone also returns the related app's app code as `code`. It is an
+ * attribute of the related app derived from its ID, not a setting of the
+ * field, so it is not part of this value.
+ */
+export type RelatedApp = Readonly<{ app: string }>;
 
 export type Lookup = Readonly<{
-  relatedApp: LookupRelatedApp;
+  relatedApp: RelatedApp;
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
@@ -307,7 +299,7 @@ export type ReferenceTableFieldDefinition = FieldDefinitionBase &
     type: "REFERENCE_TABLE";
     properties: Readonly<{
       referenceTable: Readonly<{
-        relatedApp: Readonly<{ app: string }>;
+        relatedApp: RelatedApp;
         condition: Readonly<{
           field: FieldCode;
           relatedField: FieldCode;

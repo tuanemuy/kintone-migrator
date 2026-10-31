@@ -527,6 +527,41 @@ describe("KintoneFormConfigurator", () => {
       }
     });
 
+    it.each([
+      [
+        "relatedApp が無い",
+        undefined,
+        "REFERENCE_TABLE.referenceTable.relatedApp",
+      ],
+      [
+        "relatedApp.app が数値",
+        { app: 42 },
+        "REFERENCE_TABLE.referenceTable.relatedApp.app",
+      ],
+    ])("REFERENCE_TABLE の %s なら SystemError をスローする", async (_, relatedApp, path) => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({
+            properties: {
+              related: {
+                type: "REFERENCE_TABLE",
+                code: "related",
+                label: "関連レコード",
+                referenceTable: {
+                  relatedApp,
+                  condition: { field: "key", relatedField: "rKey" },
+                  displayFields: ["col1"],
+                },
+              },
+            },
+          }),
+      });
+      const result = new KintoneFormConfigurator(client, APP_ID).getFields();
+
+      await expect(result).rejects.toThrow(SystemError);
+      await expect(result).rejects.toThrow(` at ${path}, got`);
+    });
+
     describe("lookup", () => {
       const getFieldsWithLookup = (lookup: unknown) => {
         const client = createMockClient({
@@ -643,11 +678,6 @@ describe("KintoneFormConfigurator", () => {
           'SINGLE_LINE_TEXT "customer".lookup.relatedApp.app',
         ],
         [
-          "relatedApp.code が null",
-          { ...validLookup, relatedApp: { app: "10", code: null } },
-          'SINGLE_LINE_TEXT "customer".lookup.relatedApp.code',
-        ],
-        [
           "relatedKeyField が無い",
           { ...validLookup, relatedKeyField: undefined },
           'SINGLE_LINE_TEXT "customer".lookup.relatedKeyField',
@@ -725,11 +755,16 @@ describe("KintoneFormConfigurator", () => {
         sort: "レコード番号 desc",
       });
 
-      it.each([
-        "SINGLE_LINE_TEXT",
-        "NUMBER",
-        "LINK",
-      ])("%s の relatedApp.code が空文字なら、ドメイン値は code を持たない", async (type) => {
+      it.each(
+        ["SINGLE_LINE_TEXT", "NUMBER", "LINK"].flatMap((type) =>
+          [
+            ["空文字", ""],
+            ["非空", "CUSTOMERS"],
+            ["null", null],
+            ["数値", 1],
+          ].map(([label, code]) => [type, label, code] as const),
+        ),
+      )("%s の relatedApp.code が%sでも、ドメイン値は app だけを持つ", async (type, _, code) => {
         const client = createMockClient({
           getFormFields: () =>
             Promise.resolve({
@@ -738,7 +773,7 @@ describe("KintoneFormConfigurator", () => {
                   type,
                   code: "customer",
                   label: "顧客",
-                  lookup: lookupWith({ app: "10", code: "" }),
+                  lookup: lookupWith({ app: "10", code }),
                 },
               },
             }),
@@ -751,33 +786,11 @@ describe("KintoneFormConfigurator", () => {
         });
       });
 
-      it("relatedApp.code が非空なら、ドメイン値は code を保つ", async () => {
-        const client = createMockClient({
-          getFormFields: () =>
-            Promise.resolve({
-              properties: {
-                customer: {
-                  type: "SINGLE_LINE_TEXT",
-                  code: "customer",
-                  label: "顧客",
-                  lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
-                },
-              },
-            }),
-        });
-        const adapter = new KintoneFormConfigurator(client, APP_ID);
-        const fields = await adapter.getFields();
-
-        expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
-          lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
-        });
-      });
-
       it.each([
         "SINGLE_LINE_TEXT",
         "NUMBER",
         "LINK",
-      ])("SUBTABLE 内の %s でも、空の relatedApp.code を省く", async (type) => {
+      ])("SUBTABLE 内の %s でも、relatedApp.code を落とす", async (type) => {
         const client = createMockClient({
           getFormFields: () =>
             Promise.resolve({
@@ -791,7 +804,7 @@ describe("KintoneFormConfigurator", () => {
                       type,
                       code: "customer",
                       label: "顧客",
-                      lookup: lookupWith({ app: "10", code: "" }),
+                      lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
                     },
                   },
                 },
