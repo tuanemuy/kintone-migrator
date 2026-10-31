@@ -7,6 +7,10 @@ import {
 } from "@/core/domain/singleMerge";
 import { deepEqual } from "@/lib/deepEqual";
 import { groupByKey } from "@/lib/groupByKey";
+import {
+  describeFilterCondKey,
+  filterCondKey,
+} from "../../services/filterCondKey";
 import type {
   GeneralNotification,
   GeneralNotificationConfig,
@@ -52,11 +56,23 @@ function generalEntityKey(notif: GeneralNotification): string {
 }
 
 function perRecordCompositeKey(filterCond: string, index: number): string {
-  return `perRecord:${filterCond}#${index}`;
+  return `perRecord:${filterCondKey(filterCond, index)}`;
 }
 
 function reminderKey(notif: ReminderNotification): string {
   return `reminder:${notif.code}`;
+}
+
+/**
+ * Display form of a merge key. A perRecord key carries a filterCond, which is
+ * quoted ({@link describeFilterCondKey}); the other keys are built from names
+ * and are shown as they are.
+ */
+export function describeNotificationMergeKey(key: string): string {
+  if (!key.startsWith("perRecord:")) {
+    return key;
+  }
+  return `perRecord:${describeFilterCondKey(key.slice("perRecord:".length))}`;
 }
 
 // --- Equality (matches diffDetector's "no changes" semantics). ---

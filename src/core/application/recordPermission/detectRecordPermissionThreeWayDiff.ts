@@ -3,6 +3,7 @@ import {
   describeRecordPermissionFilter,
   type RecordPermissionDiff,
 } from "@/core/domain/recordPermission/valueObject";
+import { describeFilterCondKey } from "@/core/domain/services/filterCondKey";
 import type { RecordPermissionDiffServiceArgs } from "../container/recordPermission";
 import {
   buildRecordThreeWayDiff,
@@ -42,8 +43,14 @@ export async function detectRecordPermissionThreeWayDiff({
 
   // Label by the right's filterCond (the human-meaningful grouping), falling
   // back to the composite key when no value is present (deletions on both ends).
-  return buildRecordThreeWayDiff(merge, (entry) => {
-    const right = entry.local ?? entry.remote ?? entry.base;
-    return right ? describeRecordPermissionFilter(right.filterCond) : entry.key;
-  });
+  return buildRecordThreeWayDiff(
+    merge,
+    (entry) => {
+      const right = entry.local ?? entry.remote ?? entry.base;
+      return right
+        ? describeRecordPermissionFilter(right.filterCond)
+        : entry.key;
+    },
+    { describeKey: describeFilterCondKey },
+  );
 }

@@ -18,8 +18,8 @@ export type ConflictResolution = Map<string, "local" | "remote">;
 
 /**
  * The minimal merge shape the factory needs to drive conflict resolution. Each
- * conflict exposes a stable `key` used both as the prompt label and the
- * resolution map key.
+ * conflict exposes a stable `key` used as the resolution map key and, through
+ * `describeConflict`, to name the conflict in the prompt.
  */
 export type PullMergeView = {
   readonly hasConflict: boolean;
@@ -54,6 +54,11 @@ type PullCommandConfig<
   readonly subject: string;
   /** What a conflicting entity is called in prompts, e.g. "view". */
   readonly conflictNoun: string;
+  /**
+   * How a conflicting key is named in the prompt after `conflictNoun`.
+   * Defaults to the key in double quotes.
+   */
+  readonly describeConflict?: (key: string) => string;
   readonly createContainer: (config: TContainerConfig) => TContainer;
   readonly pullFn: (args: {
     container: TContainer;
@@ -94,6 +99,8 @@ export function createPullCommand<
 >(
   config: PullCommandConfig<TContainerConfig, TContainer, TCliValues, TMerged>,
 ) {
+  const describeConflict =
+    config.describeConflict ?? ((key: string) => `"${key}"`);
   const notSupportedAll = new ValidationError(
     ValidationErrorCode.InvalidInput,
     `${config.description} does not support --all yet. Use --app <name> or a single app.`,
@@ -116,7 +123,7 @@ export function createPullCommand<
         continue;
       }
       const selected = await p.select({
-        message: `Conflict on ${config.conflictNoun} "${conflict.key}". Keep which side?`,
+        message: `Conflict on ${config.conflictNoun} ${describeConflict(conflict.key)}. Keep which side?`,
         options: [
           { value: "local", label: "local (ours)" },
           { value: "remote", label: "remote (theirs)" },

@@ -35,6 +35,7 @@ vi.mock("../../projectConfig", () => ({
   runMultiAppWithHeaders: vi.fn(),
 }));
 
+import * as p from "@clack/prompts";
 import type {
   AppEntry,
   ProjectConfig,
@@ -203,6 +204,44 @@ describe("createPullCommand — multiApp route is rejected by the factory", () =
     const passed = vi.mocked(handleCliError).mock.calls[0]?.[0];
     expect((passed as Error).message).toContain(
       "--ours and --theirs cannot be used together",
+    );
+  });
+});
+
+describe("createPullCommand — conflict prompt", () => {
+  const conflicting = (key: string) =>
+    vi.fn().mockResolvedValue({
+      mode: "merged",
+      merged: { hasConflict: true, conflicts: [{ key }] },
+    });
+
+  it("names a conflicting key in double quotes by default", async () => {
+    const config = makeConfig({ pullFn: conflicting("k1") });
+
+    await createPullCommand(config).run({ values: {} } as never);
+
+    expect(p.select).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Conflict on entry "k1". Keep which side?',
+      }),
+    );
+  });
+
+  it("names a conflicting key with describeConflict and resolves it by the key", async () => {
+    const config = makeConfig({
+      pullFn: conflicting("k1"),
+      describeConflict: (key) => `<${key}>`,
+    });
+
+    await createPullCommand(config).run({ values: {} } as never);
+
+    expect(p.select).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Conflict on entry <k1>. Keep which side?",
+      }),
+    );
+    expect(config.applyMerge).toHaveBeenCalledWith(
+      expect.objectContaining({ resolution: new Map([["k1", "remote"]]) }),
     );
   });
 });

@@ -4,6 +4,7 @@ import {
   applyPulledRecordPermissionMerge,
   pullRecordPermission,
 } from "@/core/application/recordPermission/pullRecordPermission";
+import { describeFilterCondKey } from "@/core/domain/services/filterCondKey";
 import {
   recordAclArgs,
   resolveRecordAclAppContainerConfig,
@@ -24,6 +25,9 @@ export default createPullCommand<
   args: recordAclArgs,
   subject: "record permission config",
   conflictNoun: "record permission",
+  // Named as in the 3-way diff line: the key embeds a filterCond, which carries
+  // its own quotes.
+  describeConflict: (key) => `[${describeFilterCondKey(key)}]`,
   createContainer: createRecordPermissionCliContainer,
   pullFn: async ({ container, input }) => {
     const result = await pullRecordPermission({ container, input });

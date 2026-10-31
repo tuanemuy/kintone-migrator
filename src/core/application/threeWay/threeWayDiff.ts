@@ -3,11 +3,16 @@ import type { RecordThreeWayMerge } from "@/core/domain/recordMerge";
 import type { SingleThreeWayMerge } from "@/core/domain/singleMerge";
 
 /**
- * One entry of a generic 3-way diff: a stable key, a human label, and which
+ * One entry of a generic 3-way diff: its key, a human label, and which
  * side(s) changed. Domain-agnostic so a single CLI printer
  * (`printThreeWayDiffResult`) renders every config domain.
  */
 export type ThreeWayDiffEntry = Readonly<{
+  /**
+   * The entry's merge key in display form. It is the merge key itself unless
+   * the domain's key embeds a value that must be quoted to stay readable
+   * (e.g. a filterCond).
+   */
   key: string;
   label: string;
   kind: "localOnly" | "remoteOnly" | "conflict";
@@ -54,6 +59,13 @@ export type ThreeWayDiffResult<TTwoWay = unknown> =
       diff: TTwoWay;
     }>;
 
+type RecordThreeWayDiffOptions = Readonly<{
+  /** Display form of a merge key (see {@link ThreeWayDiffEntry.key}). */
+  describeKey?: (key: string) => string;
+  /** See {@link ThreeWayDiffResult}'s `notes`. */
+  notes?: readonly string[];
+}>;
+
 /**
  * Builds the three-way portion of a {@link ThreeWayDiffResult} from a
  * record-keyed merge (view / report / action / plugin). The caller supplies a
@@ -62,8 +74,7 @@ export type ThreeWayDiffResult<TTwoWay = unknown> =
 export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
   merge: RecordThreeWayMerge<V>,
   label: (entry: ThreeWayEntry<string, V>) => string,
-  extras: readonly ThreeWayDiffExtra[] = [],
-  notes: readonly string[] = [],
+  { describeKey = (key) => key, notes = [] }: RecordThreeWayDiffOptions = {},
 ): ThreeWayDiffResult<TTwoWay> {
   const localChanges: ThreeWayDiffEntry[] = [];
   const remoteDrift: ThreeWayDiffEntry[] = [];
@@ -73,21 +84,21 @@ export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
     switch (entry.change.kind) {
       case "localOnly":
         localChanges.push({
-          key: entry.key,
+          key: describeKey(entry.key),
           label: label(entry),
           kind: "localOnly",
         });
         break;
       case "remoteOnly":
         remoteDrift.push({
-          key: entry.key,
+          key: describeKey(entry.key),
           label: label(entry),
           kind: "remoteOnly",
         });
         break;
       case "conflict":
         conflicts.push({
-          key: entry.key,
+          key: describeKey(entry.key),
           label: label(entry),
           kind: "conflict",
         });
@@ -100,15 +111,14 @@ export function buildRecordThreeWayDiff<V, TTwoWay = unknown>(
   const isEmpty =
     localChanges.length === 0 &&
     remoteDrift.length === 0 &&
-    conflicts.length === 0 &&
-    extras.length === 0;
+    conflicts.length === 0;
 
   return {
     mode: "three-way",
     localChanges,
     remoteDrift,
     conflicts,
-    extras,
+    extras: [],
     ...(notes.length > 0 ? { notes } : {}),
     isEmpty,
   };

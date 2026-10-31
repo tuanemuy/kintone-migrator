@@ -4,6 +4,7 @@ import {
   applyPulledNotificationMerge,
   pullNotification,
 } from "@/core/application/notification/pullNotification";
+import { describeNotificationMergeKey } from "@/core/domain/notification/services/notificationMerge";
 import {
   notificationArgs,
   resolveNotificationAppContainerConfig,
@@ -24,6 +25,9 @@ export default createPullCommand<
   args: notificationArgs,
   subject: "notification config",
   conflictNoun: "notification",
+  // Named as in the 3-way diff line: a perRecord key embeds a filterCond,
+  // which carries its own quotes.
+  describeConflict: (key) => `[${describeNotificationMergeKey(key)}]`,
   createContainer: createNotificationCliContainer,
   pullFn: async ({ container, input }) => {
     const result = await pullNotification({ container, input });

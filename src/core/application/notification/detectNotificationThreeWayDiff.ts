@@ -6,6 +6,7 @@ import {
 } from "@/core/domain/notification/entity";
 import {
   computeNotificationThreeWayMerge,
+  describeNotificationMergeKey,
   type NotificationMergeEntry,
   type NotificationThreeWayMerge,
 } from "@/core/domain/notification/services/notificationMerge";
@@ -86,7 +87,10 @@ function buildThreeWay(
   const extras: ThreeWayDiffExtra[] = [];
 
   for (const entry of merge.entries) {
-    const base = { key: entry.key, label: entryLabel(entry) };
+    const base = {
+      key: describeNotificationMergeKey(entry.key),
+      label: entryLabel(entry),
+    };
     switch (entry.change.kind) {
       case "localOnly":
         localChanges.push({ ...base, kind: "localOnly" });
