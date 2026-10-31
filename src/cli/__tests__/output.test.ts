@@ -41,6 +41,7 @@ import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { logError } from "../handleError";
 import {
   confirmAndDeploy,
+  frameThreeWayKey,
   indentContinuationLines,
   printActionDiffResult,
   printAdminNotesDiffResult,
@@ -1228,5 +1229,20 @@ describe("indentContinuationLines", () => {
 
   it("空文字列はそのまま返す", () => {
     expect(indentContinuationLines("")).toBe("");
+  });
+});
+
+describe("frameThreeWayKey", () => {
+  it("frames the key in brackets", () => {
+    expect(frameThreeWayKey('"a ]: b\\nc"#0')).toBe('["a ]: b\\nc"#0]');
+  });
+
+  it("styles the brackets and the key separately", () => {
+    expect(
+      frameThreeWayKey("k", {
+        bracket: (text) => `<${text}>`,
+        key: (text) => text.toUpperCase(),
+      }),
+    ).toBe("<[>K<]>");
   });
 });

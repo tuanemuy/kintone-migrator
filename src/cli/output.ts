@@ -171,14 +171,36 @@ export function printDiffResult(result: DetectDiffOutput): void {
   p.note(lines.join("\n"), "Diff Details", { format: (v) => v });
 }
 
+type ThreeWayKeyStyle = Readonly<{
+  bracket: (text: string) => string;
+  key: (text: string) => string;
+}>;
+
+const plainThreeWayKeyStyle: ThreeWayKeyStyle = {
+  bracket: (text) => text,
+  key: (text) => text,
+};
+
+/**
+ * Frames a 3-way entry's key (its display form, see `ThreeWayDiffEntry.key`)
+ * as it appears on the 3-way diff line. Pull prompts reuse it so a conflict is
+ * named exactly as its diff line names it.
+ */
+export function frameThreeWayKey(
+  key: string,
+  style: ThreeWayKeyStyle = plainThreeWayKeyStyle,
+): string {
+  return `${style.bracket("[")}${style.key(key)}${style.bracket("]")}`;
+}
+
 function formatThreeWayEntry(entry: ThreeWayDiffEntry): string {
   switch (entry.kind) {
     case "localOnly":
-      return `${pc.green("L")} ${pc.dim("[")}${pc.green(entry.key)}${pc.dim("]")} ${entry.label}${pc.dim(":")} local change`;
+      return `${pc.green("L")} ${frameThreeWayKey(entry.key, { bracket: pc.dim, key: pc.green })} ${entry.label}${pc.dim(":")} local change`;
     case "remoteOnly":
-      return `${pc.yellow("R")} ${pc.dim("[")}${pc.yellow(entry.key)}${pc.dim("]")} ${entry.label}${pc.dim(":")} remote drift`;
+      return `${pc.yellow("R")} ${frameThreeWayKey(entry.key, { bracket: pc.dim, key: pc.yellow })} ${entry.label}${pc.dim(":")} remote drift`;
     case "conflict":
-      return `${pc.red("C")} ${pc.dim("[")}${pc.red(entry.key)}${pc.dim("]")} ${entry.label}${pc.dim(":")} conflict`;
+      return `${pc.red("C")} ${frameThreeWayKey(entry.key, { bracket: pc.dim, key: pc.red })} ${entry.label}${pc.dim(":")} conflict`;
   }
 }
 

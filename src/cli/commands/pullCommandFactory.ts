@@ -6,6 +6,7 @@ import type {
   ProjectConfig,
 } from "@/core/domain/projectConfig/entity";
 import { handleCliError } from "../handleError";
+import { frameThreeWayKey } from "../output";
 import type { MultiAppCliValues } from "../projectConfig";
 import { routeMultiApp } from "../projectConfig";
 
@@ -27,7 +28,7 @@ export type PullMergeView = {
 };
 
 /**
- * Names a conflict as the 3-way diff line does (`[{display form}]`), for
+ * Names a conflict as the 3-way diff line does ({@link frameThreeWayKey}), for
  * domains whose keys embed values quoted in display (see
  * `ThreeWayDiffEntry.key`): the display form carries its own quotes, so
  * wrapping it in more quotes would blur where it ends again.
@@ -35,7 +36,7 @@ export type PullMergeView = {
 export function nameConflictAsDiffLine(
   describeKey: (key: string) => string,
 ): (key: string) => string {
-  return (key) => `[${describeKey(key)}]`;
+  return (key) => frameThreeWayKey(describeKey(key));
 }
 
 /**
