@@ -155,8 +155,10 @@ lookup:
 | `relatedKeyField` | string | Yes | 参照先アプリのキーフィールドのフィールドコード |
 | `fieldMappings` | LookupFieldMapping[] | No | フィールドのコピー元・コピー先マッピング。省略・値なし・空文字は空配列と同じに扱う |
 | `lookupPickerFields` | string[] | No | ルックアップピッカーに表示するフィールドコードの配列。省略・値なし・空文字は空配列と同じに扱う |
-| `filterCond` | string | No | レコード絞り込み条件 |
-| `sort` | string | No | ソート条件 |
+| `filterCond` | string | No | レコード絞り込み条件。省略・値なしは空文字（絞り込みなし）と同じに扱う |
+| `sort` | string | No | ソート条件。省略・値なしは空文字（ソート条件の指定なし）と同じに扱う |
+
+`filterCond`・`sort` を省いたスキーマで `schema migrate` すると、kintone のルックアップの絞り込み条件・ソート条件は空になる。kintone から取り込んだスキーマ（`schema capture`・`schema pull`・`init`）は、未設定の `filterCond`・`sort` を `""` で書き出す。
 
 **RelatedApp**:
 
@@ -524,10 +526,12 @@ lookup:
 | --- | --- | --- | --- |
 | `relatedApp` | `{ app: string }` | Yes | 関連先アプリ（アプリIDを文字列で指定） |
 | `condition` | `{ field: string, relatedField: string }` | Yes | 紐付け条件（自アプリのフィールドコードと関連先のフィールドコード） |
-| `filterCond` | string | No | レコード絞り込み条件 |
+| `filterCond` | string | No | レコード絞り込み条件。省略・値なしは空文字（絞り込みなし）と同じに扱う |
 | `displayFields` | string[] | Yes | 表示するフィールドコードの配列 |
-| `sort` | string | No | ソート条件 |
-| `size` | string | No | 表示件数 |
+| `sort` | string | No | ソート条件。省略・値なしは空文字（ソート条件の指定なし）と同じに扱う |
+| `size` | string | No | 表示件数。値なしは省略と同じに扱う |
+
+`filterCond`・`sort` の省略と取り込んだスキーマへの書き出しは、Lookup と同じに扱う。
 
 ## 装飾要素
 

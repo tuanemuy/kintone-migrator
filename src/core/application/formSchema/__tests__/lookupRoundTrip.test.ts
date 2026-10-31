@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createKintoneBackedFormSchemaContainer } from "@/core/application/__tests__/helpers";
+import {
+  createKintoneBackedFormSchemaContainer,
+  expectNoFormMutation,
+  schemaFieldIn,
+} from "@/core/application/__tests__/helpers";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { isRecord } from "@/lib/typeGuards";
 import { captureSchema } from "../captureSchema";
@@ -79,11 +83,8 @@ function schemaWithRelatedApp(relatedApp: string): string {
 }
 
 function relatedAppIn(codec: ConfigCodec, schemaText: string): unknown {
-  const parsed = codec.parse(schemaText) as {
-    layout: { fields: { code: string; lookup?: { relatedApp: unknown } }[] }[];
-  };
-  return parsed.layout[0]?.fields.find((f) => f.code === "customer_code")
-    ?.lookup?.relatedApp;
+  const lookup = schemaFieldIn(codec, schemaText, "customer_code")?.lookup;
+  return isRecord(lookup) ? lookup.relatedApp : undefined;
 }
 
 function relatedAppOf(
@@ -94,13 +95,6 @@ function relatedAppOf(
 }
 
 type Client = ReturnType<typeof createContainer>["client"];
-
-function expectNoMutation(client: Client) {
-  expect(client.app.addFormFields).not.toHaveBeenCalled();
-  expect(client.app.updateFormFields).not.toHaveBeenCalled();
-  expect(client.app.deleteFormFields).not.toHaveBeenCalled();
-  expect(client.app.updateFormLayout).not.toHaveBeenCalled();
-}
 
 function sentRelatedApp(client: Client): unknown {
   const params: unknown = client.app.updateFormFields.mock.calls[0]?.[0];
@@ -135,7 +129,7 @@ describe("lookup の relatedApp を含むフォームの diff / migrate", () => 
 
       await executeMigration({ container });
 
-      expectNoMutation(client);
+      expectNoFormMutation(client);
     });
   });
 
@@ -268,12 +262,13 @@ ${lists}
     container.schemaStorage.setContent(schemaText);
     const result = await detectDiff({ container });
 
-    const parsed = container.configCodec.parse(schemaText) as {
-      layout: { fields: { lookup?: Record<string, unknown> }[] }[];
-    };
-    const lookup = parsed.layout[0]?.fields[0]?.lookup;
-    expect(lookup?.fieldMappings).toStrictEqual([]);
-    expect(lookup?.lookupPickerFields).toStrictEqual([]);
+    const lookup = schemaFieldIn(
+      container.configCodec,
+      schemaText,
+      "customer_code",
+    )?.lookup;
+    expect(isRecord(lookup) && lookup.fieldMappings).toStrictEqual([]);
+    expect(isRecord(lookup) && lookup.lookupPickerFields).toStrictEqual([]);
     expect(result.isEmpty).toBe(true);
   });
 });

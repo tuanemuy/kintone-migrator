@@ -317,6 +317,7 @@ describe("captureSchema", () => {
           },
           displayFields: [FieldCode.create("col1")],
           sort: "col1 asc",
+          filterCond: "",
         },
       },
     } as FieldDefinition;

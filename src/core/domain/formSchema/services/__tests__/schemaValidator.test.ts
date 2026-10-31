@@ -282,6 +282,8 @@ describe("SchemaValidator", () => {
             },
             displayFields: ["col1" as FieldCode],
             size,
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -305,6 +307,8 @@ describe("SchemaValidator", () => {
             },
             displayFields: ["col1" as FieldCode],
             size: "7",
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -328,6 +332,8 @@ describe("SchemaValidator", () => {
               relatedField: "rKey" as FieldCode,
             },
             displayFields: ["col1" as FieldCode],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -350,6 +356,8 @@ describe("SchemaValidator", () => {
             relatedKeyField: "key",
             fieldMappings: [],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -374,6 +382,8 @@ describe("SchemaValidator", () => {
             relatedKeyField: "",
             fieldMappings: [],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -410,6 +420,8 @@ describe("SchemaValidator", () => {
             relatedKeyField: "key",
             fieldMappings: [{ field: "code", relatedField: "code" }, mapping],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -433,6 +445,8 @@ describe("SchemaValidator", () => {
             relatedKeyField: "key",
             fieldMappings: [{ field: "name", relatedField: "name" }],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -453,6 +467,8 @@ describe("SchemaValidator", () => {
             relatedKeyField: "",
             fieldMappings: [],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -490,6 +506,8 @@ describe("SchemaValidator", () => {
               relatedField: "rKey" as FieldCode,
             },
             displayFields: ["col1" as FieldCode],
+            filterCond: "",
+            sort: "",
           },
         },
       };
@@ -513,6 +531,8 @@ describe("SchemaValidator", () => {
               relatedField: "rKey" as FieldCode,
             },
             displayFields: ["col1" as FieldCode],
+            filterCond: "",
+            sort: "",
           },
         },
       };

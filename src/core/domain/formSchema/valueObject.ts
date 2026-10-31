@@ -32,8 +32,10 @@ export type Lookup = Readonly<{
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
-  filterCond?: string;
-  sort?: string;
+  /** `""` when the lookup has no filter condition. */
+  filterCond: string;
+  /** `""` when the lookup has no sort order. */
+  sort: string;
 }>;
 
 // FieldCode
@@ -310,9 +312,11 @@ export type ReferenceTableFieldDefinition = FieldDefinitionBase &
           field: FieldCode;
           relatedField: FieldCode;
         }>;
-        filterCond?: string;
+        /** `""` when the reference table has no filter condition. */
+        filterCond: string;
         displayFields: readonly FieldCode[];
-        sort?: string;
+        /** `""` when the reference table has no sort order. */
+        sort: string;
         size?: string;
       }>;
     }>;

@@ -553,7 +553,7 @@ describe("KintoneFormConfigurator", () => {
         sort: "",
       };
 
-      it("lookup の外のキーは落とし、filterCond と sort が無ければ持たない", async () => {
+      it("lookup の外のキーは落とし、返らない filterCond と sort は空文字にする", async () => {
         const fields = await getFieldsWithLookup({
           relatedApp: { app: "10" },
           relatedKeyField: "customer_code",
@@ -568,6 +568,8 @@ describe("KintoneFormConfigurator", () => {
             relatedKeyField: "customer_code",
             fieldMappings: [],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         });
       });
@@ -669,6 +671,16 @@ describe("KintoneFormConfigurator", () => {
           "sort が null",
           { ...validLookup, sort: null },
           'SINGLE_LINE_TEXT "customer".lookup.sort',
+        ],
+        [
+          "sort が数値",
+          { ...validLookup, sort: 1 },
+          'SINGLE_LINE_TEXT "customer".lookup.sort',
+        ],
+        [
+          "filterCond が null",
+          { ...validLookup, filterCond: null },
+          'SINGLE_LINE_TEXT "customer".lookup.filterCond',
         ],
         [
           "fieldMappings の要素が文字列",
@@ -2253,6 +2265,7 @@ describe("KintoneFormConfigurator", () => {
                 field: "key" as FieldCode,
                 relatedField: "rKey" as FieldCode,
               },
+              filterCond: "",
               displayFields: ["col1" as FieldCode],
               sort: "col1 asc",
             },
@@ -2274,8 +2287,8 @@ describe("KintoneFormConfigurator", () => {
         relatedField: "rKey",
       });
       expect(refTable.displayFields).toEqual(["col1"]);
+      expect(refTable.filterCond).toBe("");
       expect(refTable.sort).toBe("col1 asc");
-      expect(refTable).not.toHaveProperty("filterCond");
       expect(refTable).not.toHaveProperty("size");
     });
   });
@@ -2313,8 +2326,8 @@ describe("KintoneFormConfigurator", () => {
     });
   });
 
-  describe("REFERENCE_TABLE の filterCond/sort/size が省略可能", () => {
-    it("filterCond, sort, size が省略された REFERENCE_TABLE を取得できる", async () => {
+  describe("REFERENCE_TABLE の filterCond/sort/size を返さない API", () => {
+    it("filterCond と sort は空文字にし、size は持たない", async () => {
       const client = createMockClient({
         getFormFields: () =>
           Promise.resolve({
@@ -2340,13 +2353,48 @@ describe("KintoneFormConfigurator", () => {
       expect(field?.type).toBe("REFERENCE_TABLE");
       if (field?.type === "REFERENCE_TABLE") {
         const ref = field.properties.referenceTable;
-        expect(ref.filterCond).toBeUndefined();
-        expect(ref.sort).toBeUndefined();
-        expect(ref.size).toBeUndefined();
+        expect(ref.filterCond).toBe("");
+        expect(ref.sort).toBe("");
+        expect(ref).not.toHaveProperty("size");
       }
     });
 
-    it("filterCond, sort, size 省略の REFERENCE_TABLE を addFields で送信すると省略キーが含まれない", async () => {
+    it.each([
+      ["filterCond が数値", { filterCond: 1 }, "filterCond"],
+      ["filterCond が null", { filterCond: null }, "filterCond"],
+      ["sort が数値", { sort: 1 }, "sort"],
+      ["sort が null", { sort: null }, "sort"],
+    ])("%s なら SystemError をスローする", async (_, invalid, key) => {
+      const client = createMockClient({
+        getFormFields: () =>
+          Promise.resolve({
+            properties: {
+              ref: {
+                type: "REFERENCE_TABLE",
+                code: "ref",
+                label: "参照",
+                referenceTable: {
+                  relatedApp: { app: "10" },
+                  condition: { field: "key", relatedField: "rKey" },
+                  filterCond: "",
+                  displayFields: ["col1"],
+                  sort: "",
+                  ...invalid,
+                },
+              },
+            },
+            revision: "1",
+          }),
+      });
+      const result = new KintoneFormConfigurator(client, APP_ID).getFields();
+
+      await expect(result).rejects.toThrow(SystemError);
+      await expect(result).rejects.toThrow(
+        ` at REFERENCE_TABLE.referenceTable.${key}, got`,
+      );
+    });
+
+    it("filterCond と sort が空文字で size が無い REFERENCE_TABLE を addFields で送信すると、空文字を送り size は送らない", async () => {
       const client = createMockClient();
       const adapter = new KintoneFormConfigurator(client, APP_ID);
 
@@ -2362,7 +2410,9 @@ describe("KintoneFormConfigurator", () => {
                 field: "key" as FieldCode,
                 relatedField: "rKey" as FieldCode,
               },
+              filterCond: "",
               displayFields: ["col1" as FieldCode],
+              sort: "",
             },
           },
         } as FieldDefinition,
@@ -2376,8 +2426,8 @@ describe("KintoneFormConfigurator", () => {
       };
       const refProp = calledWith.properties.ref;
       const refTable = refProp.referenceTable as Record<string, unknown>;
-      expect(refTable).not.toHaveProperty("filterCond");
-      expect(refTable).not.toHaveProperty("sort");
+      expect(refTable.filterCond).toBe("");
+      expect(refTable.sort).toBe("");
       expect(refTable).not.toHaveProperty("size");
     });
   });

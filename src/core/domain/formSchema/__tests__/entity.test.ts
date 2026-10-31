@@ -466,6 +466,8 @@ describe("enrichLayoutWithFields", () => {
             relatedField: FieldCode.create("rKey"),
           },
           displayFields: [FieldCode.create("col1")],
+          filterCond: "",
+          sort: "",
         },
       },
     } as FieldDefinition;

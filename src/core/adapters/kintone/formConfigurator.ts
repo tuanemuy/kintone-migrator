@@ -190,6 +190,13 @@ function readKintoneLookupList(
   return list;
 }
 
+/** Reads a filter condition or sort order; a missing one is `""`. */
+function readKintoneQueryClause(value: unknown, fieldPath: string): string {
+  if (value === undefined) return "";
+  assertString(value, fieldPath);
+  return value;
+}
+
 function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   assertRecord(value, fieldPath);
   assertRecord(value.relatedApp, `${fieldPath}.relatedApp`);
@@ -215,21 +222,16 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
     `${fieldPath}.lookupPickerFields`,
   );
   assertStringArray(lookupPickerFields, `${fieldPath}.lookupPickerFields`);
-  const { filterCond, sort } = value;
-  if (filterCond !== undefined) {
-    assertString(filterCond, `${fieldPath}.filterCond`);
-  }
-  if (sort !== undefined) {
-    assertString(sort, `${fieldPath}.sort`);
-  }
-
   return {
     relatedApp: LookupRelatedApp.create(app, code),
     relatedKeyField: value.relatedKeyField,
     fieldMappings,
     lookupPickerFields,
-    ...(filterCond !== undefined ? { filterCond } : {}),
-    ...(sort !== undefined ? { sort } : {}),
+    filterCond: readKintoneQueryClause(
+      value.filterCond,
+      `${fieldPath}.filterCond`,
+    ),
+    sort: readKintoneQueryClause(value.sort, `${fieldPath}.sort`),
   };
 }
 
@@ -303,11 +305,15 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
             field: FieldCodeVO.create(condition.field),
             relatedField: FieldCodeVO.create(condition.relatedField),
           },
-          ...(rt.filterCond !== undefined
-            ? { filterCond: String(rt.filterCond) }
-            : {}),
+          filterCond: readKintoneQueryClause(
+            rt.filterCond,
+            "REFERENCE_TABLE.referenceTable.filterCond",
+          ),
           displayFields,
-          ...(rt.sort !== undefined ? { sort: String(rt.sort) } : {}),
+          sort: readKintoneQueryClause(
+            rt.sort,
+            "REFERENCE_TABLE.referenceTable.sort",
+          ),
           ...(rt.size !== undefined ? { size: String(rt.size) } : {}),
         },
       },
@@ -360,9 +366,9 @@ function toKintoneProperty(field: FieldDefinition): Record<string, unknown> {
           field: ref.condition.field as string,
           relatedField: ref.condition.relatedField as string,
         },
-        ...(ref.filterCond !== undefined ? { filterCond: ref.filterCond } : {}),
+        filterCond: ref.filterCond,
         displayFields: ref.displayFields.map((f) => f as string),
-        ...(ref.sort !== undefined ? { sort: ref.sort } : {}),
+        sort: ref.sort,
         ...(ref.size !== undefined ? { size: ref.size } : {}),
       },
     };

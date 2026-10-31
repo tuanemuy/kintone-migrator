@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createKintoneBackedFormSchemaContainer } from "@/core/application/__tests__/helpers";
+import {
+  createKintoneBackedFormSchemaContainer,
+  expectNoFormMutation,
+} from "@/core/application/__tests__/helpers";
 import { captureSchema } from "../captureSchema";
 import { detectDiff } from "../detectDiff";
 import { detectThreeWayDiff } from "../detectThreeWayDiff";
@@ -95,10 +98,7 @@ describe("REFERENCE_TABLE の relatedApp を含むフォームの capture / diff
       await container.schemaStorage.update(schemaText);
       await executeMigration({ container });
 
-      expect(client.app.addFormFields).not.toHaveBeenCalled();
-      expect(client.app.updateFormFields).not.toHaveBeenCalled();
-      expect(client.app.deleteFormFields).not.toHaveBeenCalled();
-      expect(client.app.updateFormLayout).not.toHaveBeenCalled();
+      expectNoFormMutation(client);
     });
   });
 
