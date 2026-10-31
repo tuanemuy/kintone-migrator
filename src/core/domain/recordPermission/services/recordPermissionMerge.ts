@@ -17,9 +17,9 @@ import { RecordPermissionErrorCode } from "../errorCode";
  * mirrors that key strategy exactly — group by `filterCond`, then key each entry
  * by its group-local index (`filterCond#i`) — so it is record-keyed (not a
  * coarse ordered-list merge) and the per-entry granularity of `record-acl diff`
- * is preserved (one entry change = one conflict). The `perRecordLabel`-style
- * positional matching means a reordering within a filterCond is seen as content
- * changes at those indices, matching the existing 2-way detector.
+ * is preserved (one entry change = one conflict). The positional matching
+ * means a reordering within a filterCond is seen as content changes at those
+ * indices, matching the existing 2-way detector.
  */
 
 function compositeKey(filterCond: string, index: number): string {

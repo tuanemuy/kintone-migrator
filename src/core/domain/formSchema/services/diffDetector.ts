@@ -110,7 +110,9 @@ function describeChanges(
   }
 
   if (before.label !== after.label) {
-    changes.push(`label: ${before.label} -> ${after.label}`);
+    changes.push(
+      `label: ${formatValue(before.label)} -> ${formatValue(after.label)}`,
+    );
   }
 
   if ((before.noLabel ?? false) !== (after.noLabel ?? false)) {

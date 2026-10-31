@@ -5,6 +5,7 @@ import type { TestNotificationContainer } from "@/core/application/__tests__/hel
 import type {
   GeneralNotification,
   NotificationConfig,
+  PerRecordNotification,
   ReminderNotification,
 } from "@/core/domain/notification/entity";
 import { NotificationConfigSerializer } from "@/core/domain/notification/services/configSerializer";
@@ -137,6 +138,60 @@ describe("detectNotificationThreeWayDiff", () => {
     expect(result.localChanges.map((e) => e.key)).toContain("reminder:r1");
     expect(result.remoteDrift).toHaveLength(0);
     expect(result.conflicts).toHaveLength(0);
+  });
+
+  describe("perRecord labels", () => {
+    function perRecord(
+      overrides: Partial<PerRecordNotification> = {},
+    ): PerRecordNotification {
+      return {
+        filterCond: 'status = "A"',
+        title: "承認",
+        targets: [{ entity: { type: "USER", code: "bob" } }],
+        ...overrides,
+      };
+    }
+
+    async function labelsOfLocalChanges(
+      container: TestNotificationContainer,
+      before: PerRecordNotification,
+      after: PerRecordNotification,
+    ): Promise<string[]> {
+      const base = config({ perRecord: [before] });
+      setBase(container, base);
+      setLocal(container, config({ perRecord: [after] }));
+      setRemote(container, base);
+      const result = await detectNotificationThreeWayDiff({ container });
+      if (result.mode !== "three-way") throw new Error("expected three-way");
+      return result.localChanges.map((e) => e.label);
+    }
+
+    it("labels a notification by its title without quoting", async () => {
+      const labels = await labelsOfLocalChanges(
+        getContainer(),
+        perRecord(),
+        perRecord({ targets: [] }),
+      );
+      expect(labels).toEqual(["承認"]);
+    });
+
+    it("labels a notification without a title by its quoted filterCond", async () => {
+      const labels = await labelsOfLocalChanges(
+        getContainer(),
+        perRecord({ title: "" }),
+        perRecord({ title: "", targets: [] }),
+      );
+      expect(labels).toEqual(['"status = \\"A\\""']);
+    });
+
+    it("labels a notification with neither title nor filterCond (empty filter)", async () => {
+      const labels = await labelsOfLocalChanges(
+        getContainer(),
+        perRecord({ title: "", filterCond: "" }),
+        perRecord({ title: "", filterCond: "", targets: [] }),
+      );
+      expect(labels).toEqual(["(empty filter)"]);
+    });
   });
 
   it("classifies the general scalar notifyToCommenter as remote drift", async () => {

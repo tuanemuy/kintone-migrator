@@ -138,7 +138,19 @@ describe("DiffDetector", () => {
 
       const diff = DiffDetector.detect(schema, current);
       expect(diff.summary.modified).toBe(1);
-      expect(diff.entries[0].details).toContain("label:");
+      expect(diff.entries[0].details).toBe('label: "old label" -> "new label"');
+    });
+
+    it("label の変更前後を JSON 文字列で示し、' -> '・二重引用符・バックスラッシュ・改行を値の中に閉じる", () => {
+      const before = makeField("f", "SINGLE_LINE_TEXT", "申請 -> 承認");
+      const after = makeField("f", "SINGLE_LINE_TEXT", '"承認"\\\n済み');
+      const schema = makeSchema([after]);
+      const current = makeFieldMap([before]);
+
+      const diff = DiffDetector.detect(schema, current);
+      expect(diff.entries[0].details).toBe(
+        'label: "申請 -> 承認" -> "\\"承認\\"\\\\\\n済み"',
+      );
     });
 
     it("変更されたフィールドを検出する (properties 変更)", () => {

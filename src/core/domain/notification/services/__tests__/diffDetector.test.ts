@@ -347,6 +347,63 @@ describe("NotificationDiffDetector", () => {
     });
   });
 
+  describe("perRecord entry name", () => {
+    it("should name an added notification by its title without quoting", () => {
+      const result = NotificationDiffDetector.detect(
+        { perRecord: [makePerRecord({ title: "承認 -> 完了" })] },
+        { perRecord: [] },
+      );
+      expect(result.entries[0].name).toBe("承認 -> 完了");
+    });
+
+    it("should name an added notification without a title by its quoted filterCond", () => {
+      const result = NotificationDiffDetector.detect(
+        {
+          perRecord: [
+            makePerRecord({ title: "", filterCond: 'status in ("A", "B")' }),
+          ],
+        },
+        { perRecord: [] },
+      );
+      expect(result.entries[0].name).toBe('"status in (\\"A\\", \\"B\\")"');
+    });
+
+    it("should name a notification with neither title nor filterCond (empty filter)", () => {
+      const result = NotificationDiffDetector.detect(
+        { perRecord: [makePerRecord({ title: "", filterCond: "" })] },
+        { perRecord: [] },
+      );
+      expect(result.entries[0].name).toBe("(empty filter)");
+    });
+
+    it("should name a deleted notification by the remote filterCond, quoted", () => {
+      const result = NotificationDiffDetector.detect(
+        { perRecord: [] },
+        { perRecord: [makePerRecord({ title: "", filterCond: "a\nb" })] },
+      );
+      expect(result.entries[0].type).toBe("deleted");
+      expect(result.entries[0].name).toBe('"a\\nb"');
+    });
+
+    it("should name a modified notification by the local title", () => {
+      const result = NotificationDiffDetector.detect(
+        { perRecord: [makePerRecord({ title: "New" })] },
+        { perRecord: [makePerRecord({ title: "" })] },
+      );
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].name).toBe("New");
+    });
+
+    it("should name a modified notification whose local title is empty by its quoted filterCond", () => {
+      const result = NotificationDiffDetector.detect(
+        { perRecord: [makePerRecord({ title: "" })] },
+        { perRecord: [makePerRecord({ title: "Old" })] },
+      );
+      expect(result.entries[0].type).toBe("modified");
+      expect(result.entries[0].name).toBe('"status = \\"active\\""');
+    });
+  });
+
   describe("reminder section", () => {
     it("should detect added reminder notification", () => {
       const local: NotificationConfig = {

@@ -32,8 +32,9 @@ import { NotificationErrorCode } from "../errorCode";
  *   reminder map). Plus the `timezone` scalar as a single whole-entity 3-way
  *   when the local config manages it (sets a timezone).
  * - **perRecord** = group by `filterCond`, then within a group match by index
- *   (`filterCond#i` composite key — `comparePerRecordSection`). `perRecordLabel`
- *   is display-only and is NOT used as a match key.
+ *   (`filterCond#i` composite key — `comparePerRecordSection`).
+ *   `describePerRecordNotification` is display-only and is NOT used as a match
+ *   key.
  * - **general** = entity (`type:code`) keyed list (`compareGeneralSection`) plus
  *   the `notifyToCommenter` scalar as a single whole-entity 3-way, so the scalar
  *   is never dropped from the 3-way.

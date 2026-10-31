@@ -2,12 +2,13 @@ import { deepEqual } from "@/lib/deepEqual";
 import { pairByKeyInOrder } from "@/lib/pairByKeyInOrder";
 import { buildDiffResult } from "../../diff";
 import { formatValue } from "../../services/formatValue";
-import type {
-  GeneralNotification,
-  GeneralNotificationConfig,
-  NotificationConfig,
-  PerRecordNotification,
-  ReminderNotification,
+import {
+  describePerRecordNotification,
+  type GeneralNotification,
+  type GeneralNotificationConfig,
+  type NotificationConfig,
+  type PerRecordNotification,
+  type ReminderNotification,
 } from "../entity";
 import type { NotificationDiff, NotificationDiffEntry } from "../valueObject";
 
@@ -103,12 +104,6 @@ function compareGeneralSection(
   return entries;
 }
 
-function perRecordLabel(notif: PerRecordNotification): string {
-  // Uses || intentionally: empty strings should fall through to the next option
-  // since they carry no meaningful label information for display purposes.
-  return notif.title || notif.filterCond || "(empty filter)";
-}
-
 // Covers all PerRecordNotification fields except filterCond (used as grouping key).
 function describePerRecordChanges(
   local: PerRecordNotification,
@@ -175,7 +170,7 @@ function comparePerRecordSection(
         entries.push({
           type: "added",
           section: "perRecord",
-          name: perRecordLabel(pair.local),
+          name: describePerRecordNotification(pair.local),
           details: "new notification",
         });
         break;
@@ -183,7 +178,7 @@ function comparePerRecordSection(
         entries.push({
           type: "deleted",
           section: "perRecord",
-          name: perRecordLabel(pair.remote),
+          name: describePerRecordNotification(pair.remote),
           details: "removed",
         });
         break;
@@ -192,7 +187,7 @@ function comparePerRecordSection(
           entries.push({
             type: "modified",
             section: "perRecord",
-            name: perRecordLabel(pair.local),
+            name: describePerRecordNotification(pair.local),
             details: describePerRecordChanges(pair.local, pair.remote),
           });
         }
