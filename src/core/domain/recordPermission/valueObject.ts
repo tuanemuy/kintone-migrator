@@ -1,4 +1,5 @@
 import type { DiffResult } from "../diff";
+import { formatValue } from "../services/formatValue";
 
 export type RecordPermissionEntityType =
   | "USER"
@@ -26,3 +27,11 @@ export type RecordPermissionDiffEntry = Readonly<{
 }>;
 
 export type RecordPermissionDiff = DiffResult<RecordPermissionDiffEntry>;
+
+/**
+ * Display form of a right's filterCond. filterCond is a query expression, so
+ * it is quoted as a value; the empty condition targets all records.
+ */
+export function describeRecordPermissionFilter(filterCond: string): string {
+  return filterCond === "" ? "(all records)" : formatValue(filterCond);
+}

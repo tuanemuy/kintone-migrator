@@ -133,6 +133,43 @@ describe("detectRecordPermissionThreeWayDiff", () => {
     }
   });
 
+  it("labels an entry by its filterCond quoted as a value", async () => {
+    const container = getContainer();
+    setState(container, baseConfig, "1");
+    container.recordPermissionStorage.setContent(
+      yamlOf({ rights: [right("x = 1", false)] }),
+    );
+    container.recordPermissionConfigurator.setPermissions({
+      rights: baseConfig.rights,
+      revision: "1",
+    });
+
+    const result = await detectRecordPermissionThreeWayDiff({ container });
+
+    if (result.mode !== "three-way") throw new Error("expected three-way");
+    expect(result.localChanges).toEqual([
+      { key: "x = 1#0", label: '"x = 1"', kind: "localOnly" },
+    ]);
+  });
+
+  it("labels an entry whose filterCond is empty (all records)", async () => {
+    const container = getContainer();
+    const allRecords: RecordPermissionConfig = { rights: [right("", true)] };
+    setState(container, allRecords, "1");
+    container.recordPermissionStorage.setContent(yamlOf(allRecords));
+    container.recordPermissionConfigurator.setPermissions({
+      rights: [right("", false)],
+      revision: "2",
+    });
+
+    const result = await detectRecordPermissionThreeWayDiff({ container });
+
+    if (result.mode !== "three-way") throw new Error("expected three-way");
+    expect(result.remoteDrift).toEqual([
+      { key: "#0", label: "(all records)", kind: "remoteOnly" },
+    ]);
+  });
+
   it("treats reordering across filterCond groups as no change (grouped by filterCond)", async () => {
     const container = getContainer();
     const ordered: RecordPermissionConfig = {

@@ -1,5 +1,8 @@
 import { computeRecordPermissionThreeWayMerge } from "@/core/domain/recordPermission/services/recordPermissionMerge";
-import type { RecordPermissionDiff } from "@/core/domain/recordPermission/valueObject";
+import {
+  describeRecordPermissionFilter,
+  type RecordPermissionDiff,
+} from "@/core/domain/recordPermission/valueObject";
 import type { RecordPermissionDiffServiceArgs } from "../container/recordPermission";
 import {
   buildRecordThreeWayDiff,
@@ -41,6 +44,6 @@ export async function detectRecordPermissionThreeWayDiff({
   // back to the composite key when no value is present (deletions on both ends).
   return buildRecordThreeWayDiff(merge, (entry) => {
     const right = entry.local ?? entry.remote ?? entry.base;
-    return right?.filterCond ?? entry.key;
+    return right ? describeRecordPermissionFilter(right.filterCond) : entry.key;
   });
 }

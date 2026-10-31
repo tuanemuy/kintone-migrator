@@ -1,3 +1,4 @@
+import { stripVTControlCharacters } from "node:util";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DetectDiffOutput } from "@/core/application/formSchema/dto";
 import type { FieldCode } from "@/core/domain/formSchema/valueObject";
@@ -305,7 +306,7 @@ describe("printDiffResult", () => {
           type: "modified",
           fieldCode: "email" as FieldCode,
           fieldLabel: "メール",
-          details: "type: SINGLE_LINE_TEXT -> NUMBER\nlabel: 旧 -> 新",
+          details: 'type: SINGLE_LINE_TEXT -> NUMBER\nlabel: "旧" -> "新"',
         },
       ],
       schemaFields: [],
@@ -319,7 +320,7 @@ describe("printDiffResult", () => {
     const noteBody = vi.mocked(p.note).mock.calls[0][0] as string;
     const lines = noteBody.split("\n");
     expect(lines[0]).toContain("type: SINGLE_LINE_TEXT -> NUMBER");
-    expect(lines[1]).toBe("    label: 旧 -> 新");
+    expect(lines[1]).toBe('    label: "旧" -> "新"');
   });
 });
 
@@ -1054,10 +1055,12 @@ describe("printRecordPermissionDiffResult", () => {
     };
     printRecordPermissionDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
-    expect(noteContent).toContain("(all records)");
+    expect(stripVTControlCharacters(noteContent)).toBe(
+      "+ [(all records)]: entities: 2",
+    );
   });
 
-  it("filterCond がある場合、そのまま表示される", () => {
+  it("filterCond がある場合、JSON 文字列で引用して表示される", () => {
     const result: DiffResult<RecordPermissionDiffEntry> = {
       entries: [
         {
@@ -1072,7 +1075,25 @@ describe("printRecordPermissionDiffResult", () => {
     };
     printRecordPermissionDiffResult(result);
     const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
-    expect(noteContent).toContain('status = "active"');
+    expect(stripVTControlCharacters(noteContent)).toBe(
+      '~ ["status = \\"active\\""]: entities changed',
+    );
+  });
+
+  it("filterCond が ']' や改行を含む場合も、値の範囲が引用符で閉じる", () => {
+    const result: DiffResult<RecordPermissionDiffEntry> = {
+      entries: [
+        { type: "deleted", filterCond: "a ]: b\nc", details: "removed" },
+      ],
+      summary: { added: 0, modified: 0, deleted: 1, total: 1 },
+      isEmpty: false,
+      warnings: [],
+    };
+    printRecordPermissionDiffResult(result);
+    const noteContent = vi.mocked(p.note).mock.calls[0][0] as string;
+    expect(stripVTControlCharacters(noteContent)).toBe(
+      '- ["a ]: b\\nc"]: removed',
+    );
   });
 });
 

@@ -21,6 +21,7 @@ import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
 import type { DiffResult, DiffSummary } from "@/core/domain/diff";
 import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
+import { describeRecordPermissionFilter } from "@/core/domain/recordPermission/valueObject";
 import { logError } from "./handleError";
 
 function formatDiffSummary(summary: DiffSummary): string {
@@ -289,7 +290,7 @@ export function printRecordPermissionDiffResult(
     result,
     "Record Permission Diff Details",
     (entry, colorize, prefix) =>
-      `${colorize(prefix)} ${pc.dim("[")}${colorize(entry.filterCond === "" ? "(all records)" : entry.filterCond)}${pc.dim("]:")} ${entry.details}`,
+      `${colorize(prefix)} ${pc.dim("[")}${colorize(describeRecordPermissionFilter(entry.filterCond))}${pc.dim("]:")} ${entry.details}`,
   );
 }
 

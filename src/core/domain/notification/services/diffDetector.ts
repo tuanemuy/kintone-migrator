@@ -103,10 +103,15 @@ function compareGeneralSection(
   return entries;
 }
 
-function perRecordLabel(notif: PerRecordNotification): string {
-  // Uses || intentionally: empty strings should fall through to the next option
-  // since they carry no meaningful label information for display purposes.
-  return notif.title || notif.filterCond || "(empty filter)";
+/**
+ * Display name of a per-record notification: the title as a name, otherwise
+ * the filterCond quoted as a value so that it is distinguishable from a title
+ * and its extent is readable.
+ */
+export function perRecordLabel(notif: PerRecordNotification): string {
+  if (notif.title !== "") return notif.title;
+  if (notif.filterCond !== "") return formatValue(notif.filterCond);
+  return "(empty filter)";
 }
 
 // Covers all PerRecordNotification fields except filterCond (used as grouping key).
