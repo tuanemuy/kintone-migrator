@@ -414,18 +414,25 @@ describe("SchemaParser", () => {
             relatedKeyField: "customer_code",
             fieldMappings: [],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         });
       });
 
-      it("filterCond と sort は、省略か値なし（null）なら持たない", () => {
+      it.each([
+        ["省略", undefined],
+        ["値なし（null）", null],
+        ["空文字", ""],
+      ])("filterCond と sort が%sなら空文字にする", (_, clause) => {
         expect(
           parseLookupOf({
             relatedApp: { app: "10" },
             relatedKeyField: "customer_code",
             fieldMappings: [],
             lookupPickerFields: [],
-            filterCond: null,
+            filterCond: clause,
+            sort: clause,
           }),
         ).toStrictEqual({
           lookup: {
@@ -433,6 +440,8 @@ describe("SchemaParser", () => {
             relatedKeyField: "customer_code",
             fieldMappings: [],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         });
       });
@@ -450,6 +459,8 @@ describe("SchemaParser", () => {
             relatedKeyField: "",
             fieldMappings: [{ field: "", relatedField: "" }],
             lookupPickerFields: [],
+            filterCond: "",
+            sort: "",
           },
         });
       });
@@ -517,6 +528,8 @@ describe("SchemaParser", () => {
         relatedKeyField: "customer_code",
         fieldMappings: [{ field: "name", relatedField: "customer_name" }],
         lookupPickerFields: ["customer_name"],
+        filterCond: "",
+        sort: "",
       });
 
       it.each([
@@ -642,6 +655,51 @@ describe("SchemaParser", () => {
         expect(ref.filterCond).toBe('status = "open"');
         expect(ref.sort).toBe("col1 asc");
       }
+    });
+
+    describe("REFERENCE_TABLE の filterCond・sort・size", () => {
+      const parseReferenceTableOf = (clauses: Record<string, unknown>) => {
+        const field = SchemaParser.parse({
+          layout: [
+            {
+              type: "REFERENCE_TABLE",
+              code: "ref",
+              label: "参照テーブル",
+              referenceTable: {
+                relatedApp: { app: "123" },
+                condition: { field: "key", relatedField: "relKey" },
+                displayFields: ["col1"],
+                ...clauses,
+              },
+            },
+          ],
+        }).fields.get("ref" as FieldCode);
+        return field?.type === "REFERENCE_TABLE"
+          ? field.properties.referenceTable
+          : undefined;
+      };
+
+      it.each([
+        ["省略", undefined],
+        ["値なし（null）", null],
+        ["空文字", ""],
+      ])("filterCond と sort が%sなら空文字にする", (_, clause) => {
+        const ref = parseReferenceTableOf({ filterCond: clause, sort: clause });
+
+        expect(ref?.filterCond).toBe("");
+        expect(ref?.sort).toBe("");
+      });
+
+      it.each([
+        ["省略", undefined],
+        ["値なし（null）", null],
+      ])("size が%sなら size を持たない", (_, size) => {
+        expect(parseReferenceTableOf({ size })).not.toHaveProperty("size");
+      });
+
+      it("数値で書いた size は文字列にする", () => {
+        expect(parseReferenceTableOf({ size: 5 })?.size).toBe("5");
+      });
     });
 
     it("REFERENCE_TABLE をトップレベルレイアウトアイテムとしてパースできる", () => {

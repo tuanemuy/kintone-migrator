@@ -592,6 +592,8 @@ layout:
             relatedField: FieldCode.create("relKey"),
           },
           displayFields: [FieldCode.create("col1")],
+          filterCond: "",
+          sort: "",
         },
       },
     } as FieldDefinition;

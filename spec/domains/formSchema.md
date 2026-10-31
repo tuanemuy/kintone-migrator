@@ -86,8 +86,8 @@ type Lookup = Readonly<{
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
-  filterCond?: string;
-  sort?: string;
+  filterCond: string;
+  sort: string;
 }>;
 ```
 
@@ -97,6 +97,7 @@ type Lookup = Readonly<{
 - `Lookup` は SchemaParser（スキーマファイル）と kintone アダプター（API レスポンス）がそれぞれ組み立て、未知のキーは持たない
 - `fieldMappings` は参照先フィールドとのマッピング定義
 - 未設定の `fieldMappings`・`lookupPickerFields` は空配列で表す。kintone API は未設定のこれらを空文字で返す
+- 未設定の `filterCond`・`sort` は空文字で表す。kintone API も未設定のこれらを空文字で返す。API のレスポンスにキーが無いときも空文字にする
 
 ### FieldCode
 
@@ -389,14 +390,16 @@ type ReferenceTableFieldDefinition = FieldDefinitionBase &
           field: FieldCode;
           relatedField: FieldCode;
         }>;
-        filterCond?: string;
+        filterCond: string;
         displayFields: readonly FieldCode[];
-        sort?: string;
+        sort: string;
         size?: string;
       }>;
     }>;
   }>;
 ```
+
+- **REFERENCE_TABLE**: 未設定の `referenceTable.filterCond`・`referenceTable.sort` は `Lookup` と同じく空文字で表す
 
 ### DiffEntry
 

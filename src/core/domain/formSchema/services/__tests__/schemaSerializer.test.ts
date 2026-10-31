@@ -364,6 +364,8 @@ describe("SchemaSerializer", () => {
             },
             displayFields: [FieldCode.create("c1")],
             size: "10",
+            filterCond: "",
+            sort: "",
           },
         },
       };

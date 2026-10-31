@@ -40,9 +40,9 @@ function serializeFlatField(
         field: ref.condition.field as string,
         relatedField: ref.condition.relatedField as string,
       },
-      ...(ref.filterCond !== undefined ? { filterCond: ref.filterCond } : {}),
+      filterCond: ref.filterCond,
       displayFields: ref.displayFields.map((f) => f as string),
-      ...(ref.sort !== undefined ? { sort: ref.sort } : {}),
+      sort: ref.sort,
       ...(ref.size !== undefined ? { size: ref.size } : {}),
     };
     return result;

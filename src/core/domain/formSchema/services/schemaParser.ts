@@ -365,6 +365,14 @@ function optionalString(value: unknown): string | undefined {
   return value === undefined || value === null ? undefined : String(value);
 }
 
+/**
+ * Reads a filter condition or sort order; an omitted or valueless one is `""`,
+ * the value kintone returns when it is unset.
+ */
+function optionalQueryClause(value: unknown): string {
+  return optionalString(value) ?? "";
+}
+
 /** Reads a lookup list; an omitted or valueless list is the empty list. */
 function optionalLookupList(
   code: string,
@@ -406,9 +414,6 @@ function parseLookup(code: string, raw: unknown): Lookup {
       relatedField: String(mapping.relatedField ?? ""),
     };
   });
-  const filterCond = optionalString(raw.filterCond);
-  const sort = optionalString(raw.sort);
-
   return {
     relatedApp: LookupRelatedApp.create(
       String(raw.relatedApp.app ?? ""),
@@ -417,8 +422,8 @@ function parseLookup(code: string, raw: unknown): Lookup {
     relatedKeyField: String(raw.relatedKeyField ?? ""),
     fieldMappings,
     lookupPickerFields,
-    ...(filterCond !== undefined ? { filterCond } : {}),
-    ...(sort !== undefined ? { sort } : {}),
+    filterCond: optionalQueryClause(raw.filterCond),
+    sort: optionalQueryClause(raw.sort),
   };
 }
 
@@ -467,6 +472,7 @@ function parseReferenceTableField(
   const relatedApp = refTable.relatedApp as Record<string, unknown>;
   const conditionField = String(condition.field ?? "");
   const conditionRelatedField = String(condition.relatedField ?? "");
+  const size = optionalString(refTable.size);
   if (conditionField.length === 0) {
     throw new BusinessRuleError(
       FormSchemaErrorCode.FsInvalidSchemaStructure,
@@ -489,12 +495,10 @@ function parseReferenceTableField(
           field: FieldCode.create(conditionField),
           relatedField: FieldCode.create(conditionRelatedField),
         },
-        ...(refTable.filterCond !== undefined
-          ? { filterCond: String(refTable.filterCond) }
-          : {}),
+        filterCond: optionalQueryClause(refTable.filterCond),
         displayFields,
-        ...(refTable.sort !== undefined ? { sort: String(refTable.sort) } : {}),
-        ...(refTable.size !== undefined ? { size: String(refTable.size) } : {}),
+        sort: optionalQueryClause(refTable.sort),
+        ...(size !== undefined ? { size } : {}),
       },
     },
   };
