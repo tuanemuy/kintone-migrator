@@ -6,6 +6,7 @@
 | --- | --- | --- | --- | --- |
 | [FormSchema](./formSchema.md) | kintoneフォーム設定の宣言的管理 | コアドメイン | [usecase](../usecases/formSchema.md) | apply / capture / diff 対応 |
 | [ProjectConfig](./projectConfig.md) | 複数アプリのプロジェクト設定管理 | サポートドメイン | [usecase](../usecases/projectConfig.md) | 複数アプリ一括実行（orchestration）対応 |
+| [AppRevision](./appRevision.md) | アプリの revision（3-way 差分のベース・未デプロイの編集の判定） | サポートドメイン | [usecase](../usecases/appRevision.md) | 未デプロイの編集の判定（check-pending）対応 |
 | [SeedData](./seedData.md) | kintoneレコードデータのシード管理 | サポートドメイン | [usecase](../usecases/seedData.md) | apply（Upsert）/ capture 対応 |
 | [Customization](./customization.md) | JS/CSSカスタマイズの宣言的管理 | サポートドメイン | [usecase](../usecases/customization.md) | apply / capture / diff 対応 |
 | [FieldPermission](./fieldPermission.md) | フィールドアクセス権の宣言的管理 | サポートドメイン | [usecase](../usecases/fieldPermission.md) | apply / capture / diff 対応 |

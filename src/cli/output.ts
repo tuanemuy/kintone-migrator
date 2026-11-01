@@ -18,6 +18,7 @@ import type {
   ThreeWayDiffResult,
 } from "@/core/application/threeWay/threeWayDiff";
 import type { ViewDiffEntry } from "@/core/application/view/detectViewDiff";
+import type { DeployState } from "@/core/domain/appRevision/valueObject";
 import type { DiffResult, DiffSummary } from "@/core/domain/diff";
 import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarget";
 import type { MultiAppResult } from "@/core/domain/projectConfig/entity";
@@ -357,6 +358,39 @@ function printFieldDiffResult<
 
 export function printAppHeader(appName: string, appId: string): void {
   p.log.step(`\n=== [${pc.bold(appName)}] (app: ${appId}) ===`);
+}
+
+export function printDeployState(state: DeployState): void {
+  switch (state.kind) {
+    case "upToDate":
+      p.log.success(
+        `No undeployed changes (preview and published are both at revision ${state.revision}).`,
+      );
+      return;
+    case "pending":
+      p.log.warn(
+        `Undeployed changes are pending: preview is at revision ${state.previewRevision}, published is at revision ${state.publishedRevision}. A deploy would publish them.\nA deploy that is still in progress also shows up this way.`,
+      );
+      return;
+    case "neverDeployed":
+      p.log.warn(
+        `The app has never been deployed (preview revision ${state.previewRevision}). A deploy would publish its entire configuration.`,
+      );
+      return;
+    default:
+      state satisfies never;
+  }
+}
+
+export function printAppsWithUndeployedChanges(
+  appNames: readonly string[],
+): void {
+  if (appNames.length === 0) {
+    return;
+  }
+  p.log.warn(
+    `Undeployed changes in ${appNames.length} app(s): ${appNames.map((name) => pc.cyan(name)).join(", ")}`,
+  );
 }
 
 export function printMultiAppResult(result: MultiAppResult): void {

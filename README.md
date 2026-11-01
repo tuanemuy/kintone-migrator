@@ -182,6 +182,7 @@ Commands are organized into domain groups:
 | Command | Description |
 |---|---|
 | `init` | Initialize a project from a kintone space |
+| `check-pending` | Check whether the app has undeployed changes that a deploy would publish |
 
 | Group | Subcommand | Description |
 |---|---|---|
@@ -221,7 +222,7 @@ Commands are organized into domain groups:
 
 > **Deprecation notice:** the `apply`/`capture`/`migrate` commands above are deprecated in favor of their per-domain `push`/`pull` successors and will be removed in a future major version. The top-level `apply`/`capture` aggregate commands are likewise superseded by the top-level `push`/`pull` aggregate commands (which run every domain at once), not by any single `<domain> push`/`<domain> pull`. `push` writes to kintone (with a drift guard; use `--force` for the legacy overwrite behavior) and `pull` reads from kintone (with 3-way merge; `--force` for legacy overwrite). `seed` is out of scope for 3-way merge, so it has `seed push` but no `seed pull` — keep using `seed capture` to read records.
 
-Every command except `init` supports `--app <name>` for [multi-app mode](#multi-app-project-config). `--all` is supported by the `apply` / `capture` / `diff` / `migrate` commands, `seed push`, and the top-level aggregate `push` / `pull`, but **not** by the per-domain `push` / `pull` commands (`schema push`, `schema pull`, `customize push`, `customize pull`, `view push`, ...) — those reject `--all` with a validation error. Run the top-level `push` / `pull` with `--all` to cover every app instead.
+Every command except `init` supports `--app <name>` for [multi-app mode](#multi-app-project-config). `--all` is supported by the `apply` / `capture` / `diff` / `migrate` commands, `seed push`, `check-pending`, and the top-level aggregate `push` / `pull`, but **not** by the per-domain `push` / `pull` commands (`schema push`, `schema pull`, `customize push`, `customize pull`, `view push`, ...) — those reject `--all` with a validation error. Run the top-level `push` / `pull` with `--all` to cover every app instead.
 
 Commands that modify data (`schema push`, `schema override`, `seed push --clean`, `customize push`) support `--yes` / `-y` to skip confirmation prompts.
 
@@ -253,6 +254,43 @@ The generated config uses the `files` object format with all domain file paths p
 App names in the generated config are resolved with the following priority: app code > app name > `app-{appId}`. Duplicate names are automatically suffixed (e.g., `-2`, `-3`). File paths follow the `<appName>/<domain>.yaml` convention (e.g., `customer/schema.yaml`).
 
 Authentication settings are intentionally omitted from the generated config to avoid committing credentials to version control. Set `KINTONE_API_TOKEN` or `KINTONE_USERNAME` + `KINTONE_PASSWORD` environment variables, or add `auth` to the config file manually.
+
+### `check-pending` -- Undeployed Changes Check
+
+A kintone deploy publishes **everything** waiting in the app's preview, not just your changes. Run `check-pending` before you push, apply, migrate, or override, to see whether the preview already holds undeployed changes that your deploy would publish along with yours.
+
+```bash
+kintone-migrator check-pending --app customer
+kintone-migrator check-pending --all
+kintone-migrator check-pending --app-id 123   # without a project config
+```
+
+| Option | Description |
+|---|---|
+| `--app` | Target app name (from project config file) |
+| `--all` | Check all apps in dependency order |
+| `--app-id`, `-a` | kintone app ID, bypassing the project config |
+| `--domain`, `-d` / `--api-token`, `-t` / `--username`, `-u` / `--password`, `-p` / `--guest-space-id`, `-g` | Connection options |
+
+The check compares the app revision of the preview with that of the published app. kintone keeps one revision for the whole app: any settings change in preview -- form, views, notifications, permissions, and settings this tool does not manage, such as categories or API tokens -- moves the preview revision ahead, and a deploy (or discarding the preview changes) brings the two back together.
+
+| Result | Output | Exit code |
+|---|---|---|
+| No undeployed changes | `No undeployed changes (preview and published are both at revision N).` | 0 |
+| Undeployed changes | `Undeployed changes are pending: preview is at revision P, published is at revision Q. ...` | 1 |
+| Never deployed | `The app has never been deployed (preview revision P). A deploy would publish its entire configuration.` | 1 |
+| Read failure | The error | 1 |
+
+What the result does and does not tell you:
+
+- It does not tell whose changes they are. Changes you pushed earlier without deploying, or that a failed push left in preview, count as undeployed changes too.
+- A deploy that is still in progress also reports undeployed changes, because the published revision moves only when the deploy finishes.
+- It is based on the revision, not on the contents: a change that was made and then undone by hand still counts.
+- It holds only at the moment it runs. Edits someone makes to the preview after the check and before your deploy are still published with yours.
+
+With `--all`, every app is checked even when an earlier one has undeployed changes; the run ends with the list of those apps (`Undeployed changes in N app(s): ...`) and exit code 1, or with `No undeployed changes in any app.` and exit code 0. In the per-app summary, `Succeeded` means the check ran, so an app with undeployed changes is listed as `Succeeded` too. A read failure stops the run (fail-fast) after listing the apps with undeployed changes found so far. With a project config but none of `--app`, `--all`, or `--app-id`, the command lists the apps and exits with code 1 without checking any of them.
+
+The check needs only app management permission -- the same permission every other command needs -- so an API token for this tool works as is.
 
 ### `schema` -- Form Schema Management
 
@@ -374,7 +412,7 @@ diff <(jq -S 'del(.revision)' fields.json) <(jq -S 'del(.revision)' published-fi
 diff <(jq -S 'del(.revision)' layout.json) <(jq -S 'del(.revision)' published-layout.json)
 ```
 
-No differences means the form definition in preview matches the one that is published. It does not mean that a deploy is safe in general: deploying publishes **all** pending preview settings for the app -- views, notifications, process management, the various permission settings, plugins, general settings -- while this check covers the form definition only. Someone else's undeployed work in those other areas would still go live.
+No differences means the form definition in preview matches the one that is published. It does not mean that a deploy is safe in general: deploying publishes **all** pending preview settings for the app -- views, notifications, process management, the various permission settings, plugins, general settings -- while this check covers the form definition only. To check the whole app for undeployed changes, run [`check-pending`](#check-pending----undeployed-changes-check).
 
 ### `seed` -- Seed Data Management
 
