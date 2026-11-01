@@ -1,11 +1,12 @@
-import type {
-  AnyRelatedApp,
-  FieldCode,
-  FieldDefinition,
-  Lookup,
-  RelatedApp,
-  RemoteFieldDefinition,
-  RemoteRelatedApp,
+import {
+  type AnyRelatedApp,
+  type FieldCode,
+  type FieldDefinition,
+  isLookupCapableField,
+  type Lookup,
+  type RelatedApp,
+  type RemoteFieldDefinition,
+  type RemoteRelatedApp,
 } from "../valueObject";
 
 type ReplaceRelatedApp<A extends AnyRelatedApp, B extends AnyRelatedApp> = (
@@ -97,16 +98,10 @@ export function mapFieldsRelatedApps<
 function relatedAppOf<R extends AnyRelatedApp>(
   field: FieldDefinition<R>,
 ): R | undefined {
-  switch (field.type) {
-    case "SINGLE_LINE_TEXT":
-    case "NUMBER":
-    case "LINK":
-      return field.properties.lookup?.relatedApp;
-    case "REFERENCE_TABLE":
-      return field.properties.referenceTable.relatedApp;
-    default:
-      return undefined;
-  }
+  if (isLookupCapableField(field)) return field.properties.lookup?.relatedApp;
+  return field.type === "REFERENCE_TABLE"
+    ? field.properties.referenceTable.relatedApp
+    : undefined;
 }
 
 /**

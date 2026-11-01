@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { deriveFilePrefix } from "@/cli/commands/customize/capture";
 import { configCodec } from "@/core/adapters/yaml/configCodec";
 import {
+  createKintoneBackedFormSchemaContainer,
   createTestActionContainer,
   createTestAdminNotesContainer,
   createTestAppPermissionContainer,
@@ -17,6 +18,7 @@ import {
   createTestReportContainer,
   createTestSeedContainer,
   createTestViewContainer,
+  schemaFieldIn,
 } from "@/core/application/__tests__/helpers";
 import type { CaptureAllContainers } from "@/core/application/container/captureAll";
 import { parseCustomizationConfigText } from "@/core/application/customization/parseConfig";
@@ -30,6 +32,7 @@ import {
   ValidationError,
   ValidationErrorCode,
 } from "@/core/application/error";
+import { isRecord } from "@/lib/typeGuards";
 import {
   CAPTURE_BATCH_SIZE,
   captureAllForApp,
@@ -320,5 +323,74 @@ describe("captureAllForApp", () => {
         true,
       );
     }
+  });
+});
+
+describe("captureAllForApp の schema の relatedApp", () => {
+  const remoteForm = {
+    properties: {
+      customer_code: {
+        type: "SINGLE_LINE_TEXT",
+        code: "customer_code",
+        label: "顧客コード",
+        lookup: {
+          relatedApp: { app: "10", code: "CUSTOMERS" },
+          relatedKeyField: "code",
+          fieldMappings: [],
+          lookupPickerFields: [],
+          filterCond: "",
+          sort: "",
+        },
+      },
+    },
+    layout: [
+      {
+        type: "ROW",
+        fields: [{ type: "SINGLE_LINE_TEXT", code: "customer_code" }],
+      },
+    ],
+  };
+  const schemaWithRelatedApp = (relatedApp: string) => `layout:
+  - type: ROW
+    fields:
+      - code: customer_code
+        type: SINGLE_LINE_TEXT
+        label: 顧客コード
+        lookup:
+          relatedApp: ${relatedApp}
+          relatedKeyField: code
+`;
+
+  it.each<[string, string | undefined, Record<string, unknown>]>([
+    ["既存のスキーマが無い", undefined, { app: "10" }],
+    [
+      "既存のスキーマがコード指定の",
+      '{ code: "CUSTOMERS" }',
+      { code: "CUSTOMERS" },
+    ],
+  ])("%sとき、保存するスキーマの relatedApp は %o になる", async (_, existing, expected) => {
+    const { container: schema } =
+      createKintoneBackedFormSchemaContainer(remoteForm);
+    if (existing !== undefined) {
+      schema.schemaStorage.setContent(schemaWithRelatedApp(existing));
+    }
+
+    const results = await captureAllForApp({
+      container: { ...createMockContainers(), schema },
+      input: { customizeBasePath: "apps/test-app" },
+    });
+
+    expect(results.find((r) => r.domain === "schema")?.success).toBe(true);
+    const stored = await schema.schemaStorage.get();
+    expect(stored.exists).toBe(true);
+    if (!stored.exists) return;
+    const lookup = schemaFieldIn(
+      configCodec,
+      stored.content,
+      "customer_code",
+    )?.lookup;
+    expect(isRecord(lookup) ? lookup.relatedApp : undefined).toStrictEqual(
+      expected,
+    );
   });
 });

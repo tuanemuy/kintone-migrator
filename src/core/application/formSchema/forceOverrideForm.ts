@@ -1,10 +1,10 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/services/layoutEnricher";
-import { projectRemoteFields } from "@/core/domain/formSchema/services/relatedAppProjection";
 import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subtableFieldSplitter";
 import type {
   FieldCode,
   FieldDefinition,
+  RemoteFieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { assertSchemaValid } from "./assertSchemaValid";
@@ -20,7 +20,7 @@ type FieldClassification = {
 function classifySubtableField(
   fieldCode: FieldCode,
   schemaDef: FieldDefinition & { type: "SUBTABLE" },
-  currentFields: ReadonlyMap<FieldCode, FieldDefinition>,
+  currentFields: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
   result: FieldClassification,
 ): void {
   const currentDef = currentFields.get(fieldCode);
@@ -61,7 +61,7 @@ function classifySubtableField(
 function classifyExistingField(
   fieldCode: FieldCode,
   schemaDef: FieldDefinition,
-  currentFields: ReadonlyMap<FieldCode, FieldDefinition>,
+  currentFields: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
   result: FieldClassification,
 ): void {
   if (schemaDef.type === "SUBTABLE") {
@@ -98,10 +98,7 @@ export async function forceOverrideForm({
 
   assertSchemaValid(schema);
 
-  const currentFields = projectRemoteFields(
-    await container.formConfigurator.getFields(),
-    schema.fields,
-  );
+  const currentFields = await container.formConfigurator.getFields();
   const subtableInnerCodes = collectSubtableInnerFieldCodes(schema.fields);
 
   const classification: FieldClassification = {

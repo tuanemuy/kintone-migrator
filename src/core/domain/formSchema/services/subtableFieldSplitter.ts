@@ -1,4 +1,5 @@
 import type {
+  AnyRelatedApp,
   FieldCode,
   FieldDefinition,
   SubtableFieldDefinition,
@@ -12,7 +13,7 @@ export type SubtableSplitResult = Readonly<{
 
 export function splitSubtableInnerFields(
   desired: SubtableFieldDefinition,
-  current: SubtableFieldDefinition,
+  current: SubtableFieldDefinition<AnyRelatedApp>,
 ): SubtableSplitResult {
   const newInnerFields = new Map<FieldCode, FieldDefinition>();
   const existingInnerFields = new Map<FieldCode, FieldDefinition>();

@@ -662,9 +662,9 @@ function restateBaseFields(
 ```
 
 - `projectRemoteFields` は、参照スキーマの同じフィールドコードのフィールドが `relatedApp` を `{ code }` で指し、リモートのアプリコードが空でなければ `{ code: リモートの code }` にする。それ以外（参照スキーマが無い・同じフィールドコードのフィールドが無い・`{ app }` で指す・参照先にアプリコードが無い）は `{ app: リモートの app }` にする。フィールドの種類（lookup か REFERENCE_TABLE か）は問わない
-- `restateBaseFields` は、3-way の base の `relatedApp` が同じフィールドコードのリモートと同じアプリを指す（ID 指定ならアプリ ID が、コード指定ならアプリコードが一致する）とき、それを `projectRemoteFields` と同じ規則で射影する。指さないとき・リモートにそのフィールドが無いときは base の値のまま返す。base とローカルで指定方法が違うだけでは差分にならない
+- `restateBaseFields` は、3-way の base の `relatedApp` が同じフィールドコードのリモートと同じアプリを指す（ID 指定ならアプリ ID が、コード指定ならアプリコードが一致する）とき、それを `projectRemoteFields` と同じ規則で射影する。指さないとき・リモートにそのフィールドが無いときは base の値のまま返す。そのため、リモートの参照先が base と同じなら、base とローカルで指定方法が違うだけでは差分にならない。リモートの参照先が変わっていると、base が指したアプリのもう一方の識別子（ID 指定の base ならアプリコード）はどこにも残っていない。ローカルが指定方法だけを変えたのか参照先も変えたのかを判定できないので、base はそのまま残り、ローカルの変更として扱う（リモートも変わっていれば conflict）
 - サブテーブル内のフィールドは、サブテーブルの中とトップレベルの両方で射影する。フィールドコードはサブテーブル内も含めてフォーム全体で一意なので、トップレベルのフィールドコードで突き合わせる
-- 参照スキーマは、2-way（detectDiff・executeMigration・forceOverrideForm）では比較・適用するスキーマ、3-way（schema diff・push・pull）ではローカルのスキーマ、captureSchema では既存のスキーマファイル
+- 参照スキーマは、2-way（detectDiff・executeMigration）では比較・適用するスキーマ、3-way（schema diff・push・pull）ではローカルのスキーマ、captureSchema では既存のスキーマファイル
 
 ### SchemaSerializer
 
@@ -811,7 +811,7 @@ interface SchemaStorage {
 - **処理フロー**:
     1. `SchemaStorage.get()` でスキーマテキストを取得する
     2. `SchemaParser.parse()` でスキーマにパースする
-    3. `FormConfigurator.getFields()` で現在のフォームフィールドを取得し、`projectRemoteFields()` で `relatedApp` をスキーマの指定方法に揃える
+    3. `FormConfigurator.getFields()` で現在のフォームフィールドを取得する
     4. スキーマにあり現在のフォームにないフィールドを `FormConfigurator.addFields()` で追加する
     5. 両方に存在するフィールドを `FormConfigurator.updateFields()` で上書きする（差分有無にかかわらず）
     6. スキーマにないフィールドを `FormConfigurator.deleteFields()` で削除する

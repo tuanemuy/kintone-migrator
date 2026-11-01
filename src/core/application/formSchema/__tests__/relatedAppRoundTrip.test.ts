@@ -614,6 +614,14 @@ describe.each(placements)("$name の relatedApp", (placement) => {
         '{ code: "OTHERS" }',
         { conflicts: [{ key: placement.changedKey, kind: "conflict" }] },
       ],
+      [
+        // Nothing records the app code of the app base refers to by ID, so
+        // whether local's app code names that same app cannot be told.
+        "ローカルの指定方法が変わり、リモートの参照先も変わると conflict",
+        BY_ID,
+        BY_CODE,
+        { conflicts: [{ key: placement.changedKey, kind: "conflict" }] },
+      ],
     ])("%sとして検出し、push は drift で止まる", async (_, base, local, expected) => {
       const { container, client } = createContainer(OTHER_APP);
       container.schemaStateStorage.setContent(placement.schema(base));

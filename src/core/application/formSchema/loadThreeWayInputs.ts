@@ -15,8 +15,9 @@ import { loadState } from "./schemaStateIo";
 
 export type ThreeWayInputs = Readonly<{
   /**
-   * Parsed state (base snapshot), or undefined on first run. Its related apps
-   * are restated the way local refers to them (see `restateBaseFields`).
+   * Parsed state (base snapshot), or undefined on first run. A related app
+   * that refers to the same app as remote is restated the way local refers to
+   * it (see `restateBaseFields`).
    */
   state: SchemaState | undefined;
   /** Local schema parsed from the YAML file, or undefined when absent. */
@@ -54,8 +55,9 @@ export async function loadThreeWayInputs(
     ? parseSchemaText(container.configCodec, localResult.content)
     : undefined;
 
-  // Base and remote both refer to related apps the way local does, so how a
-  // related app is written (by app ID or by app code) is never a difference.
+  // Remote refers to related apps the way local does, and so does base where
+  // it refers to the same app as remote, so writing that app by app ID in one
+  // and by app code in another is not a difference.
   const projectedRemoteFields = projectRemoteFields(
     remoteFields,
     local?.fields,

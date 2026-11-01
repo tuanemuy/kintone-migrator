@@ -357,6 +357,24 @@ export type FieldDefinition<R extends AnyRelatedApp = RelatedApp> =
 /** A field definition as read from kintone. */
 export type RemoteFieldDefinition = FieldDefinition<RemoteRelatedApp>;
 
+/** A field type that can carry a `lookup`. */
+export type LookupCapableFieldDefinition<R extends AnyRelatedApp = RelatedApp> =
+  | SingleLineTextFieldDefinition<R>
+  | NumberFieldDefinition<R>
+  | LinkFieldDefinition<R>;
+
+const LOOKUP_CAPABLE_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
+  "SINGLE_LINE_TEXT",
+  "NUMBER",
+  "LINK",
+]);
+
+export function isLookupCapableField<R extends AnyRelatedApp>(
+  field: FieldDefinition<R>,
+): field is LookupCapableFieldDefinition<R> {
+  return LOOKUP_CAPABLE_TYPES.has(field.type);
+}
+
 // Layout-related types
 
 export type ElementSize = Readonly<{

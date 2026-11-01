@@ -151,7 +151,7 @@ type DetectDiffOutput = {
 
 1. `SchemaStorage.get()` でスキーマテキストを取得する
 2. `SchemaParser.parse()` でスキーマをパースする
-3. `FormConfigurator.getFields()` で現在のフィールド定義を取得し、`projectRemoteFields()` で `relatedApp` をスキーマの指定方法に揃える
+3. `FormConfigurator.getFields()` で現在のフィールド定義を取得する
 4. スキーマと現在のフォームを比較し、追加・更新・削除対象のフィールドを分類する
 5. 追加対象がある場合、`FormConfigurator.addFields()` でフィールドを追加する
 6. 更新対象がある場合、`FormConfigurator.updateFields()` でフィールドを上書きする

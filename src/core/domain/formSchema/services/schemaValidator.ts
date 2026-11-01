@@ -1,12 +1,10 @@
 import type { Schema } from "../entity";
-import type {
-  FieldCode,
-  FieldDefinition,
-  LinkFieldDefinition,
-  NumberFieldDefinition,
-  RelatedApp,
-  SelectionFieldDefinition,
-  SingleLineTextFieldDefinition,
+import {
+  type FieldCode,
+  type FieldDefinition,
+  isLookupCapableField,
+  type RelatedApp,
+  type SelectionFieldDefinition,
 } from "../valueObject";
 
 export type ValidationSeverity = "error" | "warning";
@@ -44,23 +42,10 @@ const VALID_REFERENCE_TABLE_SIZES = new Set([
   "50",
 ]);
 
-const LOOKUP_FIELD_TYPES = new Set(["SINGLE_LINE_TEXT", "NUMBER", "LINK"]);
-
-type LookupCapableFieldDefinition =
-  | SingleLineTextFieldDefinition
-  | NumberFieldDefinition
-  | LinkFieldDefinition;
-
 function isSelectionField(
   field: FieldDefinition,
 ): field is SelectionFieldDefinition {
   return SELECTION_TYPES.has(field.type);
-}
-
-function isLookupCapableField(
-  field: FieldDefinition,
-): field is LookupCapableFieldDefinition {
-  return LOOKUP_FIELD_TYPES.has(field.type);
 }
 
 function issue(
