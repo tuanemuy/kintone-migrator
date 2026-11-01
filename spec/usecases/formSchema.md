@@ -22,9 +22,10 @@ type DetectDiffInput = {
 1. `SchemaStorage.get()` でスキーマテキストを取得する
 2. `SchemaParser.parse()` でスキーマをパースする
 3. `FormConfigurator.getFields(target)` と `FormConfigurator.getLayout(target)` を並行して実行し、指定世代のフィールド定義とレイアウトを取得する
-4. `DiffDetector.detect()` でフィールドの差分を検出する
-5. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
-6. 結果をDTOに変換して返す
+4. `projectRemoteFields()` で、フィールド定義の `relatedApp` をスキーマの指定方法に揃える。レイアウトは揃えたフィールド定義で埋める
+5. `DiffDetector.detect()` でフィールドの差分を検出する
+6. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
+7. 結果をDTOに変換して返す
 
 ### 出力DTO
 
@@ -85,6 +86,8 @@ type DetectDiffOutput = {
 - 入力を省略した場合、`FormConfigurator` の read 系が `"preview"` を対象として呼ばれる
 - `input.target` に `"published"` を指定した場合、`FormConfigurator` の read 系が `"published"` を対象として呼ばれる
 - `"published"` 指定時は published 世代のフィールド・レイアウトに対して差分が計算される
+- `relatedApp` をコード指定（`{ code: C }`）したスキーマと、同じアプリ（`{ app, code: C }`）を返すフォームは差分なしになる。フォームが別のアプリコードを返す場合は `relatedApp` の差分になり、アプリコードを返さない（`code: ""`）場合は `{ app }` から `{ code }` への差分になる
+- `relatedApp` を ID 指定（`{ app: A }`）したスキーマと、`{ app: A, code }` を返すフォームは差分なしになる
 
 ---
 
@@ -99,11 +102,12 @@ type DetectDiffOutput = {
 1. `SchemaStorage.get()` でスキーマテキストを取得する
 2. `SchemaParser.parse()` でスキーマをパースする
 3. `FormConfigurator.getFields()` と `FormConfigurator.getLayout()` を並行して実行し、現在のフィールド定義とレイアウトを取得する
-4. `DiffDetector.detect()` でフィールドの差分を検出する
-5. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
-6. フィールド差分もレイアウト差分もない場合、何も実行せずに終了する
-7. 差分に基づいてフィールドの追加 → 更新 → 削除の順でポートメソッドを呼び出す
-8. レイアウトに差分がある場合、`FormConfigurator.updateLayout()` でレイアウトを更新する
+4. `projectRemoteFields()` で、フィールド定義の `relatedApp` をスキーマの指定方法に揃える。レイアウトは揃えたフィールド定義で埋める
+5. `DiffDetector.detect()` でフィールドの差分を検出する
+6. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
+7. フィールド差分もレイアウト差分もない場合、何も実行せずに終了する
+8. 差分に基づいてフィールドの追加 → 更新 → 削除の順でポートメソッドを呼び出す
+9. レイアウトに差分がある場合、`FormConfigurator.updateLayout()` でレイアウトを更新する
 
 ### 入力DTO
 
@@ -122,6 +126,7 @@ type DetectDiffOutput = {
 - 追加・変更・削除が混在する場合、追加 → 更新 → 削除の順でそれぞれ対応するポートメソッドが呼ばれる
 - `FormConfigurator.addFields()` に渡されるフィールドが、スキーマ内の追加対象フィールドのドメイン型と一致する
 - `FormConfigurator.updateFields()` に渡されるフィールドが、スキーマ内の変更対象フィールドのドメイン型と一致する
+- 追加・更新で送る `relatedApp` は、スキーマがコード指定なら `{ code }` だけ、ID 指定なら `{ app }` だけである
 - `FormConfigurator.deleteFields()` に渡されるフィールドコードが、現在のフォームにのみ存在するフィールドコードと一致する
 - レイアウトに差分がある場合、`FormConfigurator.updateLayout()` がスキーマのレイアウトで呼ばれる
 - フィールド差分がなくレイアウト差分のみがある場合、`FormConfigurator.updateLayout()` のみが呼ばれる
@@ -146,7 +151,7 @@ type DetectDiffOutput = {
 
 1. `SchemaStorage.get()` でスキーマテキストを取得する
 2. `SchemaParser.parse()` でスキーマをパースする
-3. `FormConfigurator.getFields()` で現在のフィールド定義を取得する
+3. `FormConfigurator.getFields()` で現在のフィールド定義を取得し、`projectRemoteFields()` で `relatedApp` をスキーマの指定方法に揃える
 4. スキーマと現在のフォームを比較し、追加・更新・削除対象のフィールドを分類する
 5. 追加対象がある場合、`FormConfigurator.addFields()` でフィールドを追加する
 6. 更新対象がある場合、`FormConfigurator.updateFields()` でフィールドを上書きする
@@ -241,6 +246,9 @@ type CaptureSchemaOutput = {
 - kintoneシステムフィールドは `schemaText` に含まれない
 - `FormConfigurator.getLayout()` の通信に失敗した場合、`SystemError` がスローされる
 - `SchemaStorage.get()` の通信に失敗した場合、`SystemError` がスローされる
+- 既存のスキーマで `relatedApp` をコード指定したフィールドは、フォームが返すアプリコードで `{ code }` と書き出す。フォームがアプリコードを返さない（`code: ""`）フィールドと、それ以外のフィールドは `{ app }` と書き出す
+- 既存のスキーマが無い、またはパースできない場合、すべての `relatedApp` を `{ app }` と書き出し、capture は成功する
+- 既存のスキーマが validate で落ちるだけ（パースはできる）場合も、その指定方法に揃える
 
 ---
 

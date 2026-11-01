@@ -3,6 +3,7 @@ import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarg
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import { DiffDetector } from "@/core/domain/formSchema/services/diffDetector";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
+import { projectRemoteFields } from "@/core/domain/formSchema/services/relatedAppProjection";
 import type {
   FieldDefinition,
   FormSchemaDiffEntry,
@@ -61,10 +62,11 @@ export async function detectDiff({
     );
   }
   const schema = parseSchemaText(container.configCodec, result.content);
-  const [currentFields, currentLayout] = await Promise.all([
+  const [remoteFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(target),
     container.formConfigurator.getLayout(target),
   ]);
+  const currentFields = projectRemoteFields(remoteFields, schema.fields);
   const diff = DiffDetector.detect(schema, currentFields);
   const enrichedCurrentLayout = enrichLayoutWithFields(
     currentLayout,

@@ -1,5 +1,9 @@
 import type { FormLayout } from "../entity";
-import type { FieldCode, FieldDefinition } from "../valueObject";
+import type {
+  FieldCode,
+  FieldDefinition,
+  RemoteFieldDefinition,
+} from "../valueObject";
 import type { FormReadTarget } from "./formReadTarget";
 
 /**
@@ -39,7 +43,8 @@ export type ExpectedRevision = string | typeof SKIP_REVISION_CHECK | undefined;
  */
 export interface FormConfigurator {
   /**
-   * Returns all non-system fields currently configured in the form.
+   * Returns all non-system fields currently configured in the form, with
+   * each related app as kintone reports it (see `projectRemoteFields`).
    *
    * @param target which generation to read. Defaults to `"preview"`.
    *   Implementations must read `DEFAULT_FORM_READ_TARGET` when `target` is
@@ -49,7 +54,7 @@ export interface FormConfigurator {
    */
   getFields(
     target?: FormReadTarget,
-  ): Promise<ReadonlyMap<FieldCode, FieldDefinition>>;
+  ): Promise<ReadonlyMap<FieldCode, RemoteFieldDefinition>>;
   /**
    * Returns the current app (preview) revision in a single API call.
    *

@@ -1,5 +1,6 @@
 import { ValidationError, ValidationErrorCode } from "@/core/application/error";
 import { collectSubtableInnerFieldCodes } from "@/core/domain/formSchema/services/layoutEnricher";
+import { projectRemoteFields } from "@/core/domain/formSchema/services/relatedAppProjection";
 import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subtableFieldSplitter";
 import type {
   FieldCode,
@@ -97,7 +98,10 @@ export async function forceOverrideForm({
 
   assertSchemaValid(schema);
 
-  const currentFields = await container.formConfigurator.getFields();
+  const currentFields = projectRemoteFields(
+    await container.formConfigurator.getFields(),
+    schema.fields,
+  );
   const subtableInnerCodes = collectSubtableInnerFieldCodes(schema.fields);
 
   const classification: FieldClassification = {

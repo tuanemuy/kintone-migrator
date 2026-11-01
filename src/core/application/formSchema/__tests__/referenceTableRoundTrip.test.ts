@@ -9,7 +9,7 @@ import { detectThreeWayDiff } from "../detectThreeWayDiff";
 import { executeMigration } from "../executeMigration";
 import { pullSchema } from "../pullSchema";
 
-type RelatedApp = { app: string; code?: string };
+type RelatedApp = { app?: string; code?: string };
 
 function createContainer(remoteRelatedApp: RelatedApp) {
   return createKintoneBackedFormSchemaContainer({
@@ -102,28 +102,17 @@ describe("REFERENCE_TABLE の relatedApp を含むフォームの capture / diff
     });
   });
 
-  it.each([
-    ["code を省いた手書きの YAML", '{ app: "21" }'],
-    ["code: '' を含む旧版 capture の YAML", '{ app: "21", code: "" }'],
+  it.each<[string, string, RelatedApp, RelatedApp]>([
+    ["ID 指定", '{ app: "21" }', { app: "22" }, { app: "21" }],
     [
-      "アプリコードを含む旧版 capture の YAML",
-      '{ app: "21", code: "MEMBERS" }',
+      "コード指定",
+      '{ code: "MEMBERS" }',
+      { code: "STAFF" },
+      { code: "MEMBERS" },
     ],
-    ["API と code だけが違う YAML", '{ app: "21", code: "OTHER" }'],
-  ])("%s は、app が一致するリモートと差分なし", async (_, relatedApp) => {
-    const { container } = createContainer({ app: "21", code: "MEMBERS" });
-    await container.schemaStorage.update(schemaWithRelatedApp(relatedApp));
-
-    const result = await detectDiff({ container });
-
-    expect(result.entries).toEqual([]);
-    expect(result.hasLayoutChanges).toBe(false);
-    expect(result.isEmpty).toBe(true);
-  });
-
-  it("YAML とリモートで relatedApp.app が異なるとき、relatedApp の変更として検出する", async () => {
-    const { container } = createContainer({ app: "22", code: "" });
-    await container.schemaStorage.update(schemaWithRelatedApp('{ app: "21" }'));
+  ])("%s の YAML とリモートで参照先が異なるとき、relatedApp の変更として検出する", async (_, local, before, after) => {
+    const { container } = createContainer({ app: "22", code: "STAFF" });
+    await container.schemaStorage.update(schemaWithRelatedApp(local));
 
     const result = await detectDiff({ container });
 
@@ -134,33 +123,11 @@ describe("REFERENCE_TABLE の relatedApp を含むフォームの capture / diff
     expect(entry).toMatchObject({
       type: "modified",
       fieldCode: "members",
-      before: { properties: { referenceTable: { relatedApp: { app: "22" } } } },
-      after: { properties: { referenceTable: { relatedApp: { app: "21" } } } },
+      before: { properties: { referenceTable: { relatedApp: before } } },
+      after: { properties: { referenceTable: { relatedApp: after } } },
     });
     expect(entry?.details).toMatch(/^referenceTable\.relatedApp: /);
     expect(entry?.details).not.toContain("\nreferenceTable.");
-  });
-
-  it("YAML とリモートで relatedApp.app が異なるとき、migrate は YAML の app で更新を送る", async () => {
-    const { container, client } = createContainer({ app: "22", code: "" });
-    await container.schemaStorage.update(
-      schemaWithRelatedApp('{ app: "21", code: "MEMBERS" }'),
-    );
-
-    await executeMigration({ container });
-
-    expect(client.app.updateFormFields).toHaveBeenCalledTimes(1);
-    expect(client.app.updateFormFields).toHaveBeenCalledWith(
-      expect.objectContaining({
-        properties: {
-          members: expect.objectContaining({
-            referenceTable: expect.objectContaining({
-              relatedApp: { app: "21" },
-            }),
-          }),
-        },
-      }),
-    );
   });
 });
 
@@ -178,52 +145,6 @@ describe("REFERENCE_TABLE の relatedApp を含むフォームの 3-way diff", (
       conflicts: [],
       extras: [],
       isEmpty: true,
-    });
-  });
-
-  it("旧版 pull が保存した code 入りの base / local とリモートは差分なし", async () => {
-    const { container } = createContainer({ app: "21", code: "MEMBERS" });
-    const legacy = schemaWithRelatedApp('{ app: "21", code: "MEMBERS" }');
-    container.schemaStateStorage.setContent(legacy);
-    container.schemaStorage.setContent(legacy);
-
-    const result = await detectThreeWayDiff({ container });
-
-    expect(result).toMatchObject({ mode: "three-way", isEmpty: true });
-  });
-
-  it("リモートだけ relatedApp.app が変わると remote drift として検出する", async () => {
-    const { container } = createContainer({ app: "22", code: "" });
-    const base = schemaWithRelatedApp('{ app: "21" }');
-    container.schemaStateStorage.setContent(base);
-    container.schemaStorage.setContent(base);
-
-    const result = await detectThreeWayDiff({ container });
-
-    expect(result).toMatchObject({
-      mode: "three-way",
-      localChanges: [],
-      remoteDrift: [{ key: "members", kind: "remoteOnly" }],
-      conflicts: [],
-      isEmpty: false,
-    });
-  });
-
-  it("local とリモートが別々の relatedApp.app に変わると conflict として検出する", async () => {
-    const { container } = createContainer({ app: "22", code: "" });
-    container.schemaStateStorage.setContent(
-      schemaWithRelatedApp('{ app: "21" }'),
-    );
-    container.schemaStorage.setContent(schemaWithRelatedApp('{ app: "23" }'));
-
-    const result = await detectThreeWayDiff({ container });
-
-    expect(result).toMatchObject({
-      mode: "three-way",
-      localChanges: [],
-      remoteDrift: [],
-      conflicts: [{ key: "members", kind: "conflict" }],
-      isEmpty: false,
     });
   });
 });

@@ -3,6 +3,7 @@ import { KintoneRestAPIError } from "@kintone/rest-api-client";
 import { describe, expect, it, vi } from "vitest";
 import { ConflictError, SystemError } from "@/core/application/error";
 import { SKIP_REVISION_CHECK } from "@/core/domain/formSchema/ports/formConfigurator";
+import { projectRemoteFields } from "@/core/domain/formSchema/services/relatedAppProjection";
 import type {
   FieldCode,
   FieldDefinition,
@@ -495,9 +496,16 @@ describe("KintoneFormConfigurator", () => {
     });
 
     it.each([
-      { app: "42", code: "" },
-      { app: "42", code: "CUSTOMERS" },
-    ])("REFERENCE_TABLE の relatedApp が %o のとき、ドメイン値は app だけを持つ", async (relatedApp) => {
+      [
+        { app: "42", code: "" },
+        { app: "42", code: "" },
+      ],
+      [
+        { app: "42", code: "CUSTOMERS" },
+        { app: "42", code: "CUSTOMERS" },
+      ],
+      [{ app: "42" }, { app: "42", code: "" }],
+    ])("REFERENCE_TABLE の relatedApp が %o のとき、リモートの値は %o になる", async (relatedApp, expected) => {
       const client = createMockClient({
         getFormFields: () =>
           Promise.resolve({
@@ -521,9 +529,9 @@ describe("KintoneFormConfigurator", () => {
       const field = fields.get("related" as FieldCode);
       expect(field?.type).toBe("REFERENCE_TABLE");
       if (field?.type === "REFERENCE_TABLE") {
-        expect(field.properties.referenceTable.relatedApp).toStrictEqual({
-          app: "42",
-        });
+        expect(field.properties.referenceTable.relatedApp).toStrictEqual(
+          expected,
+        );
       }
     });
 
@@ -537,6 +545,11 @@ describe("KintoneFormConfigurator", () => {
         "relatedApp.app が数値",
         { app: 42 },
         "REFERENCE_TABLE.referenceTable.relatedApp.app",
+      ],
+      [
+        "relatedApp.code が数値",
+        { app: "42", code: 1 },
+        "REFERENCE_TABLE.referenceTable.relatedApp.code",
       ],
     ])("REFERENCE_TABLE の %s なら SystemError をスローする", async (_, relatedApp, path) => {
       const client = createMockClient({
@@ -599,7 +612,7 @@ describe("KintoneFormConfigurator", () => {
 
         expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
           lookup: {
-            relatedApp: { app: "10" },
+            relatedApp: { app: "10", code: "" },
             relatedKeyField: "customer_code",
             fieldMappings: [],
             lookupPickerFields: [],
@@ -618,7 +631,7 @@ describe("KintoneFormConfigurator", () => {
 
         expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
           lookup: {
-            relatedApp: { app: "10" },
+            relatedApp: { app: "10", code: "" },
             relatedKeyField: "customer_code",
             fieldMappings: [],
             lookupPickerFields: [],
@@ -676,6 +689,11 @@ describe("KintoneFormConfigurator", () => {
           "relatedApp.app が数値",
           { ...validLookup, relatedApp: { app: 10 } },
           'SINGLE_LINE_TEXT "customer".lookup.relatedApp.app',
+        ],
+        [
+          "relatedApp.code が null",
+          { ...validLookup, relatedApp: { app: "10", code: null } },
+          'SINGLE_LINE_TEXT "customer".lookup.relatedApp.code',
         ],
         [
           "relatedKeyField が無い",
@@ -767,14 +785,18 @@ describe("KintoneFormConfigurator", () => {
 
       it.each(
         ["SINGLE_LINE_TEXT", "NUMBER", "LINK"].flatMap((type) =>
-          [
-            ["空文字", ""],
-            ["非空", "CUSTOMERS"],
-            ["null", null],
-            ["数値", 1],
-          ].map(([label, code]) => [type, label, code] as const),
+          (
+            [
+              ["空文字", { app: "10", code: "" }, ""],
+              ["非空", { app: "10", code: "CUSTOMERS" }, "CUSTOMERS"],
+              ["無い", { app: "10" }, ""],
+            ] satisfies readonly [string, Record<string, unknown>, string][]
+          ).map(
+            ([label, relatedApp, code]) =>
+              [type, label, relatedApp, code] as const,
+          ),
         ),
-      )("%s の relatedApp.code が%sでも、ドメイン値は app だけを持つ", async (type, _, code) => {
+      )("%s の relatedApp.code が%sとき、リモートの値は app と code を持つ", async (type, _, relatedApp, code) => {
         const client = createMockClient({
           getFormFields: () =>
             Promise.resolve({
@@ -783,7 +805,7 @@ describe("KintoneFormConfigurator", () => {
                   type,
                   code: "customer",
                   label: "顧客",
-                  lookup: lookupWith({ app: "10", code }),
+                  lookup: lookupWith(relatedApp),
                 },
               },
             }),
@@ -792,7 +814,7 @@ describe("KintoneFormConfigurator", () => {
         const fields = await adapter.getFields();
 
         expect(fields.get("customer" as FieldCode)?.properties).toStrictEqual({
-          lookup: lookupWith({ app: "10" }),
+          lookup: lookupWith({ app: "10", code }),
         });
       });
 
@@ -800,7 +822,7 @@ describe("KintoneFormConfigurator", () => {
         "SINGLE_LINE_TEXT",
         "NUMBER",
         "LINK",
-      ])("SUBTABLE 内の %s でも、relatedApp.code を落とす", async (type) => {
+      ])("SUBTABLE 内の %s でも、relatedApp は app と code を持つ", async (type) => {
         const client = createMockClient({
           getFormFields: () =>
             Promise.resolve({
@@ -829,7 +851,9 @@ describe("KintoneFormConfigurator", () => {
         if (table?.type === "SUBTABLE") {
           expect(
             table.properties.fields.get("customer" as FieldCode)?.properties,
-          ).toStrictEqual({ lookup: lookupWith({ app: "10" }) });
+          ).toStrictEqual({
+            lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
+          });
         }
       });
     });
@@ -1534,7 +1558,9 @@ describe("KintoneFormConfigurator", () => {
       const fields = await adapter.getFields();
       expect(fields.size).toBe(8);
 
-      await adapter.addFields([...fields.values()]);
+      await adapter.addFields([
+        ...projectRemoteFields(fields, undefined).values(),
+      ]);
 
       expect(capturedAddProperties).not.toBeNull();
       const props = capturedAddProperties as unknown as Record<

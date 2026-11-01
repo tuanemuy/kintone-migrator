@@ -446,16 +446,16 @@ describe("SchemaParser", () => {
         });
       });
 
-      it("relatedApp.app・relatedKeyField・fieldMappings の各キーの省略は空文字にし、検証に任せる", () => {
+      it("relatedKeyField・fieldMappings の各キーの省略は空文字にし、検証に任せる", () => {
         expect(
           parseLookupOf({
-            relatedApp: {},
+            relatedApp: { app: "10" },
             fieldMappings: [{}],
             lookupPickerFields: [],
           }),
         ).toStrictEqual({
           lookup: {
-            relatedApp: { app: "" },
+            relatedApp: { app: "10" },
             relatedKeyField: "",
             fieldMappings: [{ field: "", relatedField: "" }],
             lookupPickerFields: [],
@@ -522,8 +522,8 @@ describe("SchemaParser", () => {
       });
     });
 
-    describe("lookup.relatedApp.code", () => {
-      const lookupWith = (relatedApp: Record<string, unknown>) => ({
+    describe("relatedApp", () => {
+      const lookupWith = (relatedApp: unknown) => ({
         relatedApp,
         relatedKeyField: "customer_code",
         fieldMappings: [{ field: "name", relatedField: "customer_name" }],
@@ -531,80 +531,174 @@ describe("SchemaParser", () => {
         filterCond: "",
         sort: "",
       });
-
-      it.each(
-        ["SINGLE_LINE_TEXT", "NUMBER", "LINK"].flatMap((type) =>
-          (
-            [
-              ["非空", { app: "10", code: "CUSTOMERS" }],
-              ["空文字", { app: "10", code: "" }],
-              ["値なし（null）", { app: "10", code: null }],
-              ["数値", { app: "10", code: 20 }],
-              ["省略", { app: "10" }],
-            ] as const satisfies readonly (readonly [
-              string,
-              Record<string, unknown>,
-            ])[]
-          ).map(([label, relatedApp]) => [type, label, relatedApp] as const),
-        ),
-      )("%s の code が%sのとき、relatedApp は app だけを持つ", (type, _, relatedApp) => {
-        const schema = SchemaParser.parse({
-          layout: [
-            {
-              type: "ROW",
-              fields: [
-                {
-                  code: "customer",
-                  type,
-                  label: "顧客",
-                  lookup: lookupWith(relatedApp),
-                },
-              ],
-            },
-          ],
-        });
-
-        expect(
-          schema.fields.get("customer" as FieldCode)?.properties,
-        ).toStrictEqual({
-          lookup: lookupWith({ app: "10" }),
-        });
+      const referenceTableWith = (relatedApp: unknown) => ({
+        relatedApp,
+        condition: { field: "key", relatedField: "rKey" },
+        filterCond: "",
+        displayFields: ["col1"],
+        sort: "",
       });
 
-      it.each([
-        "SINGLE_LINE_TEXT",
-        "NUMBER",
-        "LINK",
-      ])("SUBTABLE 内の %s でも、code を落とす", (type) => {
-        const schema = SchemaParser.parse({
-          layout: [
-            {
-              type: "SUBTABLE",
-              code: "items",
-              label: "明細",
-              fields: [
+      type Holder = Readonly<{
+        name: string;
+        /** A schema whose field `customer` holds `relatedApp`. */
+        schemaWith: (relatedApp: unknown) => unknown;
+        /** Where an error about `relatedApp` names it. */
+        path: string;
+        messagePrefix: string;
+      }>;
+
+      const holders: readonly Holder[] = [
+        ...(["SINGLE_LINE_TEXT", "NUMBER", "LINK"] as const).flatMap((type) => [
+          {
+            name: `行の ${type} の lookup`,
+            schemaWith: (relatedApp: unknown) => ({
+              layout: [
                 {
-                  code: "customer",
-                  type,
-                  label: "顧客",
-                  lookup: lookupWith({ app: "10", code: "CUSTOMERS" }),
+                  type: "ROW",
+                  fields: [
+                    {
+                      code: "customer",
+                      type,
+                      label: "顧客",
+                      lookup: lookupWith(relatedApp),
+                    },
+                  ],
                 },
               ],
-            },
+            }),
+            path: "relatedApp",
+            messagePrefix: 'Field "customer" lookup',
+          },
+          {
+            name: `サブテーブルの ${type} の lookup`,
+            schemaWith: (relatedApp: unknown) => ({
+              layout: [
+                {
+                  type: "SUBTABLE",
+                  code: "items",
+                  label: "明細",
+                  fields: [
+                    {
+                      code: "customer",
+                      type,
+                      label: "顧客",
+                      lookup: lookupWith(relatedApp),
+                    },
+                  ],
+                },
+              ],
+            }),
+            path: "relatedApp",
+            messagePrefix: 'Field "customer" lookup',
+          },
+        ]),
+        {
+          name: "REFERENCE_TABLE",
+          schemaWith: (relatedApp: unknown) => ({
+            layout: [
+              {
+                type: "ROW",
+                fields: [
+                  {
+                    code: "customer",
+                    type: "REFERENCE_TABLE",
+                    label: "顧客",
+                    referenceTable: referenceTableWith(relatedApp),
+                  },
+                ],
+              },
+            ],
+          }),
+          path: "referenceTable.relatedApp",
+          messagePrefix: 'Field "customer" of type REFERENCE_TABLE',
+        },
+      ];
+
+      /** The `relatedApp` of `customer`, wherever it sits. */
+      function relatedAppIn(schema: ReturnType<typeof SchemaParser.parse>) {
+        const field = schema.fields.get("customer" as FieldCode);
+        if (field?.type === "REFERENCE_TABLE") {
+          return field.properties.referenceTable.relatedApp;
+        }
+        return field !== undefined && "lookup" in field.properties
+          ? field.properties.lookup?.relatedApp
+          : undefined;
+      }
+
+      describe.each(holders)("$name", ({ schemaWith, path, messagePrefix }) => {
+        it.each<[string, Record<string, unknown>, unknown]>([
+          ["app だけ", { app: "10" }, { app: "10" }],
+          ["数値の app だけ", { app: 10 }, { app: "10" }],
+          ["code だけ", { code: "CUSTOMERS" }, { code: "CUSTOMERS" }],
+          [
+            "app と値なし（null）の code",
+            { app: "10", code: null },
+            { app: "10" },
           ],
+          [
+            "値なし（null）の app と code",
+            { app: null, code: "CUSTOMERS" },
+            { code: "CUSTOMERS" },
+          ],
+          ["空の app だけ", { app: "" }, { app: "" }],
+          ["空の code だけ", { code: "" }, { code: "" }],
+        ])("%s を書いた relatedApp を読める", (_, relatedApp, expected) => {
+          expect(
+            relatedAppIn(SchemaParser.parse(schemaWith(relatedApp))),
+          ).toStrictEqual(expected);
         });
 
-        const expected = { lookup: lookupWith({ app: "10" }) };
-        expect(
-          schema.fields.get("customer" as FieldCode)?.properties,
-        ).toStrictEqual(expected);
-        const table = schema.fields.get("items" as FieldCode);
-        expect(table?.type).toBe("SUBTABLE");
-        if (table?.type === "SUBTABLE") {
-          expect(
-            table.properties.fields.get("customer" as FieldCode)?.properties,
-          ).toStrictEqual(expected);
-        }
+        it.each<[string, Record<string, unknown>, string]>([
+          [
+            "app と code の両方",
+            { app: "10", code: "CUSTOMERS" },
+            `must have only one of "${path}.app" and "${path}.code"`,
+          ],
+          [
+            "app と空の code の両方",
+            { app: "10", code: "" },
+            `must have only one of "${path}.app" and "${path}.code"`,
+          ],
+          ["どちらも無い", {}, `must have "${path}.app" or "${path}.code"`],
+          [
+            "どちらも値なし（null）",
+            { app: null, code: null },
+            `must have "${path}.app" or "${path}.code"`,
+          ],
+        ])("%s を書いた relatedApp は InvalidSchemaStructure エラーになる", (_, relatedApp, message) => {
+          try {
+            SchemaParser.parse(schemaWith(relatedApp));
+            expect.unreachable("should throw");
+          } catch (e) {
+            expect(e).toBeInstanceOf(BusinessRuleError);
+            expect((e as BusinessRuleError).code).toBe(
+              FormSchemaErrorCode.FsInvalidSchemaStructure,
+            );
+            expect((e as BusinessRuleError).message).toBe(
+              `${messagePrefix} ${message}`,
+            );
+          }
+        });
+
+        it("relatedAppWithBothKeys が app なら、app と code の両方を書いた relatedApp を app で読む", () => {
+          const schema = SchemaParser.parse(
+            schemaWith({ app: "10", code: "CUSTOMERS" }),
+            { relatedAppWithBothKeys: "app" },
+          );
+
+          expect(relatedAppIn(schema)).toStrictEqual({ app: "10" });
+        });
+
+        it("relatedAppWithBothKeys が app でも、どちらも無い relatedApp は InvalidSchemaStructure エラーになる", () => {
+          expect(() =>
+            SchemaParser.parse(schemaWith({}), {
+              relatedAppWithBothKeys: "app",
+            }),
+          ).toThrow(
+            `${messagePrefix} must have "${path}.app" or "${path}.code"`,
+          );
+        });
       });
     });
 

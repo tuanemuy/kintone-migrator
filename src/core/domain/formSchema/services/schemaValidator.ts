@@ -4,6 +4,7 @@ import type {
   FieldDefinition,
   LinkFieldDefinition,
   NumberFieldDefinition,
+  RelatedApp,
   SelectionFieldDefinition,
   SingleLineTextFieldDefinition,
 } from "../valueObject";
@@ -230,6 +231,17 @@ function validateReferenceTableSize(field: FieldDefinition): ValidationIssue[] {
   return [];
 }
 
+/** The key `relatedApp` refers to the related app by, when its value is empty. */
+function emptyRelatedAppKey(
+  relatedApp: RelatedApp,
+): "app" | "code" | undefined {
+  const [key, value] =
+    relatedApp.code !== undefined
+      ? (["code", relatedApp.code] as const)
+      : (["app", relatedApp.app] as const);
+  return value.trim().length === 0 ? key : undefined;
+}
+
 function validateLookupStructure(field: FieldDefinition): ValidationIssue[] {
   if (!isLookupCapableField(field)) return [];
 
@@ -238,14 +250,15 @@ function validateLookupStructure(field: FieldDefinition): ValidationIssue[] {
 
   const issues: ValidationIssue[] = [];
 
-  if (lookup.relatedApp.app.trim().length === 0) {
+  const emptyKey = emptyRelatedAppKey(lookup.relatedApp);
+  if (emptyKey !== undefined) {
     issues.push(
       issue(
         "error",
         field.code,
         field.type,
         "INVALID_LOOKUP",
-        `Field "${field.code}" lookup must have a non-empty "relatedApp.app"`,
+        `Field "${field.code}" lookup must have a non-empty "relatedApp.${emptyKey}"`,
       ),
     );
   }
@@ -286,15 +299,17 @@ function validateReferenceTableRelatedApp(
 ): ValidationIssue[] {
   if (field.type !== "REFERENCE_TABLE") return [];
 
-  const { app } = field.properties.referenceTable.relatedApp;
-  if (app.trim().length === 0) {
+  const emptyKey = emptyRelatedAppKey(
+    field.properties.referenceTable.relatedApp,
+  );
+  if (emptyKey !== undefined) {
     return [
       issue(
         "error",
         field.code,
         field.type,
         "EMPTY_RELATED_APP",
-        `Field "${field.code}" referenceTable.relatedApp.app must be non-empty`,
+        `Field "${field.code}" referenceTable.relatedApp.${emptyKey} must be non-empty`,
       ),
     ];
   }

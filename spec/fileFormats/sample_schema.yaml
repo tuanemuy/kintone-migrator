@@ -55,7 +55,7 @@ layout:
         label: 仕入先ID
         size: { width: "200" }
         lookup:
-          relatedApp: { app: "15" }
+          relatedApp: { code: SUPPLIERS }
           relatedKeyField: supplier_id
           fieldMappings:
             - { field: supplier_name, relatedField: name }
@@ -474,7 +474,7 @@ layout:
     layout:
       - type: ROW
         fields:
-          - code: price
+          - code: group_price
             type: NUMBER
             label: 金額（グループ内）
             size: { width: "200" }
@@ -486,7 +486,7 @@ layout:
     layout:
       - type: ROW
         fields:
-          - code: memo
+          - code: group_memo
             type: MULTI_LINE_TEXT
             label: メモ（グループ内）
             size: { width: "400" }
@@ -579,6 +579,6 @@ layout:
         label: 最小関連テーブル
         size: { width: "400" }
         referenceTable:
-          relatedApp: { app: "100" }
+          relatedApp: { code: ORDERS }
           condition: { field: order_number, relatedField: order_id }
           displayFields: [order_id]

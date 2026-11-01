@@ -1,5 +1,10 @@
 import type { FormLayout, LayoutItem, LayoutRow } from "../entity";
-import type { FieldCode, FieldDefinition, LayoutElement } from "../valueObject";
+import type {
+  AnyRelatedApp,
+  FieldCode,
+  FieldDefinition,
+  LayoutElement,
+} from "../valueObject";
 
 function enrichLayoutElement(
   element: LayoutElement,
@@ -83,8 +88,8 @@ export function enrichLayoutWithFields(
   return layout.map((item) => enrichLayoutItem(item, fields));
 }
 
-export function collectSubtableInnerFieldCodes(
-  fields: ReadonlyMap<FieldCode, FieldDefinition>,
+export function collectSubtableInnerFieldCodes<R extends AnyRelatedApp>(
+  fields: ReadonlyMap<FieldCode, FieldDefinition<R>>,
 ): ReadonlySet<FieldCode> {
   const innerCodes = new Set<FieldCode>();
   for (const def of fields.values()) {

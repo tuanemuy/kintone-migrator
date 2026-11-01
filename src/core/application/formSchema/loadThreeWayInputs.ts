@@ -1,16 +1,30 @@
 import { Schema } from "@/core/domain/formSchema/entity";
 import { enrichLayoutWithFields } from "@/core/domain/formSchema/services/layoutEnricher";
+import {
+  projectRemoteFields,
+  restateBaseFields,
+} from "@/core/domain/formSchema/services/relatedAppProjection";
 import type { SchemaState } from "@/core/domain/formSchema/state";
+import type {
+  FieldCode,
+  RemoteFieldDefinition,
+} from "@/core/domain/formSchema/valueObject";
 import type { FormSchemaDiffContainer } from "../container/formSchema";
 import { parseSchemaText } from "./parseSchema";
 import { loadState } from "./schemaStateIo";
 
 export type ThreeWayInputs = Readonly<{
-  /** Parsed state (base snapshot), or undefined on first run. */
+  /**
+   * Parsed state (base snapshot), or undefined on first run. Its related apps
+   * are restated the way local refers to them (see `restateBaseFields`).
+   */
   state: SchemaState | undefined;
   /** Local schema parsed from the YAML file, or undefined when absent. */
   local: Schema | undefined;
-  /** Remote schema reconstructed from getFields/getLayout. */
+  /**
+   * Remote schema reconstructed from getFields/getLayout, referring to related
+   * apps the way local does (see `projectRemoteFields`).
+   */
   remote: Schema;
   /** Current remote (preview) revision observed via getRevision. */
   remoteRevision: string;
@@ -40,9 +54,15 @@ export async function loadThreeWayInputs(
     ? parseSchemaText(container.configCodec, localResult.content)
     : undefined;
 
+  // Base and remote both refer to related apps the way local does, so how a
+  // related app is written (by app ID or by app code) is never a difference.
+  const projectedRemoteFields = projectRemoteFields(
+    remoteFields,
+    local?.fields,
+  );
   const enrichedRemoteLayout = enrichLayoutWithFields(
     remoteLayout,
-    remoteFields,
+    projectedRemoteFields,
   );
   // base/local are layout-derived (round-tripped through SchemaSerializer /
   // SchemaParser, which serialize layout only), so their field maps contain only
@@ -54,7 +74,24 @@ export async function loadThreeWayInputs(
   // normalization (normalizeForThreeWay) only drops GROUP / subtable-inner, not
   // layout-non-placed fields, so this relies on that kintone invariant rather
   // than re-deriving remote fields from layout.
-  const remote = Schema.create(remoteFields, enrichedRemoteLayout);
+  const remote = Schema.create(projectedRemoteFields, enrichedRemoteLayout);
 
-  return { state, local, remote, remoteRevision };
+  return {
+    state:
+      state === undefined
+        ? undefined
+        : { schema: restateBase(state.schema, remoteFields, local) },
+    local,
+    remote,
+    remoteRevision,
+  };
+}
+
+function restateBase(
+  base: Schema,
+  remoteFields: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
+  local: Schema | undefined,
+): Schema {
+  const fields = restateBaseFields(base.fields, remoteFields, local?.fields);
+  return Schema.create(fields, enrichLayoutWithFields(base.layout, fields));
 }
