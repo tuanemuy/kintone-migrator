@@ -18,10 +18,11 @@ const KINTONE_APP_NOT_FOUND_CODE = "GAIA_AP01";
  * Reads both generations' revisions through `getAppAcl`.
  *
  * The app revision is shared by every settings endpoint, so any getter would
- * do; `getAppAcl` is the one that needs only app management permission for
- * both generations (other published getters such as `getViews` also require
- * record view permission), so this works with the same credentials as every
- * other command.
+ * do. `getAppAcl` is documented to need only app management permission for
+ * both generations, whereas published getters such as `getFormFields`,
+ * `getViews` and `getAppSettings` are documented to need record view (or add)
+ * permission; an API token with app management permission alone is refused
+ * by several of them (`GAIA_NO01`).
  */
 export class KintoneAppRevisionGenerationsReader
   implements AppRevisionGenerationsReader

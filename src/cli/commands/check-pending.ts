@@ -11,16 +11,12 @@ import type { DeployState } from "@/core/domain/appRevision/valueObject";
 import type { AppName } from "@/core/domain/projectConfig/valueObject";
 import { kintoneArgs, multiAppArgs, resolveConfig } from "../config";
 import { handleCliError } from "../handleError";
-import {
-  printAppHeader,
-  printAppsWithUndeployedChanges,
-  printDeployState,
-} from "../output";
+import { printAppsWithUndeployedChanges, printDeployState } from "../output";
 import {
   printAvailableApps,
   resolveAppCliConfig,
   routeMultiApp,
-  runMultiAppWithFailCheck,
+  runMultiAppWithHeaders,
 } from "../projectConfig";
 
 const checkPendingArgs = {
@@ -81,8 +77,7 @@ export default define({
         multiApp: async (plan, projectConfig) => {
           const appsWithUndeployedChanges: AppName[] = [];
           try {
-            await runMultiAppWithFailCheck(plan, async (app) => {
-              printAppHeader(app.name, app.appId);
+            await runMultiAppWithHeaders(plan, async (app) => {
               const state = await runCheck(
                 resolveAppCliConfig(app, projectConfig, values),
               );
@@ -104,7 +99,7 @@ export default define({
           }
           p.log.success("No undeployed changes in any app.");
         },
-        listApps: async (projectConfig) => {
+        noAppSelected: async (projectConfig) => {
           printAvailableApps(projectConfig);
           p.log.error(
             `No app was checked. Pass ${pc.cyan("--app <name>")} or ${pc.cyan("--all")} to check for undeployed changes.`,

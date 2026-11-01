@@ -265,25 +265,25 @@ describe("routeMultiApp", () => {
   }
 
   function makeHandlers(
-    listApps?: MultiAppHandlers["listApps"],
+    noAppSelected?: MultiAppHandlers["noAppSelected"],
   ): MultiAppHandlers {
     return {
       singleLegacy: vi.fn(),
       singleApp: vi.fn(),
       multiApp: vi.fn(),
-      listApps,
+      noAppSelected,
     };
   }
 
-  it("アプリが選ばれていなければ listApps に設定を渡し、どのアプリも実行しない", async () => {
+  it("アプリが選ばれていなければ noAppSelected に設定を渡し、どのアプリも実行しない", async () => {
     await withProjectConfigFile(async (configPath) => {
-      const listApps = vi.fn(async () => {});
-      const handlers = makeHandlers(listApps);
+      const noAppSelected = vi.fn(async () => {});
+      const handlers = makeHandlers(noAppSelected);
 
       await routeMultiApp({ config: configPath }, handlers);
 
-      expect(listApps).toHaveBeenCalledTimes(1);
-      expect(listApps).toHaveBeenCalledWith(
+      expect(noAppSelected).toHaveBeenCalledTimes(1);
+      expect(noAppSelected).toHaveBeenCalledWith(
         expect.objectContaining({
           apps: new Map([
             ["customer", expect.objectContaining({ appId: "10" })],
@@ -297,7 +297,7 @@ describe("routeMultiApp", () => {
     });
   });
 
-  it("listApps が無ければ従来どおりアプリ一覧を表示する", async () => {
+  it("noAppSelected が無ければアプリ一覧を表示する", async () => {
     await withProjectConfigFile(async (configPath) => {
       const handlers = makeHandlers();
 

@@ -290,7 +290,7 @@ What the result does and does not tell you:
 
 With `--all`, every app is checked even when an earlier one has undeployed changes; the run ends with the list of those apps (`Undeployed changes in N app(s): ...`) and exit code 1, or with `No undeployed changes in any app.` and exit code 0. In the per-app summary, `Succeeded` means the check ran, so an app with undeployed changes is listed as `Succeeded` too. A read failure stops the run (fail-fast) after listing the apps with undeployed changes found so far. With a project config but none of `--app`, `--all`, or `--app-id`, the command lists the apps and exits with code 1 without checking any of them.
 
-The check needs only app management permission -- the same permission every other command needs -- so an API token for this tool works as is.
+The check needs only app management permission for the app; an API token with just that permission is enough.
 
 ### `schema` -- Form Schema Management
 

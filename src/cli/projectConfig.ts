@@ -225,7 +225,7 @@ export type MultiAppHandlers = {
    * Runs when a project config exists but no app was selected. Defaults to
    * {@link printAvailableApps}.
    */
-  readonly listApps?: (config: ProjectConfig) => Promise<void>;
+  readonly noAppSelected?: (config: ProjectConfig) => Promise<void>;
 };
 
 export async function routeMultiApp(
@@ -240,8 +240,8 @@ export async function routeMultiApp(
   }
 
   if (target.mode === "list-apps") {
-    if (handlers.listApps) {
-      await handlers.listApps(target.config);
+    if (handlers.noAppSelected) {
+      await handlers.noAppSelected(target.config);
     } else {
       printAvailableApps(target.config);
     }

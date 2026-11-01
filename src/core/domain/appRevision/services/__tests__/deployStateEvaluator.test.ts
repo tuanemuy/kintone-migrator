@@ -24,16 +24,16 @@ describe("DeployStateEvaluator.evaluate", () => {
     });
   });
 
-  it("revision は数値ではなく文字列として比べる（桁数が違えば pending）", () => {
+  it("revision は文字列として比べる（数値として等しくても文字列が違えば pending）", () => {
     expect(
       DeployStateEvaluator.evaluate({
-        preview: "10",
-        published: { kind: "deployed", revision: "9" },
+        preview: "04",
+        published: { kind: "deployed", revision: "4" },
       }),
     ).toEqual({
       kind: "pending",
-      previewRevision: "10",
-      publishedRevision: "9",
+      previewRevision: "04",
+      publishedRevision: "4",
     });
   });
 

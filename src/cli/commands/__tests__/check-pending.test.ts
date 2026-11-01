@@ -130,23 +130,30 @@ afterEach(() => {
   process.exitCode = undefined;
 });
 
+// The two single-app entrances must behave the same: legacy (--app-id / env)
+// and --app <name>.
+const SINGLE_APP_ENTRANCES = [
+  {
+    label: "legacy",
+    appId: "100",
+    invoke: (handlers: MultiAppHandlers) => handlers.singleLegacy(),
+  },
+  {
+    label: "--app",
+    appId: "200",
+    invoke: (handlers: MultiAppHandlers) => {
+      const app = makeApp("customer", "200");
+      return handlers.singleApp(app, makeProjectConfig([app]));
+    },
+  },
+] as const;
+
 describe("check-pending command", () => {
-  describe("単一アプリ", () => {
-    it.each([
-      [
-        "legacy",
-        (handlers: MultiAppHandlers) => handlers.singleLegacy(),
-        "100",
-      ],
-      [
-        "--app",
-        (handlers: MultiAppHandlers) => {
-          const app = makeApp("customer", "200");
-          return handlers.singleApp(app, makeProjectConfig([app]));
-        },
-        "200",
-      ],
-    ])("%s: upToDate なら revision を表示し、終了コードを変えない", async (_label, invoke, appId) => {
+  describe.each(SINGLE_APP_ENTRANCES)("単一アプリ（$label）", ({
+    appId,
+    invoke,
+  }) => {
+    it("upToDate なら revision を表示し、終了コードを変えない", async () => {
       givenRemoteApps({ [appId]: UP_TO_DATE });
       routeTo(invoke);
 
@@ -162,21 +169,7 @@ describe("check-pending command", () => {
       expect(process.exitCode).toBeUndefined();
     });
 
-    it.each([
-      [
-        "legacy",
-        (handlers: MultiAppHandlers) => handlers.singleLegacy(),
-        "100",
-      ],
-      [
-        "--app",
-        (handlers: MultiAppHandlers) => {
-          const app = makeApp("customer", "200");
-          return handlers.singleApp(app, makeProjectConfig([app]));
-        },
-        "200",
-      ],
-    ])("%s: pending なら両世代の revision と deploy 処理中の可能性を表示し、終了コード 1", async (_label, invoke, appId) => {
+    it("pending なら両世代の revision と deploy 処理中の可能性を表示し、終了コード 1", async () => {
       givenRemoteApps({ [appId]: PENDING });
       routeTo(invoke);
 
@@ -191,8 +184,8 @@ describe("check-pending command", () => {
     });
 
     it("neverDeployed なら設定全体が公開されることを表示し、終了コード 1", async () => {
-      givenRemoteApps({ "100": NEVER_DEPLOYED });
-      routeTo((handlers) => handlers.singleLegacy());
+      givenRemoteApps({ [appId]: NEVER_DEPLOYED });
+      routeTo(invoke);
 
       await runCommand();
 
@@ -205,8 +198,8 @@ describe("check-pending command", () => {
 
     it("読み取りが失敗したらスピナーを止めてから handleCliError に渡す", async () => {
       const error = new NotFoundError(NotFoundErrorCode.NotFound, "missing");
-      givenRemoteApps({ "100": error });
-      routeTo((handlers) => handlers.singleLegacy());
+      givenRemoteApps({ [appId]: error });
+      routeTo(invoke);
 
       await runCommand();
 
@@ -230,6 +223,13 @@ describe("check-pending command", () => {
       await runCommand();
 
       expect(createDeployStateCliContainer).toHaveBeenCalledTimes(3);
+      expect(logged(p.log.step)).toEqual(
+        expect.arrayContaining([
+          "\n=== [a] (app: 1) ===",
+          "\n=== [b] (app: 2) ===",
+          "\n=== [c] (app: 3) ===",
+        ]),
+      );
       expect(logged(p.log.success)).toContain(
         "No undeployed changes in any app.",
       );
@@ -250,6 +250,15 @@ describe("check-pending command", () => {
       ).toEqual(["1", "2", "3"]);
       expect(logged(p.log.warn)).toContain(
         "Undeployed changes in 2 app(s): a, c",
+      );
+      const headerOfA = logged(p.log.step).indexOf("\n=== [a] (app: 1) ===");
+      const verdictOfA = logged(p.log.warn).findIndex((m) =>
+        m.startsWith("Undeployed changes are pending"),
+      );
+      expect(
+        vi.mocked(p.log.step).mock.invocationCallOrder[headerOfA],
+      ).toBeLessThan(
+        vi.mocked(p.log.warn).mock.invocationCallOrder[verdictOfA] ?? 0,
       );
       expect(logged(p.log.success)).not.toContain(
         "No undeployed changes in any app.",
@@ -294,17 +303,21 @@ describe("check-pending command", () => {
       expect(
         logged(p.log.warn).filter((m) => m.startsWith("Undeployed")),
       ).toEqual([]);
-      expect(handleCliError).toHaveBeenCalled();
+      expect(createDeployStateCliContainer).toHaveBeenCalledTimes(2);
+      expect(logged(p.log.warn)).toContain("  - Skipped: c");
+      expect(handleCliError).toHaveBeenCalledWith(
+        expect.objectContaining({ code: "EXECUTION_ERROR" }),
+      );
     });
   });
 
   it("アプリが選ばれていなければ一覧を出し、何も判定せずに終了コード 1", async () => {
     const config = makeProjectConfig([makeApp("a", "1")]);
     routeTo(async (handlers) => {
-      if (!handlers.listApps) {
-        throw new Error("listApps handler is not set");
+      if (!handlers.noAppSelected) {
+        throw new Error("noAppSelected handler is not set");
       }
-      await handlers.listApps(config);
+      await handlers.noAppSelected(config);
     });
 
     await runCommand();
