@@ -8,6 +8,7 @@ import adminNotesGroup from "./commands/admin-notes";
 import appAclGroup from "./commands/app-acl";
 import applyCommand from "./commands/apply";
 import captureCommand from "./commands/capture";
+import checkPendingCommand from "./commands/check-pending";
 import customizeGroup from "./commands/customize";
 import diffCommand from "./commands/diff";
 import fieldAclGroup from "./commands/field-acl";
@@ -51,6 +52,7 @@ await cli(process.argv.slice(2), main, {
     diff: diffCommand,
     pull: pullCommand,
     push: pushCommand,
+    "check-pending": checkPendingCommand,
     schema: schemaGroup,
     seed: seedGroup,
     customize: customizeGroup,

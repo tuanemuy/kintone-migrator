@@ -278,6 +278,57 @@ Execution stopped.
 
 ---
 
+## シナリオ6: 未デプロイの編集が残っていないかを確認する
+
+### 目的
+
+kintone の deploy はアプリの preview（動作テスト環境）の設定をまるごと公開する。自分の変更を preview に入れる前に、preview に未デプロイの編集が残っていないか（＝今 deploy したら何かが一緒に公開されるか）を確かめる。フォームに限らず、ビュー・通知・権限・このツールが扱わない設定（カテゴリー・API トークンなど）も含めてアプリ単位で判定する。CLIでは `check-pending` で実行する。
+
+### 前提
+
+- 判定は誰の編集かを区別しない。自分が以前に push して deploy しなかった変更や、途中で失敗した push が残した変更も「未デプロイの編集あり」になる
+- 判定は実行した時点のもので、判定の後から自分の deploy までの間に他人が preview に入れた編集は拾えない
+- 必要な権限はアプリ管理権限だけ
+
+### フロー（CLI）
+
+1. 利用者は `check-pending --app <name>`（または `--app-id <id>`、`--all`）を実行する
+2. システムは preview と published（運用環境）の app revision を読み、判定を表示する（判定の定義は [AppRevision ユースケース](../usecases/appRevision.md#checkdeploystate)）
+3. 未デプロイの編集が無ければ終了コード 0、あれば（一度も deploy していない場合を含む）終了コード 1 で終わる
+
+### 出力例
+
+```
+◇  Check complete.
+◆  No undeployed changes (preview and published are both at revision 4).
+```
+
+```
+◇  Check complete.
+▲  Undeployed changes are pending: preview is at revision 5, published is at revision 4. A deploy would publish them.
+   A deploy that is still in progress also shows up this way.
+```
+
+```
+◇  Check complete.
+▲  The app has never been deployed (preview revision 2). A deploy would publish its entire configuration.
+```
+
+### Multi-Appモード
+
+- `--all` は全アプリを依存順に判定し、未デプロイの編集があるアプリが見つかっても残りのアプリの判定を続ける
+- 最後に未デプロイの編集があるアプリの一覧（`Undeployed changes in N app(s): a, c`）を出して終了コード 1 で終わる。1 件も無ければ `No undeployed changes in any app.` を出して終了コード 0
+- 結果サマリーの `Succeeded` は「判定できた」ことを表し、未デプロイの編集があるアプリも `Succeeded` になる
+- 読み取りに失敗したら Fail-Fast で停止する。それまでに見つけた未デプロイの編集があるアプリの一覧を出してからエラーを表示する。停止した実行では `No undeployed changes in any app.` を出さない
+- プロジェクト設定ファイルがあり `--app` / `--all` / `--app-id` のいずれも無い場合は、アプリ一覧を表示したうえで「どのアプリも判定していない」ことをエラーとして出し、終了コード 1 で終わる
+
+### エラー時
+
+- アプリが存在しない・権限が無い・認証に失敗した場合: 各エラー種別（`NotFoundError` / `ForbiddenError` / `UnauthenticatedError`）を表示し、終了コード 1
+- published の読み取りが「アプリが見つからない」以外の理由で失敗した場合: 一度も deploy していないとは判定せず、エラーを表示する
+
+---
+
 ## 横断ルール（全シナリオ共通）
 
 FormSchema 管理（シナリオ1〜4）と Multi-App 管理（シナリオ5）以外の設定管理シナリオは、大半が共通の apply / capture / diff パターンに従う。本節で横断ルールを定め、続く「共通シナリオテンプレート」と「設定種別ごとの差分一覧」で網羅性を担保する。
@@ -292,6 +343,7 @@ FormSchema 管理（シナリオ1〜4）と Multi-App 管理（シナリオ5）�
 | フォームリセット（シナリオ3a） | 非提供 | 提供 | `schema override --reset`。UIには対応操作を置かない |
 | その他すべての設定管理（シード・カスタマイズ・各種ACL・ビュー・プロセス管理・一般設定・通知・レポート・アクション・管理者用メモ・プラグイン） | 非提供 | 提供 | CLI中心。`<domain> apply` / `<domain> capture`（+ `diff` を持つドメインあり） |
 | Multi-App 一括操作（シナリオ5） | 非提供 | 提供 | `--all` / `--app <name>` |
+| 未デプロイの編集の確認（シナリオ6） | 非提供 | 提供 | `check-pending` |
 
 - UIシナリオ（FormSchema）の判断・確認はダイアログで完結し、ページ遷移を行わない。
 - CLIシナリオの確認は標準入力のプロンプト（`y/N`）で行う。

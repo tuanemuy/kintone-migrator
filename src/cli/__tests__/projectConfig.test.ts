@@ -1,3 +1,6 @@
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ValidationError } from "@/core/application/error";
 import type {
@@ -35,6 +38,8 @@ import * as p from "@clack/prompts";
 import { executeMultiApp } from "@/core/application/projectConfig/executeMultiApp";
 import { printMultiAppResult } from "../output";
 import {
+  type MultiAppHandlers,
+  routeMultiApp,
   runMultiAppWithFailCheck,
   validateExclusiveArgs,
 } from "../projectConfig";
@@ -239,5 +244,69 @@ describe("runMultiAppWithFailCheck", () => {
     );
 
     expect(p.log.warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("routeMultiApp", () => {
+  async function withProjectConfigFile(
+    run: (configPath: string) => Promise<void>,
+  ): Promise<void> {
+    const dir = await mkdtemp(join(tmpdir(), "route-multi-app-test-"));
+    try {
+      const configPath = join(dir, "kintone-migrator.yaml");
+      await writeFile(
+        configPath,
+        'domain: example.cybozu.com\napps:\n  customer:\n    appId: "10"\n',
+      );
+      await run(configPath);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  function makeHandlers(
+    noAppSelected?: MultiAppHandlers["noAppSelected"],
+  ): MultiAppHandlers {
+    return {
+      singleLegacy: vi.fn(),
+      singleApp: vi.fn(),
+      multiApp: vi.fn(),
+      noAppSelected,
+    };
+  }
+
+  it("アプリが選ばれていなければ noAppSelected に設定を渡し、どのアプリも実行しない", async () => {
+    await withProjectConfigFile(async (configPath) => {
+      const noAppSelected = vi.fn(async () => {});
+      const handlers = makeHandlers(noAppSelected);
+
+      await routeMultiApp({ config: configPath }, handlers);
+
+      expect(noAppSelected).toHaveBeenCalledTimes(1);
+      expect(noAppSelected).toHaveBeenCalledWith(
+        expect.objectContaining({
+          apps: new Map([
+            ["customer", expect.objectContaining({ appId: "10" })],
+          ]),
+        }),
+      );
+      expect(p.log.info).not.toHaveBeenCalled();
+      expect(handlers.singleLegacy).not.toHaveBeenCalled();
+      expect(handlers.singleApp).not.toHaveBeenCalled();
+      expect(handlers.multiApp).not.toHaveBeenCalled();
+    });
+  });
+
+  it("noAppSelected が無ければアプリ一覧を表示する", async () => {
+    await withProjectConfigFile(async (configPath) => {
+      const handlers = makeHandlers();
+
+      await routeMultiApp({ config: configPath }, handlers);
+
+      expect(p.log.info).toHaveBeenCalledWith(
+        "Available apps in project config:",
+      );
+      expect(handlers.singleLegacy).not.toHaveBeenCalled();
+    });
   });
 });
