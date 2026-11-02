@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BusinessRuleError } from "@/core/domain/error";
 import type { Schema } from "../../entity";
+import type { FieldCode } from "../../valueObject";
 import { SchemaParser } from "../schemaParser";
 import { SchemaStateParser } from "../schemaStateParser";
 import { SchemaStateSerializer } from "../schemaStateSerializer";
@@ -97,6 +98,55 @@ describe("SchemaState serialize/parse", () => {
     expect(parsed.schema.layout).toEqual(schema.layout);
     // No revision leaks back out; the migrated snapshot drops it.
     expect(SchemaStateSerializer.serialize(parsed).revision).toBeUndefined();
+  });
+
+  describe("relatedApp", () => {
+    const stateWithRelatedApp = (relatedApp: Record<string, unknown>) => ({
+      layout: [
+        {
+          type: "REFERENCE_TABLE",
+          code: "ref",
+          label: "参照",
+          referenceTable: {
+            relatedApp,
+            condition: { field: "name", relatedField: "rel" },
+            displayFields: ["item_name"],
+          },
+        },
+      ],
+    });
+    const relatedAppOf = (schema: Schema) => {
+      const field = schema.fields.get("ref" as FieldCode);
+      return field?.type === "REFERENCE_TABLE"
+        ? field.properties.referenceTable.relatedApp
+        : undefined;
+    };
+
+    it.each<[string, Record<string, unknown>, unknown]>([
+      [
+        "旧版の app と code の両方",
+        { app: "123", code: "MEMBERS" },
+        { app: "123" },
+      ],
+      ["code だけ", { code: "MEMBERS" }, { code: "MEMBERS" }],
+      [
+        "値なし（null）の app と code",
+        { app: null, code: "MEMBERS" },
+        { code: "MEMBERS" },
+      ],
+    ])("%s を書いた relatedApp を読める", (_, relatedApp, expected) => {
+      const { schema } = SchemaStateParser.parse(
+        stateWithRelatedApp(relatedApp),
+      );
+
+      expect(relatedAppOf(schema)).toStrictEqual(expected);
+    });
+
+    it("app も code も無い relatedApp は BusinessRuleError をスローする", () => {
+      expect(() => SchemaStateParser.parse(stateWithRelatedApp({}))).toThrow(
+        BusinessRuleError,
+      );
+    });
   });
 
   it("非オブジェクトは BusinessRuleError をスローする", () => {

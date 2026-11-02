@@ -10,17 +10,26 @@ export type LookupFieldMapping = Readonly<{
   relatedField: string;
 }>;
 
-/**
- * The app a lookup or a reference table refers to, identified by app ID.
- *
- * kintone also returns the related app's app code as `code`. It is an
- * attribute of the related app derived from its ID, not a setting of the
- * field, so it is not part of this value.
- */
-export type RelatedApp = Readonly<{ app: string }>;
+/** Refers to the related app by its app ID, which differs per environment. */
+export type RelatedAppById = Readonly<{ app: string; code?: never }>;
 
-export type Lookup = Readonly<{
-  relatedApp: RelatedApp;
+/** Refers to the related app by its app code, which stays across environments. */
+export type RelatedAppByCode = Readonly<{ code: string; app?: never }>;
+
+/** How a schema refers to the app a lookup or a reference table uses. */
+export type RelatedApp = RelatedAppById | RelatedAppByCode;
+
+/**
+ * The related app as kintone reports it: by both its app ID and its app code
+ * (`""` when the app has none). It becomes a {@link RelatedApp} before it is
+ * compared, sent or written.
+ */
+export type RemoteRelatedApp = Readonly<{ app: string; code: string }>;
+
+export type AnyRelatedApp = RelatedApp | RemoteRelatedApp;
+
+export type Lookup<R extends AnyRelatedApp = RelatedApp> = Readonly<{
+  relatedApp: R;
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
@@ -108,7 +117,9 @@ type FieldDefinitionBase = Readonly<{
 }>;
 
 // Text fields
-export type SingleLineTextFieldDefinition = FieldDefinitionBase &
+export type SingleLineTextFieldDefinition<
+  R extends AnyRelatedApp = RelatedApp,
+> = FieldDefinitionBase &
   Readonly<{
     type: "SINGLE_LINE_TEXT";
     properties: Readonly<{
@@ -119,7 +130,7 @@ export type SingleLineTextFieldDefinition = FieldDefinitionBase &
       maxLength?: string;
       expression?: string;
       hideExpression?: boolean;
-      lookup?: Lookup;
+      lookup?: Lookup<R>;
     }>;
   }>;
 
@@ -144,22 +155,23 @@ export type RichTextFieldDefinition = FieldDefinitionBase &
   }>;
 
 // Number fields
-export type NumberFieldDefinition = FieldDefinitionBase &
-  Readonly<{
-    type: "NUMBER";
-    properties: Readonly<{
-      required?: boolean;
-      unique?: boolean;
-      defaultValue?: string;
-      minValue?: string;
-      maxValue?: string;
-      digit?: boolean;
-      displayScale?: string;
-      unit?: string;
-      unitPosition?: "BEFORE" | "AFTER";
-      lookup?: Lookup;
+export type NumberFieldDefinition<R extends AnyRelatedApp = RelatedApp> =
+  FieldDefinitionBase &
+    Readonly<{
+      type: "NUMBER";
+      properties: Readonly<{
+        required?: boolean;
+        unique?: boolean;
+        defaultValue?: string;
+        minValue?: string;
+        maxValue?: string;
+        digit?: boolean;
+        displayScale?: string;
+        unit?: string;
+        unitPosition?: "BEFORE" | "AFTER";
+        lookup?: Lookup<R>;
+      }>;
     }>;
-  }>;
 
 export type CalcFieldDefinition = FieldDefinitionBase &
   Readonly<{
@@ -242,19 +254,20 @@ export type DateTimeFieldDefinition = FieldDefinitionBase &
   }>;
 
 // Link field
-export type LinkFieldDefinition = FieldDefinitionBase &
-  Readonly<{
-    type: "LINK";
-    properties: Readonly<{
-      required?: boolean;
-      unique?: boolean;
-      defaultValue?: string;
-      minLength?: string;
-      maxLength?: string;
-      protocol?: "WEB" | "CALL" | "MAIL";
-      lookup?: Lookup;
+export type LinkFieldDefinition<R extends AnyRelatedApp = RelatedApp> =
+  FieldDefinitionBase &
+    Readonly<{
+      type: "LINK";
+      properties: Readonly<{
+        required?: boolean;
+        unique?: boolean;
+        defaultValue?: string;
+        minLength?: string;
+        maxLength?: string;
+        protocol?: "WEB" | "CALL" | "MAIL";
+        lookup?: Lookup<R>;
+      }>;
     }>;
-  }>;
 
 // User select fields
 export type UserSelectFieldDefinition = FieldDefinitionBase &
@@ -286,20 +299,23 @@ export type GroupFieldDefinition = FieldDefinitionBase &
     }>;
   }>;
 
-export type SubtableFieldDefinition = FieldDefinitionBase &
-  Readonly<{
-    type: "SUBTABLE";
-    properties: Readonly<{
-      fields: ReadonlyMap<FieldCode, FieldDefinition>;
+export type SubtableFieldDefinition<R extends AnyRelatedApp = RelatedApp> =
+  FieldDefinitionBase &
+    Readonly<{
+      type: "SUBTABLE";
+      properties: Readonly<{
+        fields: ReadonlyMap<FieldCode, FieldDefinition<R>>;
+      }>;
     }>;
-  }>;
 
-export type ReferenceTableFieldDefinition = FieldDefinitionBase &
+export type ReferenceTableFieldDefinition<
+  R extends AnyRelatedApp = RelatedApp,
+> = FieldDefinitionBase &
   Readonly<{
     type: "REFERENCE_TABLE";
     properties: Readonly<{
       referenceTable: Readonly<{
-        relatedApp: RelatedApp;
+        relatedApp: R;
         condition: Readonly<{
           field: FieldCode;
           relatedField: FieldCode;
@@ -315,23 +331,49 @@ export type ReferenceTableFieldDefinition = FieldDefinitionBase &
   }>;
 
 // FieldDefinition union
-export type FieldDefinition =
-  | SingleLineTextFieldDefinition
+/**
+ * A field definition. `R` is how its related apps are held: a schema's
+ * {@link RelatedApp} by default, or a {@link RemoteRelatedApp} as read from
+ * kintone ({@link RemoteFieldDefinition}).
+ */
+export type FieldDefinition<R extends AnyRelatedApp = RelatedApp> =
+  | SingleLineTextFieldDefinition<R>
   | MultiLineTextFieldDefinition
   | RichTextFieldDefinition
-  | NumberFieldDefinition
+  | NumberFieldDefinition<R>
   | CalcFieldDefinition
   | MultiValueSelectionFieldDefinition
   | SingleValueSelectionFieldDefinition
   | DateFieldDefinition
   | TimeFieldDefinition
   | DateTimeFieldDefinition
-  | LinkFieldDefinition
+  | LinkFieldDefinition<R>
   | UserSelectFieldDefinition
   | FileFieldDefinition
   | GroupFieldDefinition
-  | SubtableFieldDefinition
-  | ReferenceTableFieldDefinition;
+  | SubtableFieldDefinition<R>
+  | ReferenceTableFieldDefinition<R>;
+
+/** A field definition as read from kintone. */
+export type RemoteFieldDefinition = FieldDefinition<RemoteRelatedApp>;
+
+/** A field type that can carry a `lookup`. */
+export type LookupCapableFieldDefinition<R extends AnyRelatedApp = RelatedApp> =
+  | SingleLineTextFieldDefinition<R>
+  | NumberFieldDefinition<R>
+  | LinkFieldDefinition<R>;
+
+const LOOKUP_CAPABLE_TYPES: ReadonlySet<FieldType> = new Set<FieldType>([
+  "SINGLE_LINE_TEXT",
+  "NUMBER",
+  "LINK",
+]);
+
+export function isLookupCapableField<R extends AnyRelatedApp>(
+  field: FieldDefinition<R>,
+): field is LookupCapableFieldDefinition<R> {
+  return LOOKUP_CAPABLE_TYPES.has(field.type);
+}
 
 // Layout-related types
 

@@ -43,7 +43,7 @@
       "label": "仕入先ID",
       "properties": {
         "lookup": {
-          "relatedApp": { "app": "15" },
+          "relatedApp": { "code": "SUPPLIERS" },
           "relatedKeyField": "supplier_id",
           "fieldMappings": [
             { "field": "supplier_name", "relatedField": "name" }
@@ -571,7 +571,7 @@
       "label": "最小関連テーブル",
       "properties": {
         "referenceTable": {
-          "relatedApp": { "app": "100" },
+          "relatedApp": { "code": "ORDERS" },
           "condition": {
             "field": "order_number",
             "relatedField": "order_id"

@@ -73,10 +73,14 @@ type LookupFieldMapping = Readonly<{
   relatedField: string;
 }>;
 
-type RelatedApp = Readonly<{ app: string }>;
+type RelatedAppById = Readonly<{ app: string; code?: never }>;
+type RelatedAppByCode = Readonly<{ code: string; app?: never }>;
+type RelatedApp = RelatedAppById | RelatedAppByCode;
 
-type Lookup = Readonly<{
-  relatedApp: RelatedApp;
+type RemoteRelatedApp = Readonly<{ app: string; code: string }>;
+
+type Lookup<R extends RelatedApp | RemoteRelatedApp = RelatedApp> = Readonly<{
+  relatedApp: R;
   relatedKeyField: string;
   fieldMappings: readonly LookupFieldMapping[];
   lookupPickerFields: readonly string[];
@@ -86,8 +90,9 @@ type Lookup = Readonly<{
 ```
 
 - ルックアップ対応フィールド（SINGLE_LINE_TEXT, NUMBER, LINK）の `lookup` プロパティで使用
-- `RelatedApp` は参照先アプリをアプリ ID で表す。`Lookup` と `ReferenceTableFieldDefinition` が共有する
-- kintone API は参照先アプリのアプリコードも `relatedApp.code` として返すが、`RelatedApp` は持たない。アプリコードはフィールドの設定ではなく、参照先アプリの属性（API がアプリ ID から導いて返す値）であるため。SchemaParser と kintone アダプターは `code` を捨てて `RelatedApp` を組み立てる
+- `RelatedApp` はスキーマが参照先アプリを指す方法で、アプリ ID（`{ app }`、環境ごとに違う）とアプリコード（`{ code }`、環境をまたいで同じ）のどちらか一方を持つ。両方を持つ値は型で作れない。`Lookup` と `ReferenceTableFieldDefinition` が共有する
+- `RemoteRelatedApp` は kintone API が返す参照先アプリで、アプリ ID とアプリコード（アプリコードの無いアプリは `""`）の両方を持つ。`FieldDefinition<R>` の型引数 `R` が `relatedApp` の型を決め、`RemoteFieldDefinition = FieldDefinition<RemoteRelatedApp>` がリモートのフィールド定義を表す。`RemoteFieldDefinition` は比較・送信・書き出しの前に、[RelatedAppProjection](#relatedappprojection) で `FieldDefinition` にする
+- SchemaParser はスキーマファイルの `relatedApp` を `RelatedApp` に、kintone アダプターは API の `relatedApp` を `RemoteRelatedApp` に組み立てる
 - `Lookup` は SchemaParser（スキーマファイル）と kintone アダプター（API レスポンス）がそれぞれ組み立て、未知のキーは持たない
 - `fieldMappings` は参照先フィールドとのマッピング定義
 - 未設定の `fieldMappings`・`lookupPickerFields` は空配列で表す。kintone API は未設定のこれらを空文字で返す
@@ -146,23 +151,27 @@ type FieldDefinitionBase = Readonly<{
   noLabel?: boolean;
 }>;
 
-type FieldDefinition =
-  | SingleLineTextFieldDefinition
+type FieldDefinition<R extends RelatedApp | RemoteRelatedApp = RelatedApp> =
+  | SingleLineTextFieldDefinition<R>
   | MultiLineTextFieldDefinition
   | RichTextFieldDefinition
-  | NumberFieldDefinition
+  | NumberFieldDefinition<R>
   | CalcFieldDefinition
   | SelectionFieldDefinition
   | DateFieldDefinition
   | TimeFieldDefinition
   | DateTimeFieldDefinition
-  | LinkFieldDefinition
+  | LinkFieldDefinition<R>
   | UserSelectFieldDefinition
   | FileFieldDefinition
   | GroupFieldDefinition
-  | SubtableFieldDefinition
-  | ReferenceTableFieldDefinition;
+  | SubtableFieldDefinition<R>
+  | ReferenceTableFieldDefinition<R>;
+
+type RemoteFieldDefinition = FieldDefinition<RemoteRelatedApp>;
 ```
+
+- 型引数 `R` は `relatedApp`（lookup・REFERENCE_TABLE）の型。既定の `RelatedApp` はスキーマの指定、`RemoteRelatedApp` は kintone から読んだ値を表す（[Lookup](#lookupfieldmapping--lookup)）。参照先を持つフィールド型（SINGLE_LINE_TEXT・NUMBER・LINK・SUBTABLE・REFERENCE_TABLE）だけが `R` を取る
 
 ### フィールド型別プロパティ
 
@@ -171,7 +180,7 @@ type FieldDefinition =
 #### テキスト系フィールド
 
 ```typescript
-type SingleLineTextFieldDefinition = FieldDefinitionBase &
+type SingleLineTextFieldDefinition<R> = FieldDefinitionBase &
   Readonly<{
     type: "SINGLE_LINE_TEXT";
     properties: Readonly<{
@@ -182,7 +191,7 @@ type SingleLineTextFieldDefinition = FieldDefinitionBase &
       maxLength?: string;
       expression?: string;
       hideExpression?: boolean;
-      lookup?: Lookup;
+      lookup?: Lookup<R>;
     }>;
   }>;
 
@@ -213,7 +222,7 @@ type RichTextFieldDefinition = FieldDefinitionBase &
 #### 数値系フィールド
 
 ```typescript
-type NumberFieldDefinition = FieldDefinitionBase &
+type NumberFieldDefinition<R> = FieldDefinitionBase &
   Readonly<{
     type: "NUMBER";
     properties: Readonly<{
@@ -226,7 +235,7 @@ type NumberFieldDefinition = FieldDefinitionBase &
       displayScale?: string;
       unit?: string;
       unitPosition?: "BEFORE" | "AFTER";
-      lookup?: Lookup;
+      lookup?: Lookup<R>;
     }>;
   }>;
 
@@ -321,7 +330,7 @@ type DateTimeFieldDefinition = FieldDefinitionBase &
 #### その他のフィールド
 
 ```typescript
-type LinkFieldDefinition = FieldDefinitionBase &
+type LinkFieldDefinition<R> = FieldDefinitionBase &
   Readonly<{
     type: "LINK";
     properties: Readonly<{
@@ -331,7 +340,7 @@ type LinkFieldDefinition = FieldDefinitionBase &
       minLength?: string;
       maxLength?: string;
       protocol?: "WEB" | "CALL" | "MAIL";
-      lookup?: Lookup;
+      lookup?: Lookup<R>;
     }>;
   }>;
 
@@ -366,20 +375,20 @@ type GroupFieldDefinition = FieldDefinitionBase &
     }>;
   }>;
 
-type SubtableFieldDefinition = FieldDefinitionBase &
+type SubtableFieldDefinition<R> = FieldDefinitionBase &
   Readonly<{
     type: "SUBTABLE";
     properties: Readonly<{
-      fields: ReadonlyMap<FieldCode, FieldDefinition>;
+      fields: ReadonlyMap<FieldCode, FieldDefinition<R>>;
     }>;
   }>;
 
-type ReferenceTableFieldDefinition = FieldDefinitionBase &
+type ReferenceTableFieldDefinition<R> = FieldDefinitionBase &
   Readonly<{
     type: "REFERENCE_TABLE";
     properties: Readonly<{
       referenceTable: Readonly<{
-        relatedApp: RelatedApp;
+        relatedApp: R;
         condition: Readonly<{
           field: FieldCode;
           relatedField: FieldCode;
@@ -611,11 +620,18 @@ const DiffDetector = {
 パース済みのスキーマデータ（`unknown`）を検証し、`Schema` に変換する純粋関数。YAMLテキストのパースはアプリケーション層（ConfigCodec）が担い、本関数はその結果である pre-parsed な `unknown` を受け取る。
 
 ```typescript
+type SchemaParseOptions = Readonly<{
+  relatedAppWithBothKeys: "reject" | "app";
+}>;
+
 const SchemaParser = {
-  parse: (parsed: unknown): Schema;
+  parse: (parsed: unknown, options?: SchemaParseOptions): Schema;
 };
 ```
 
+- `relatedApp` は `app` と `code` のどちらか一方で参照先を指す。値が省略・`null` のキーは書いていないものとして扱い、値は文字列にする
+    - どちらも書いていない場合は `BusinessRuleError(INVALID_SCHEMA_STRUCTURE)` をスローする
+    - 両方を書いた場合の扱いは `relatedAppWithBothKeys` で決まる。`"reject"`（省略時。スキーマファイル）は `BusinessRuleError(INVALID_SCHEMA_STRUCTURE)` をスローし、`"app"`（SchemaStateParser）は `app` で読んで `code` を捨てる。v0.35.8 以前の pull / push は、アプリコードのある参照先を `{ app, code }` で state に保存していた。この `code` は kintone から観測した属性なので捨てる
 - 入力がオブジェクトでない場合は `BusinessRuleError` をスローする
 - 検証に失敗した場合は `BusinessRuleError` をスローする
 - 重複するFieldCodeが存在する場合は `BusinessRuleError` をスローする
@@ -627,6 +643,28 @@ const SchemaParser = {
 - SchemaSerializerが生成するデータとラウンドトリップ整合性を保つ
 - YAMLテキスト → `unknown` への変換はアプリケーション層が行い、YAMLとして不正な文字列の場合の検出もアプリケーション層の責務とする
 - 旧フォーマット（`fields` キーのみで `layout` キーを持たない）が検出された場合はエラーメッセージで新フォーマットへの移行を案内する
+
+### RelatedAppProjection
+
+kintone から読んだ `RemoteFieldDefinition` を、参照スキーマの指定方法に合わせた `FieldDefinition` にする純粋関数。
+
+```typescript
+function projectRemoteFields(
+  remote: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
+  reference: ReadonlyMap<FieldCode, FieldDefinition> | undefined,
+): ReadonlyMap<FieldCode, FieldDefinition>;
+
+function restateBaseFields(
+  base: ReadonlyMap<FieldCode, FieldDefinition>,
+  remote: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
+  reference: ReadonlyMap<FieldCode, FieldDefinition> | undefined,
+): ReadonlyMap<FieldCode, FieldDefinition>;
+```
+
+- `projectRemoteFields` は、参照スキーマの同じフィールドコードのフィールドが `relatedApp` を `{ code }` で指し、リモートのアプリコードが空でなければ `{ code: リモートの code }` にする。それ以外（参照スキーマが無い・同じフィールドコードのフィールドが無い・`{ app }` で指す・参照先にアプリコードが無い）は `{ app: リモートの app }` にする。フィールドの種類（lookup か REFERENCE_TABLE か）は問わない
+- `restateBaseFields` は、3-way の base の `relatedApp` が同じフィールドコードのリモートと同じアプリを指す（ID 指定ならアプリ ID が、コード指定ならアプリコードが一致する）とき、それを `projectRemoteFields` と同じ規則で射影する。指さないとき・リモートにそのフィールドが無いときは base の値のまま返す。そのため、リモートの参照先が base と同じなら、base とローカルで指定方法が違うだけでは差分にならない。リモートの参照先が変わっていると、base が指したアプリのもう一方の識別子（ID 指定の base ならアプリコード）はどこにも残っていない。ローカルが指定方法だけを変えたのか参照先も変えたのかを判定できないので、base はそのまま残り、ローカルの変更として扱う（リモートも変わっていれば conflict）
+- サブテーブル内のフィールドは、サブテーブルの中とトップレベルの両方で射影する。フィールドコードはサブテーブル内も含めてフォーム全体で一意なので、トップレベルのフィールドコードで突き合わせる
+- 参照スキーマは、2-way（detectDiff・executeMigration）では比較・適用するスキーマ、3-way（schema diff・push・pull）ではローカルのスキーマ、captureSchema では既存のスキーマファイル
 
 ### SchemaSerializer
 
@@ -677,7 +715,7 @@ const SchemaValidator = {
 type FormReadTarget = "preview" | "published";
 
 interface FormConfigurator {
-  getFields(target?: FormReadTarget): Promise<ReadonlyMap<FieldCode, FieldDefinition>>;
+  getFields(target?: FormReadTarget): Promise<ReadonlyMap<FieldCode, RemoteFieldDefinition>>;
   addFields(fields: readonly FieldDefinition[]): Promise<void>;
   updateFields(fields: readonly FieldDefinition[]): Promise<void>;
   deleteFields(fieldCodes: readonly FieldCode[]): Promise<void>;
@@ -686,7 +724,8 @@ interface FormConfigurator {
 }
 ```
 
-- 外部から取得したフォーム情報をドメインの型（FieldDefinition）に変換する責務を持つ
+- 外部から取得したフォーム情報をドメインの型（`RemoteFieldDefinition`）に変換する責務を持つ。`relatedApp` は API が返すアプリ ID とアプリコードの両方を持ち、`code` が無ければ `""`、`app` / `code` が文字列でなければ `SystemError` をスローする
+- `addFields` / `updateFields` は `FieldDefinition` の `relatedApp` をそのまま送る（`{ app }` か `{ code }` のどちらか一方）
 - `getFields()` はシステムフィールド（RECORD_NUMBER、CREATOR 等）を除外して返す。`FieldType` ユニオンにシステムフィールド型を含まないため、アダプター側でフィルタリングする
 - kintone のフォーム定義は preview（編集中）と published（公開済み）の2世代を持つ。read 系（`getFields` / `getLayout`）は `FormReadTarget` で読み取る世代を選べる。省略時は `"preview"` を読む
 - mutation 系（`addFields` / `updateFields` / `deleteFields` / `updateLayout`）は常に preview 世代を対象とする。kintone のフォーム API が変更できるのが preview だけであるため
@@ -731,8 +770,9 @@ interface SchemaStorage {
     1. `SchemaStorage.get()` でスキーマテキストを取得する
     2. `SchemaParser.parse()` でスキーマにパースする
     3. `FormConfigurator.getFields(target)` で現在のフォームフィールドを取得する。読み取る世代は入力の `target` で決まる
-    4. `DiffDetector.detect()` で差分を検出する
-    5. `FormDiff` を返却する
+    4. `projectRemoteFields()` で、現在のフォームフィールドの `relatedApp` をスキーマの指定方法に揃える
+    5. `DiffDetector.detect()` で差分を検出する
+    6. `FormDiff` を返却する
 - **エラー**:
     - パース失敗 → `BusinessRuleError` を `ValidationError` に変換（スキーマテキストの記述形式不正）
     - API通信失敗 → `SystemError`
@@ -748,13 +788,14 @@ interface SchemaStorage {
     1. `SchemaStorage.get()` でスキーマテキストを取得する
     2. `SchemaParser.parse()` でスキーマにパースする
     3. `FormConfigurator.getFields()` と `FormConfigurator.getLayout()` を並行して実行し、現在のフィールド定義とレイアウトを取得する
-    4. `DiffDetector.detect()` でフィールドの差分を検出する
-    5. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
-    6. フィールド差分もレイアウト差分もない場合は何もせず終了する
-    7. 追加フィールドがある場合、`FormConfigurator.addFields()` で追加する
-    8. 変更フィールドがある場合、`FormConfigurator.updateFields()` で更新する
-    9. 削除フィールドがある場合、`FormConfigurator.deleteFields()` で削除する
-    10. レイアウトに差分がある場合、`FormConfigurator.updateLayout()` でレイアウトを更新する
+    4. `projectRemoteFields()` で、現在のフィールド定義の `relatedApp` をスキーマの指定方法に揃える。レイアウトは揃えたフィールド定義で埋める
+    5. `DiffDetector.detect()` でフィールドの差分を検出する
+    6. `DiffDetector.detectLayoutChanges()` でレイアウトの差分を検出する
+    7. フィールド差分もレイアウト差分もない場合は何もせず終了する
+    8. 追加フィールドがある場合、`FormConfigurator.addFields()` で追加する
+    9. 変更フィールドがある場合、`FormConfigurator.updateFields()` で更新する
+    10. 削除フィールドがある場合、`FormConfigurator.deleteFields()` で削除する
+    11. レイアウトに差分がある場合、`FormConfigurator.updateLayout()` でレイアウトを更新する
 - **操作順序**: 追加 → 変更 → 削除の順に逐次実行する。新規フィールドへの参照を先に確立し、不要フィールドの削除は最後に行うことで、フィールド間の依存関係（サブテーブル内フィールド等）による失敗を防ぐ
 - **部分失敗時の方針**: いずれかの操作でAPI通信に失敗した場合、残りの操作は実行せず即座にエラーを返す。既に適用された変更のロールバックは行わない（外部サービスがトランザクションをサポートしないため）
 - **エラー**:
@@ -789,11 +830,10 @@ interface SchemaStorage {
 - **入力**: なし
 - **出力**: `{ schemaText: string; hasExistingSchema: boolean }`
 - **処理フロー**:
-    1. `FormConfigurator.getLayout()` で現在のフォームレイアウトを取得する
-    2. `SchemaSerializer.serialize()` でスキーマテキスト（YAML）を生成する
-    3. `SchemaStorage.get()` で既存のスキーマテキストを取得する
-    4. 既存設定の有無を判定する
-    5. 生成テキストと既存設定の有無を返却する
+    1. `FormConfigurator.getFields()`・`FormConfigurator.getLayout()`・`SchemaStorage.get()` を並行して実行し、現在のフィールド定義・レイアウト・既存のスキーマテキストを取得する
+    2. 既存のスキーマテキストをパースし、`projectRemoteFields()` の参照スキーマにする。既存のスキーマが無い・パースに失敗した場合は参照スキーマ無しで射影する（全 `relatedApp` が `{ app }` になる）。パースに失敗しても capture は止めない（capture は読めないスキーマファイルを書き直す手段でもあるため）
+    3. 揃えたフィールド定義でレイアウトを埋め、`SchemaSerializer.serialize()` でスキーマテキスト（YAML）を生成する
+    4. 生成テキストと既存設定の有無を返却する
 - **エラー**:
     - API通信失敗 → `SystemError`
 

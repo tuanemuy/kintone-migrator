@@ -162,11 +162,27 @@ lookup:
 
 **RelatedApp**:
 
+```yaml
+relatedApp: { app: "10" }        # アプリ ID で指定する
+relatedApp: { code: CUSTOMERS }  # アプリコードで指定する
+```
+
 | プロパティ | 型 | 必須 | 説明 |
 | --- | --- | --- | --- |
-| `app` | string | Yes | 参照先アプリのアプリID |
+| `app` | string | どちらか一方 | 参照先アプリのアプリID |
+| `code` | string | どちらか一方 | 参照先アプリのアプリコード |
 
-`relatedApp` に `code`（参照先アプリのアプリコード）を書いても読み捨てる。参照先はアプリ ID だけで決まり、`code` は比較にも、kintone への送信にも使わない。kintone から取り込んだスキーマ（`schema capture`・`schema pull`・`init`）にも書き出さない。
+`app` と `code` のどちらか一方だけを書く。
+
+- 両方を書いた場合、どちらも書かない場合は `INVALID_SCHEMA_STRUCTURE` になる。値を書かない（`null`）キーは書いていないものとして扱う
+- 書いた値が空の場合は validate のエラーになる（lookup は `INVALID_LOOKUP`、REFERENCE_TABLE は `EMPTY_RELATED_APP`）
+- `schema migrate`・`schema push`・`schema override` は、書いたほうのキーだけを kintone に送る
+
+kintone はリモートの `relatedApp` をアプリ ID とアプリコードの両方で返す。比較（`schema diff`・3-way）は、リモートをスキーマと同じ指定方法に揃えてから行う。アプリコードで指定したフィールドは、リモートの参照先のアプリコードが同じなら差分なしになる。
+
+kintone から取り込んだスキーマ（`schema capture`・`schema pull`・`init`）は、既存のスキーマ（capture は既存のスキーマファイル、pull はローカルのスキーマ）でアプリコード指定のフィールドを `{ code }` で、それ以外を `{ app }` で書き出す。参照先にアプリコードが無いフィールドは `{ app }` で書き出す。capture は、既存のスキーマファイルが読めなくても止まらず、すべて `{ app }` で書き出す。
+
+state（`schema pull` / `schema push` が保存するスナップショット）は、v0.35.8 以前の版が `{ app, code }` で保存したものも読める。両方があれば `app` で読む。
 
 **LookupFieldMapping**:
 
@@ -175,7 +191,7 @@ lookup:
 | `field` | string | Yes | 自アプリのコピー先フィールドコード |
 | `relatedField` | string | Yes | 参照先アプリのコピー元フィールドコード |
 
-> **注意**: `relatedApp.app` はアプリIDであるため、異なる環境へマイグレーションする場合は、移行先環境のアプリIDに手動で書き換える必要があります。
+> **注意**: アプリ ID は環境ごとに異なる。`relatedApp` を `app` で指定したスキーマを別の環境へマイグレーションする場合は、移行先環境のアプリ ID に書き換える必要がある。参照先アプリにアプリコードを設定し、`relatedApp` を `code` で指定すれば、書き換えずに移行できる。
 
 ## フィールド型一覧
 
@@ -620,7 +636,7 @@ ROW 内の `fields` 配列に、フィールドと並べて装飾要素を配置
 | --- | --- |
 | `EMPTY_SCHEMA_TEXT` | スキーマテキストが空 |
 | `INVALID_SCHEMA_FORMAT` | YAML として不正なテキスト |
-| `INVALID_SCHEMA_STRUCTURE` | `layout` キーが存在しない、または配列でない。`lookup` の構造が不正（`lookup`・`relatedApp`・`fieldMappings` の要素がオブジェクトでない、`fieldMappings`・`lookupPickerFields` が省略・値なし・空文字・配列のいずれでもない） |
+| `INVALID_SCHEMA_STRUCTURE` | `layout` キーが存在しない、または配列でない。`lookup` の構造が不正（`lookup`・`relatedApp`・`fieldMappings` の要素がオブジェクトでない、`fieldMappings`・`lookupPickerFields` が省略・値なし・空文字・配列のいずれでもない）。lookup・REFERENCE_TABLE の `relatedApp` に `app` と `code` の両方がある、またはどちらも無い |
 | `INVALID_FIELD_TYPE` | 未知のフィールド型 |
 | `INVALID_LAYOUT_STRUCTURE` | レイアウト要素の構造が不正 |
 | `INVALID_DECORATION_ELEMENT` | 装飾要素の構造が不正（`elementId` の欠落等） |

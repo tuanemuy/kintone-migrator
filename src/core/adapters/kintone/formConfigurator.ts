@@ -23,7 +23,8 @@ import type {
   FieldType,
   LayoutElement,
   Lookup,
-  RelatedApp,
+  RemoteFieldDefinition,
+  RemoteRelatedApp,
 } from "@/core/domain/formSchema/valueObject";
 import { FieldCode as FieldCodeVO } from "@/core/domain/formSchema/valueObject";
 import { wrapKintoneError } from "./wrapKintoneError";
@@ -195,14 +196,22 @@ function readKintoneQueryClause(value: unknown, fieldPath: string): string {
   return value;
 }
 
-/** Reads `relatedApp` by its app ID; the returned `code` is dropped. */
-function fromKintoneRelatedApp(value: unknown, fieldPath: string): RelatedApp {
+/** Reads `relatedApp`; a missing `code` is `""`, as for an app without one. */
+function fromKintoneRelatedApp(
+  value: unknown,
+  fieldPath: string,
+): RemoteRelatedApp {
   assertRecord(value, fieldPath);
   assertString(value.app, `${fieldPath}.app`);
-  return { app: value.app };
+  if (value.code === undefined) return { app: value.app, code: "" };
+  assertString(value.code, `${fieldPath}.code`);
+  return { app: value.app, code: value.code };
 }
 
-function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
+function fromKintoneLookup(
+  value: unknown,
+  fieldPath: string,
+): Lookup<RemoteRelatedApp> {
   assertRecord(value, fieldPath);
   const relatedApp = fromKintoneRelatedApp(
     value.relatedApp,
@@ -238,7 +247,9 @@ function fromKintoneLookup(value: unknown, fieldPath: string): Lookup {
   };
 }
 
-function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
+function fromKintoneProperty(
+  prop: KintoneFieldProperty,
+): RemoteFieldDefinition {
   const { type, code, label, noLabel, ...rest } = prop;
   const base = {
     code: FieldCodeVO.create(code),
@@ -252,7 +263,7 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
       string,
       KintoneFieldProperty
     >;
-    const subFields = new Map<FieldCode, FieldDefinition>();
+    const subFields = new Map<FieldCode, RemoteFieldDefinition>();
     for (const [subCode, subProp] of Object.entries(kintoneSubFields)) {
       assertRecord(subProp, `SUBTABLE.fields.${subCode}`);
       subFields.set(
@@ -264,7 +275,7 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
       ...base,
       type: "SUBTABLE",
       properties: { fields: subFields },
-    } as FieldDefinition;
+    } as RemoteFieldDefinition;
   }
 
   if (type === "REFERENCE_TABLE" && "referenceTable" in rest) {
@@ -315,7 +326,7 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
           ...(rt.size !== undefined ? { size: String(rt.size) } : {}),
         },
       },
-    } as FieldDefinition;
+    } as RemoteFieldDefinition;
   }
 
   if (!KNOWN_FIELD_TYPES.has(type)) {
@@ -335,7 +346,7 @@ function fromKintoneProperty(prop: KintoneFieldProperty): FieldDefinition {
           lookup: fromKintoneLookup(lookup, `${type} "${code}".lookup`),
         };
 
-  return { ...base, type, properties } as FieldDefinition;
+  return { ...base, type, properties } as RemoteFieldDefinition;
 }
 
 function toKintoneProperty(field: FieldDefinition): Record<string, unknown> {
@@ -627,7 +638,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
 
   async getFields(
     target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
-  ): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
+  ): Promise<ReadonlyMap<FieldCode, RemoteFieldDefinition>> {
     const preview = target === "preview";
     try {
       const { properties, revision } = await this.client.app.getFormFields({
@@ -641,7 +652,7 @@ export class KintoneFormConfigurator implements FormConfigurator {
         this.revisionTracker.track(revision);
       }
 
-      const fields = new Map<FieldCode, FieldDefinition>();
+      const fields = new Map<FieldCode, RemoteFieldDefinition>();
       for (const [code, prop] of Object.entries(properties)) {
         const kintoneProp = prop as KintoneFieldProperty;
         if (SYSTEM_FIELD_TYPES.has(kintoneProp.type)) continue;

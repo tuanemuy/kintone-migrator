@@ -4,6 +4,7 @@ import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subt
 import type {
   FieldCode,
   FieldDefinition,
+  RemoteFieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
 import type { FormSchemaServiceArgs } from "../container/formSchema";
 import { assertSchemaValid } from "./assertSchemaValid";
@@ -19,7 +20,7 @@ type FieldClassification = {
 function classifySubtableField(
   fieldCode: FieldCode,
   schemaDef: FieldDefinition & { type: "SUBTABLE" },
-  currentFields: ReadonlyMap<FieldCode, FieldDefinition>,
+  currentFields: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
   result: FieldClassification,
 ): void {
   const currentDef = currentFields.get(fieldCode);
@@ -60,7 +61,7 @@ function classifySubtableField(
 function classifyExistingField(
   fieldCode: FieldCode,
   schemaDef: FieldDefinition,
-  currentFields: ReadonlyMap<FieldCode, FieldDefinition>,
+  currentFields: ReadonlyMap<FieldCode, RemoteFieldDefinition>,
   result: FieldClassification,
 ): void {
   if (schemaDef.type === "SUBTABLE") {

@@ -23,6 +23,20 @@ import type {
 import { FieldCode } from "../valueObject";
 import { decodeLookupList } from "./lookupListDecoder";
 
+/**
+ * How a parse reads a `relatedApp` that has both `app` and `code` written: a
+ * schema file must write only one (`"reject"`), while a state written by an
+ * older version has both, its `code` being the app code observed from kintone
+ * (`"app"`: refer by app ID and drop `code`).
+ */
+export type SchemaParseOptions = Readonly<{
+  relatedAppWithBothKeys: "reject" | "app";
+}>;
+
+const SCHEMA_FILE_OPTIONS: SchemaParseOptions = {
+  relatedAppWithBothKeys: "reject",
+};
+
 const VALID_UNIT_POSITIONS: ReadonlySet<string> = new Set(["BEFORE", "AFTER"]);
 
 const VALID_CALC_FORMATS: ReadonlySet<string> = new Set([
@@ -388,12 +402,40 @@ function optionalLookupList(
   return list;
 }
 
-/** Reads `relatedApp` by its app ID; a written `code` is dropped. */
-function parseRelatedApp(raw: Readonly<Record<string, unknown>>): RelatedApp {
-  return { app: String(raw.app ?? "") };
+/**
+ * Reads `relatedApp` (written at `path`), which refers to the related app by
+ * exactly one of `app` and `code`. A key whose value is omitted or `null` is not
+ * written.
+ */
+function parseRelatedApp(
+  raw: Readonly<Record<string, unknown>>,
+  path: string,
+  { relatedAppWithBothKeys }: SchemaParseOptions,
+  invalid: (detail: string) => BusinessRuleError,
+): RelatedApp {
+  const app = optionalString(raw.app);
+  const code = optionalString(raw.code);
+  if (
+    app !== undefined &&
+    (code === undefined || relatedAppWithBothKeys === "app")
+  ) {
+    return { app };
+  }
+  if (code !== undefined && app === undefined) {
+    return { code };
+  }
+  throw invalid(
+    app === undefined
+      ? `must have "${path}.app" or "${path}.code"`
+      : `must have only one of "${path}.app" and "${path}.code"`,
+  );
 }
 
-function parseLookup(code: string, raw: unknown): Lookup {
+function parseLookup(
+  code: string,
+  raw: unknown,
+  options: SchemaParseOptions,
+): Lookup {
   if (!isRecord(raw)) {
     throw invalidLookup(code, "must be an object");
   }
@@ -421,7 +463,12 @@ function parseLookup(code: string, raw: unknown): Lookup {
     };
   });
   return {
-    relatedApp: parseRelatedApp(raw.relatedApp),
+    relatedApp: parseRelatedApp(
+      raw.relatedApp,
+      "relatedApp",
+      options,
+      (detail) => invalidLookup(code, detail),
+    ),
     relatedKeyField: String(raw.relatedKeyField ?? ""),
     fieldMappings,
     lookupPickerFields,
@@ -438,6 +485,7 @@ function parseReferenceTableField(
     readonly label: string;
     readonly noLabel?: boolean;
   },
+  options: SchemaParseOptions,
 ): ReferenceTableFieldDefinition {
   if (!isRecord(raw.referenceTable)) {
     throw new BusinessRuleError(
@@ -492,7 +540,16 @@ function parseReferenceTableField(
     type: "REFERENCE_TABLE",
     properties: {
       referenceTable: {
-        relatedApp: parseRelatedApp(refTable.relatedApp),
+        relatedApp: parseRelatedApp(
+          refTable.relatedApp,
+          "referenceTable.relatedApp",
+          options,
+          (detail) =>
+            new BusinessRuleError(
+              FormSchemaErrorCode.FsInvalidSchemaStructure,
+              `Field "${code}" of type REFERENCE_TABLE ${detail}`,
+            ),
+        ),
         condition: {
           field: FieldCode.create(conditionField),
           relatedField: FieldCode.create(conditionRelatedField),
@@ -506,7 +563,10 @@ function parseReferenceTableField(
   };
 }
 
-function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
+function parseFieldDefinitionFromFlat(
+  raw: RawField,
+  options: SchemaParseOptions,
+): FieldDefinition {
   const code = String(raw.code);
   const type = String(raw.type);
 
@@ -533,7 +593,7 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
       : [];
     const subFields = new Map<FieldCode, FieldDefinition>();
     for (const subRaw of rawFields) {
-      const subDef = parseFieldDefinitionFromFlat(subRaw);
+      const subDef = parseFieldDefinitionFromFlat(subRaw, options);
       subFields.set(subDef.code, subDef);
     }
     const def: SubtableFieldDefinition = {
@@ -545,14 +605,14 @@ function parseFieldDefinitionFromFlat(raw: RawField): FieldDefinition {
   }
 
   if (fieldType === "REFERENCE_TABLE") {
-    return parseReferenceTableField(raw, code, base);
+    return parseReferenceTableField(raw, code, base, options);
   }
 
   const { lookup, ...others } = extractProperties(raw);
   const properties =
     lookup === undefined
       ? others
-      : { ...others, lookup: parseLookup(code, lookup) };
+      : { ...others, lookup: parseLookup(code, lookup, options) };
   validateFieldProperties(code, fieldType, properties);
 
   return buildFieldDefinition(base, fieldType, properties);
@@ -584,7 +644,10 @@ function parseDecorationElement(raw: RawField): DecorationElement {
   }
 }
 
-function parseLayoutElement(raw: RawField): LayoutElement {
+function parseLayoutElement(
+  raw: RawField,
+  options: SchemaParseOptions,
+): LayoutElement {
   const type = String(raw.type);
 
   if (DECORATION_TYPES.has(type)) {
@@ -600,7 +663,7 @@ function parseLayoutElement(raw: RawField): LayoutElement {
     };
   }
 
-  const field = parseFieldDefinitionFromFlat(raw);
+  const field = parseFieldDefinitionFromFlat(raw, options);
   const size = parseSize(raw.size);
   const layoutField: LayoutField = {
     kind: "field",
@@ -610,7 +673,10 @@ function parseLayoutElement(raw: RawField): LayoutElement {
   return layoutField;
 }
 
-function parseLayoutRow(raw: Record<string, unknown>): LayoutRow {
+function parseLayoutRow(
+  raw: Record<string, unknown>,
+  options: SchemaParseOptions,
+): LayoutRow {
   if (raw.type !== "ROW") {
     throw new BusinessRuleError(
       FormSchemaErrorCode.FsInvalidLayoutStructure,
@@ -626,7 +692,7 @@ function parseLayoutRow(raw: Record<string, unknown>): LayoutRow {
   }
 
   const rawFields = Array.isArray(raw.fields) ? (raw.fields as RawField[]) : [];
-  const fields = rawFields.map(parseLayoutElement);
+  const fields = rawFields.map((r) => parseLayoutElement(r, options));
 
   return { type: "ROW", fields };
 }
@@ -675,6 +741,7 @@ function mergeFieldMaps(
 
 function parseGroupLayoutItem(
   raw: Record<string, unknown>,
+  options: SchemaParseOptions,
 ): ParseLayoutItemResult {
   const code = FieldCode.create(String(raw.code));
   const label = String(raw.label ?? "");
@@ -688,7 +755,7 @@ function parseGroupLayoutItem(
   let groupFields = new Map<FieldCode, FieldDefinition>();
   const layout: LayoutRow[] = [];
   for (const r of rawLayout) {
-    const row = parseLayoutRow(r);
+    const row = parseLayoutRow(r, options);
     const rowFields = collectFieldsFromElements(row.fields);
     groupFields = mergeFieldMaps(groupFields, rowFields);
     layout.push(row);
@@ -721,12 +788,13 @@ function parseGroupLayoutItem(
 
 function parseSubtableLayoutItem(
   raw: Record<string, unknown>,
+  options: SchemaParseOptions,
 ): ParseLayoutItemResult {
   const code = FieldCode.create(String(raw.code));
   const label = String(raw.label ?? "");
   const noLabel = typeof raw.noLabel === "boolean" ? raw.noLabel : undefined;
   const rawFields = Array.isArray(raw.fields) ? (raw.fields as RawField[]) : [];
-  const elements = rawFields.map(parseLayoutElement);
+  const elements = rawFields.map((r) => parseLayoutElement(r, options));
 
   const subFields = collectFieldsFromElements(elements);
 
@@ -755,26 +823,29 @@ function parseSubtableLayoutItem(
   };
 }
 
-function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
+function parseLayoutItem(
+  raw: Record<string, unknown>,
+  options: SchemaParseOptions,
+): ParseLayoutItemResult {
   const type = String(raw.type);
 
   switch (type) {
     case "ROW": {
-      const row = parseLayoutRow(raw);
+      const row = parseLayoutRow(raw, options);
       const fields = collectFieldsFromElements(row.fields);
       return { item: row, fields };
     }
     case "GROUP":
-      return parseGroupLayoutItem(raw);
+      return parseGroupLayoutItem(raw, options);
     case "SUBTABLE":
-      return parseSubtableLayoutItem(raw);
+      return parseSubtableLayoutItem(raw, options);
     case "REFERENCE_TABLE": {
       const code = FieldCode.create(String(raw.code));
       const label = String(raw.label ?? "");
       const noLabel =
         typeof raw.noLabel === "boolean" ? raw.noLabel : undefined;
 
-      const fieldDef = parseFieldDefinitionFromFlat(raw);
+      const fieldDef = parseFieldDefinitionFromFlat(raw, options);
 
       const allFields = new Map<FieldCode, FieldDefinition>();
       allFields.set(code, fieldDef);
@@ -797,7 +868,10 @@ function parseLayoutItem(raw: Record<string, unknown>): ParseLayoutItemResult {
 }
 
 export const SchemaParser = {
-  parse: (parsed: unknown): Schema => {
+  parse: (
+    parsed: unknown,
+    options: SchemaParseOptions = SCHEMA_FILE_OPTIONS,
+  ): Schema => {
     if (!isRecord(parsed)) {
       throw new BusinessRuleError(
         FormSchemaErrorCode.FsInvalidSchemaStructure,
@@ -833,7 +907,7 @@ export const SchemaParser = {
           `Layout item at index ${i} must be an object`,
         );
       }
-      const result = parseLayoutItem(rawItem);
+      const result = parseLayoutItem(rawItem, options);
       layout.push(result.item);
       fieldMap = mergeFieldMaps(fieldMap, result.fields);
     }

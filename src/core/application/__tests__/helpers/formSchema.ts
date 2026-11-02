@@ -12,9 +12,11 @@ import type { FormReadTarget } from "@/core/domain/formSchema/ports/formReadTarg
 import { DEFAULT_FORM_READ_TARGET } from "@/core/domain/formSchema/ports/formReadTarget";
 import type { SchemaStateStorage } from "@/core/domain/formSchema/ports/schemaStateStorage";
 import type { SchemaStorage } from "@/core/domain/formSchema/ports/schemaStorage";
+import { mapFieldsRelatedApps } from "@/core/domain/formSchema/services/relatedAppProjection";
 import type {
   FieldCode,
   FieldDefinition,
+  RemoteFieldDefinition,
 } from "@/core/domain/formSchema/valueObject";
 import type { ConfigCodec } from "@/core/domain/ports/configCodec";
 import { isRecord } from "@/lib/typeGuards";
@@ -26,6 +28,19 @@ import {
   setupContainer,
   testConfigCodec,
 } from "./shared";
+
+/**
+ * Reports stored schema fields the way kintone reports them: each related app
+ * by both identifiers, the one the schema leaves out being `""`.
+ */
+function toRemoteFields(
+  fields: ReadonlyMap<FieldCode, FieldDefinition>,
+): ReadonlyMap<FieldCode, RemoteFieldDefinition> {
+  return mapFieldsRelatedApps(fields, (relatedApp) => ({
+    app: relatedApp.app ?? "",
+    code: relatedApp.code ?? "",
+  }));
+}
 
 export class InMemoryFormConfigurator
   extends FakeBase
@@ -70,13 +85,12 @@ export class InMemoryFormConfigurator
 
   async getFields(
     target: FormReadTarget = DEFAULT_FORM_READ_TARGET,
-  ): Promise<ReadonlyMap<FieldCode, FieldDefinition>> {
+  ): Promise<ReadonlyMap<FieldCode, RemoteFieldDefinition>> {
     this.trackCall("getFields");
     this.readTargets.push(target);
-    if (target === "published") {
-      return new Map(this.publishedFields);
-    }
-    return new Map(this.fields);
+    return toRemoteFields(
+      target === "published" ? this.publishedFields : this.fields,
+    );
   }
 
   async getRevision(): Promise<string> {

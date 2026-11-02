@@ -1,6 +1,8 @@
 import { isRecord } from "@/core/domain/typeGuards";
 import type { SchemaState } from "../state";
-import { SchemaParser } from "./schemaParser";
+import { type SchemaParseOptions, SchemaParser } from "./schemaParser";
+
+const STATE_OPTIONS: SchemaParseOptions = { relatedAppWithBothKeys: "app" };
 
 /**
  * Parses pre-parsed (codec-decoded) data into a {@link SchemaState}.
@@ -12,7 +14,9 @@ import { SchemaParser } from "./schemaParser";
  * `revision` field alongside the captured `layout`. revision is now stored
  * separately in `state/<appName>/revision.yaml`, so any residual top-level
  * `revision` is stripped and ignored here — the snapshot is parsed from the
- * remainder. The domain layer does not depend on YAML; the application layer
+ * remainder. Older state files also hold a lookup's `relatedApp` as both `app`
+ * and `code`; it is read by `app` (see {@link SchemaParseOptions}). The domain
+ * layer does not depend on YAML; the application layer
  * handles codec decoding before calling this.
  */
 export const SchemaStateParser = {
@@ -27,7 +31,7 @@ export const SchemaStateParser = {
         })()
       : parsed;
 
-    const schema = SchemaParser.parse(rest);
+    const schema = SchemaParser.parse(rest, STATE_OPTIONS);
 
     return { schema };
   },

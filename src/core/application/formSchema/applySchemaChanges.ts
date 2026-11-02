@@ -6,6 +6,7 @@ import {
   collectSubtableInnerFieldCodes,
   enrichLayoutWithFields,
 } from "@/core/domain/formSchema/services/layoutEnricher";
+import { projectRemoteFields } from "@/core/domain/formSchema/services/relatedAppProjection";
 import { splitSubtableInnerFields } from "@/core/domain/formSchema/services/subtableFieldSplitter";
 import type {
   FieldCode,
@@ -85,10 +86,11 @@ export async function applySchemaChanges(
   schema: Schema,
   { container, expectedRevision }: ApplySchemaChangesContext,
 ): Promise<void> {
-  const [currentFields, currentLayout] = await Promise.all([
+  const [remoteFields, currentLayout] = await Promise.all([
     container.formConfigurator.getFields(),
     container.formConfigurator.getLayout(),
   ]);
+  const currentFields = projectRemoteFields(remoteFields, schema.fields);
   const diff = DiffDetector.detect(schema, currentFields);
   const enrichedCurrentLayout = enrichLayoutWithFields(
     currentLayout,

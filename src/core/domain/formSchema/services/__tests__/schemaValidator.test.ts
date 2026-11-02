@@ -9,6 +9,7 @@ import type {
   MultiValueSelectionFieldDefinition,
   NumberFieldDefinition,
   ReferenceTableFieldDefinition,
+  RelatedApp,
   SingleLineTextFieldDefinition,
   SingleValueSelectionFieldDefinition,
   SubtableFieldDefinition,
@@ -345,30 +346,53 @@ describe("SchemaValidator", () => {
   });
 
   describe("validateLookupStructure", () => {
-    it("lookup で relatedApp.app が空の場合エラーになる", () => {
-      const field: SingleLineTextFieldDefinition = {
-        code: "text" as FieldCode,
-        type: "SINGLE_LINE_TEXT",
-        label: "テキスト",
-        properties: {
-          lookup: {
-            relatedApp: { app: "" },
-            relatedKeyField: "key",
-            fieldMappings: [],
-            lookupPickerFields: [],
-            filterCond: "",
-            sort: "",
-          },
+    const lookupWithRelatedApp = (
+      relatedApp: RelatedApp,
+    ): SingleLineTextFieldDefinition => ({
+      code: "text" as FieldCode,
+      type: "SINGLE_LINE_TEXT",
+      label: "テキスト",
+      properties: {
+        lookup: {
+          relatedApp,
+          relatedKeyField: "key",
+          fieldMappings: [],
+          lookupPickerFields: [],
+          filterCond: "",
+          sort: "",
         },
-      };
-      const result = SchemaValidator.validate(createSchema([field]));
+      },
+    });
+
+    it.each<[string, RelatedApp, string]>([
+      ["空の app", { app: "" }, "app"],
+      ["空白だけの app", { app: " " }, "app"],
+      ["空の code", { code: "" }, "code"],
+      ["空白だけの code", { code: " " }, "code"],
+    ])("lookup の relatedApp が%sならエラーになる", (_, relatedApp, key) => {
+      const result = SchemaValidator.validate(
+        createSchema([lookupWithRelatedApp(relatedApp)]),
+      );
       expect(result.isValid).toBe(false);
       expect(
-        result.issues.some(
-          (i) =>
-            i.rule === "INVALID_LOOKUP" && i.message.includes("relatedApp.app"),
-        ),
-      ).toBe(true);
+        result.issues.filter((i) => i.rule === "INVALID_LOOKUP"),
+      ).toStrictEqual([
+        expect.objectContaining({
+          message: `Field "text" lookup must have a non-empty "relatedApp.${key}"`,
+        }),
+      ]);
+    });
+
+    it.each<[string, RelatedApp]>([
+      ["app", { app: "1" }],
+      ["code", { code: "CUSTOMERS" }],
+    ])("lookup の relatedApp の %s が非空ならエラーにならない", (_, relatedApp) => {
+      const result = SchemaValidator.validate(
+        createSchema([lookupWithRelatedApp(relatedApp)]),
+      );
+      expect(
+        result.issues.filter((i) => i.rule === "INVALID_LOOKUP"),
+      ).toHaveLength(0);
     });
 
     it("lookup で relatedKeyField が空の場合エラーになる", () => {
@@ -493,50 +517,52 @@ describe("SchemaValidator", () => {
   });
 
   describe("validateReferenceTableRelatedApp", () => {
-    it("referenceTable.relatedApp.app が空文字の場合エラーになる", () => {
-      const field: ReferenceTableFieldDefinition = {
-        code: "ref" as FieldCode,
-        type: "REFERENCE_TABLE",
-        label: "参照",
-        properties: {
-          referenceTable: {
-            relatedApp: { app: "" },
-            condition: {
-              field: "key" as FieldCode,
-              relatedField: "rKey" as FieldCode,
-            },
-            displayFields: ["col1" as FieldCode],
-            filterCond: "",
-            sort: "",
+    const referenceTableWithRelatedApp = (
+      relatedApp: RelatedApp,
+    ): ReferenceTableFieldDefinition => ({
+      code: "ref" as FieldCode,
+      type: "REFERENCE_TABLE",
+      label: "参照",
+      properties: {
+        referenceTable: {
+          relatedApp,
+          condition: {
+            field: "key" as FieldCode,
+            relatedField: "rKey" as FieldCode,
           },
+          displayFields: ["col1" as FieldCode],
+          filterCond: "",
+          sort: "",
         },
-      };
-      const result = SchemaValidator.validate(createSchema([field]));
-      expect(result.isValid).toBe(false);
-      expect(result.issues.some((i) => i.rule === "EMPTY_RELATED_APP")).toBe(
-        true,
-      );
+      },
     });
 
-    it("referenceTable.relatedApp.app が非空の場合エラーにならない", () => {
-      const field: ReferenceTableFieldDefinition = {
-        code: "ref" as FieldCode,
-        type: "REFERENCE_TABLE",
-        label: "参照",
-        properties: {
-          referenceTable: {
-            relatedApp: { app: "1" },
-            condition: {
-              field: "key" as FieldCode,
-              relatedField: "rKey" as FieldCode,
-            },
-            displayFields: ["col1" as FieldCode],
-            filterCond: "",
-            sort: "",
-          },
-        },
-      };
-      const result = SchemaValidator.validate(createSchema([field]));
+    it.each<[string, RelatedApp, string]>([
+      ["空の app", { app: "" }, "app"],
+      ["空白だけの app", { app: " " }, "app"],
+      ["空の code", { code: "" }, "code"],
+      ["空白だけの code", { code: " " }, "code"],
+    ])("referenceTable.relatedApp が%sならエラーになる", (_, relatedApp, key) => {
+      const result = SchemaValidator.validate(
+        createSchema([referenceTableWithRelatedApp(relatedApp)]),
+      );
+      expect(result.isValid).toBe(false);
+      expect(
+        result.issues.filter((i) => i.rule === "EMPTY_RELATED_APP"),
+      ).toStrictEqual([
+        expect.objectContaining({
+          message: `Field "ref" referenceTable.relatedApp.${key} must be non-empty`,
+        }),
+      ]);
+    });
+
+    it.each<[string, RelatedApp]>([
+      ["app", { app: "1" }],
+      ["code", { code: "MEMBERS" }],
+    ])("referenceTable.relatedApp の %s が非空ならエラーにならない", (_, relatedApp) => {
+      const result = SchemaValidator.validate(
+        createSchema([referenceTableWithRelatedApp(relatedApp)]),
+      );
       expect(
         result.issues.filter((i) => i.rule === "EMPTY_RELATED_APP"),
       ).toHaveLength(0);
