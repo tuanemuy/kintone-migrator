@@ -180,7 +180,7 @@ importers:
         version: 1.9.0
       '@kintone/rest-api-client':
         specifier: ^7.0.0
-        version: 7.0.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
+        version: 7.0.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       dotenv:
         specifier: ^18.0.0
         version: 18.0.10
@@ -542,8 +542,8 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@kintone/rest-api-client@7.0.0':
-    resolution: {integrity: sha512-D/6rEFmDtRLjsWSecmVvsWHoKlwbVtys4KT004s/u4nPbYlIftJV/wW0xoMYDgVPHC5L7akCAsDJE+5MlEmq7Q==}
+  '@kintone/rest-api-client@7.0.1':
+    resolution: {integrity: sha512-ncjt950qisIQy8hdbg0iy3mHcQJ4HQue0hf1ysnHGwIIhMVN7F86pX7VCLcAB4qzY4isecGcqZhP8oPfoUFZ4w==}
     engines: {node: '>=22'}
 
   '@napi-rs/wasm-runtime@1.1.1':
@@ -1591,8 +1591,8 @@ packages:
     resolution: {integrity: sha512-qjdpeo2yKlYTH7nFdK0vbZWuTCesk4o63v5iVOlhMQPfuIZQfW/HI35SjfhA+4qpg36rnFSvUK5b1m+ckIblQQ==}
     engines: {node: '>= 0.6.0'}
 
-  js-base64@3.9.4:
-    resolution: {integrity: sha512-PtOMXpEGuP0RRiRXsjzHzl44dMHxSu2CPvAhinupR1tBa88me+1DPqsobl7eupn5UukjLkln1ZnAOAOXOrYG0Q==}
+  js-base64@3.9.5:
+    resolution: {integrity: sha512-u0CFDUca8BbBRkMkF/fDcuoLCx9nTNbXdVtbjVnBqySA9E221u0uYKbACiYGOEk1heY69qM4caeX3OwjSyxevw==}
 
   js-tokens@10.0.0:
     resolution: {integrity: sha512-lM/UBzQmfJRo9ABXbPWemivdCW8V2G8FHaHdypQaIy523snUjog0W71ayWXTjiR+ixeMyVHN2XcpnTd/liPg/Q==}
@@ -2047,8 +2047,8 @@ packages:
     resolution: {integrity: sha512-cJ+oHTW1VAEa8cJslgmUZrc+sjRKgAKl3Zyse6+PV38hZe/V6Z14TbCuXcan9F9ghlz4QrFr2c92TNF82UkYHA==}
     engines: {node: '>=10'}
 
-  qs@6.16.1:
-    resolution: {integrity: sha512-5Px6J7rfHBAGUhNQ3es4YzcOdBBw0SDcVtThJml4RdnKw4tKs2epA0kPZ+K8X+WiHktT93RHVcQ/3ym5aTCgtg==}
+  qs@6.17.0:
+    resolution: {integrity: sha512-5LK5BZ2XDHMvcUJaf0CQ5HL3aVgKbpklvByC7qLSxYkfE8COEEbJg5xCHWCTqzqi0Gs4Jn5Mv5v3R38W6edscA==}
     engines: {node: '>=0.6'}
 
   quansync@1.0.0:
@@ -2821,13 +2821,13 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@kintone/rest-api-client@7.0.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)':
+  '@kintone/rest-api-client@7.0.1(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)':
     dependencies:
       axios: 1.20.0(debug@4.4.3(supports-color@7.2.0))(supports-color@7.2.0)
       form-data: 4.0.6
-      js-base64: 3.9.4
+      js-base64: 3.9.5
       mime: 3.0.0
-      qs: 6.16.1
+      qs: 6.17.0
     transitivePeerDependencies:
       - debug
       - supports-color
@@ -3808,7 +3808,7 @@ snapshots:
 
   java-properties@1.0.2: {}
 
-  js-base64@3.9.4: {}
+  js-base64@3.9.5: {}
 
   js-tokens@10.0.0: {}
 
@@ -4118,7 +4118,7 @@ snapshots:
 
   proxy-from-env@2.1.0: {}
 
-  qs@6.16.1:
+  qs@6.17.0:
     dependencies:
       es-define-property: 1.0.1
       side-channel: 1.1.1
